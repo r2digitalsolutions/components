@@ -66,6 +66,7 @@ export { default as Calendar } from './components/molecules/Calendar/Calendar.sv
 export type { CalendarMode, CalendarDot } from './components/molecules/Calendar/Calendar.svelte';
 export { default as DatePicker } from './components/molecules/DatePicker/DatePicker.svelte';
 export { default as ColorPicker } from './components/molecules/ColorPicker/ColorPicker.svelte';
+export type { ColorFormat } from './components/molecules/ColorPicker/ColorPicker.svelte';
 
 // ── Organisms ────────────────────────────────────────────────────────────────
 export { default as FileUploader } from './components/organisms/FileUploader/FileUploader.svelte';
