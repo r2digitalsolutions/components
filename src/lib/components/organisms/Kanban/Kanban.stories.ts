@@ -7,8 +7,7 @@ const meta = {
 	tags: ['autodocs'],
 	parameters: {
 		layout: 'fullscreen'
-	},
-	args: {}
+	}
 } satisfies Meta<typeof KanbanStory>;
 
 export default meta;
