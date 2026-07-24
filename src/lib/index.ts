@@ -23,6 +23,10 @@ export { default as Rating } from './components/atoms/Rating/Rating.svelte';
 export { default as Stat } from './components/atoms/Stat/Stat.svelte';
 export { default as AspectRatio } from './components/atoms/AspectRatio/AspectRatio.svelte';
 export { default as SkeletonText } from './components/atoms/SkeletonText/SkeletonText.svelte';
+export { default as RangeSlider } from './components/atoms/RangeSlider/RangeSlider.svelte';
+export { default as CircularProgress } from './components/atoms/CircularProgress/CircularProgress.svelte';
+export { default as ScrollArea } from './components/atoms/ScrollArea/ScrollArea.svelte';
+export { default as Image } from './components/atoms/Image/Image.svelte';
 
 // ── Molecules ────────────────────────────────────────────────────────────────
 export { default as Card } from './components/molecules/Card/Card.svelte';
@@ -76,6 +80,28 @@ export { default as Combobox } from './components/molecules/Combobox/Combobox.sv
 export type { ComboboxOption } from './components/molecules/Combobox/Combobox.svelte';
 export { default as MultiSelect } from './components/molecules/MultiSelect/MultiSelect.svelte';
 export type { MultiSelectOption } from './components/molecules/MultiSelect/MultiSelect.svelte';
+export { default as ConfirmDialog } from './components/molecules/ConfirmDialog/ConfirmDialog.svelte';
+export { default as ContextMenu } from './components/molecules/ContextMenu/ContextMenu.svelte';
+export type { ContextMenuItem } from './components/molecules/ContextMenu/ContextMenu.svelte';
+export { default as Carousel } from './components/molecules/Carousel/Carousel.svelte';
+export type { CarouselItem } from './components/molecules/Carousel/Carousel.svelte';
+export { default as TreeView } from './components/molecules/TreeView/TreeView.svelte';
+export type { TreeNode } from './components/molecules/TreeView/TreeView.svelte';
+export { default as TreeSelect } from './components/molecules/TreeSelect/TreeSelect.svelte';
+export { default as Cascader } from './components/molecules/Cascader/Cascader.svelte';
+export type { CascaderOption } from './components/molecules/Cascader/Cascader.svelte';
+export { default as MaskedInput } from './components/molecules/MaskedInput/MaskedInput.svelte';
+export { default as PhoneInput } from './components/molecules/PhoneInput/PhoneInput.svelte';
+export { default as CurrencyInput } from './components/molecules/CurrencyInput/CurrencyInput.svelte';
+export { default as TransferList } from './components/molecules/TransferList/TransferList.svelte';
+export type { TransferOption } from './components/molecules/TransferList/TransferList.svelte';
+export { default as Resizable } from './components/molecules/Resizable/Resizable.svelte';
+export { default as NavigationMenu } from './components/molecules/NavigationMenu/NavigationMenu.svelte';
+export type { NavMenuItem, NavMenuChild } from './components/molecules/NavigationMenu/NavigationMenu.svelte';
+export { default as ChatBubble } from './components/molecules/ChatBubble/ChatBubble.svelte';
+export { default as MessageList } from './components/molecules/MessageList/MessageList.svelte';
+export type { Message } from './components/molecules/MessageList/MessageList.svelte';
+export { default as VirtualList } from './components/molecules/VirtualList/VirtualList.svelte';
 
 // ── Organisms ────────────────────────────────────────────────────────────────
 export { default as FileUploader } from './components/organisms/FileUploader/FileUploader.svelte';
@@ -103,6 +129,12 @@ export { default as CommandPalette } from './components/organisms/CommandPalette
 export type { CommandItem } from './components/organisms/CommandPalette/CommandPalette.svelte';
 export { default as AppShell } from './components/organisms/AppShell/AppShell.svelte';
 export { default as LoginForm } from './components/organisms/LoginForm/LoginForm.svelte';
+export { default as Menubar } from './components/organisms/Menubar/Menubar.svelte';
+export type { MenubarItem, MenubarSubItem } from './components/organisms/Menubar/Menubar.svelte';
+export { default as NotificationCenter } from './components/organisms/NotificationCenter/NotificationCenter.svelte';
+export type { NotificationItem } from './components/organisms/NotificationCenter/NotificationCenter.svelte';
+export { default as Kanban } from './components/organisms/Kanban/Kanban.svelte';
+export type { KanbanColumn, KanbanCard } from './components/organisms/Kanban/Kanban.svelte';
 
 // ── Utils ────────────────────────────────────────────────────────────────────
 export { themeStore } from './utils/theme.svelte.js';
