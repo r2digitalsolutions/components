@@ -1,5 +1,8 @@
 @import 'tailwindcss';
 
+/* Match theme tokens (:root.dark) — not prefers-color-scheme alone */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* ─────────────────────────────────────────────────────────────────────────────
    R2DigiSolutions Design System — Tailwind 4 @theme
    ─────────────────────────────────────────────────────────────────────────── */
@@ -65,8 +68,8 @@
   --border: oklch(88% 0.02 265);
   --border-strong: oklch(75% 0.04 265);
   --text-primary: oklch(15% 0.02 265);
-  --text-secondary: oklch(40% 0.03 265);
-  --text-muted: oklch(60% 0.02 265);
+  --text-secondary: oklch(35% 0.03 265);
+  --text-muted: oklch(45% 0.02 265);
   --text-inverse: oklch(99% 0 0);
 }
 
