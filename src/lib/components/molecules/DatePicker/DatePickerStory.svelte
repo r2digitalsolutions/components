@@ -7,13 +7,15 @@
 		months = 1,
 		variant = 'field',
 		label = 'Date',
-		closeOnSelect = true
+		closeOnSelect = true,
+		placement = 'auto'
 	}: {
 		mode?: CalendarMode;
 		months?: 1 | 2;
 		variant?: 'field' | 'split';
 		label?: string;
 		closeOnSelect?: boolean;
+		placement?: 'auto' | 'bottom' | 'bottom-start' | 'bottom-end' | 'top' | 'top-start' | 'top-end';
 	} = $props();
 
 	const today = new Date();
@@ -29,7 +31,12 @@
 	let open = $state(false);
 </script>
 
-<div class="min-h-96 w-full max-w-xl space-y-3">
+<div
+	class={[
+		'flex min-h-96 max-w-full flex-col space-y-3',
+		months === 2 ? 'w-[36rem]' : 'w-[20rem]'
+	]}
+>
 	{#if mode === 'single'}
 		<DatePicker
 			mode="single"
@@ -37,6 +44,7 @@
 			{variant}
 			{label}
 			{closeOnSelect}
+			{placement}
 			bind:value
 			bind:open
 			placeholder="Pick a date"
@@ -47,6 +55,7 @@
 			mode="multiple"
 			{months}
 			{label}
+			{placement}
 			closeOnSelect={false}
 			bind:values
 			bind:open
@@ -62,6 +71,7 @@
 			{variant}
 			{label}
 			{closeOnSelect}
+			{placement}
 			bind:start
 			bind:end
 			bind:open

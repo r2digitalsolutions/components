@@ -18,12 +18,17 @@ const meta = {
 			control: 'select',
 			options: ['field', 'split']
 		},
+		placement: {
+			control: 'select',
+			options: ['auto', 'bottom', 'bottom-start', 'bottom-end', 'top', 'top-start', 'top-end']
+		},
 		closeOnSelect: { control: 'boolean' }
 	},
 	args: {
 		mode: 'single',
 		months: 1,
 		variant: 'field',
+		placement: 'auto',
 		label: 'Date',
 		closeOnSelect: true
 	}

@@ -293,15 +293,15 @@
 	class={[
 		'max-w-full bg-surface-elevated',
 		framed && 'rounded-2xl border border-border p-3 shadow-sm',
-		!framed && 'p-1',
-		dual && panel === 'days' ? 'w-fit' : 'w-80',
+		!framed && 'p-0.5',
+		dual && panel === 'days' ? 'w-fit' : framed ? 'w-80' : 'w-full',
 		className
 	]}
 >
 	{#if panel === 'days'}
 		<div class={['flex', dual ? 'flex-col gap-4 sm:flex-row sm:gap-2' : 'flex-col']}>
 			{#each monthGrids as grid (grid.offset)}
-				<div class="w-72 max-w-full shrink-0 px-1">
+				<div class={['max-w-full shrink-0 px-0.5', dual ? 'w-72' : 'w-full']}>
 					<div class="mb-3 flex items-center justify-between gap-1">
 						{#if grid.offset === 0}
 							<button
@@ -386,7 +386,7 @@
 			{/each}
 		</div>
 	{:else}
-		<div class="w-72 max-w-full px-1">
+		<div class="w-full max-w-full px-0.5">
 			<div class="mb-3 flex items-center justify-between gap-1">
 				<button
 					type="button"

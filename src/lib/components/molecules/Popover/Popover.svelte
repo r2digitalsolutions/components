@@ -26,9 +26,11 @@
 		onopenchange?.(next);
 	}
 
-	function onDocClick(e: MouseEvent) {
+	function onDocPointerDown(e: PointerEvent) {
 		if (!open || !rootEl) return;
-		if (!rootEl.contains(e.target as Node)) setOpen(false);
+		const path = typeof e.composedPath === 'function' ? e.composedPath() : [];
+		if (path.includes(rootEl) || rootEl.contains(e.target as Node)) return;
+		setOpen(false);
 	}
 
 	function onKey(e: KeyboardEvent) {
@@ -43,7 +45,7 @@
 	};
 </script>
 
-<svelte:document onclick={onDocClick} onkeydown={onKey} />
+<svelte:document onpointerdown={onDocPointerDown} onkeydown={onKey} />
 
 <div class={['relative inline-flex', className]} bind:this={rootEl}>
 	{#if trigger}{@render trigger()}{/if}

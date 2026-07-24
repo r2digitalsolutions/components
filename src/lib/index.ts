@@ -65,6 +65,7 @@ export { default as CodeBlock } from './components/molecules/CodeBlock/CodeBlock
 export { default as Calendar } from './components/molecules/Calendar/Calendar.svelte';
 export type { CalendarMode, CalendarDot } from './components/molecules/Calendar/Calendar.svelte';
 export { default as DatePicker } from './components/molecules/DatePicker/DatePicker.svelte';
+export type { DatePickerPlacement } from './components/molecules/DatePicker/DatePicker.svelte';
 export { default as ColorPicker } from './components/molecules/ColorPicker/ColorPicker.svelte';
 export type { ColorFormat } from './components/molecules/ColorPicker/ColorPicker.svelte';
 

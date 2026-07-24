@@ -4,6 +4,15 @@
 		type CalendarMode
 	} from '../Calendar/Calendar.svelte';
 
+	export type DatePickerPlacement =
+		| 'auto'
+		| 'bottom'
+		| 'bottom-start'
+		| 'bottom-end'
+		| 'top'
+		| 'top-start'
+		| 'top-end';
+
 	interface DatePickerProps {
 		mode?: CalendarMode;
 		/** 1 month, or 2 side-by-side (booking style). */
@@ -29,6 +38,11 @@
 		variant?: 'field' | 'split';
 		/** Close popover after a complete selection. */
 		closeOnSelect?: boolean;
+		/**
+		 * Panel placement. `auto` flips vertical and chooses horizontal
+		 * alignment from available viewport space.
+		 */
+		placement?: DatePickerPlacement;
 		class?: string;
 		onchange?: (detail: {
 			mode: CalendarMode;
@@ -61,12 +75,18 @@
 		endPlaceholder = 'Add date',
 		variant = 'field',
 		closeOnSelect = true,
+		placement = 'auto',
 		class: className = '',
 		onchange
 	}: DatePickerProps = $props();
 
 	let rootEl = $state<HTMLDivElement | null>(null);
+	let panelEl = $state<HTMLDivElement | null>(null);
 	let activeField = $state<'start' | 'end' | 'value'>('value');
+	let resolved = $state<{ side: 'top' | 'bottom'; align: 'start' | 'center' | 'end' | 'stretch' }>({
+		side: 'bottom',
+		align: months === 1 ? 'stretch' : 'center'
+	});
 
 	function formatIso(iso: string) {
 		if (!iso) return '';
@@ -91,6 +111,82 @@
 		return placeholder;
 	});
 
+	function parsePlacement(p: DatePickerPlacement) {
+		if (p === 'auto') return null;
+		const [side, align] = p.split('-') as ['top' | 'bottom', 'start' | 'center' | 'end' | undefined];
+		return {
+			side,
+			align: (align ?? (months === 1 ? 'stretch' : 'center')) as
+				| 'start'
+				| 'center'
+				| 'end'
+				| 'stretch'
+		};
+	}
+
+	function updatePlacement() {
+		if (!rootEl || !panelEl) return;
+
+		const fixed = parsePlacement(placement);
+		if (fixed) {
+			resolved = {
+				side: fixed.side,
+				align: months === 1 && fixed.align === 'center' ? 'stretch' : fixed.align
+			};
+			return;
+		}
+
+		const trigger = rootEl.getBoundingClientRect();
+		const panel = panelEl.getBoundingClientRect();
+		const gap = 8;
+		const vw = window.innerWidth;
+		const vh = window.innerHeight;
+
+		const spaceBelow = vh - trigger.bottom - gap;
+		const spaceAbove = trigger.top - gap;
+		const side: 'top' | 'bottom' =
+			spaceBelow < panel.height && spaceAbove > spaceBelow ? 'top' : 'bottom';
+
+		let align: 'start' | 'center' | 'end' | 'stretch' = months === 1 ? 'stretch' : 'center';
+
+		if (months === 2 || align !== 'stretch') {
+			const centerLeft = trigger.left + trigger.width / 2 - panel.width / 2;
+			const startLeft = trigger.left;
+			const endLeft = trigger.right - panel.width;
+
+			const fits = (left: number) => left >= gap && left + panel.width <= vw - gap;
+
+			if (fits(centerLeft)) align = 'center';
+			else if (fits(startLeft)) align = 'start';
+			else if (fits(endLeft)) align = 'end';
+			else {
+				// pick least overflow
+				const overflows = [
+					{ align: 'center' as const, overflow: Math.max(0, -centerLeft) + Math.max(0, centerLeft + panel.width - vw) },
+					{ align: 'start' as const, overflow: Math.max(0, -startLeft) + Math.max(0, startLeft + panel.width - vw) },
+					{ align: 'end' as const, overflow: Math.max(0, -endLeft) + Math.max(0, endLeft + panel.width - vw) }
+				];
+				overflows.sort((a, b) => a.overflow - b.overflow);
+				align = overflows[0].align;
+			}
+		}
+
+		resolved = { side, align };
+	}
+
+	$effect(() => {
+		if (!open) return;
+		const id = requestAnimationFrame(() => updatePlacement());
+		const onWin = () => updatePlacement();
+		window.addEventListener('resize', onWin);
+		window.addEventListener('scroll', onWin, true);
+		return () => {
+			cancelAnimationFrame(id);
+			window.removeEventListener('resize', onWin);
+			window.removeEventListener('scroll', onWin, true);
+		};
+	});
+
 	function setOpen(next: boolean) {
 		if (disabled) return;
 		open = next;
@@ -102,9 +198,11 @@
 		open = true;
 	}
 
-	function onDocClick(e: MouseEvent) {
+	function onDocPointerDown(e: PointerEvent) {
 		if (!open || !rootEl) return;
-		if (!rootEl.contains(e.target as Node)) setOpen(false);
+		const path = typeof e.composedPath === 'function' ? e.composedPath() : [];
+		if (path.includes(rootEl) || rootEl.contains(e.target as Node)) return;
+		setOpen(false);
 	}
 
 	function onKey(e: KeyboardEvent) {
@@ -149,11 +247,41 @@
 				? values.length > 0
 				: !!(start || end)
 	);
+
+	const panelClass = $derived.by(() => {
+		const { side, align } = resolved;
+		const vertical =
+			side === 'bottom' ? 'top-full mt-2' : 'bottom-full mb-2';
+
+		const horizontal =
+			align === 'stretch'
+				? 'left-0 right-0'
+				: align === 'center'
+					? 'left-1/2 -translate-x-1/2'
+					: align === 'end'
+						? 'right-0'
+						: 'left-0';
+
+		return [
+			'absolute z-50 rounded-2xl border border-border bg-surface-elevated p-2 shadow-xl',
+			vertical,
+			horizontal,
+			months === 2 && align !== 'stretch' ? 'w-max max-w-[min(100vw-1rem,42rem)]' : '',
+			months === 1 || align === 'stretch' ? 'w-auto' : ''
+		];
+	});
 </script>
 
-<svelte:document onclick={onDocClick} onkeydown={onKey} />
+<svelte:document onpointerdown={onDocPointerDown} onkeydown={onKey} />
 
-<div class={['relative w-full max-w-md', className]} bind:this={rootEl}>
+<div
+	class={[
+		'relative',
+		months === 2 ? 'w-full max-w-xl' : 'w-full min-w-[18rem] max-w-[20rem]',
+		className
+	]}
+	bind:this={rootEl}
+>
 	{#if label && variant === 'field'}
 		<span class="mb-1.5 block text-sm font-medium text-primary">{label}</span>
 	{/if}
@@ -264,12 +392,11 @@
 
 	{#if open}
 		<div
+			bind:this={panelEl}
 			role="dialog"
 			aria-label="Choose date"
-			class={[
-				'absolute left-0 z-50 mt-2 rounded-2xl border border-border bg-surface-elevated p-2 shadow-xl',
-				months === 2 ? 'w-max max-w-[min(100vw-2rem,42rem)]' : 'w-max'
-			]}
+			class={panelClass}
+			onpointerdown={(e) => e.stopPropagation()}
 		>
 			{#if mode === 'single'}
 				<Calendar

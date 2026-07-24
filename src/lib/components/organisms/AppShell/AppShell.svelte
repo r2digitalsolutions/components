@@ -12,6 +12,12 @@
 		collapsed?: boolean;
 		showSidebar?: boolean;
 		showNavbar?: boolean;
+		/**
+		 * Fill the viewport. Use `false` + `framed` for compact Storybook previews.
+		 */
+		fullHeight?: boolean;
+		/** Card chrome (border/radius) — typical for demos, not production apps. */
+		framed?: boolean;
 		class?: string;
 		actions?: Snippet;
 		children?: Snippet;
@@ -26,13 +32,22 @@
 		collapsed = $bindable(false),
 		showSidebar = true,
 		showNavbar = true,
+		fullHeight = true,
+		framed = false,
 		class: className = '',
 		actions,
 		children
 	}: AppShellProps = $props();
 </script>
 
-<div class={['flex h-[min(36rem,80vh)] w-full overflow-hidden rounded-xl border border-border bg-surface', className]}>
+<div
+	class={[
+		'flex w-full overflow-hidden bg-surface',
+		fullHeight ? 'h-dvh' : 'h-[min(36rem,80vh)]',
+		framed && 'rounded-xl border border-border',
+		className
+	]}
+>
 	{#if showSidebar}
 		<Sidebar
 			{brand}
@@ -41,7 +56,7 @@
 			bind:collapsed
 		/>
 	{/if}
-	<div class="flex min-w-0 flex-1 flex-col">
+	<div class="flex min-h-0 min-w-0 flex-1 flex-col">
 		{#if showNavbar}
 			<Navbar
 				{brand}

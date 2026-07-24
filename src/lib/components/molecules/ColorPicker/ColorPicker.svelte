@@ -96,9 +96,11 @@
 		commit();
 	}
 
-	function onDocClick(e: MouseEvent) {
+	function onDocPointerDown(e: PointerEvent) {
 		if (!open || !rootEl) return;
-		if (!rootEl.contains(e.target as Node)) open = false;
+		const path = typeof e.composedPath === 'function' ? e.composedPath() : [];
+		if (path.includes(rootEl) || rootEl.contains(e.target as Node)) return;
+		open = false;
 	}
 
 	function onKey(e: KeyboardEvent) {
@@ -163,7 +165,7 @@
 </script>
 
 <svelte:document
-	onclick={onDocClick}
+	onpointerdown={onDocPointerDown}
 	onkeydown={onKey}
 	onpointermove={onPointer}
 	onpointerup={onPointerUp}
