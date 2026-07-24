@@ -1,3 +1,7 @@
+<script module lang="ts">
+	let scrollLockCount = 0;
+</script>
+
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import Button from '$lib/components/atoms/Button/Button.svelte';
@@ -122,6 +126,30 @@
 		} else if (!open && dialogEl.open) {
 			dialogEl.close();
 		}
+	});
+
+	/** Prevent page scroll while any dialog is open (supports nested dialogs). */
+	$effect(() => {
+		if (!open || typeof document === 'undefined') return;
+
+		scrollLockCount += 1;
+		if (scrollLockCount === 1) {
+			const scrollbar = window.innerWidth - document.documentElement.clientWidth;
+			document.documentElement.style.overflow = 'hidden';
+			document.body.style.overflow = 'hidden';
+			if (scrollbar > 0) {
+				document.body.style.paddingRight = `${scrollbar}px`;
+			}
+		}
+
+		return () => {
+			scrollLockCount = Math.max(0, scrollLockCount - 1);
+			if (scrollLockCount === 0) {
+				document.documentElement.style.overflow = '';
+				document.body.style.overflow = '';
+				document.body.style.paddingRight = '';
+			}
+		};
 	});
 
 	function close(reason: 'close' | 'cancel' | 'confirm' | 'backdrop' | 'escape' = 'close') {

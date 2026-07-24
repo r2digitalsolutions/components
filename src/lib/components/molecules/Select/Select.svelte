@@ -1,10 +1,11 @@
 <script lang="ts">
 	import { on } from 'svelte/events';
 
-	interface SelectOption {
+	export interface SelectOption {
 		value: string;
 		label: string;
 		disabled?: boolean;
+		children?: SelectOption[];
 	}
 
 	interface SelectProps {
@@ -19,6 +20,11 @@
 		disabled?: boolean;
 		required?: boolean;
 		searchable?: boolean;
+		/**
+		 * On open, drill into the submenu that contains the current value
+		 * and highlight it. Defaults to true.
+		 */
+		flyToSelected?: boolean;
 		size?: 'sm' | 'md' | 'lg';
 		class?: string;
 		onchange?: (value: string) => void;
@@ -36,6 +42,7 @@
 		disabled = false,
 		required = false,
 		searchable = false,
+		flyToSelected = true,
 		size = 'md',
 		class: className = '',
 		onchange
@@ -44,6 +51,7 @@
 	let isOpen = $state(false);
 	let searchQuery = $state('');
 	let highlightedIndex = $state(-1);
+	let path = $state<string[]>([]);
 	let triggerEl = $state<HTMLButtonElement | null>(null);
 	let listboxEl = $state<HTMLDivElement | null>(null);
 	let searchInputEl = $state<HTMLInputElement | null>(null);
@@ -55,16 +63,86 @@
 	const selectId = $derived(id ?? `select-${Math.random().toString(36).slice(2, 9)}`);
 	const listboxId = $derived(`${selectId}-listbox`);
 	const helperId = $derived(`${selectId}-helper`);
-	const selectedOption = $derived(options.find((o) => o.value === value));
 
-	const filteredOptions = $derived(
-		searchQuery
-			? options.filter((o) => o.label.toLowerCase().includes(searchQuery.toLowerCase()))
-			: options
-	);
+	function findPathToValue(
+		list: SelectOption[],
+		target: string,
+		parents: string[] = []
+	): string[] | null {
+		for (const option of list) {
+			if (option.value === target) return parents;
+			if (option.children?.length) {
+				const found = findPathToValue(option.children, target, [...parents, option.value]);
+				if (found) return found;
+			}
+		}
+		return null;
+	}
+
+	function findOptionByValue(list: SelectOption[], target: string): SelectOption | null {
+		for (const option of list) {
+			if (option.value === target) return option;
+			if (option.children?.length) {
+				const found = findOptionByValue(option.children, target);
+				if (found) return found;
+			}
+		}
+		return null;
+	}
+
+	function levelFromPath(
+		root: SelectOption[],
+		pathIds: string[]
+	): { title: string; options: SelectOption[] } {
+		let current = root;
+		let title = label || 'Options';
+		for (const id of pathIds) {
+			const next = current.find((option) => option.value === id);
+			if (!next?.children?.length) break;
+			title = next.label;
+			current = next.children;
+		}
+		return { title, options: current };
+	}
+
+	function flattenLeaves(
+		list: SelectOption[],
+		trail: string[] = []
+	): Array<SelectOption & { breadcrumb?: string }> {
+		const out: Array<SelectOption & { breadcrumb?: string }> = [];
+		for (const option of list) {
+			if (option.children?.length) {
+				out.push(...flattenLeaves(option.children, [...trail, option.label]));
+			} else {
+				out.push({
+					...option,
+					breadcrumb: trail.length ? trail.join(' / ') : undefined
+				});
+			}
+		}
+		return out;
+	}
+
+	const leafOptions = $derived(flattenLeaves(options));
+	const selectedOption = $derived(findOptionByValue(options, value));
+	const currentLevel = $derived(levelFromPath(options, path));
+	const canGoBack = $derived(path.length > 0);
+	const isSearching = $derived(Boolean(searchQuery.trim()));
+
+	const visibleOptions = $derived.by(() => {
+		if (isSearching) {
+			const q = searchQuery.toLowerCase();
+			return leafOptions.filter(
+				(o) =>
+					o.label.toLowerCase().includes(q) ||
+					(o.breadcrumb?.toLowerCase().includes(q) ?? false)
+			);
+		}
+		return currentLevel.options;
+	});
 
 	const enabledIndexes = $derived(
-		filteredOptions
+		visibleOptions
 			.map((option, index) => (option.disabled ? -1 : index))
 			.filter((index) => index !== -1)
 	);
@@ -90,6 +168,16 @@
 			'border-amber-400 focus-visible:border-amber-500 focus-visible:ring-2 focus-visible:ring-amber-500/20'
 	};
 
+	function applyFlyToSelected() {
+		searchQuery = '';
+		if (flyToSelected && value) {
+			const nextPath = findPathToValue(options, value);
+			path = nextPath ?? [];
+		} else {
+			path = [];
+		}
+	}
+
 	function positionListbox() {
 		if (!triggerEl) return;
 
@@ -112,6 +200,7 @@
 
 	function openListbox() {
 		if (disabled || !listboxEl) return;
+		applyFlyToSelected();
 		positionListbox();
 		if (!listboxEl.matches(':popover-open')) listboxEl.showPopover();
 	}
@@ -126,6 +215,7 @@
 				event.preventDefault();
 				return;
 			}
+			applyFlyToSelected();
 			positionListbox();
 		}
 	}
@@ -134,10 +224,9 @@
 		isOpen = event.newState === 'open';
 
 		if (isOpen) {
-			const selectedIndex = filteredOptions.findIndex((o) => o.value === value && !o.disabled);
+			const selectedIndex = visibleOptions.findIndex((o) => o.value === value && !o.disabled);
 			highlightedIndex = selectedIndex >= 0 ? selectedIndex : (enabledIndexes[0] ?? -1);
 			ignoreHover = true;
-			// Focus an element that owns keydown — popover steals focus from the trigger
 			requestAnimationFrame(() => {
 				if (searchable) searchInputEl?.focus();
 				else listboxEl?.focus();
@@ -145,14 +234,40 @@
 			});
 		} else {
 			searchQuery = '';
+			path = [];
 			highlightedIndex = -1;
 			ignoreHover = false;
 			requestAnimationFrame(() => triggerEl?.focus());
 		}
 	}
 
+	function enterGroup(option: SelectOption) {
+		if (!option.children?.length || option.disabled) return;
+		path = [...path, option.value];
+		searchQuery = '';
+		queueMicrotask(() => {
+			highlightedIndex = visibleOptions.findIndex((o) => !o.disabled);
+			scrollHighlightedIntoView();
+			listboxEl?.focus();
+		});
+	}
+
+	function goBack() {
+		if (!canGoBack || isSearching) return;
+		path = path.slice(0, -1);
+		highlightedIndex = enabledIndexes[0] ?? -1;
+		queueMicrotask(() => {
+			scrollHighlightedIntoView();
+			listboxEl?.focus();
+		});
+	}
+
 	function selectOption(option: SelectOption) {
 		if (option.disabled) return;
+		if (option.children?.length && !isSearching) {
+			enterGroup(option);
+			return;
+		}
 		value = option.value;
 		onchange?.(option.value);
 		closeListbox();
@@ -161,7 +276,7 @@
 	/** Prevent options from stealing focus from the combobox / search input */
 	function handleOptionPointerDown(event: PointerEvent, option: SelectOption) {
 		event.preventDefault();
-		if (!option.disabled) highlightedIndex = filteredOptions.indexOf(option);
+		if (!option.disabled) highlightedIndex = visibleOptions.indexOf(option);
 	}
 
 	function handleListboxPointerMove() {
@@ -226,7 +341,7 @@
 			case ' ':
 				if (isOpen) {
 					event.preventDefault();
-					if (highlightedIndex >= 0) selectOption(filteredOptions[highlightedIndex]);
+					if (highlightedIndex >= 0) selectOption(visibleOptions[highlightedIndex]);
 				}
 				break;
 			case 'Home':
@@ -252,6 +367,7 @@
 
 	function handleListboxKeydown(event: KeyboardEvent) {
 		const fromSearch = event.currentTarget === searchInputEl;
+		const current = highlightedIndex >= 0 ? visibleOptions[highlightedIndex] : undefined;
 
 		switch (event.key) {
 			case 'ArrowDown':
@@ -263,6 +379,21 @@
 				event.preventDefault();
 				event.stopPropagation();
 				moveHighlight(-1);
+				break;
+			case 'ArrowRight':
+				if (current?.children?.length && !isSearching) {
+					event.preventDefault();
+					event.stopPropagation();
+					enterGroup(current);
+				}
+				break;
+			case 'ArrowLeft':
+			case 'Backspace':
+				if (!fromSearch && canGoBack && !isSearching) {
+					event.preventDefault();
+					event.stopPropagation();
+					goBack();
+				}
 				break;
 			case 'Home':
 				event.preventDefault();
@@ -277,19 +408,19 @@
 			case 'Enter':
 				event.preventDefault();
 				event.stopPropagation();
-				if (highlightedIndex >= 0) selectOption(filteredOptions[highlightedIndex]);
+				if (highlightedIndex >= 0) selectOption(visibleOptions[highlightedIndex]);
 				break;
 			case ' ':
-				// Allow typing spaces in the search field
 				if (fromSearch) return;
 				event.preventDefault();
 				event.stopPropagation();
-				if (highlightedIndex >= 0) selectOption(filteredOptions[highlightedIndex]);
+				if (highlightedIndex >= 0) selectOption(visibleOptions[highlightedIndex]);
 				break;
 			case 'Escape':
 				event.preventDefault();
 				event.stopPropagation();
-				closeListbox();
+				if (canGoBack && !isSearching) goBack();
+				else closeListbox();
 				break;
 			case 'Tab':
 				closeListbox();
@@ -299,6 +430,7 @@
 
 	function handleSearchInput() {
 		ignoreHover = true;
+		path = [];
 		highlightedIndex = enabledIndexes[0] ?? -1;
 		scrollHighlightedIntoView();
 	}
@@ -306,8 +438,14 @@
 	$effect(() => {
 		if (!isOpen) return;
 
-		const offResize = on(window, 'resize', positionListbox);
-		const offScroll = on(window, 'scroll', positionListbox, { capture: true });
+		const reposition = (event?: Event) => {
+			const target = event?.target;
+			if (target instanceof Node && listboxEl?.contains(target)) return;
+			positionListbox();
+		};
+
+		const offResize = on(window, 'resize', reposition);
+		const offScroll = on(window, 'scroll', reposition, { capture: true });
 
 		return () => {
 			offResize();
@@ -372,7 +510,7 @@
 
 		<!-- Hidden native select for form submission -->
 		<select {name} {value} class="sr-only" tabindex={-1} aria-hidden="true">
-			{#each options as opt}
+			{#each leafOptions as opt}
 				<option value={opt.value}>{opt.label}</option>
 			{/each}
 		</select>
@@ -415,13 +553,36 @@
 				</div>
 			{/if}
 
+			{#if canGoBack && !isSearching}
+				<button
+					type="button"
+					onclick={goBack}
+					class="gap-2 text-primary hover:bg-surface-overlay mx-1.5 mt-1.5 flex shrink-0 items-center rounded-lg px-2.5 py-2 text-left text-sm font-medium transition-colors"
+				>
+					<svg
+						class="text-secondary h-4 w-4 shrink-0"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						aria-hidden="true"
+					>
+						<path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+					</svg>
+					<span class="truncate">{currentLevel.title}</span>
+				</button>
+				<div class="border-border mx-1.5 mb-0.5 h-px border-b" role="separator"></div>
+			{/if}
+
 			<div bind:this={optionsContainerEl} class="p-1.5 min-h-0 overflow-y-auto">
-				{#if filteredOptions.length === 0}
+				{#if visibleOptions.length === 0}
 					<div class="px-3 py-2.5 text-xs text-muted text-center">No options found</div>
 				{:else}
-					{#each filteredOptions as option, index (option.value)}
+					{#each visibleOptions as option, index (option.value)}
 						{@const isSelected = value === option.value}
 						{@const isHighlighted = highlightedIndex === index}
+						{@const hasChildren = Boolean(option.children?.length) && !isSearching}
+						{@const breadcrumb = 'breadcrumb' in option ? option.breadcrumb : undefined}
 						<!-- svelte-ignore a11y_click_events_have_key_events -->
 						<!-- svelte-ignore a11y_no_static_element_interactions -->
 						<div
@@ -429,6 +590,7 @@
 							role="option"
 							aria-selected={isSelected}
 							aria-disabled={option.disabled || undefined}
+							aria-haspopup={hasChildren ? 'listbox' : undefined}
 							tabindex={-1}
 							onpointerdown={(e) => handleOptionPointerDown(e, option)}
 							onclick={() => selectOption(option)}
@@ -445,33 +607,67 @@
 									: 'text-primary'
 							]}
 						>
-							<span
-								class={[
-									'h-4 w-4 flex shrink-0 items-center justify-center rounded-full border transition-colors duration-75',
-									(isHighlighted || isSelected) && !option.disabled
-										? isSelected
-											? 'border-white bg-white'
-											: 'border-white/60 bg-transparent'
-										: 'border-border-strong bg-transparent'
-								]}
-								aria-hidden="true"
-							>
-								{#if isSelected}
-									<svg
-										class="h-2.5 w-2.5 text-brand-600"
-										viewBox="0 0 24 24"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="3"
+							{#if !hasChildren}
+								<span
+									class={[
+										'h-4 w-4 flex shrink-0 items-center justify-center rounded-full border transition-colors duration-75',
+										(isHighlighted || isSelected) && !option.disabled
+											? isSelected
+												? 'border-white bg-white'
+												: 'border-white/60 bg-transparent'
+											: 'border-border-strong bg-transparent'
+									]}
+									aria-hidden="true"
+								>
+									{#if isSelected}
+										<svg
+											class="h-2.5 w-2.5 text-brand-600"
+											viewBox="0 0 24 24"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="3"
+										>
+											<path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+										</svg>
+									{/if}
+								</span>
+							{/if}
+
+							<span class="min-w-0 flex-1">
+								<span class={['block truncate', isSelected && 'font-medium']}>
+									{option.label}
+								</span>
+								{#if breadcrumb}
+									<span
+										class={[
+											'mt-0.5 block truncate text-[11px]',
+											(isHighlighted || isSelected) && !option.disabled
+												? 'text-white/75'
+												: 'text-secondary'
+										]}
 									>
-										<path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-									</svg>
+										{breadcrumb}
+									</span>
 								{/if}
 							</span>
 
-							<span class={['flex-1 truncate', isSelected && 'font-medium']}>
-								{option.label}
-							</span>
+							{#if hasChildren}
+								<svg
+									class={[
+										'h-4 w-4 shrink-0',
+										(isHighlighted || isSelected) && !option.disabled
+											? 'text-white/80'
+											: 'text-secondary'
+									]}
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2"
+									aria-hidden="true"
+								>
+									<path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+								</svg>
+							{/if}
 						</div>
 					{/each}
 				{/if}
