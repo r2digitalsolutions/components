@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { on } from 'svelte/events';
+
 	export interface CascaderOption {
 		value: string;
 		label: string;
@@ -7,6 +9,7 @@
 	}
 
 	interface CascaderProps {
+		id?: string;
 		options?: CascaderOption[];
 		value?: string[];
 		label?: string;
@@ -18,6 +21,7 @@
 	}
 
 	let {
+		id,
 		options = [],
 		value = $bindable([]),
 		label = '',
@@ -35,16 +39,8 @@
 	/** Columns hovered/activated path (may differ from committed value) */
 	let activePath = $state<string[]>([]);
 
-	function findOption(opts: CascaderOption[], val: string): CascaderOption | null {
-		for (const opt of opts) {
-			if (opt.value === val) return opt;
-			if (opt.children) {
-				const found = findOption(opt.children, val);
-				if (found) return found;
-			}
-		}
-		return null;
-	}
+	const selectId = $derived(id ?? `cascader-${Math.random().toString(36).slice(2, 9)}`);
+	const popoverId = $derived(`${selectId}-popover`);
 
 	function getLabels(path: string[]): string[] {
 		const labels: string[] = [];
@@ -60,7 +56,6 @@
 
 	const displayLabel = $derived(value.length ? getLabels(value).join(' / ') : '');
 
-	/** Build columns from activePath */
 	const columns = $derived.by(() => {
 		const cols: CascaderOption[][] = [options];
 		let current = options;
@@ -74,33 +69,49 @@
 	});
 
 	function positionPopover() {
-		if (!triggerEl) return;
+		if (!triggerEl || !popoverEl) return;
+		if (!popoverEl.matches(':popover-open')) return;
+
 		const rect = triggerEl.getBoundingClientRect();
 		const gap = 6;
-		const spaceBelow = window.innerHeight - rect.bottom - gap;
-		const spaceAbove = rect.top - gap;
+		const margin = 8;
+		const spaceBelow = window.innerHeight - rect.bottom - gap - margin;
+		const spaceAbove = rect.top - gap - margin;
 		const openUp = spaceBelow < 200 && spaceAbove > spaceBelow;
+
 		popoverStyle = [
-			`left: ${rect.left}px`,
-			`top: ${openUp ? 'auto' : `${rect.bottom + gap}px`}`,
-			`bottom: ${openUp ? `${window.innerHeight - rect.top + gap}px` : 'auto'}`
-		].join('; ');
+			`position:fixed`,
+			`left:${Math.max(margin, Math.min(rect.left, window.innerWidth - margin - 100))}px`,
+			openUp ? 'top:auto' : `top:${rect.bottom + gap}px`,
+			openUp ? `bottom:${window.innerHeight - rect.top + gap}px` : 'bottom:auto',
+			`max-height:${Math.min(320, openUp ? spaceAbove : spaceBelow)}px`
+		].join(';');
 	}
 
-	function open() {
-		if (disabled) return;
-		activePath = [...value];
-		positionPopover();
-		if (popoverEl && !popoverEl.matches(':popover-open')) popoverEl.showPopover();
+	function handleBeforeToggle(event: ToggleEvent) {
+		if (event.newState === 'open' && disabled) {
+			event.preventDefault();
+			return;
+		}
+		if (event.newState === 'open') {
+			activePath = [...value];
+		}
+	}
+
+	function handleToggle(event: ToggleEvent) {
+		isOpen = event.newState === 'open';
+		if (isOpen) {
+			queueMicrotask(() => {
+				positionPopover();
+				requestAnimationFrame(() => positionPopover());
+			});
+		} else {
+			activePath = [];
+		}
 	}
 
 	function close() {
-		if (popoverEl?.matches(':popover-open')) popoverEl.hidePopover();
-	}
-
-	function handleToggle(e: ToggleEvent) {
-		isOpen = e.newState === 'open';
-		if (!isOpen) activePath = [];
+		popoverEl?.hidePopover();
 	}
 
 	function handleOptionClick(colIndex: number, opt: CascaderOption) {
@@ -124,33 +135,59 @@
 			activePath = [...activePath.slice(0, colIndex), opt.value];
 		}
 	}
+
+	$effect(() => {
+		if (!isOpen) return;
+
+		let frame = 0;
+		const reposition = () => {
+			cancelAnimationFrame(frame);
+			frame = requestAnimationFrame(() => positionPopover());
+		};
+
+		const offScroll = on(window, 'scroll', reposition, { capture: true, passive: true });
+		const offResize = on(window, 'resize', reposition);
+
+		return () => {
+			cancelAnimationFrame(frame);
+			offScroll();
+			offResize();
+		};
+	});
 </script>
 
 <div class={['w-full', className]}>
 	{#if label}
-		<label class="mb-1.5 block text-sm font-medium text-primary">{label}</label>
+		<label for={selectId} class="mb-1.5 block text-sm font-medium text-primary">{label}</label>
 	{/if}
 
 	<button
 		bind:this={triggerEl}
+		id={selectId}
 		type="button"
 		{disabled}
-		onclick={open}
-		popovertarget="cascader-popover"
+		popovertarget={popoverId}
+		popovertargetaction="toggle"
 		class={[
-			'flex h-10 w-full items-center justify-between gap-2 rounded-lg border border-border bg-surface-elevated px-3.5 text-sm text-left transition-colors outline-none',
+			'flex h-10 w-full items-center justify-between gap-2 rounded-lg border border-border bg-surface-elevated px-3.5 text-left text-sm outline-none transition-colors',
+			'focus-visible:border-brand-500 focus-visible:ring-2 focus-visible:ring-brand-500/20',
 			isOpen && 'border-brand-500 ring-2 ring-brand-500/20',
 			disabled && 'cursor-not-allowed opacity-50'
 		]}
 		aria-haspopup="listbox"
 		aria-expanded={isOpen}
+		aria-controls={popoverId}
 	>
-		<span class={['truncate', displayLabel ? 'text-primary font-medium' : 'text-muted']}>
+		<span class={['truncate', displayLabel ? 'font-medium text-primary' : 'text-muted']}>
 			{displayLabel || placeholder}
 		</span>
 		<svg
-			class={['h-4 w-4 text-muted shrink-0 transition-transform duration-200', isOpen && 'rotate-180']}
-			viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"
+			class={['h-4 w-4 shrink-0 text-muted transition-transform duration-200', isOpen && 'rotate-180']}
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			stroke-width="2"
+			aria-hidden="true"
 		>
 			<path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
 		</svg>
@@ -158,16 +195,17 @@
 
 	<div
 		bind:this={popoverEl}
-		id="cascader-popover"
+		id={popoverId}
 		popover="auto"
+		onbeforetoggle={handleBeforeToggle}
 		ontoggle={handleToggle}
 		style={popoverStyle}
-		class="cascader-panel m-0 flex rounded-xl border border-border bg-surface-elevated shadow-xl outline-none"
+		class="cascader-panel inset-auto m-0 flex overflow-hidden rounded-xl border border-border bg-surface-elevated shadow-xl outline-none"
 	>
 		{#each columns as colOptions, colIndex (colIndex)}
 			<div
 				class={[
-					'flex w-44 flex-col py-1.5',
+					'flex max-h-80 w-44 flex-col overflow-y-auto py-1.5',
 					colIndex < columns.length - 1 && 'border-r border-border'
 				]}
 			>
@@ -181,19 +219,35 @@
 						onclick={() => handleOptionClick(colIndex, opt)}
 						onpointerenter={() => handleOptionHover(colIndex, opt)}
 						class={[
-							'flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors duration-75 outline-none',
+							'flex w-full items-center gap-2 px-3 py-2 text-left text-sm outline-none transition-colors duration-75',
 							opt.disabled && 'cursor-not-allowed opacity-40',
-							!opt.disabled && isActive && 'bg-brand-50 dark:bg-brand-950 text-brand-600 dark:text-brand-400',
-							!opt.disabled && !isActive && 'text-primary hover:bg-surface-overlay',
+							!opt.disabled &&
+								isActive &&
+								'bg-brand-50 text-brand-600 dark:bg-brand-950 dark:text-brand-400',
+							!opt.disabled && !isActive && 'text-primary hover:bg-surface-overlay'
 						]}
 					>
 						<span class="min-w-0 flex-1 truncate font-medium">{opt.label}</span>
 						{#if isSelected && !hasChildren}
-							<svg class="h-3.5 w-3.5 shrink-0 text-brand-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true">
+							<svg
+								class="h-3.5 w-3.5 shrink-0 text-brand-500"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="3"
+								aria-hidden="true"
+							>
 								<path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
 							</svg>
 						{:else if hasChildren}
-							<svg class={['h-3.5 w-3.5 shrink-0', isActive ? 'text-brand-500' : 'text-muted']} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+							<svg
+								class={['h-3.5 w-3.5 shrink-0', isActive ? 'text-brand-500' : 'text-muted']}
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2.5"
+								aria-hidden="true"
+							>
 								<path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
 							</svg>
 						{/if}
@@ -208,6 +262,11 @@
 	.cascader-panel {
 		position: fixed;
 	}
+
+	.cascader-panel:popover-open {
+		display: flex;
+	}
+
 	.cascader-panel:not(:popover-open) {
 		display: none;
 	}
