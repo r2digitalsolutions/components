@@ -15,6 +15,7 @@ export { default as Avatar } from './components/atoms/Avatar/Avatar.svelte';
 export { default as Spinner } from './components/atoms/Spinner/Spinner.svelte';
 export { default as Toggle } from './components/atoms/Toggle/Toggle.svelte';
 export { default as Checkbox } from './components/atoms/Checkbox/Checkbox.svelte';
+export { default as Chip } from './components/atoms/Chip/Chip.svelte';
 export { default as Tooltip } from './components/atoms/Tooltip/Tooltip.svelte';
 export { default as Divider } from './components/atoms/Divider/Divider.svelte';
 
@@ -30,6 +31,7 @@ export { default as ProfileHeaderUploader } from './components/molecules/Profile
 export { default as Alert } from './components/molecules/Alert/Alert.svelte';
 export type { AlertItem } from './components/molecules/Alert/Alert.svelte';
 export { default as Dialog } from './components/molecules/Dialog/Dialog.svelte';
+export { default as Drawer } from './components/molecules/Drawer/Drawer.svelte';
 export { default as Tabs } from './components/molecules/Tabs/Tabs.svelte';
 export type { TabItem } from './components/molecules/Tabs/Tabs.svelte';
 export { default as DropdownMenu } from './components/molecules/DropdownMenu/DropdownMenu.svelte';
@@ -38,6 +40,12 @@ export { default as Pagination } from './components/molecules/Pagination/Paginat
 export { default as Breadcrumb } from './components/molecules/Breadcrumb/Breadcrumb.svelte';
 export type { BreadcrumbItem } from './components/molecules/Breadcrumb/Breadcrumb.svelte';
 export { default as EmptyState } from './components/molecules/EmptyState/EmptyState.svelte';
+export { default as DataTable } from './components/molecules/DataTable/DataTable.svelte';
+export type { DataTableColumn } from './components/molecules/DataTable/DataTable.svelte';
+export { default as Accordion } from './components/molecules/Accordion/Accordion.svelte';
+export type { AccordionItem } from './components/molecules/Accordion/Accordion.svelte';
+export { default as Stepper } from './components/molecules/Stepper/Stepper.svelte';
+export type { StepItem } from './components/molecules/Stepper/Stepper.svelte';
 export { default as ToastContainer } from './components/molecules/Toast/ToastContainer.svelte';
 export { toastStore, toast } from './components/molecules/Toast/toast.svelte.js';
 export type {
