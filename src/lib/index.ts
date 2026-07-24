@@ -26,6 +26,7 @@ export { default as FileUploader } from './components/molecules/FileUploader/Fil
 export { default as ProfileHeaderUploader } from './components/molecules/ProfileHeaderUploader/ProfileHeaderUploader.svelte';
 export { default as Alert } from './components/molecules/Alert/Alert.svelte';
 export type { AlertItem } from './components/molecules/Alert/Alert.svelte';
+export { default as Dialog } from './components/molecules/Dialog/Dialog.svelte';
 export { default as EmptyState } from './components/molecules/EmptyState/EmptyState.svelte';
 export { default as ToastContainer } from './components/molecules/Toast/ToastContainer.svelte';
 export { toastStore, toast } from './components/molecules/Toast/toast.svelte.js';
