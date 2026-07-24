@@ -32,4 +32,8 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = { args: { label: 'Country' } };
 export const Searchable: Story = { args: { label: 'Search Country', searchable: true } };
-export const WithError: Story = { args: { label: 'Country', status: 'error', helperText: 'Country selection is required.' } };
+export const WithError: Story = {
+	args: { label: 'Country', status: 'error', helperText: 'Country selection is required.' }
+};
+export const Required: Story = { args: { label: 'Country', required: true } };
+export const Disabled: Story = { args: { label: 'Country', disabled: true } };

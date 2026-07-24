@@ -93,21 +93,19 @@
 		<!-- Track background -->
 		<div
 			class={[
-				'w-full rounded-full bg-border-strong dark:bg-surface-overlay relative overflow-hidden transition-all',
+				'w-full rounded-full bg-border-strong dark:bg-surface-overlay relative overflow-hidden',
 				trackHeightClasses[size]
 			]}
 		>
 			<!-- Fill bar -->
-			<div
-				class="h-full bg-brand-500 rounded-full transition-all duration-75"
-				style="width: {percentage}%"
-			></div>
+			<div class="h-full bg-brand-500 rounded-full" style="width: {percentage}%"></div>
 		</div>
 
 		<!-- Custom Floating Thumb / Handle -->
 		<div
 			class={[
-				'absolute top-1/2 -translate-y-1/2 rounded-full bg-white dark:bg-slate-900 border-2 border-brand-500 shadow-md transition-transform duration-100 pointer-events-none flex items-center justify-center',
+				'absolute top-1/2 -translate-y-1/2 rounded-full bg-white dark:bg-slate-900 border-2 border-brand-500 shadow-md pointer-events-none flex items-center justify-center',
+				'transition-[transform,box-shadow] duration-100',
 				thumbSizeClasses[size],
 				(isFocused || isHovered) && 'scale-110 ring-4 ring-brand-500/20',
 				disabled && 'opacity-50 border-gray-400'
