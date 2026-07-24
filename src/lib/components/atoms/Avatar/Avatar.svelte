@@ -8,6 +8,8 @@
 		name?: string;
 		size?: AvatarSize;
 		status?: AvatarStatus;
+		/** Soft outline around the avatar (disable inside AvatarGroup) */
+		ringed?: boolean;
 		class?: string;
 	}
 
@@ -17,6 +19,7 @@
 		name,
 		size = 'md',
 		status = null,
+		ringed = true,
 		class: className = ''
 	}: AvatarProps = $props();
 
@@ -77,7 +80,8 @@
 <span class={['relative inline-flex shrink-0', className]}>
 	<span
 		class={[
-			'inline-flex items-center justify-center rounded-full overflow-hidden ring-2 ring-surface-elevated',
+			'inline-flex items-center justify-center overflow-hidden rounded-full',
+			ringed && 'ring-2 ring-surface-elevated',
 			sizeClasses[size],
 			!showImage && [bgColor, 'text-white font-semibold']
 		]}

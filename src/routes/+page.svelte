@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { themeStore } from '$lib/utils/theme.svelte.js';
-	import { toast } from '$lib/components/molecules/Toast/toast.svelte.js';
+	import { toast } from '$lib/components/organisms/Toast/toast.svelte.js';
 	import Button from '$lib/components/atoms/Button/Button.svelte';
 	import Input from '$lib/components/atoms/Input/Input.svelte';
 	import Textarea from '$lib/components/atoms/Textarea/Textarea.svelte';
@@ -17,7 +17,7 @@
 	import FormField from '$lib/components/molecules/FormField/FormField.svelte';
 	import Select from '$lib/components/molecules/Select/Select.svelte';
 	import PinInput from '$lib/components/molecules/PinInput/PinInput.svelte';
-	import FileUploader from '$lib/components/molecules/FileUploader/FileUploader.svelte';
+	import FileUploader from '$lib/components/organisms/FileUploader/FileUploader.svelte';
 	import Alert from '$lib/components/molecules/Alert/Alert.svelte';
 	import EmptyState from '$lib/components/molecules/EmptyState/EmptyState.svelte';
 

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import '../app.css';
 	import { themeStore } from '$lib/utils/theme.svelte.js';
-	import ToastContainer from '$lib/components/molecules/Toast/ToastContainer.svelte';
+	import ToastContainer from '$lib/components/organisms/Toast/ToastContainer.svelte';
 
 	const { children } = $props();
 </script>
