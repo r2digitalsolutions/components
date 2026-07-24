@@ -33,7 +33,7 @@
 	let value = $state<string[]>(['billing']);
 </script>
 
-<div class="max-w-lg">
+<div class="w-[32rem] max-w-full">
 	<Accordion
 		{items}
 		bind:value
