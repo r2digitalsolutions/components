@@ -1,5 +1,6 @@
 <script lang="ts">
 	interface PinInputProps {
+		id?: string;
 		length?: number;
 		value?: string;
 		label?: string;
@@ -13,6 +14,7 @@
 	}
 
 	let {
+		id,
 		length = 4,
 		value = $bindable(''),
 		label,
@@ -27,9 +29,11 @@
 
 	let inputNodes = $state<HTMLInputElement[]>([]);
 
-	const digits = $derived(
-		Array.from({ length }, (_, i) => value[i] ?? '')
-	);
+	const pinId = $derived(id ?? `pin-${Math.random().toString(36).slice(2, 9)}`);
+	const labelId = $derived(`${pinId}-label`);
+	const helperId = $derived(`${pinId}-helper`);
+
+	const digits = $derived(Array.from({ length }, (_, i) => value[i] ?? ''));
 
 	const statusRingClasses: Record<string, string> = {
 		default: 'border-border focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20',
@@ -81,20 +85,29 @@
 
 <div class={['flex flex-col gap-2 w-full', className]}>
 	{#if label}
-		<span class="text-sm font-medium text-primary">{label}</span>
+		<div id={labelId} class="text-sm font-medium text-primary">{label}</div>
 	{/if}
 
-	<div class="flex items-center gap-2.5">
+	<div
+		class="flex items-center gap-2.5"
+		role="group"
+		aria-labelledby={label ? labelId : undefined}
+		aria-describedby={helperText ? helperId : undefined}
+	>
 		{#each Array.from({ length }) as _, i (i)}
 			<input
 				bind:this={inputNodes[i]}
+				id={i === 0 ? pinId : `${pinId}-${i}`}
 				type={type === 'number' ? 'text' : type}
 				inputmode={type === 'number' ? 'numeric' : 'text'}
+				autocomplete={i === 0 ? 'one-time-code' : 'off'}
 				maxlength={1}
 				value={digits[i]}
 				{disabled}
+				aria-label="Digit {i + 1} of {length}"
+				aria-invalid={status === 'error' || undefined}
 				class={[
-					'h-12 w-12 text-center text-lg font-bold font-mono bg-surface-elevated border rounded-xl transition-all duration-200 outline-none select-none',
+					'h-12 w-12 text-center text-lg font-bold font-mono text-primary bg-surface-elevated border rounded-xl transition-all duration-200 outline-none select-none',
 					statusRingClasses[status],
 					disabled && 'opacity-50 cursor-not-allowed bg-surface'
 				]}
@@ -106,7 +119,13 @@
 	</div>
 
 	{#if helperText}
-		<p class={['text-xs leading-relaxed', status === 'error' ? 'text-red-500' : 'text-muted']}>
+		<p
+			id={helperId}
+			class={[
+				'text-xs leading-relaxed',
+				status === 'error' ? 'text-red-600 dark:text-red-400' : 'text-secondary'
+			]}
+		>
 			{helperText}
 		</p>
 	{/if}
