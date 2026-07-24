@@ -3,6 +3,11 @@
 	import { toast } from '$lib/components/molecules/Toast/toast.svelte.js';
 	import Button from '$lib/components/atoms/Button/Button.svelte';
 	import Input from '$lib/components/atoms/Input/Input.svelte';
+	import Textarea from '$lib/components/atoms/Textarea/Textarea.svelte';
+	import RadioGroup from '$lib/components/molecules/RadioGroup/RadioGroup.svelte';
+	import Slider from '$lib/components/atoms/Slider/Slider.svelte';
+	import Skeleton from '$lib/components/atoms/Skeleton/Skeleton.svelte';
+	import ProgressBar from '$lib/components/atoms/ProgressBar/ProgressBar.svelte';
 	import Badge from '$lib/components/atoms/Badge/Badge.svelte';
 	import Avatar from '$lib/components/atoms/Avatar/Avatar.svelte';
 	import Spinner from '$lib/components/atoms/Spinner/Spinner.svelte';
@@ -10,11 +15,21 @@
 	import Checkbox from '$lib/components/atoms/Checkbox/Checkbox.svelte';
 	import Card from '$lib/components/molecules/Card/Card.svelte';
 	import FormField from '$lib/components/molecules/FormField/FormField.svelte';
+	import Select from '$lib/components/molecules/Select/Select.svelte';
+	import PinInput from '$lib/components/molecules/PinInput/PinInput.svelte';
+	import FileUploader from '$lib/components/molecules/FileUploader/FileUploader.svelte';
+	import Alert from '$lib/components/molecules/Alert/Alert.svelte';
+	import EmptyState from '$lib/components/molecules/EmptyState/EmptyState.svelte';
 
 	let loadingBtn = $state(false);
 	let inputValue = $state('');
+	let textareaValue = $state('');
 	let toggleValue = $state(false);
 	let checkValue = $state(false);
+	let selectedPlan = $state('pro');
+	let sliderVal = $state(75);
+	let selectedCountry = $state('es');
+	let pinVal = $state('');
 
 	function simulateLoad() {
 		loadingBtn = true;
@@ -47,7 +62,7 @@
 			</div>
 
 			<div class="flex items-center gap-3">
-				<Badge variant="primary" rounded>v0.1.0</Badge>
+				<Badge variant="primary" rounded>v0.2.0</Badge>
 				<button
 					id="theme-toggle"
 					type="button"
@@ -56,7 +71,6 @@
 					aria-label="Toggle theme"
 				>
 					{#if themeStore.isDark}
-						<!-- Sun icon -->
 						<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 							<circle cx="12" cy="12" r="5"/>
 							<line x1="12" y1="1" x2="12" y2="3"/>
@@ -69,7 +83,6 @@
 							<line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
 						</svg>
 					{:else}
-						<!-- Moon icon -->
 						<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 							<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
 						</svg>
@@ -99,6 +112,17 @@
 		</p>
 	</section>
 
+	<!-- ── Alerts Section ────────────────────────────────────────────────── -->
+	<section class="space-y-4">
+		<h3 class="text-xs font-semibold uppercase tracking-widest text-muted">Alert Banners</h3>
+		<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+			<Alert variant="info" title="System Maintenance" message="Scheduled update tonight at 02:00 UTC." dismissible />
+			<Alert variant="success" title="Success" message="Your subscription has been updated to Pro." dismissible />
+			<Alert variant="warning" title="Warning" message="Storage usage reached 85%." dismissible />
+			<Alert variant="error" title="Action Failed" message="Could not connect to service." dismissible />
+		</div>
+	</section>
+
 	<!-- ── Atoms ─────────────────────────────────────────────────────────── -->
 	<section id="atoms" class="space-y-8">
 		<div class="flex items-center gap-3">
@@ -117,7 +141,6 @@
 			{/snippet}
 
 			<div class="space-y-6">
-				<!-- Variants -->
 				<div>
 					<p class="text-xs font-medium text-muted mb-3 uppercase tracking-wide">Variants</p>
 					<div class="flex flex-wrap gap-3">
@@ -128,20 +151,6 @@
 						<Button variant="destructive">Destructive</Button>
 					</div>
 				</div>
-
-				<!-- Sizes -->
-				<div>
-					<p class="text-xs font-medium text-muted mb-3 uppercase tracking-wide">Sizes</p>
-					<div class="flex flex-wrap items-center gap-3">
-						<Button size="xs">XSmall</Button>
-						<Button size="sm">Small</Button>
-						<Button size="md">Medium</Button>
-						<Button size="lg">Large</Button>
-						<Button size="xl">XLarge</Button>
-					</div>
-				</div>
-
-				<!-- States -->
 				<div>
 					<p class="text-xs font-medium text-muted mb-3 uppercase tracking-wide">States</p>
 					<div class="flex flex-wrap gap-3">
@@ -149,163 +158,108 @@
 							{loadingBtn ? 'Loading...' : 'Simulate Load'}
 						</Button>
 						<Button disabled>Disabled</Button>
-						<Button fullWidth variant="secondary">Full Width</Button>
 					</div>
 				</div>
 			</div>
 		</Card>
 
-		<!-- Badges -->
-		<Card>
-			{#snippet header()}
-				<div class="flex items-center justify-between">
-					<h3 class="font-semibold text-primary">Badge</h3>
-					<Badge variant="info" size="sm">atom</Badge>
-				</div>
-			{/snippet}
-
-			<div class="space-y-4">
-				<div>
-					<p class="text-xs font-medium text-muted mb-3 uppercase tracking-wide">Variants</p>
-					<div class="flex flex-wrap gap-2">
-						<Badge>Default</Badge>
-						<Badge variant="primary">Primary</Badge>
-						<Badge variant="secondary">Secondary</Badge>
-						<Badge variant="success" dot>Active</Badge>
-						<Badge variant="warning" dot>Warning</Badge>
-						<Badge variant="error" dot>Error</Badge>
-						<Badge variant="info">Info</Badge>
-					</div>
-				</div>
-				<div>
-					<p class="text-xs font-medium text-muted mb-3 uppercase tracking-wide">Rounded (pill)</p>
-					<div class="flex flex-wrap gap-2">
-						<Badge variant="primary" rounded>42</Badge>
-						<Badge variant="success" rounded dot>Online</Badge>
-						<Badge variant="error" rounded>99+</Badge>
-					</div>
-				</div>
-			</div>
-		</Card>
-
-		<!-- Avatars -->
-		<Card>
-			{#snippet header()}
-				<div class="flex items-center justify-between">
-					<h3 class="font-semibold text-primary">Avatar</h3>
-					<Badge variant="info" size="sm">atom</Badge>
-				</div>
-			{/snippet}
-
-			<div class="space-y-4">
-				<div>
-					<p class="text-xs font-medium text-muted mb-3 uppercase tracking-wide">Sizes & Initials</p>
-					<div class="flex flex-wrap items-end gap-3">
-						<Avatar name="Rafael González" size="xs" />
-						<Avatar name="Ana M" size="sm" />
-						<Avatar name="Carlos López" size="md" />
-						<Avatar name="Elena R" size="lg" />
-						<Avatar name="Pedro S" size="xl" />
-						<Avatar name="Marta T" size="2xl" />
-					</div>
-				</div>
-				<div>
-					<p class="text-xs font-medium text-muted mb-3 uppercase tracking-wide">With status</p>
-					<div class="flex flex-wrap items-center gap-4">
-						<div class="flex items-center gap-2">
-							<Avatar name="Online User" status="online" />
-							<span class="text-sm text-secondary">Online</span>
-						</div>
-						<div class="flex items-center gap-2">
-							<Avatar name="Busy User" status="busy" />
-							<span class="text-sm text-secondary">Busy</span>
-						</div>
-						<div class="flex items-center gap-2">
-							<Avatar name="Away User" status="away" />
-							<span class="text-sm text-secondary">Away</span>
-						</div>
-						<div class="flex items-center gap-2">
-							<Avatar name="Offline User" status="offline" />
-							<span class="text-sm text-secondary">Offline</span>
-						</div>
-					</div>
-				</div>
-			</div>
-		</Card>
-
-		<!-- Spinners -->
-		<Card>
-			{#snippet header()}
-				<div class="flex items-center justify-between">
-					<h3 class="font-semibold text-primary">Spinner</h3>
-					<Badge variant="info" size="sm">atom</Badge>
-				</div>
-			{/snippet}
-
-			<div class="flex flex-wrap items-center gap-6">
-				<div class="flex flex-col items-center gap-2">
-					<Spinner size="xs" />
-					<span class="text-xs text-muted">xs</span>
-				</div>
-				<div class="flex flex-col items-center gap-2">
-					<Spinner size="sm" />
-					<span class="text-xs text-muted">sm</span>
-				</div>
-				<div class="flex flex-col items-center gap-2">
-					<Spinner size="md" />
-					<span class="text-xs text-muted">md</span>
-				</div>
-				<div class="flex flex-col items-center gap-2">
-					<Spinner size="lg" />
-					<span class="text-xs text-muted">lg</span>
-				</div>
-				<div class="flex flex-col items-center gap-2">
-					<Spinner size="xl" />
-					<span class="text-xs text-muted">xl</span>
-				</div>
-				<div class="flex flex-col items-center gap-2 rounded-lg bg-brand-500 p-3">
-					<Spinner size="md" variant="white" />
-					<span class="text-xs text-white">white</span>
-				</div>
-			</div>
-		</Card>
-
-		<!-- Toggles & Checkboxes -->
+		<!-- Slider & ProgressBar -->
 		<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 			<Card>
 				{#snippet header()}
 					<div class="flex items-center justify-between">
-						<h3 class="font-semibold text-primary">Toggle</h3>
+						<h3 class="font-semibold text-primary">Slider</h3>
 						<Badge variant="info" size="sm">atom</Badge>
 					</div>
 				{/snippet}
-
 				<div class="space-y-4">
-					<Toggle label="Notifications" bind:checked={toggleValue} />
-					<Toggle label="Dark mode" size="sm" />
-					<Toggle label="Auto-save (large)" size="lg" />
-					<Toggle label="Right label" labelPosition="right" checked />
-					<Toggle label="Left label" labelPosition="left" checked />
-					<Toggle label="Disabled" disabled />
+					<Slider label="Volume" bind:value={sliderVal} unit="%" />
+					<Slider label="Price Limit" min={10} max={500} value={250} unit="€" />
 				</div>
 			</Card>
 
 			<Card>
 				{#snippet header()}
 					<div class="flex items-center justify-between">
-						<h3 class="font-semibold text-primary">Checkbox</h3>
+						<h3 class="font-semibold text-primary">ProgressBar</h3>
 						<Badge variant="info" size="sm">atom</Badge>
 					</div>
 				{/snippet}
-
 				<div class="space-y-4">
-					<Checkbox label="Accept terms" bind:checked={checkValue} />
-					<Checkbox label="With helper" helperText="This option enables extra features" />
-					<Checkbox label="Checked state" checked />
-					<Checkbox label="Indeterminate" indeterminate />
-					<Checkbox label="Small size" size="sm" />
-					<Checkbox label="Large size" size="lg" />
-					<Checkbox label="Disabled" disabled />
+					<ProgressBar label="Storage Used" value={65} showValue />
+					<ProgressBar label="Uploading File" variant="success" value={100} showValue />
+					<ProgressBar label="Processing Data" indeterminate />
+				</div>
+			</Card>
+		</div>
+
+		<!-- Skeleton Loader -->
+		<Card>
+			{#snippet header()}
+				<div class="flex items-center justify-between">
+					<h3 class="font-semibold text-primary">Skeleton Loader</h3>
+					<Badge variant="info" size="sm">atom</Badge>
+				</div>
+			{/snippet}
+			<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+				<div class="space-y-3">
+					<p class="text-xs font-medium text-muted uppercase">Pulse Animation</p>
+					<div class="flex items-center gap-3">
+						<Skeleton variant="circular" width="40px" height="40px" />
+						<div class="flex-1 space-y-2">
+							<Skeleton variant="text" width="70%" />
+							<Skeleton variant="text" width="40%" />
+						</div>
+					</div>
+				</div>
+				<div class="space-y-3">
+					<p class="text-xs font-medium text-muted uppercase">Shimmer Animation</p>
+					<Skeleton variant="rounded" height="80px" animation="shimmer" />
+				</div>
+			</div>
+		</Card>
+
+		<!-- Badges, Avatars, Spinners -->
+		<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+			<Card>
+				{#snippet header()}
+					<div class="flex items-center justify-between">
+						<h3 class="font-semibold text-primary">Badge</h3>
+						<Badge variant="info" size="sm">atom</Badge>
+					</div>
+				{/snippet}
+				<div class="flex flex-wrap gap-2">
+					<Badge variant="primary">Primary</Badge>
+					<Badge variant="success" dot>Active</Badge>
+					<Badge variant="warning" dot>Pending</Badge>
+					<Badge variant="error" dot>Failed</Badge>
+				</div>
+			</Card>
+
+			<Card>
+				{#snippet header()}
+					<div class="flex items-center justify-between">
+						<h3 class="font-semibold text-primary">Avatar</h3>
+						<Badge variant="info" size="sm">atom</Badge>
+					</div>
+				{/snippet}
+				<div class="flex items-center gap-3">
+					<Avatar name="Rafael González" status="online" size="md" />
+					<Avatar name="Ana Martínez" status="busy" size="md" />
+					<Avatar name="Carlos López" status="away" size="md" />
+				</div>
+			</Card>
+
+			<Card>
+				{#snippet header()}
+					<div class="flex items-center justify-between">
+						<h3 class="font-semibold text-primary">Toggle & Checkbox</h3>
+						<Badge variant="info" size="sm">atom</Badge>
+					</div>
+				{/snippet}
+				<div class="space-y-3">
+					<Toggle label="Enable Notifications" bind:checked={toggleValue} />
+					<Checkbox label="Accept terms & conditions" bind:checked={checkValue} />
 				</div>
 			</Card>
 		</div>
@@ -319,16 +273,16 @@
 			<div class="h-px flex-1 bg-border"></div>
 		</div>
 
-		<!-- Inputs & FormFields -->
+		<!-- Inputs, Textarea, Select, PinInput -->
 		<Card>
 			{#snippet header()}
 				<div class="flex items-center justify-between">
-					<h3 class="font-semibold text-primary">Input / FormField</h3>
+					<h3 class="font-semibold text-primary">Form Controls</h3>
 					<Badge variant="warning" size="sm">molecule</Badge>
 				</div>
 			{/snippet}
 
-			<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+			<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 				<FormField
 					label="Email address"
 					type="email"
@@ -336,56 +290,90 @@
 					helperText="We'll never share your email."
 					bind:value={inputValue}
 				/>
-				<FormField
-					label="Password"
-					type="password"
-					placeholder="••••••••"
-					required
+
+				<Select
+					label="Country"
+					searchable
+					bind:value={selectedCountry}
+					options={[
+						{ value: 'es', label: 'Spain 🇪🇸' },
+						{ value: 'us', label: 'United States 🇺🇸' },
+						{ value: 'mx', label: 'Mexico 🇲🇽' },
+						{ value: 'ar', label: 'Argentina 🇦🇷' }
+					]}
 				/>
-				<FormField
-					label="Username"
-					placeholder="@username"
-					status="success"
-					helperText="Username is available!"
+
+				<Textarea
+					label="Bio / Notes"
+					placeholder="Tell us about yourself..."
+					maxLength={160}
+					showCount
+					bind:value={textareaValue}
 				/>
-				<FormField
-					label="Promo code"
-					placeholder="SAVE20"
-					errorMessage="Invalid promo code. Please try again."
+
+				<PinInput
+					label="2FA Security Code"
+					length={4}
+					helperText="Enter 4-digit code"
+					bind:value={pinVal}
 				/>
-				<Input label="Clearable" placeholder="Type to clear..." clearable bind:value={inputValue} />
-				<Input label="Disabled" placeholder="Cannot edit this" disabled />
 			</div>
 		</Card>
 
-		<!-- Cards -->
-		<div>
-			<p class="text-xs font-semibold uppercase tracking-widest text-muted mb-4">Card variants</p>
-			<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-				<Card variant="default" padding="md">
-					<p class="text-sm font-medium text-primary mb-1">Default</p>
-					<p class="text-xs text-muted">Border + soft shadow</p>
-				</Card>
-				<Card variant="elevated" padding="md">
-					<p class="text-sm font-medium text-primary mb-1">Elevated</p>
-					<p class="text-xs text-muted">Stronger shadow</p>
-				</Card>
-				<Card variant="bordered" padding="md">
-					<p class="text-sm font-medium text-primary mb-1">Bordered</p>
-					<p class="text-xs text-muted">2px border, no fill</p>
-				</Card>
-				<Card variant="ghost" padding="md">
-					<p class="text-sm font-medium text-primary mb-1">Ghost</p>
-					<p class="text-xs text-muted">Subtle overlay</p>
-				</Card>
-			</div>
+		<!-- RadioGroup & FileUploader -->
+		<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+			<Card>
+				{#snippet header()}
+					<div class="flex items-center justify-between">
+						<h3 class="font-semibold text-primary">RadioGroup</h3>
+						<Badge variant="warning" size="sm">molecule</Badge>
+					</div>
+				{/snippet}
+				<RadioGroup
+					label="Subscription Plan"
+					bind:value={selectedPlan}
+					options={[
+						{ value: 'free', label: 'Free Plan', helperText: '$0/month' },
+						{ value: 'pro', label: 'Pro Plan', helperText: '$19/month' },
+						{ value: 'enterprise', label: 'Enterprise', helperText: 'Custom pricing' }
+					]}
+				/>
+			</Card>
+
+			<Card>
+				{#snippet header()}
+					<div class="flex items-center justify-between">
+						<h3 class="font-semibold text-primary">FileUploader</h3>
+						<Badge variant="warning" size="sm">molecule</Badge>
+					</div>
+				{/snippet}
+				<FileUploader label="Attachments" helperText="PNG, JPG, PDF (max 10MB)" />
+			</Card>
 		</div>
 
-		<!-- Toast demo -->
+		<!-- EmptyState -->
 		<Card>
 			{#snippet header()}
 				<div class="flex items-center justify-between">
-					<h3 class="font-semibold text-primary">Toast Notifications</h3>
+					<h3 class="font-semibold text-primary">EmptyState</h3>
+					<Badge variant="warning" size="sm">molecule</Badge>
+				</div>
+			{/snippet}
+			<EmptyState
+				title="No invoices created yet"
+				description="Start by creating your first invoice for your clients."
+			>
+				{#snippet action()}
+					<Button variant="primary" size="sm">Create Invoice</Button>
+				{/snippet}
+			</EmptyState>
+		</Card>
+
+		<!-- Toast Notifications -->
+		<Card>
+			{#snippet header()}
+				<div class="flex items-center justify-between">
+					<h3 class="font-semibold text-primary">Toast System</h3>
 					<Badge variant="warning" size="sm">molecule</Badge>
 				</div>
 			{/snippet}

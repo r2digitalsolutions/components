@@ -65,7 +65,7 @@
 			{value}
 			{disabled}
 			bind:checked
-			use:setIndeterminate
+			{@attach setIndeterminate}
 			class={[
 				'shrink-0 cursor-pointer border-2 border-border bg-surface-elevated appearance-none transition-all duration-150',
 				'checked:bg-brand-500 checked:border-brand-500',
