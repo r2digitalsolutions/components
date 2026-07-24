@@ -6,13 +6,15 @@ const meta = {
 	component: SliderStory,
 	tags: ['autodocs'],
 	argTypes: {
-		label: { control: 'text', description: 'Label text' },
+		label: { control: 'text' },
 		min: { control: 'number' },
 		max: { control: 'number' },
 		step: { control: 'number' },
 		value: { control: 'number' },
 		disabled: { control: 'boolean' },
 		showValue: { control: 'boolean' },
+		valuePosition: { control: 'select', options: ['tooltip', 'header'] },
+		showMarks: { control: 'boolean' },
 		unit: { control: 'text' },
 		size: { control: 'select', options: ['sm', 'md', 'lg'] }
 	},
@@ -24,6 +26,8 @@ const meta = {
 		value: 65,
 		disabled: false,
 		showValue: true,
+		valuePosition: 'tooltip',
+		showMarks: true,
 		unit: '%',
 		size: 'md'
 	}
@@ -32,7 +36,12 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = { args: { label: 'Brightness', value: 80, unit: '%' } };
-export const Currency: Story = { args: { label: 'Max Price', min: 10, max: 500, step: 5, value: 250, unit: '€' } };
-export const Large: Story = { args: { label: 'Zoom Level', size: 'lg', value: 150, min: 50, max: 300, unit: '%' } };
-export const Disabled: Story = { args: { label: 'Locked Slider', disabled: true, value: 40 } };
+export const FloatingTooltip: Story = {
+	args: { label: 'Volume Control', value: 75, valuePosition: 'tooltip', showMarks: true }
+};
+export const HeaderValue: Story = {
+	args: { label: 'Budget Limit', valuePosition: 'header', min: 100, max: 2000, step: 50, value: 850, unit: '€', showMarks: true }
+};
+export const LargeSize: Story = {
+	args: { label: 'Zoom Level', size: 'lg', value: 120, min: 50, max: 200, unit: '%', showMarks: true }
+};
