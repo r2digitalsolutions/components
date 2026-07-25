@@ -62,7 +62,7 @@
 		showHandle={props.showHandle ?? true}
 		showClose={props.showClose ?? true}
 		showSnaps={props.showSnaps ?? true}
-		borderTop={props.borderTop ?? false}
+		borderTop={props.borderTop ?? true}
 		snaps={size === 'xl' ? [0.32, 0.55, 0.88] : undefined}
 	>
 		{#snippet actions()}

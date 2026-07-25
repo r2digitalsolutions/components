@@ -31,7 +31,7 @@ const meta = {
 		showHandle: true,
 		showClose: true,
 		showSnaps: true,
-		borderTop: false
+		borderTop: true
 	}
 } satisfies Meta<typeof SheetStory>;
 

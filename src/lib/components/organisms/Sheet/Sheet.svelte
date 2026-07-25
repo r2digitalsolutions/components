@@ -42,7 +42,7 @@
 		showClose?: boolean;
 		/** Show snap breakpoint dots when there are 2+ snaps */
 		showSnaps?: boolean;
-		/** Draw a top border on the panel (often redundant with accent) */
+		/** Draw the top accent stripe (the colored top edge) */
 		borderTop?: boolean;
 		/** Allow dragging the sheet between snaps */
 		draggable?: boolean;
@@ -382,9 +382,9 @@
 >
 	<div
 		class={[
-			'sheet-panel relative mx-auto flex w-full flex-col overflow-hidden bg-surface-elevated shadow-2xl outline-none',
+			'sheet-panel relative mx-auto flex w-full flex-col overflow-hidden bg-surface-elevated outline-none',
 			'rounded-t-2xl',
-			borderTop ? 'sheet-panel--bordered border border-b-0 border-border' : 'sheet-panel--unbordered',
+			borderTop ? 'sheet-panel--bordered border border-b-0 border-border shadow-2xl' : 'sheet-panel--unbordered',
 			dragging && 'sheet-panel--dragging',
 			className
 		]}
@@ -395,7 +395,7 @@
 		role="document"
 		ontransitionend={handlePanelTransitionEnd}
 	>
-		{#if accentColor}
+		{#if borderTop && accentColor}
 			<div
 				class="sheet-accent h-1 w-full shrink-0"
 				style:background={accentColor}
@@ -428,7 +428,7 @@
 			<div
 				class={[
 					'flex shrink-0 justify-center gap-1.5 px-4',
-					showHandle ? 'pb-2 pt-0.5' : accentColor ? 'pt-2 pb-2' : 'pt-3 pb-2'
+					showHandle ? 'pb-2 pt-0.5' : borderTop && accentColor ? 'pt-2 pb-2' : 'pt-3 pb-2'
 				]}
 				aria-label="Sheet size"
 				role="group"
@@ -534,9 +534,14 @@
 		will-change: height;
 	}
 
+	/* No CSS border — and no ambient shadow rim (shadow-2xl's negative
+	   spread draws a dark outline around the rounded top that looks like a border). */
 	.sheet-panel--unbordered {
-		border: none !important;
-		border-width: 0 !important;
+		border: 0 !important;
+		border-style: none !important;
+		box-shadow:
+			0 18px 28px -6px rgb(0 0 0 / 0.2),
+			0 8px 12px -6px rgb(0 0 0 / 0.12) !important;
 	}
 
 	.sheet-panel--bordered {
