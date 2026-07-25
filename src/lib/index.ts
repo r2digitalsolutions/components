@@ -65,6 +65,11 @@ export { default as Truncate } from './components/atoms/Truncate/Truncate.svelte
 export { default as SplitHandle } from './components/atoms/SplitHandle/SplitHandle.svelte';
 export type { SplitOrientation } from './components/atoms/SplitHandle/SplitHandle.svelte';
 export { default as PanelHeader } from './components/atoms/PanelHeader/PanelHeader.svelte';
+export { default as Barcode } from './components/atoms/Barcode/Barcode.svelte';
+export { default as BrandMark } from './components/atoms/BrandMark/BrandMark.svelte';
+export type { BrandMarkSize } from './components/atoms/BrandMark/BrandMark.svelte';
+export { default as StepMark } from './components/atoms/StepMark/StepMark.svelte';
+export type { StepMarkState } from './components/atoms/StepMark/StepMark.svelte';
 
 // ── Molecules ────────────────────────────────────────────────────────────────
 export { default as Card } from './components/molecules/Card/Card.svelte';
@@ -176,6 +181,13 @@ export type { AnchorItem } from './components/molecules/AnchorNav/AnchorNav.svel
 export { default as Poll } from './components/molecules/Poll/Poll.svelte';
 export type { PollOption } from './components/molecules/Poll/Poll.svelte';
 export { default as NewsletterSignup } from './components/molecules/NewsletterSignup/NewsletterSignup.svelte';
+export { default as FollowButton } from './components/molecules/FollowButton/FollowButton.svelte';
+export { default as CopyField } from './components/molecules/CopyField/CopyField.svelte';
+export { default as CountrySelect } from './components/molecules/CountrySelect/CountrySelect.svelte';
+export type { CountryOption } from './components/molecules/CountrySelect/CountrySelect.svelte';
+export { default as InfiniteScroll } from './components/molecules/InfiniteScroll/InfiniteScroll.svelte';
+export { default as PullToRefresh } from './components/molecules/PullToRefresh/PullToRefresh.svelte';
+export { default as CronBuilder } from './components/molecules/CronBuilder/CronBuilder.svelte';
 export { default as TimeAgo } from './components/molecules/TimeAgo/TimeAgo.svelte';
 export { default as Spoiler } from './components/molecules/Spoiler/Spoiler.svelte';
 export { default as PasswordStrength } from './components/molecules/PasswordStrength/PasswordStrength.svelte';
@@ -388,6 +400,22 @@ export { default as Roadmap } from './components/organisms/Roadmap/Roadmap.svelt
 export type { RoadmapItem, RoadmapStatus } from './components/organisms/Roadmap/Roadmap.svelte';
 export { default as FAQ } from './components/organisms/FAQ/FAQ.svelte';
 export type { FaqItem } from './components/organisms/FAQ/FAQ.svelte';
+export { default as PermissionsMatrix } from './components/organisms/PermissionsMatrix/PermissionsMatrix.svelte';
+export type {
+	PermissionLevel,
+	PermissionRole,
+	PermissionResource,
+	PermissionMap
+} from './components/organisms/PermissionsMatrix/PermissionsMatrix.svelte';
+export { default as IntegrationsPage } from './components/organisms/IntegrationsPage/IntegrationsPage.svelte';
+export type { IntegrationItem } from './components/organisms/IntegrationsPage/IntegrationsPage.svelte';
+export { default as Testimonials } from './components/organisms/Testimonials/Testimonials.svelte';
+export type { TestimonialItem } from './components/organisms/Testimonials/Testimonials.svelte';
+export { default as Scheduler } from './components/organisms/Scheduler/Scheduler.svelte';
+export type {
+	ScheduleSlot,
+	ScheduleBooking
+} from './components/organisms/Scheduler/Scheduler.svelte';
 
 // ── Utils ────────────────────────────────────────────────────────────────────
 export { themeStore } from './utils/theme.svelte.js';
