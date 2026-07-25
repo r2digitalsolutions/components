@@ -127,6 +127,7 @@ export type { ListItem, ListVariant, ListSize } from './components/molecules/Lis
 export { default as Banner } from './components/molecules/Banner/Banner.svelte';
 export { default as TagInput } from './components/molecules/TagInput/TagInput.svelte';
 export { default as CodeBlock } from './components/molecules/CodeBlock/CodeBlock.svelte';
+export { default as CodeEditor } from './components/molecules/CodeEditor/CodeEditor.svelte';
 export { default as Calendar } from './components/molecules/Calendar/Calendar.svelte';
 export type { CalendarMode, CalendarDot } from './components/molecules/Calendar/Calendar.svelte';
 export { default as DatePicker } from './components/molecules/DatePicker/DatePicker.svelte';
@@ -168,6 +169,14 @@ export { default as ChatBubble } from './components/molecules/ChatBubble/ChatBub
 export { default as MessageList } from './components/molecules/MessageList/MessageList.svelte';
 export type { Message } from './components/molecules/MessageList/MessageList.svelte';
 export { default as VirtualList } from './components/molecules/VirtualList/VirtualList.svelte';
+export { default as MasonryGrid } from './components/molecules/MasonryGrid/MasonryGrid.svelte';
+export { default as OrgChart } from './components/molecules/OrgChart/OrgChart.svelte';
+export type { OrgNode } from './components/molecules/OrgChart/OrgChart.svelte';
+export { default as TableToolbar } from './components/molecules/TableToolbar/TableToolbar.svelte';
+export type {
+	TableColumnOption,
+	TableDensity
+} from './components/molecules/TableToolbar/TableToolbar.svelte';
 export { default as ButtonGroup } from './components/molecules/ButtonGroup/ButtonGroup.svelte';
 export { default as ThemeToggle } from './components/molecules/ThemeToggle/ThemeToggle.svelte';
 export { default as LoadingOverlay } from './components/molecules/LoadingOverlay/LoadingOverlay.svelte';
@@ -247,6 +256,9 @@ export { default as SortableList } from './components/molecules/SortableList/Sor
 export type { SortableItem } from './components/molecules/SortableList/SortableList.svelte';
 export { default as Form } from './components/molecules/Form/Form.svelte';
 export type { FormErrors, FormContext } from './components/molecules/Form/Form.svelte';
+export { default as FieldArray } from './components/molecules/FieldArray/FieldArray.svelte';
+export type { FieldArrayItem } from './components/molecules/FieldArray/FieldArray.svelte';
+export { default as PromptInput } from './components/molecules/PromptInput/PromptInput.svelte';
 export { default as MonthPicker } from './components/molecules/MonthPicker/MonthPicker.svelte';
 export { default as WeekPicker } from './components/molecules/WeekPicker/WeekPicker.svelte';
 export { default as YearPicker } from './components/molecules/YearPicker/YearPicker.svelte';
@@ -380,6 +392,17 @@ export type {
 	HeatmapSize
 } from './components/molecules/Heatmap/Heatmap.svelte';
 export { HEATMAP_PALETTES } from './components/molecules/Heatmap/Heatmap.svelte';
+export { default as ContributionGraph } from './components/molecules/ContributionGraph/ContributionGraph.svelte';
+export type {
+	ContributionDay,
+	ContributionPalette
+} from './components/molecules/ContributionGraph/ContributionGraph.svelte';
+export { default as FunnelChart } from './components/molecules/FunnelChart/FunnelChart.svelte';
+export type { FunnelStep } from './components/molecules/FunnelChart/FunnelChart.svelte';
+export { default as ScatterChart } from './components/molecules/ScatterChart/ScatterChart.svelte';
+export type { ScatterPoint } from './components/molecules/ScatterChart/ScatterChart.svelte';
+export { default as RadarChart } from './components/molecules/RadarChart/RadarChart.svelte';
+export type { RadarAxis, RadarSeries } from './components/molecules/RadarChart/RadarChart.svelte';
 export { default as InputGroup } from './components/molecules/InputGroup/InputGroup.svelte';
 export { default as CreditCardInput } from './components/molecules/CreditCardInput/CreditCardInput.svelte';
 export type { CardBrand } from './components/molecules/CreditCardInput/CreditCardInput.svelte';
@@ -507,6 +530,8 @@ export type { SheetSize, SheetAccent } from './components/organisms/Sheet/Sheet.
 export { SHEET_SIZE_SNAPS } from './components/organisms/Sheet/Sheet.svelte';
 export { default as DataTable } from './components/organisms/DataTable/DataTable.svelte';
 export type { DataTableColumn } from './components/organisms/DataTable/DataTable.svelte';
+export { default as GanttChart } from './components/organisms/GanttChart/GanttChart.svelte';
+export type { GanttTask } from './components/organisms/GanttChart/GanttChart.svelte';
 export { default as ToastContainer } from './components/organisms/Toast/ToastContainer.svelte';
 export { toastStore, toast } from './components/organisms/Toast/toast.svelte.js';
 export type {
@@ -729,15 +754,27 @@ export type {
 } from './components/organisms/SearchResults/SearchResults.svelte';
 export { default as SettingsForm } from './components/organisms/SettingsForm/SettingsForm.svelte';
 export type { AccountSettingsValues } from './components/organisms/SettingsForm/SettingsForm.svelte';
+export { default as SchemaForm } from './components/organisms/SchemaForm/SchemaForm.svelte';
+export type {
+	SchemaField,
+	SchemaFieldType,
+	SchemaFieldOption,
+	SchemaFormValues
+} from './components/organisms/SchemaForm/SchemaForm.svelte';
 
 // ── Templates ────────────────────────────────────────────────────────────────
 export { default as AuthTemplate } from './components/templates/AuthTemplate/AuthTemplate.svelte';
 export type { AuthTemplateView } from './components/templates/AuthTemplate/AuthTemplate.svelte';
 export { default as DashboardTemplate } from './components/templates/DashboardTemplate/DashboardTemplate.svelte';
+export type { DashboardTemplateDensity } from './components/templates/DashboardTemplate/DashboardTemplate.svelte';
 export { default as MarketingTemplate } from './components/templates/MarketingTemplate/MarketingTemplate.svelte';
 export { default as ListingTemplate } from './components/templates/ListingTemplate/ListingTemplate.svelte';
 export { default as CheckoutTemplate } from './components/templates/CheckoutTemplate/CheckoutTemplate.svelte';
-export type { CheckoutLine } from './components/templates/CheckoutTemplate/CheckoutTemplate.svelte';
+export type {
+	CheckoutLine,
+	CheckoutStep,
+	CheckoutShippingOption
+} from './components/templates/CheckoutTemplate/CheckoutTemplate.svelte';
 
 // ── Utils ────────────────────────────────────────────────────────────────────
 export { themeStore } from './utils/theme.svelte.js';

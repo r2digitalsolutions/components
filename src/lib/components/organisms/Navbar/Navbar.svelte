@@ -68,9 +68,9 @@
 
 <header
 	class={[
-		'w-full bg-surface-elevated',
+		'relative z-40 w-full bg-surface-elevated',
 		bordered && 'border-b border-border',
-		sticky && 'sticky top-0 z-40',
+		sticky && 'sticky top-0',
 		blur && 'bg-surface-elevated/85 backdrop-blur-md',
 		className
 	]}

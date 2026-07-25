@@ -46,8 +46,10 @@
 <div
 	class={[
 		'flex w-full overflow-hidden bg-surface',
-		fullHeight ? 'h-dvh' : 'h-[min(36rem,80vh)]',
-		framed && 'rounded-xl border border-border',
+		fullHeight && 'h-dvh',
+		!fullHeight && framed && 'h-full min-h-0',
+		!fullHeight && !framed && 'h-[min(36rem,80vh)]',
+		framed && 'rounded-2xl border border-border shadow-sm',
 		className
 	]}
 >
