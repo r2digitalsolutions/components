@@ -684,7 +684,14 @@ export type { TestimonialItem } from './components/organisms/Testimonials/Testim
 export { default as Scheduler } from './components/organisms/Scheduler/Scheduler.svelte';
 export type {
 	ScheduleSlot,
-	ScheduleBooking
+	ScheduleBooking,
+	ScheduleHost,
+	ScheduleDuration,
+	ScheduleMeetingType,
+	SchedulerSlotLayout,
+	SchedulePeriod,
+	SchedulerMode,
+	ScheduleConfirmDetail
 } from './components/organisms/Scheduler/Scheduler.svelte';
 export { default as ComingSoonPage } from './components/organisms/ComingSoonPage/ComingSoonPage.svelte';
 export { default as MaintenancePage } from './components/organisms/MaintenancePage/MaintenancePage.svelte';

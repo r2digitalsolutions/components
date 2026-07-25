@@ -17,7 +17,9 @@ const meta = {
 		draggable: { control: 'boolean' },
 		pullToClose: { control: 'boolean' },
 		showHandle: { control: 'boolean' },
-		showClose: { control: 'boolean' }
+		showClose: { control: 'boolean' },
+		showSnaps: { control: 'boolean' },
+		borderTop: { control: 'boolean' }
 	},
 	args: {
 		title: 'Workout details',
@@ -27,7 +29,9 @@ const meta = {
 		draggable: true,
 		pullToClose: true,
 		showHandle: true,
-		showClose: true
+		showClose: true,
+		showSnaps: true,
+		borderTop: false
 	}
 } satisfies Meta<typeof SheetStory>;
 

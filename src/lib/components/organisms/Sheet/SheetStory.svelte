@@ -11,6 +11,8 @@
 		pullToClose?: boolean;
 		showHandle?: boolean;
 		showClose?: boolean;
+		showSnaps?: boolean;
+		borderTop?: boolean;
 	}>();
 
 	let open = $state(false);
@@ -59,6 +61,8 @@
 		pullToClose={props.pullToClose ?? true}
 		showHandle={props.showHandle ?? true}
 		showClose={props.showClose ?? true}
+		showSnaps={props.showSnaps ?? true}
+		borderTop={props.borderTop ?? false}
 		snaps={size === 'xl' ? [0.32, 0.55, 0.88] : undefined}
 	>
 		{#snippet actions()}

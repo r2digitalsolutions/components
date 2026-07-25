@@ -1,29 +1,63 @@
 <script lang="ts">
 	import Scheduler from './Scheduler.svelte';
+	import type { ScheduleDuration, SchedulerSlotLayout } from './Scheduler.svelte';
 	import Text from '$lib/components/atoms/Text/Text.svelte';
 
+	interface Props {
+		variant?: 'default' | 'list' | 'compact' | 'range';
+	}
+
+	let { variant = 'default' }: Props = $props();
+
 	let selectedSlotId = $state<string | null>(null);
+	let duration = $state<ScheduleDuration>(30);
+	let slotLayout = $state<SchedulerSlotLayout>(variant === 'list' ? 'list' : 'grid');
+	const today = new Date();
+	const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+	let start = $state(todayIso);
+	let end = $state('');
+	let last = $state('');
+
+	const isRange = $derived(variant === 'range');
 </script>
 
-<div class="space-y-3">
-	<Scheduler
-		bind:selectedSlotId
-		dateLabel="Fri, Jul 25"
-		slots={[
-			{ id: '9', time: '09:00' },
-			{ id: '10', time: '10:00' },
-			{ id: '11', time: '11:00' },
-			{ id: '12', time: '12:00', available: false },
-			{ id: '14', time: '14:00' },
-			{ id: '15', time: '15:00' },
-			{ id: '16', time: '16:00' }
-		]}
-		bookings={[
-			{ id: 'b1', slotId: '10', title: 'Design review', with: 'Maya' },
-			{ id: 'b2', slotId: '15', title: 'Customer call', with: 'Luis' }
-		]}
-	/>
-	{#if selectedSlotId}
-		<Text size="xs" tone="muted">Selected slot: {selectedSlotId}</Text>
+<div class="space-y-3 p-2">
+	{#if isRange}
+		<Scheduler
+			mode="range"
+			bind:selectedSlotId
+			bind:duration
+			bind:slotLayout
+			bind:start
+			bind:end
+			allowDateOnly
+			title="Reserve dates"
+			description="Pick a date range, then a check-in time."
+			confirmLabel="Reserve"
+			onconfirm={(d) => {
+				last = `range ${d.start}→${d.end} (${d.nights}n) slot=${d.slotId ?? 'none'}`;
+				selectedSlotId = null;
+			}}
+			onrangechange={(d) => (last = `range:${d.start || '…'}→${d.end || '…'}`)}
+			onselect={(id) => (last = `select:${id}`)}
+		/>
+	{:else}
+		<Scheduler
+			bind:selectedSlotId
+			bind:duration
+			bind:slotLayout
+			showCalendar={variant !== 'compact'}
+			showWeekStrip
+			groupByPeriod={variant !== 'compact'}
+			onconfirm={(d) => {
+				last = `confirmed ${d.date} @ ${d.slotId} (${d.duration}m)`;
+				selectedSlotId = null;
+			}}
+			ondatechange={(d) => (last = `date:${d}`)}
+			onselect={(id) => (last = `select:${id}`)}
+		/>
+	{/if}
+	{#if last}
+		<Text size="xs" tone="muted">Last action: {last}</Text>
 	{/if}
 </div>

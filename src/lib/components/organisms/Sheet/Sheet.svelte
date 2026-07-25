@@ -40,6 +40,10 @@
 		accent?: SheetAccent | (string & {});
 		showHandle?: boolean;
 		showClose?: boolean;
+		/** Show snap breakpoint dots when there are 2+ snaps */
+		showSnaps?: boolean;
+		/** Draw a top border on the panel (often redundant with accent) */
+		borderTop?: boolean;
 		/** Allow dragging the sheet between snaps */
 		draggable?: boolean;
 		/** Pull down past the lowest snap to dismiss */
@@ -73,6 +77,8 @@
 		accent = 'brand',
 		showHandle = true,
 		showClose = true,
+		showSnaps = true,
+		borderTop = false,
 		draggable = true,
 		pullToClose = true,
 		dismissOffset = 80,
@@ -376,11 +382,13 @@
 >
 	<div
 		class={[
-			'sheet-panel relative mx-auto flex w-full flex-col overflow-hidden border border-border border-b-0 bg-surface-elevated shadow-2xl outline-none',
+			'sheet-panel relative mx-auto flex w-full flex-col overflow-hidden bg-surface-elevated shadow-2xl outline-none',
 			'rounded-t-2xl',
+			borderTop ? 'sheet-panel--bordered border border-b-0 border-border' : 'sheet-panel--unbordered',
 			dragging && 'sheet-panel--dragging',
 			className
 		]}
+		data-border-top={borderTop ? 'true' : 'false'}
 		style:max-width={maxWidth}
 		style:height={motion === 'idle' ? '0px' : `${heightFrac * 100}vh`}
 		style:transition={dragging ? 'none' : `height ${ANIM_MS}ms cubic-bezier(0.32, 0.72, 0, 1)`}
@@ -389,7 +397,7 @@
 	>
 		{#if accentColor}
 			<div
-				class="absolute inset-x-0 top-0 z-10 h-1 rounded-t-2xl"
+				class="sheet-accent h-1 w-full shrink-0"
 				style:background={accentColor}
 				aria-hidden="true"
 			></div>
@@ -398,8 +406,7 @@
 		{#if showHandle}
 			<!-- svelte-ignore a11y_no_static_element_interactions -->
 			<div
-				class="group/handle flex shrink-0 cursor-grab justify-center pt-3 pb-1 active:cursor-grabbing"
-				style:padding-top={accentColor ? '14px' : undefined}
+				class="group/handle flex shrink-0 cursor-grab justify-center pt-2.5 pb-1 active:cursor-grabbing"
 				aria-hidden="true"
 				onpointerdown={onHandlePointerDown}
 				onpointermove={onPointerMove}
@@ -414,6 +421,32 @@
 							: 'bg-border-strong group-hover/handle:scale-x-125 group-hover/handle:bg-brand-500/70'
 					]}
 				></span>
+			</div>
+		{/if}
+
+		{#if showSnaps && points.length > 1}
+			<div
+				class={[
+					'flex shrink-0 justify-center gap-1.5 px-4',
+					showHandle ? 'pb-2 pt-0.5' : accentColor ? 'pt-2 pb-2' : 'pt-3 pb-2'
+				]}
+				aria-label="Sheet size"
+				role="group"
+			>
+				{#each points as p, i}
+					<button
+						type="button"
+						class={[
+							'h-1.5 rounded-full transition-all',
+							snapIndex === i
+								? 'w-4 bg-brand-500'
+								: 'w-1.5 bg-border-strong hover:bg-secondary'
+						]}
+						aria-label={`Snap ${Math.round(p * 100)}%`}
+						aria-pressed={snapIndex === i}
+						onclick={() => goToSnap(i)}
+					></button>
+				{/each}
 			</div>
 		{/if}
 
@@ -450,23 +483,6 @@
 					{/if}
 				</div>
 			</header>
-		{/if}
-
-		{#if points.length > 1}
-			<div class="flex shrink-0 justify-center gap-1.5 px-4 pb-2" aria-label="Sheet size" role="group">
-				{#each points as p, i}
-					<button
-						type="button"
-						class={[
-							'size-1.5 rounded-full transition-all',
-							snapIndex === i ? 'w-4 bg-brand-500' : 'bg-border-strong hover:bg-secondary'
-						]}
-						aria-label={`Snap ${Math.round(p * 100)}%`}
-						aria-pressed={snapIndex === i}
-						onclick={() => goToSnap(i)}
-					></button>
-				{/each}
-			</div>
 		{/if}
 
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -516,6 +532,15 @@
 		right: 0;
 		bottom: 0;
 		will-change: height;
+	}
+
+	.sheet-panel--unbordered {
+		border: none !important;
+		border-width: 0 !important;
+	}
+
+	.sheet-panel--bordered {
+		border-bottom: none !important;
 	}
 
 	.sheet-panel--dragging {
