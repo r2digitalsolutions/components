@@ -1,11 +1,17 @@
 <script lang="ts">
 	import Form from '$lib/components/molecules/Form/Form.svelte';
 	import FormField from '$lib/components/molecules/FormField/FormField.svelte';
-	import Select from '$lib/components/molecules/Select/Select.svelte';
-	import Textarea from '$lib/components/atoms/Textarea/Textarea.svelte';
-	import Toggle from '$lib/components/atoms/Toggle/Toggle.svelte';
-	import Checkbox from '$lib/components/atoms/Checkbox/Checkbox.svelte';
-	import Button from '$lib/components/atoms/Button/Button.svelte';
+	import FormTextarea from '$lib/components/molecules/FormTextarea/FormTextarea.svelte';
+	import FormSelect from '$lib/components/molecules/FormSelect/FormSelect.svelte';
+	import FormToggle from '$lib/components/molecules/FormToggle/FormToggle.svelte';
+	import FormCheckbox from '$lib/components/molecules/FormCheckbox/FormCheckbox.svelte';
+	import FormPasswordInput from '$lib/components/molecules/FormPasswordInput/FormPasswordInput.svelte';
+	import FormActions from '$lib/components/molecules/FormActions/FormActions.svelte';
+	import FormError from '$lib/components/molecules/FormError/FormError.svelte';
+	import RadioGroup from '$lib/components/molecules/RadioGroup/RadioGroup.svelte';
+	import MultiSelect from '$lib/components/molecules/MultiSelect/MultiSelect.svelte';
+	import DatePicker from '$lib/components/molecules/DatePicker/DatePicker.svelte';
+	import type { FormErrors } from '$lib/utils/formContext.js';
 
 	export type SchemaFieldType =
 		| 'text'
@@ -17,7 +23,10 @@
 		| 'textarea'
 		| 'select'
 		| 'toggle'
-		| 'checkbox';
+		| 'checkbox'
+		| 'date'
+		| 'radio'
+		| 'multiselect';
 
 	export interface SchemaFieldOption {
 		value: string;
@@ -34,34 +43,42 @@
 		options?: SchemaFieldOption[];
 		/** Group heading before this field */
 		section?: string;
-		defaultValue?: string | boolean | number;
+		defaultValue?: string | boolean | number | string[];
 	}
 
-	export type SchemaFormValues = Record<string, string | boolean | number>;
+	export type SchemaFormValue = string | boolean | number | string[];
+	export type SchemaFormValues = Record<string, SchemaFormValue>;
 
 	interface SchemaFormProps {
 		schema?: SchemaField[];
 		values?: SchemaFormValues;
+		errors?: FormErrors;
 		title?: string;
 		description?: string;
 		submitLabel?: string;
+		cancelLabel?: string;
+		showCancel?: boolean;
 		loading?: boolean;
 		class?: string;
 		onsubmit?: (values: SchemaFormValues) => void;
+		oncancel?: () => void;
 	}
 
 	let {
 		schema = [],
 		values = $bindable<SchemaFormValues>({}),
+		errors = $bindable<FormErrors>({}),
 		title,
 		description,
 		submitLabel = 'Save',
+		cancelLabel = 'Cancel',
+		showCancel = false,
 		loading = false,
 		class: className = '',
-		onsubmit
+		onsubmit,
+		oncancel
 	}: SchemaFormProps = $props();
 
-	// Seed defaults once
 	$effect.pre(() => {
 		const next = { ...values };
 		let changed = false;
@@ -70,19 +87,26 @@
 				next[field.name] = field.defaultValue;
 				changed = true;
 			} else if (next[field.name] === undefined) {
-				next[field.name] = field.type === 'toggle' || field.type === 'checkbox' ? false : '';
+				const type = field.type ?? 'text';
+				if (type === 'toggle' || type === 'checkbox') next[field.name] = false;
+				else if (type === 'multiselect') next[field.name] = [];
+				else next[field.name] = '';
 				changed = true;
 			}
 		}
 		if (changed) values = next;
 	});
 
-	function setValue(name: string, v: string | boolean | number) {
+	function setValue(name: string, v: SchemaFormValue) {
 		values = { ...values, [name]: v };
+		if (name in errors) {
+			const next = { ...errors };
+			delete next[name];
+			errors = next;
+		}
 	}
 
-	function handleSubmit(e: SubmitEvent) {
-		e.preventDefault();
+	function handleSubmit() {
 		onsubmit?.(values);
 	}
 
@@ -102,7 +126,15 @@
 	});
 </script>
 
-<Form {title} {description} {loading} class={className} onsubmit={handleSubmit}>
+<Form
+	bind:data={values}
+	bind:errors
+	{title}
+	{description}
+	{loading}
+	class={className}
+	onsubmit={handleSubmit}
+>
 	{#each sections as section, si (si)}
 		{#if section.title}
 			<div class={si > 0 ? 'pt-2' : ''}>
@@ -111,44 +143,92 @@
 		{/if}
 		{#each section.fields as field (field.name)}
 			{@const type = field.type ?? 'text'}
+			{@const fieldError = errors[field.name]}
 			{#if type === 'textarea'}
-				<Textarea
+				<FormTextarea
+					name={field.name}
 					label={field.label}
 					placeholder={field.placeholder}
 					helperText={field.helperText}
 					required={field.required}
-					value={String(values[field.name] ?? '')}
-					oninput={(e) => setValue(field.name, (e.currentTarget as HTMLTextAreaElement).value)}
+					bindData
 				/>
 			{:else if type === 'select'}
-				<Select
+				<FormSelect
+					name={field.name}
 					label={field.label}
 					placeholder={field.placeholder ?? 'Select…'}
 					helperText={field.helperText}
 					required={field.required}
 					options={field.options ?? []}
+					bindData
+				/>
+			{:else if type === 'toggle'}
+				<FormToggle
+					name={field.name}
+					label={field.label}
+					helperText={field.helperText}
+					bindData
+				/>
+			{:else if type === 'checkbox'}
+				<FormCheckbox
+					name={field.name}
+					label={field.label}
+					helperText={field.helperText}
+					bindData
+				/>
+			{:else if type === 'password'}
+				<FormPasswordInput
+					name={field.name}
+					label={field.label}
+					placeholder={field.placeholder}
+					helperText={field.helperText}
+					required={field.required}
+					bindData
+				/>
+			{:else if type === 'date'}
+				<div class="w-full space-y-1">
+					<DatePicker
+						label={field.label}
+						placeholder={field.placeholder ?? 'Select date…'}
+						disabled={loading}
+						value={String(values[field.name] ?? '')}
+						onchange={(detail) => setValue(field.name, detail.value)}
+					/>
+					{#if fieldError}
+						<FormError message={fieldError} />
+					{:else if field.helperText}
+						<p class="text-xs text-muted">{field.helperText}</p>
+					{/if}
+				</div>
+			{:else if type === 'radio'}
+				<RadioGroup
+					name={field.name}
+					label={field.label}
+					options={field.options ?? []}
+					required={field.required}
+					disabled={loading}
+					status={fieldError ? 'error' : 'default'}
+					helperText={fieldError ?? field.helperText}
 					value={String(values[field.name] ?? '')}
 					onchange={(v) => setValue(field.name, v)}
 				/>
-			{:else if type === 'toggle'}
-				<div class="flex items-center justify-between gap-3 rounded-xl border border-border px-3 py-2.5">
-					<div>
-						<p class="text-sm font-medium text-primary">{field.label}</p>
-						{#if field.helperText}
-							<p class="text-xs text-muted">{field.helperText}</p>
-						{/if}
-					</div>
-					<Toggle
-						checked={Boolean(values[field.name])}
-						onchange={(c) => setValue(field.name, c)}
+			{:else if type === 'multiselect'}
+				<div class="w-full space-y-1">
+					<MultiSelect
+						label={field.label}
+						placeholder={field.placeholder ?? 'Select…'}
+						options={field.options ?? []}
+						disabled={loading}
+						value={Array.isArray(values[field.name]) ? (values[field.name] as string[]) : []}
+						onchange={(v) => setValue(field.name, v)}
 					/>
+					{#if fieldError}
+						<FormError message={fieldError} />
+					{:else if field.helperText}
+						<p class="text-xs text-muted">{field.helperText}</p>
+					{/if}
 				</div>
-			{:else if type === 'checkbox'}
-				<Checkbox
-					label={field.label}
-					checked={Boolean(values[field.name])}
-					onchange={(c) => setValue(field.name, c)}
-				/>
 			{:else}
 				<FormField
 					name={field.name}
@@ -157,19 +237,21 @@
 					placeholder={field.placeholder}
 					helperText={field.helperText}
 					required={field.required}
-					value={String(values[field.name] ?? '')}
-					oninput={(e) => {
-						const raw = (e.currentTarget as HTMLInputElement).value;
-						setValue(field.name, type === 'number' ? Number(raw) : raw);
-					}}
+					bindData
 				/>
 			{/if}
 		{/each}
 	{/each}
 
 	{#snippet footer()}
-		<div class="flex justify-end pt-2">
-			<Button type="submit" loading={loading}>{submitLabel}</Button>
-		</div>
+		<FormActions
+			{submitLabel}
+			{cancelLabel}
+			{showCancel}
+			variant="plain"
+			fullWidth={false}
+			align="end"
+			oncancel={oncancel}
+		/>
 	{/snippet}
 </Form>

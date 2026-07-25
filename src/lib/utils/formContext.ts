@@ -11,6 +11,15 @@ export const FORM_CONTEXT_KEY = 'r2-form';
 
 export type FormErrors = Record<string, string>;
 export type FormDataValues = Record<string, unknown>;
+export type FormFieldStatus = 'default' | 'error' | 'success' | 'warning';
+
+/**
+ * Build a dotted path for nested form errors / remote issues
+ * (e.g. `items.0.email`).
+ */
+export function fieldPath(...segments: Array<string | number>): string {
+	return segments.map(String).filter((s) => s.length > 0).join('.');
+}
 
 /**
  * Spreadable remote form binding: a Kit `RemoteForm` or the object returned by `.enhance(...)`.

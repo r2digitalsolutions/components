@@ -19,6 +19,13 @@
 			helperText: 'Used in URLs'
 		},
 		{
+			name: 'password',
+			label: 'Admin password',
+			type: 'password',
+			required: true,
+			helperText: 'At least 8 characters'
+		},
+		{
 			name: 'plan',
 			label: 'Plan',
 			type: 'select',
@@ -29,6 +36,34 @@
 				{ value: 'enterprise', label: 'Enterprise' }
 			],
 			defaultValue: 'pro'
+		},
+		{
+			name: 'seats',
+			label: 'Seat tiers',
+			type: 'multiselect',
+			options: [
+				{ value: 'dev', label: 'Developers' },
+				{ value: 'design', label: 'Designers' },
+				{ value: 'ops', label: 'Ops' }
+			],
+			helperText: 'Who needs access first?'
+		},
+		{
+			name: 'billing',
+			label: 'Billing cycle',
+			type: 'radio',
+			options: [
+				{ value: 'monthly', label: 'Monthly' },
+				{ value: 'yearly', label: 'Yearly (2 months free)' }
+			],
+			defaultValue: 'monthly'
+		},
+		{
+			name: 'renewal',
+			label: 'Renewal date',
+			type: 'date',
+			section: 'Schedule',
+			placeholder: 'Pick a date'
 		},
 		{
 			name: 'notes',
@@ -63,6 +98,11 @@
 		title="Create workspace"
 		description="Configure your team workspace."
 		submitLabel="Create"
+		showCancel
+		oncancel={() => {
+			values = {};
+			saved = '';
+		}}
 		onsubmit={(v) => (saved = JSON.stringify(v, null, 2))}
 	/>
 	{#if saved}

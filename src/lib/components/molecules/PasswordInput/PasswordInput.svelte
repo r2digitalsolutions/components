@@ -2,6 +2,8 @@
 	import Input from '$lib/components/atoms/Input/Input.svelte';
 
 	interface PasswordInputProps {
+		id?: string;
+		name?: string;
 		value?: string;
 		label?: string;
 		placeholder?: string;
@@ -16,6 +18,8 @@
 	}
 
 	let {
+		id,
+		name,
 		value = $bindable(''),
 		label = 'Password',
 		placeholder = 'Enter password',
@@ -34,6 +38,8 @@
 
 <div class={className}>
 	<Input
+		{id}
+		{name}
 		{label}
 		{placeholder}
 		{helperText}

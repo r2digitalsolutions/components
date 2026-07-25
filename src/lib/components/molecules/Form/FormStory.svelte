@@ -1,37 +1,48 @@
 <script lang="ts">
 	import Form from './Form.svelte';
 	import FormField from '$lib/components/molecules/FormField/FormField.svelte';
-	import PasswordInput from '$lib/components/molecules/PasswordInput/PasswordInput.svelte';
-	import Button from '$lib/components/atoms/Button/Button.svelte';
-	import Checkbox from '$lib/components/atoms/Checkbox/Checkbox.svelte';
+	import FormPasswordInput from '$lib/components/molecules/FormPasswordInput/FormPasswordInput.svelte';
+	import FormCheckbox from '$lib/components/molecules/FormCheckbox/FormCheckbox.svelte';
+	import FormActions from '$lib/components/molecules/FormActions/FormActions.svelte';
+	import FormTextarea from '$lib/components/molecules/FormTextarea/FormTextarea.svelte';
+	import FormSelect from '$lib/components/molecules/FormSelect/FormSelect.svelte';
 	import Alert from '$lib/components/molecules/Alert/Alert.svelte';
+	import Button from '$lib/components/atoms/Button/Button.svelte';
+	import type { FormErrors } from '$lib/utils/formContext.js';
 
-	let errors = $state<Record<string, string>>({});
-	let name = $state('');
-	let email = $state('');
-	let password = $state('');
-	let company = $state('');
-	let terms = $state(false);
+	type WorkspaceForm = {
+		name: string;
+		email: string;
+		password: string;
+		company: string;
+		role: string;
+		notes: string;
+		terms: boolean;
+	};
+
+	let data = $state<WorkspaceForm>({
+		name: '',
+		email: '',
+		password: '',
+		company: '',
+		role: '',
+		notes: '',
+		terms: false
+	});
+	let errors = $state<FormErrors>({});
 	let loading = $state(false);
 	let success = $state(false);
 
 	function validate() {
-		const next: Record<string, string> = {};
-		if (!name.trim()) next.name = 'Name is required';
-		if (!email.trim()) next.email = 'Email is required';
-		else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) next.email = 'Enter a valid email address';
-		if (password.length < 8) next.password = 'Use at least 8 characters';
-		if (!terms) next.terms = 'You must accept the terms';
+		const next: FormErrors = {};
+		if (!data.name.trim()) next.name = 'Name is required';
+		if (!data.email.trim()) next.email = 'Email is required';
+		else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) next.email = 'Enter a valid email address';
+		if (data.password.length < 8) next.password = 'Use at least 8 characters';
+		if (!data.role) next.role = 'Select a role';
+		if (!data.terms) next.terms = 'You must accept the terms';
 		errors = next;
 		return Object.keys(next).length === 0;
-	}
-
-	function clearField(field: string) {
-		if (errors[field]) {
-			const next = { ...errors };
-			delete next[field];
-			errors = next;
-		}
 	}
 
 	async function submit() {
@@ -45,11 +56,15 @@
 	}
 
 	function reset() {
-		name = '';
-		email = '';
-		password = '';
-		company = '';
-		terms = false;
+		data = {
+			name: '',
+			email: '',
+			password: '',
+			company: '',
+			role: '',
+			notes: '',
+			terms: false
+		};
 		errors = {};
 		success = false;
 	}
@@ -58,7 +73,7 @@
 <div class="w-full max-w-md overflow-hidden rounded-2xl border border-border bg-surface-elevated shadow-sm">
 	<div class="border-b border-border px-5 py-4">
 		<p class="text-sm font-semibold text-primary">Create workspace</p>
-		<p class="text-xs text-muted">Demo form with validation, loading, and success states.</p>
+		<p class="text-xs text-muted">Demo with bind:data, context-aware fields, and FormActions.</p>
 	</div>
 
 	<div class="p-5">
@@ -66,67 +81,78 @@
 			<div class="space-y-4">
 				<Alert variant="success" title="Workspace created" dismissible={false}>
 					<p class="text-sm">
-						Welcome, {name || 'there'}. We sent a confirmation to
-						<span class="font-medium">{email}</span>.
+						Welcome, {data.name || 'there'}. We sent a confirmation to
+						<span class="font-medium">{data.email}</span>.
 					</p>
 				</Alert>
 				<Button variant="secondary" onclick={reset}>Create another</Button>
 			</div>
 		{:else}
 			<Form
+				bind:data
 				bind:errors
 				{loading}
 				title="Account details"
 				description="Fields marked with * are required."
 				onsubmit={submit}
 			>
+				<FormField name="name" label="Full name" placeholder="Alex Rivera" bindData required />
 				<FormField
-					label="Full name"
-					placeholder="Alex Rivera"
-					bind:value={name}
-					errorMessage={errors.name}
-					required
-					oninput={() => clearField('name')}
-				/>
-
-				<FormField
+					name="email"
 					label="Work email"
 					type="email"
 					placeholder="alex@company.com"
-					bind:value={email}
-					errorMessage={errors.email}
+					bindData
 					required
-					oninput={() => clearField('email')}
 				/>
-
 				<FormField
+					name="company"
 					label="Company"
 					placeholder="Optional"
-					bind:value={company}
 					helperText="Shown on invoices and invites."
+					bindData
 				/>
-
-				<PasswordInput
-					label="Password"
-					bind:value={password}
+				<FormSelect
+					name="role"
+					label="Role"
+					placeholder="Select a role…"
+					options={[
+						{ value: 'admin', label: 'Admin' },
+						{ value: 'member', label: 'Member' },
+						{ value: 'viewer', label: 'Viewer' }
+					]}
+					bindData
 					required
-					helperText={errors.password ?? 'At least 8 characters'}
-					status={errors.password ? 'error' : 'default'}
-					oninput={() => clearField('password')}
 				/>
-
-				<div class="space-y-1">
-					<Checkbox bind:checked={terms} label="I agree to the Terms and Privacy Policy" />
-					{#if errors.terms}
-						<p class="text-xs text-red-500">{errors.terms}</p>
-					{/if}
-				</div>
+				<FormPasswordInput
+					name="password"
+					label="Password"
+					helperText="At least 8 characters"
+					bindData
+					required
+				/>
+				<FormTextarea
+					name="notes"
+					label="Notes"
+					placeholder="Anything we should know?"
+					rows={3}
+					bindData
+				/>
+				<FormCheckbox
+					name="terms"
+					label="I agree to the Terms and Privacy Policy"
+					bindData
+				/>
 
 				{#snippet footer()}
-					<Button type="submit" {loading} fullWidth>Create account</Button>
-					<Button type="button" variant="ghost" fullWidth disabled={loading} onclick={reset}>
-						Reset
-					</Button>
+					<FormActions
+						submitLabel="Create account"
+						cancelLabel="Reset"
+						variant="plain"
+						align="end"
+						fullWidth
+						oncancel={reset}
+					/>
 				{/snippet}
 			</Form>
 		{/if}

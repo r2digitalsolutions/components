@@ -89,6 +89,13 @@ export { default as CornerBadge } from './components/atoms/CornerBadge/CornerBad
 export { default as Card } from './components/molecules/Card/Card.svelte';
 export type { CardVariant, CardPadding } from './components/molecules/Card/Card.svelte';
 export { default as FormField } from './components/molecules/FormField/FormField.svelte';
+export type { FormFieldControlProps } from './components/molecules/FormField/FormField.svelte';
+export { default as FormTextarea } from './components/molecules/FormTextarea/FormTextarea.svelte';
+export { default as FormSelect } from './components/molecules/FormSelect/FormSelect.svelte';
+export { default as FormCheckbox } from './components/molecules/FormCheckbox/FormCheckbox.svelte';
+export { default as FormToggle } from './components/molecules/FormToggle/FormToggle.svelte';
+export { default as FormPasswordInput } from './components/molecules/FormPasswordInput/FormPasswordInput.svelte';
+export { default as FormError } from './components/molecules/FormError/FormError.svelte';
 export { default as RadioGroup } from './components/molecules/RadioGroup/RadioGroup.svelte';
 export { default as Select } from './components/molecules/Select/Select.svelte';
 export type { SelectOption } from './components/molecules/Select/Select.svelte';
@@ -259,12 +266,14 @@ export {
 	getFormContext,
 	FORM_CONTEXT_KEY,
 	remoteIssuesToErrors,
-	isRemoteForm
+	isRemoteForm,
+	fieldPath
 } from './utils/formContext.js';
 export type {
 	FormErrors,
 	FormContext,
 	FormDataValues,
+	FormFieldStatus,
 	FormRemote,
 	/** @deprecated Use `FormRemote` */
 	RemoteFormSpread,
@@ -274,7 +283,10 @@ export type {
 } from './utils/formContext.js';
 
 export { default as FieldArray } from './components/molecules/FieldArray/FieldArray.svelte';
-export type { FieldArrayItem } from './components/molecules/FieldArray/FieldArray.svelte';
+export type {
+	FieldArrayItem,
+	FieldArrayMeta
+} from './components/molecules/FieldArray/FieldArray.svelte';
 export { default as PromptInput } from './components/molecules/PromptInput/PromptInput.svelte';
 export { default as MonthPicker } from './components/molecules/MonthPicker/MonthPicker.svelte';
 export { default as WeekPicker } from './components/molecules/WeekPicker/WeekPicker.svelte';
@@ -776,6 +788,7 @@ export type {
 	SchemaField,
 	SchemaFieldType,
 	SchemaFieldOption,
+	SchemaFormValue,
 	SchemaFormValues
 } from './components/organisms/SchemaForm/SchemaForm.svelte';
 
