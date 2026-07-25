@@ -9,6 +9,8 @@
 		dangerLabel?: string;
 		loading?: boolean;
 		disabled?: boolean;
+		/** Disable only the primary submit control (e.g. wizard validation) */
+		submitDisabled?: boolean;
 		/** Stretch buttons on small screens */
 		fullWidth?: boolean;
 		align?: 'start' | 'end' | 'between';
@@ -35,6 +37,7 @@
 		dangerLabel,
 		loading = false,
 		disabled = false,
+		submitDisabled = false,
 		fullWidth = true,
 		align = 'end',
 		showCancel = true,
@@ -118,7 +121,7 @@
 			type="submit"
 			{size}
 			{loading}
-			{disabled}
+			disabled={busy || submitDisabled}
 			class={fullWidth ? 'w-full sm:w-auto' : ''}
 			onclick={() => onsubmit?.()}
 		>
