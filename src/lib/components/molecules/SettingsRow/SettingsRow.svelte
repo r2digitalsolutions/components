@@ -3,12 +3,16 @@
 	import Toggle from '$lib/components/atoms/Toggle/Toggle.svelte';
 	import FieldHint from '$lib/components/atoms/FieldHint/FieldHint.svelte';
 
+	export type SettingsRowVariant = 'card' | 'flush' | 'plain';
+
 	interface SettingsRowProps {
 		title: string;
 		description?: string;
 		checked?: boolean;
 		disabled?: boolean;
 		hint?: string;
+		/** card = bordered panel · flush = for stacked lists · plain = no chrome */
+		variant?: SettingsRowVariant;
 		class?: string;
 		/** Custom control instead of Toggle */
 		control?: Snippet;
@@ -21,6 +25,7 @@
 		checked = $bindable(false),
 		disabled = false,
 		hint,
+		variant = 'card',
 		class: className = '',
 		control,
 		onchange
@@ -29,7 +34,10 @@
 
 <div
 	class={[
-		'flex items-start justify-between gap-4 rounded-xl border border-border bg-surface-elevated px-4 py-3',
+		'flex items-start justify-between gap-4',
+		variant === 'card' && 'rounded-xl border border-border bg-surface-elevated px-4 py-3',
+		variant === 'flush' && 'px-1 py-3.5',
+		variant === 'plain' && 'py-2',
 		disabled && 'opacity-60',
 		className
 	]}

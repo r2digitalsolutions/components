@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import type { Component } from 'svelte';
 
 	export interface ChipBarItem {
@@ -20,7 +21,7 @@
 		values?: string[];
 		size?: ChipBarSize;
 		variant?: ChipBarVariant;
-		/** Fade edges when content overflows horizontally */
+		/** Fade edges only when content overflows / is scrolled */
 		fade?: boolean;
 		ariaLabel?: string;
 		class?: string;
@@ -41,6 +42,37 @@
 		onchange,
 		onchangeMulti
 	}: ChipBarProps = $props();
+
+	let scroller = $state<HTMLDivElement | null>(null);
+	let canScrollLeft = $state(false);
+	let canScrollRight = $state(false);
+
+	function updateFade() {
+		const el = scroller;
+		if (!el) {
+			canScrollLeft = false;
+			canScrollRight = false;
+			return;
+		}
+		const max = el.scrollWidth - el.clientWidth;
+		canScrollLeft = el.scrollLeft > 2;
+		canScrollRight = max > 2 && el.scrollLeft < max - 2;
+	}
+
+	onMount(() => {
+		updateFade();
+		const el = scroller;
+		if (!el || typeof ResizeObserver === 'undefined') return;
+		const ro = new ResizeObserver(() => updateFade());
+		ro.observe(el);
+		return () => ro.disconnect();
+	});
+
+	$effect(() => {
+		// Recompute when items change
+		items;
+		queueMicrotask(updateFade);
+	});
 
 	function select(id: string, disabled?: boolean) {
 		if (disabled) return;
@@ -78,26 +110,33 @@
 				? 'border-brand-500 text-brand-700 ring-1 ring-brand-500/20 dark:text-brand-300'
 				: 'border-border bg-transparent text-secondary hover:border-border-strong hover:text-primary';
 		}
-		// soft (default)
 		return isActive
 			? 'border-brand-500/35 bg-brand-500/10 text-brand-700 dark:border-brand-400/30 dark:bg-brand-500/15 dark:text-brand-300'
 			: 'border-border/80 bg-surface-elevated text-secondary hover:border-border-strong hover:bg-surface-overlay hover:text-primary';
 	}
 </script>
 
-<div
-	class={[
-		'relative',
-		fade &&
-			'before:pointer-events-none before:absolute before:inset-y-0 before:left-0 before:z-10 before:w-6 before:bg-gradient-to-r before:from-surface before:to-transparent after:pointer-events-none after:absolute after:inset-y-0 after:right-0 after:z-10 after:w-6 after:bg-gradient-to-l after:from-surface after:to-transparent',
-		className
-	]}
->
+<div class={['relative', className]}>
+	{#if fade && canScrollLeft}
+		<div
+			class="pointer-events-none absolute inset-y-0 left-0 z-10 w-7 bg-gradient-to-r from-surface to-transparent"
+			aria-hidden="true"
+		></div>
+	{/if}
+	{#if fade && canScrollRight}
+		<div
+			class="pointer-events-none absolute inset-y-0 right-0 z-10 w-7 bg-gradient-to-l from-surface to-transparent"
+			aria-hidden="true"
+		></div>
+	{/if}
+
 	<div
-		class="flex gap-2 overflow-x-auto px-0.5 py-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+		bind:this={scroller}
+		class="flex gap-2 overflow-x-auto py-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
 		role="listbox"
 		aria-label={ariaLabel}
 		aria-multiselectable={multi}
+		onscroll={updateFade}
 	>
 		{#each items as item (item.id)}
 			{@const isActive = active(item.id)}

@@ -123,7 +123,7 @@ export type {
 	AvatarGroupRing
 } from './components/molecules/AvatarGroup/AvatarGroup.svelte';
 export { default as List } from './components/molecules/List/List.svelte';
-export type { ListItem } from './components/molecules/List/List.svelte';
+export type { ListItem, ListVariant, ListSize } from './components/molecules/List/List.svelte';
 export { default as Banner } from './components/molecules/Banner/Banner.svelte';
 export { default as TagInput } from './components/molecules/TagInput/TagInput.svelte';
 export { default as CodeBlock } from './components/molecules/CodeBlock/CodeBlock.svelte';
@@ -301,6 +301,7 @@ export type {
 	UserChipLabel
 } from './components/molecules/UserChip/UserChip.svelte';
 export { default as SettingsRow } from './components/molecules/SettingsRow/SettingsRow.svelte';
+export type { SettingsRowVariant } from './components/molecules/SettingsRow/SettingsRow.svelte';
 export { default as CommentComposer } from './components/molecules/CommentComposer/CommentComposer.svelte';
 export { default as ActionBar } from './components/molecules/ActionBar/ActionBar.svelte';
 export type { ActionBarVariant } from './components/molecules/ActionBar/ActionBar.svelte';
@@ -719,8 +720,15 @@ export type {
 	LandingHeroAnnouncement
 } from './components/organisms/LandingHero/LandingHero.svelte';
 export { default as SearchResults } from './components/organisms/SearchResults/SearchResults.svelte';
-export type { SearchResultItem } from './components/organisms/SearchResults/SearchResults.svelte';
+export type {
+	SearchResultItem,
+	SearchResultKind,
+	SearchResultsLayout,
+	SearchResultsSort,
+	SearchSuggestion
+} from './components/organisms/SearchResults/SearchResults.svelte';
 export { default as SettingsForm } from './components/organisms/SettingsForm/SettingsForm.svelte';
+export type { AccountSettingsValues } from './components/organisms/SettingsForm/SettingsForm.svelte';
 
 // ── Templates ────────────────────────────────────────────────────────────────
 export { default as AuthTemplate } from './components/templates/AuthTemplate/AuthTemplate.svelte';
