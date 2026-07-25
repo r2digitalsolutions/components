@@ -193,13 +193,18 @@ export { default as BookmarkButton } from './components/molecules/BookmarkButton
 export { default as AnchorNav } from './components/molecules/AnchorNav/AnchorNav.svelte';
 export type { AnchorItem } from './components/molecules/AnchorNav/AnchorNav.svelte';
 export { default as Poll } from './components/molecules/Poll/Poll.svelte';
-export type { PollOption } from './components/molecules/Poll/Poll.svelte';
+export type { PollOption, PollSize, PollLayout } from './components/molecules/Poll/Poll.svelte';
 export { default as NewsletterSignup } from './components/molecules/NewsletterSignup/NewsletterSignup.svelte';
+export type {
+	NewsletterVariant,
+	NewsletterSize
+} from './components/molecules/NewsletterSignup/NewsletterSignup.svelte';
 export { default as FollowButton } from './components/molecules/FollowButton/FollowButton.svelte';
 export { default as CopyField } from './components/molecules/CopyField/CopyField.svelte';
 export { default as CountrySelect } from './components/molecules/CountrySelect/CountrySelect.svelte';
 export type { CountryOption } from './components/molecules/CountrySelect/CountrySelect.svelte';
 export { default as InfiniteScroll } from './components/molecules/InfiniteScroll/InfiniteScroll.svelte';
+export type { InfiniteScrollMode } from './components/molecules/InfiniteScroll/InfiniteScroll.svelte';
 export { default as PullToRefresh } from './components/molecules/PullToRefresh/PullToRefresh.svelte';
 export { default as CronBuilder } from './components/molecules/CronBuilder/CronBuilder.svelte';
 export { default as TimeAgo } from './components/molecules/TimeAgo/TimeAgo.svelte';
@@ -268,7 +273,12 @@ export type {
 export { default as UserListItem } from './components/molecules/UserListItem/UserListItem.svelte';
 export type { UserListItemStatus } from './components/molecules/UserListItem/UserListItem.svelte';
 export { default as UserChip } from './components/molecules/UserChip/UserChip.svelte';
-export type { UserChipStatus } from './components/molecules/UserChip/UserChip.svelte';
+export type {
+	UserChipStatus,
+	UserChipSize,
+	UserChipVariant,
+	UserChipLabel
+} from './components/molecules/UserChip/UserChip.svelte';
 export { default as SettingsRow } from './components/molecules/SettingsRow/SettingsRow.svelte';
 export { default as CommentComposer } from './components/molecules/CommentComposer/CommentComposer.svelte';
 export { default as ActionBar } from './components/molecules/ActionBar/ActionBar.svelte';

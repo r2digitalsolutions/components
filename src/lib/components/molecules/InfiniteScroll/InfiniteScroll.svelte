@@ -1,55 +1,177 @@
+<script module lang="ts">
+	export type InfiniteScrollMode = 'auto' | 'manual' | 'both';
+</script>
+
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import Spinner from '$lib/components/atoms/Spinner/Spinner.svelte';
+	import Button from '$lib/components/atoms/Button/Button.svelte';
 	import Text from '$lib/components/atoms/Text/Text.svelte';
 
 	interface InfiniteScrollProps {
 		loading?: boolean;
 		hasMore?: boolean;
 		disabled?: boolean;
-		/** Root margin for IntersectionObserver */
+		error?: string | null;
+		/** IntersectionObserver root margin */
 		rootMargin?: string;
+		/** IntersectionObserver threshold 0–1 */
+		threshold?: number;
+		/**
+		 * Scroll container for the observer. Defaults to viewport.
+		 * Pass the element that actually scrolls (e.g. a max-height list).
+		 */
+		scrollRoot?: HTMLElement | null;
+		/** How to trigger the next page */
+		mode?: InfiniteScrollMode;
+		/** Where the load sentinel sits relative to children */
+		sentinel?: 'end' | 'start';
+		endMessage?: string;
+		loadMoreLabel?: string;
+		retryLabel?: string;
 		class?: string;
 		children?: Snippet;
+		/** Replaces default spinner */
+		loader?: Snippet;
+		/** Replaces default end message */
+		end?: Snippet;
+		/** Replaces default error + retry */
+		errorSnippet?: Snippet;
 		onloadmore?: () => void;
+		onretry?: () => void;
 	}
 
 	const {
 		loading = false,
 		hasMore = true,
 		disabled = false,
-		rootMargin = '200px',
+		error = null,
+		rootMargin = '240px',
+		threshold = 0,
+		scrollRoot = null,
+		mode = 'auto',
+		sentinel: sentinelPos = 'end',
+		endMessage = "You're all caught up",
+		loadMoreLabel = 'Load more',
+		retryLabel = 'Try again',
 		class: className = '',
 		children,
-		onloadmore
+		loader,
+		end,
+		errorSnippet,
+		onloadmore,
+		onretry
 	}: InfiniteScrollProps = $props();
 
 	let sentinel = $state<HTMLDivElement | null>(null);
+	let locked = $state(false);
+
+	const canAutoLoad = $derived(
+		(mode === 'auto' || mode === 'both') &&
+			!disabled &&
+			!loading &&
+			!error &&
+			hasMore &&
+			!locked
+	);
+
+	const showManual = $derived(
+		(mode === 'manual' || mode === 'both') && hasMore && !disabled && !error
+	);
+
+	function requestMore() {
+		if (disabled || loading || !hasMore || locked || error) return;
+		locked = true;
+		onloadmore?.();
+	}
+
+	function retry() {
+		if (loading) return;
+		onretry?.() ?? onloadmore?.();
+	}
+
+	// Unlock when parent finishes loading (or errors / ends).
+	$effect(() => {
+		if (!loading) locked = false;
+	});
 
 	$effect(() => {
-		if (!sentinel || disabled || !hasMore || loading) return;
+		if (!sentinel || !canAutoLoad) return;
+
 		const el = sentinel;
 		const obs = new IntersectionObserver(
 			(entries) => {
-				if (entries.some((e) => e.isIntersecting)) onloadmore?.();
+				if (entries.some((e) => e.isIntersecting)) requestMore();
 			},
-			{ rootMargin }
+			{
+				root: scrollRoot ?? null,
+				rootMargin,
+				threshold
+			}
 		);
 		obs.observe(el);
 		return () => obs.disconnect();
 	});
 </script>
 
-<div class={['w-full', className]}>
+<div
+	class={['w-full', className]}
+	aria-busy={loading}
+>
+	{#if sentinelPos === 'start'}
+		{@render footer()}
+	{/if}
+
 	{#if children}
 		{@render children()}
 	{/if}
 
-	<div bind:this={sentinel} class="flex justify-center py-4" aria-hidden={!loading}>
-		{#if loading}
-			<Spinner size="sm" />
+	{#if sentinelPos === 'end'}
+		{@render footer()}
+	{/if}
+</div>
+
+{#snippet footer()}
+	<div
+		bind:this={sentinel}
+		class="flex flex-col items-center justify-center gap-2 py-4"
+		aria-live="polite"
+	>
+		{#if error}
+			{#if errorSnippet}
+				{@render errorSnippet()}
+			{:else}
+				<div class="flex flex-col items-center gap-2 px-3 text-center">
+					<p class="text-xs text-red-600 dark:text-red-400">{error}</p>
+					<Button size="sm" variant="secondary" onclick={retry} disabled={loading}>
+						{retryLabel}
+					</Button>
+				</div>
+			{/if}
+		{:else if loading}
+			{#if loader}
+				{@render loader()}
+			{:else}
+				<div class="flex items-center gap-2 text-muted">
+					<Spinner size="sm" />
+					<span class="text-xs">Loading…</span>
+				</div>
+			{/if}
 		{:else if !hasMore}
-			<Text size="xs" tone="muted">You're all caught up</Text>
+			{#if end}
+				{@render end()}
+			{:else}
+				<Text size="xs" tone="muted">{endMessage}</Text>
+			{/if}
+		{:else if showManual}
+			<Button
+				size="sm"
+				variant={mode === 'manual' ? 'secondary' : 'ghost'}
+				onclick={requestMore}
+				disabled={loading}
+			>
+				{loadMoreLabel}
+			</Button>
 		{/if}
 	</div>
-</div>
+{/snippet}
