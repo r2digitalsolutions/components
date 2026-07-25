@@ -412,15 +412,28 @@ export type {
 	SnackbarVariant
 } from './components/molecules/Snackbar/Snackbar.svelte';
 export { default as ChipBar } from './components/molecules/ChipBar/ChipBar.svelte';
-export type { ChipBarItem } from './components/molecules/ChipBar/ChipBar.svelte';
+export type {
+	ChipBarItem,
+	ChipBarSize,
+	ChipBarVariant
+} from './components/molecules/ChipBar/ChipBar.svelte';
 export { default as StickyCTA } from './components/molecules/StickyCTA/StickyCTA.svelte';
+export type {
+	StickyCTALayout,
+	StickyCTAPlacement
+} from './components/molecules/StickyCTA/StickyCTA.svelte';
 export { default as ShareSheet } from './components/molecules/ShareSheet/ShareSheet.svelte';
 export type { ShareChannel } from './components/molecules/ShareSheet/ShareSheet.svelte';
 export { default as PhoneFrame } from './components/molecules/PhoneFrame/PhoneFrame.svelte';
 export type { PhoneFrameSize } from './components/molecules/PhoneFrame/PhoneFrame.svelte';
 export { default as SearchSheet } from './components/molecules/SearchSheet/SearchSheet.svelte';
 export { default as ProductCard } from './components/molecules/ProductCard/ProductCard.svelte';
+export type {
+	ProductCardVariant,
+	ProductCardBadgeTone
+} from './components/molecules/ProductCard/ProductCard.svelte';
 export { default as ReviewCard } from './components/molecules/ReviewCard/ReviewCard.svelte';
+export type { ReviewCardVariant } from './components/molecules/ReviewCard/ReviewCard.svelte';
 export { default as Stories } from './components/molecules/Stories/Stories.svelte';
 export type { StoryItem } from './components/molecules/Stories/Stories.svelte';
 export { default as CameraButton } from './components/molecules/CameraButton/CameraButton.svelte';
