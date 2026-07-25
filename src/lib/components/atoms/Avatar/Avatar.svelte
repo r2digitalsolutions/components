@@ -77,10 +77,10 @@
 	const showImage = $derived(!!src && !imgError);
 </script>
 
-<span class={['relative inline-flex shrink-0', className]}>
+<span class={['relative inline-flex aspect-square shrink-0', className]}>
 	<span
 		class={[
-			'inline-flex items-center justify-center overflow-hidden rounded-full',
+			'inline-flex aspect-square items-center justify-center overflow-hidden rounded-full',
 			ringed && 'ring-2 ring-surface-elevated',
 			sizeClasses[size],
 			!showImage && [bgColor, 'text-white font-semibold']

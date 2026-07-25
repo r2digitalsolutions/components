@@ -118,7 +118,10 @@ export { default as HoverCard } from './components/molecules/HoverCard/HoverCard
 export { default as Timeline } from './components/molecules/Timeline/Timeline.svelte';
 export type { TimelineItem } from './components/molecules/Timeline/Timeline.svelte';
 export { default as AvatarGroup } from './components/molecules/AvatarGroup/AvatarGroup.svelte';
-export type { AvatarGroupItem } from './components/molecules/AvatarGroup/AvatarGroup.svelte';
+export type {
+	AvatarGroupItem,
+	AvatarGroupRing
+} from './components/molecules/AvatarGroup/AvatarGroup.svelte';
 export { default as List } from './components/molecules/List/List.svelte';
 export type { ListItem } from './components/molecules/List/List.svelte';
 export { default as Banner } from './components/molecules/Banner/Banner.svelte';
@@ -705,6 +708,16 @@ export type {
 	BlogPostLayout
 } from './components/organisms/BlogPost/BlogPost.svelte';
 export { default as LandingHero } from './components/organisms/LandingHero/LandingHero.svelte';
+export type {
+	LandingHeroVariant,
+	LandingHeroTone,
+	LandingHeroCtaMode,
+	LandingHeroSize,
+	LandingHeroStat,
+	LandingHeroLogo,
+	LandingHeroProof,
+	LandingHeroAnnouncement
+} from './components/organisms/LandingHero/LandingHero.svelte';
 export { default as SearchResults } from './components/organisms/SearchResults/SearchResults.svelte';
 export type { SearchResultItem } from './components/organisms/SearchResults/SearchResults.svelte';
 export { default as SettingsForm } from './components/organisms/SettingsForm/SettingsForm.svelte';

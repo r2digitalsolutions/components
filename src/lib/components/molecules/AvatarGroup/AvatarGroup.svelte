@@ -8,10 +8,14 @@
 		alt?: string;
 	}
 
+	export type AvatarGroupRing = 'surface' | 'elevated' | 'inverse' | 'transparent';
+
 	interface AvatarGroupProps {
 		items?: AvatarGroupItem[];
 		max?: number;
 		size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
+		/** Separator ring color against parent background */
+		ring?: AvatarGroupRing;
 		class?: string;
 	}
 
@@ -19,6 +23,7 @@
 		items = [],
 		max = 4,
 		size = 'md',
+		ring = 'surface',
 		class: className = ''
 	}: AvatarGroupProps = $props();
 
@@ -39,31 +44,39 @@
 			'2xl': 'h-20 w-20 text-lg'
 		}[size]
 	);
+
+	const ringShadow: Record<AvatarGroupRing, string> = {
+		surface: 'shadow-[0_0_0_2px_var(--surface)]',
+		elevated: 'shadow-[0_0_0_2px_var(--surface-elevated)]',
+		inverse: 'shadow-[0_0_0_2px_rgb(9_9_11)]',
+		transparent: 'shadow-none'
+	};
 </script>
 
-<div class={['flex items-center', className]} role="list">
+<div class={['inline-flex shrink-0 items-center', className]} role="list">
 	{#each visible as item, i (item.id)}
 		<div
-			class={['relative rounded-full', i > 0 && overlap]}
+			class={['relative aspect-square shrink-0 rounded-full', i > 0 && overlap]}
 			style="z-index: {visible.length - i}"
 			role="listitem"
 		>
-			<!-- Single separator: box-shadow matches page surface (avoids double CSS rings) -->
-			<div class="rounded-full shadow-[0_0_0_2px_var(--surface)]">
+			<!-- Single separator: box-shadow matches parent surface (avoids double CSS rings) -->
+			<div class={['aspect-square rounded-full', ringShadow[ring]]}>
 				<Avatar name={item.name} src={item.src} alt={item.alt} {size} ringed={false} />
 			</div>
 		</div>
 	{/each}
 	{#if overflow > 0}
 		<div
-			class={['relative rounded-full', overlap]}
+			class={['relative aspect-square shrink-0 rounded-full', overlap]}
 			style="z-index: 0"
 			role="listitem"
 			aria-label={`${overflow} more`}
 		>
 			<div
 				class={[
-					'flex items-center justify-center rounded-full bg-surface-overlay font-medium text-secondary shadow-[0_0_0_2px_var(--surface)]',
+					'flex aspect-square items-center justify-center rounded-full bg-surface-overlay font-medium text-secondary',
+					ringShadow[ring],
 					overflowSize
 				]}
 			>
