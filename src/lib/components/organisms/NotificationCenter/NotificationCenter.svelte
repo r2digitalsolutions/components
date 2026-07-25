@@ -1,14 +1,16 @@
 <script lang="ts">
 	import { on } from 'svelte/events';
+	import NotificationRow from '$lib/components/molecules/NotificationRow/NotificationRow.svelte';
 
 	export interface NotificationItem {
 		id: string;
 		title: string;
 		description?: string;
-		time?: string;
+		time?: string | Date | number;
 		read?: boolean;
 		href?: string;
 		avatar?: string;
+		actor?: string;
 		type?: 'info' | 'success' | 'warning' | 'error';
 	}
 
@@ -39,13 +41,6 @@
 	const baseId = $derived(id ?? `notif-${Math.random().toString(36).slice(2, 9)}`);
 	const popoverId = $derived(`${baseId}-popover`);
 	const unreadCount = $derived(items.filter((n) => !n.read).length);
-
-	const typeColors: Record<string, string> = {
-		info: 'bg-sky-500',
-		success: 'bg-green-500',
-		warning: 'bg-amber-500',
-		error: 'bg-red-500'
-	};
 
 	function positionPopover() {
 		if (!triggerEl || !popoverEl) return;
@@ -233,107 +228,16 @@
 					<p class="text-sm text-muted">No notifications</p>
 				</div>
 			{:else}
-				{#each items as item (item.id)}
-					<button
-						type="button"
-						onclick={() => handleItemClick(item)}
-						class={[
-							'flex w-full items-start gap-3 border-b border-border px-4 py-3 text-left transition-colors last:border-b-0 hover:bg-surface-overlay',
-							!item.read && 'bg-brand-50/50 dark:bg-brand-950/20'
-						]}
-					>
-						<div class="relative mt-0.5 shrink-0">
-							{#if item.avatar}
-								<img src={item.avatar} alt="" class="h-9 w-9 rounded-full object-cover" />
-							{:else}
-								<div
-									class={[
-										'flex h-9 w-9 items-center justify-center rounded-full',
-										typeColors[item.type ?? 'info'] ?? 'bg-brand-500'
-									]}
-								>
-									{#if item.type === 'success'}
-										<svg
-											class="h-4 w-4 text-white"
-											viewBox="0 0 24 24"
-											fill="none"
-											stroke="currentColor"
-											stroke-width="2.5"
-											><path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												d="M5 13l4 4L19 7"
-											/></svg
-										>
-									{:else if item.type === 'warning'}
-										<svg
-											class="h-4 w-4 text-white"
-											viewBox="0 0 24 24"
-											fill="none"
-											stroke="currentColor"
-											stroke-width="2"
-											><path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
-											/></svg
-										>
-									{:else if item.type === 'error'}
-										<svg
-											class="h-4 w-4 text-white"
-											viewBox="0 0 24 24"
-											fill="none"
-											stroke="currentColor"
-											stroke-width="2.5"
-											><path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												d="M6 18L18 6M6 6l12 12"
-											/></svg
-										>
-									{:else}
-										<svg
-											class="h-4 w-4 text-white"
-											viewBox="0 0 24 24"
-											fill="none"
-											stroke="currentColor"
-											stroke-width="2"
-											><path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-											/></svg
-										>
-									{/if}
-								</div>
-							{/if}
-							{#if !item.read}
-								<span
-									class="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-surface-elevated bg-brand-500"
-								></span>
-							{/if}
-						</div>
-
-						<div class="min-w-0 flex-1">
-							<p
-								class={[
-									'text-sm leading-snug text-primary',
-									!item.read ? 'font-semibold' : 'font-medium'
-								]}
-							>
-								{item.title}
-							</p>
-							{#if item.description}
-								<p class="mt-0.5 line-clamp-2 text-xs leading-relaxed text-secondary">
-									{item.description}
-								</p>
-							{/if}
-							{#if item.time}
-								<p class="mt-1 text-[11px] text-muted">{item.time}</p>
-							{/if}
-						</div>
-					</button>
-				{/each}
+				<div class="divide-y divide-border">
+					{#each items as item (item.id)}
+						<NotificationRow
+							{item}
+							density="compact"
+							class="rounded-none"
+							onclick={handleItemClick}
+						/>
+					{/each}
+				</div>
 			{/if}
 		</div>
 	</div>
