@@ -4,7 +4,10 @@ import TourStory from './TourStory.svelte';
 const meta = {
 	title: 'Organisms/Tour',
 	component: TourStory,
-	tags: ['autodocs']
+	tags: ['autodocs'],
+	parameters: {
+		layout: 'centered'
+	}
 } satisfies Meta<typeof TourStory>;
 
 export default meta;
