@@ -5,6 +5,9 @@ const meta = {
 	title: 'Organisms/DataListPage',
 	component: DataListPageStory,
 	tags: ['autodocs'],
+	parameters: {
+		layout: 'fullscreen'
+	},
 	argTypes: {
 		empty: { control: 'boolean' },
 		loading: { control: 'boolean' }
