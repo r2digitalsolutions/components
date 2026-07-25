@@ -84,7 +84,7 @@
 		description="Pick a plan and complete billing details to continue."
 	/>
 
-	<PricingTable {plans} onselect={handleSelect} />
+	<PricingTable {plans} bind:selectedId={selectedPlanId} onselect={handleSelect} />
 
 	{#if selected}
 		<Alert variant="info" title="Selected plan" message={`${selected.name} · ${selected.price}${selected.period ?? ''}`} />

@@ -1,82 +1,220 @@
-<script lang="ts">
-	import type { Snippet } from 'svelte';
-
+<script module lang="ts">
 	export interface SettingsNavItem {
 		id: string;
 		label: string;
 		description?: string;
 		disabled?: boolean;
+		href?: string;
 	}
 
+	export interface SettingsNavGroup {
+		id: string;
+		label?: string;
+		items: SettingsNavItem[];
+	}
+</script>
+
+<script lang="ts">
+	import type { Snippet } from 'svelte';
+	import Tabs from '$lib/components/molecules/Tabs/Tabs.svelte';
+	import Heading from '$lib/components/atoms/Heading/Heading.svelte';
+	import Text from '$lib/components/atoms/Text/Text.svelte';
+
 	interface SettingsLayoutProps {
+		/** Flat nav list (single implicit group) */
 		items?: SettingsNavItem[];
+		/** Grouped nav; takes precedence over `items` when non-empty */
+		groups?: SettingsNavGroup[];
 		value?: string;
+		/** Aside / page label */
 		title?: string;
+		description?: string;
+		/** Show content PageHeader for the active section */
+		showHeader?: boolean;
 		stickyHeader?: boolean;
 		class?: string;
 		children?: Snippet;
 		header?: Snippet;
+		actions?: Snippet;
+		footer?: Snippet;
 		onchange?: (id: string) => void;
 	}
 
 	let {
 		items = [],
+		groups = [],
 		value = $bindable(''),
 		title = 'Settings',
-		stickyHeader = true,
+		description,
+		showHeader = true,
+		stickyHeader = false,
 		class: className = '',
 		children,
 		header,
+		actions: actionsSlot,
+		footer,
 		onchange
 	}: SettingsLayoutProps = $props();
+
+	const resolvedGroups = $derived<SettingsNavGroup[]>(
+		groups.length > 0 ? groups : [{ id: 'main', items }]
+	);
+
+	const flatItems = $derived(resolvedGroups.flatMap((g) => g.items));
+
+	const active = $derived(
+		flatItems.find((i) => i.id === value) ?? flatItems.find((i) => !i.disabled) ?? null
+	);
+
+	$effect(() => {
+		if (!flatItems.length) return;
+		if (value && flatItems.some((i) => i.id === value && !i.disabled)) return;
+		const first = flatItems.find((i) => !i.disabled);
+		if (first) value = first.id;
+	});
 
 	function select(id: string, disabled?: boolean) {
 		if (disabled) return;
 		value = id;
 		onchange?.(id);
 	}
+
+	const tabItems = $derived(
+		flatItems.map((i) => ({ id: i.id, label: i.label, disabled: i.disabled }))
+	);
 </script>
 
-<div class={['flex w-full flex-col gap-6 lg:flex-row', className]}>
-	<aside class="w-full shrink-0 lg:w-56">
-		<p class="mb-3 text-xs font-semibold uppercase tracking-wide text-muted">{title}</p>
-		<nav class="flex flex-row gap-1 overflow-x-auto lg:flex-col">
-			{#each items as item (item.id)}
-				<button
-					type="button"
-					disabled={item.disabled}
-					onclick={() => select(item.id, item.disabled)}
-					class={[
-						'rounded-xl px-3 py-2 text-left transition-colors',
-						value === item.id
-							? 'bg-brand-50 text-brand-700 dark:bg-brand-950/40 dark:text-brand-300'
-							: 'text-secondary hover:bg-surface-overlay hover:text-primary',
-						item.disabled && 'opacity-40'
-					]}
-				>
-					<span class="block text-sm font-medium">{item.label}</span>
-					{#if item.description}
-						<span class="hidden text-xs text-muted lg:block">{item.description}</span>
-					{/if}
-				</button>
+{#snippet navButton(item: SettingsNavItem)}
+	{#if item.href && !item.disabled}
+		<a
+			href={item.href}
+			aria-current={value === item.id ? 'page' : undefined}
+			onclick={() => select(item.id)}
+			class={[
+				'block w-full rounded-lg px-3 py-2 text-left transition-colors',
+				'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30',
+				value === item.id
+					? 'bg-brand-50 text-brand-700 dark:bg-brand-950/40 dark:text-brand-300'
+					: 'text-secondary hover:bg-surface-overlay hover:text-primary'
+			]}
+		>
+			<span class="block text-sm font-medium">{item.label}</span>
+			{#if item.description}
+				<span class="mt-0.5 block text-xs text-muted">{item.description}</span>
+			{/if}
+		</a>
+	{:else}
+		<button
+			type="button"
+			disabled={item.disabled}
+			aria-current={value === item.id ? 'page' : undefined}
+			onclick={() => select(item.id, item.disabled)}
+			class={[
+				'w-full rounded-lg px-3 py-2 text-left transition-colors',
+				'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30',
+				value === item.id
+					? 'bg-brand-50 font-medium text-brand-700 dark:bg-brand-950/40 dark:text-brand-300'
+					: 'text-secondary hover:bg-surface-overlay hover:text-primary',
+				item.disabled && 'cursor-not-allowed opacity-40'
+			]}
+		>
+			<span class="block text-sm font-medium">{item.label}</span>
+			{#if item.description}
+				<span class="mt-0.5 block text-xs text-muted">{item.description}</span>
+			{/if}
+		</button>
+	{/if}
+{/snippet}
+
+<div
+	class={[
+		'flex w-full flex-col overflow-hidden rounded-2xl border border-border bg-surface-elevated lg:min-h-112 lg:flex-row',
+		className
+	]}
+>
+	<!-- Desktop aside -->
+	<aside
+		class="hidden w-56 shrink-0 flex-col border-r border-border bg-surface lg:flex"
+		aria-label={title}
+	>
+		<div class="border-b border-border px-4 py-4">
+			<p class="text-sm font-semibold text-primary">{title}</p>
+			{#if description}
+				<p class="mt-0.5 text-xs text-muted">{description}</p>
+			{/if}
+		</div>
+
+		<nav class="flex-1 overflow-y-auto px-2 py-3" aria-label={`${title} sections`}>
+			{#each resolvedGroups as group, gi (group.id)}
+				{#if group.label}
+					<p
+						class={[
+							'mb-1 px-2 text-[11px] font-semibold uppercase tracking-wide text-muted',
+							gi > 0 && 'mt-4'
+						]}
+					>
+						{group.label}
+					</p>
+				{:else if gi > 0}
+					<div class="my-2 border-t border-border" aria-hidden="true"></div>
+				{/if}
+				<ul class="flex flex-col gap-0.5">
+					{#each group.items as item (item.id)}
+						<li>{@render navButton(item)}</li>
+					{/each}
+				</ul>
 			{/each}
 		</nav>
+
+		{#if footer}
+			<div class="mt-auto border-t border-border p-3">
+				{@render footer()}
+			</div>
+		{/if}
 	</aside>
 
-	<section class="min-w-0 flex-1">
-		{#if header || stickyHeader}
-			<div class={['mb-4 border-b border-border pb-3', stickyHeader && 'sticky top-0 z-10 bg-surface/90 backdrop-blur']}>
+	<!-- Main panel -->
+	<section class="flex min-w-0 flex-1 flex-col">
+		<!-- Mobile top bar -->
+		<div class="space-y-3 border-b border-border px-4 py-3 lg:hidden">
+			<div>
+				<p class="text-sm font-semibold text-primary">{title}</p>
+				{#if description}
+					<p class="text-xs text-muted">{description}</p>
+				{/if}
+			</div>
+			<Tabs items={tabItems} bind:value variant="underline" onchange={(id) => onchange?.(id)} />
+		</div>
+
+		{#if showHeader || header}
+			<div
+				class={[
+					'border-b border-border px-4 py-4 sm:px-6',
+					stickyHeader && 'sticky top-0 z-10 bg-surface-elevated/95 backdrop-blur'
+				]}
+			>
 				{#if header}
 					{@render header()}
-				{:else}
-					{@const active = items.find((i) => i.id === value)}
-					<h2 class="text-lg font-semibold text-primary">{active?.label ?? title}</h2>
-					{#if active?.description}
-						<p class="text-sm text-secondary">{active.description}</p>
-					{/if}
+				{:else if showHeader && active}
+					<div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+						<div class="min-w-0 space-y-1">
+							<Heading level={2} size="lg">{active.label}</Heading>
+							{#if active.description}
+								<Text size="sm" tone="muted">{active.description}</Text>
+							{/if}
+						</div>
+						{#if actionsSlot}
+							<div class="flex shrink-0 flex-wrap items-center gap-2">
+								{@render actionsSlot()}
+							</div>
+						{/if}
+					</div>
 				{/if}
 			</div>
 		{/if}
-		{#if children}{@render children()}{/if}
+
+		<div class="min-w-0 flex-1 px-4 py-5 sm:px-6 sm:py-6">
+			{#if children}{@render children()}{/if}
+		</div>
 	</section>
 </div>

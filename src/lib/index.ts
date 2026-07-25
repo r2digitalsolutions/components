@@ -71,6 +71,11 @@ export type { BrandMarkSize } from './components/atoms/BrandMark/BrandMark.svelt
 export { default as StepMark } from './components/atoms/StepMark/StepMark.svelte';
 export type { StepMarkState } from './components/atoms/StepMark/StepMark.svelte';
 export { default as RadialProgress } from './components/atoms/RadialProgress/RadialProgress.svelte';
+export { default as EnvBadge } from './components/atoms/EnvBadge/EnvBadge.svelte';
+export type { EnvKind } from './components/atoms/EnvBadge/EnvBadge.svelte';
+export { default as LiveBadge } from './components/atoms/LiveBadge/LiveBadge.svelte';
+export { default as ColorSwatch } from './components/atoms/ColorSwatch/ColorSwatch.svelte';
+export type { ColorSwatchSize } from './components/atoms/ColorSwatch/ColorSwatch.svelte';
 
 // ── Molecules ────────────────────────────────────────────────────────────────
 export { default as Card } from './components/molecules/Card/Card.svelte';
@@ -370,6 +375,17 @@ export { default as LocaleSwitcher } from './components/molecules/LocaleSwitcher
 export type { LocaleOption } from './components/molecules/LocaleSwitcher/LocaleSwitcher.svelte';
 export { default as NoteCard } from './components/molecules/NoteCard/NoteCard.svelte';
 export type { NoteTone } from './components/molecules/NoteCard/NoteCard.svelte';
+export { default as LikeButton } from './components/molecules/LikeButton/LikeButton.svelte';
+export { default as CharacterCount } from './components/molecules/CharacterCount/CharacterCount.svelte';
+export type { CharacterCountMode } from './components/molecules/CharacterCount/CharacterCount.svelte';
+export { default as FullscreenToggle } from './components/molecules/FullscreenToggle/FullscreenToggle.svelte';
+export { default as SlugInput } from './components/molecules/SlugInput/SlugInput.svelte';
+export { default as TimezoneSelect } from './components/molecules/TimezoneSelect/TimezoneSelect.svelte';
+export type { TimezoneOption } from './components/molecules/TimezoneSelect/TimezoneSelect.svelte';
+export { default as DropZone } from './components/molecules/DropZone/DropZone.svelte';
+export { default as CouponInput } from './components/molecules/CouponInput/CouponInput.svelte';
+export type { CouponStatus } from './components/molecules/CouponInput/CouponInput.svelte';
+export { default as DownloadButton } from './components/molecules/DownloadButton/DownloadButton.svelte';
 
 // ── Organisms ────────────────────────────────────────────────────────────────
 export { default as FileUploader } from './components/organisms/FileUploader/FileUploader.svelte';
@@ -437,9 +453,16 @@ export type {
 	ActivityType
 } from './components/organisms/ActivityFeed/ActivityFeed.svelte';
 export { default as SettingsLayout } from './components/organisms/SettingsLayout/SettingsLayout.svelte';
-export type { SettingsNavItem } from './components/organisms/SettingsLayout/SettingsLayout.svelte';
+export type {
+	SettingsNavItem,
+	SettingsNavGroup
+} from './components/organisms/SettingsLayout/SettingsLayout.svelte';
 export { default as PricingTable } from './components/organisms/PricingTable/PricingTable.svelte';
-export type { PricingPlan } from './components/organisms/PricingTable/PricingTable.svelte';
+export type {
+	PricingPlan,
+	PricingLayout,
+	PricingFeature
+} from './components/organisms/PricingTable/PricingTable.svelte';
 export { default as FeatureComparison } from './components/organisms/FeatureComparison/FeatureComparison.svelte';
 export type { FeatureRow } from './components/organisms/FeatureComparison/FeatureComparison.svelte';
 export { default as AuthShell } from './components/organisms/AuthShell/AuthShell.svelte';
@@ -502,6 +525,8 @@ export type {
 	ScheduleSlot,
 	ScheduleBooking
 } from './components/organisms/Scheduler/Scheduler.svelte';
+export { default as ComingSoonPage } from './components/organisms/ComingSoonPage/ComingSoonPage.svelte';
+export { default as MaintenancePage } from './components/organisms/MaintenancePage/MaintenancePage.svelte';
 
 // ── Utils ────────────────────────────────────────────────────────────────────
 export { themeStore } from './utils/theme.svelte.js';

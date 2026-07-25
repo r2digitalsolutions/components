@@ -46,7 +46,7 @@
 </script>
 
 <div class={['relative w-full space-y-4 pb-20', className]}>
-	<SettingsLayout {items} bind:value {onchange}>
+	<SettingsLayout {items} bind:value {onchange} showHeader={false}>
 		{#if children}
 			{@render children()}
 		{:else if value === 'notifications'}
