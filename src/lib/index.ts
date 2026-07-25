@@ -102,6 +102,14 @@ export { default as FormLabel } from './components/molecules/FormLabel/FormLabel
 export { default as FormRadioGroup } from './components/molecules/FormRadioGroup/FormRadioGroup.svelte';
 export { default as FormNumberInput } from './components/molecules/FormNumberInput/FormNumberInput.svelte';
 export { default as FormDatePicker } from './components/molecules/FormDatePicker/FormDatePicker.svelte';
+export { default as FormMultiSelect } from './components/molecules/FormMultiSelect/FormMultiSelect.svelte';
+export { default as FormCombobox } from './components/molecules/FormCombobox/FormCombobox.svelte';
+export { default as FormCheckboxGroup } from './components/molecules/FormCheckboxGroup/FormCheckboxGroup.svelte';
+export { default as FormDateRangePicker } from './components/molecules/FormDateRangePicker/FormDateRangePicker.svelte';
+export type { FormDateRangeValue } from './components/molecules/FormDateRangePicker/FormDateRangePicker.svelte';
+export { default as FormDateTimePicker } from './components/molecules/FormDateTimePicker/FormDateTimePicker.svelte';
+export { default as FormFileUpload } from './components/molecules/FormFileUpload/FormFileUpload.svelte';
+export { default as FormPinInput } from './components/molecules/FormPinInput/FormPinInput.svelte';
 export { default as I18nProvider } from './components/molecules/I18nProvider/I18nProvider.svelte';
 export { default as RadioGroup } from './components/molecules/RadioGroup/RadioGroup.svelte';
 export { default as Select } from './components/molecules/Select/Select.svelte';
@@ -275,7 +283,9 @@ export {
 	remoteIssuesToErrors,
 	isRemoteForm,
 	fieldPath,
-	resolveFormFieldState
+	resolveFormFieldState,
+	applyFormDataSync,
+	sameStringArray
 } from './utils/formContext.js';
 export type {
 	FormErrors,

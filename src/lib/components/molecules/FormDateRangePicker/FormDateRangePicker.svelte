@@ -1,5 +1,5 @@
 <script lang="ts">
-	import DatePicker from '$lib/components/molecules/DatePicker/DatePicker.svelte';
+	import DateRangePicker from '$lib/components/molecules/DateRangePicker/DateRangePicker.svelte';
 	import FormError from '$lib/components/molecules/FormError/FormError.svelte';
 	import FormDescription from '$lib/components/molecules/FormDescription/FormDescription.svelte';
 	import {
@@ -8,35 +8,46 @@
 		applyFormDataSync
 	} from '$lib/utils/formContext.js';
 
-	interface FormDatePickerProps {
+	export interface FormDateRangeValue {
+		start: string;
+		end: string;
+	}
+
+	interface FormDateRangePickerProps {
 		name?: string;
 		label?: string;
 		placeholder?: string;
-		value?: string;
+		start?: string;
+		end?: string;
 		min?: string;
 		max?: string;
+		months?: 1 | 2;
+		variant?: 'field' | 'split';
 		helperText?: string;
 		errorMessage?: string;
 		disabled?: boolean;
 		bindData?: boolean;
 		class?: string;
-		onchange?: (value: string) => void;
+		onchange?: (value: FormDateRangeValue) => void;
 	}
 
 	let {
 		name,
 		label,
-		placeholder = 'Select date…',
-		value = $bindable(''),
+		placeholder = 'Select dates',
+		start = $bindable(''),
+		end = $bindable(''),
 		min,
 		max,
+		months = 2,
+		variant = 'split',
 		helperText,
 		errorMessage,
 		disabled = false,
 		bindData = false,
 		class: className = '',
 		onchange
-	}: FormDatePickerProps = $props();
+	}: FormDateRangePickerProps = $props();
 
 	const form = getFormContext();
 	const resolved = $derived(
@@ -47,32 +58,46 @@
 		if (!bindData || !name || !form) return;
 		applyFormDataSync({
 			fromCtx: form.data[name],
-			getLocal: () => value,
+			getLocal: () => ({ start, end }),
 			setLocal: (v) => {
-				value = v;
+				start = v.start;
+				end = v.end;
 			},
-			map: (raw) => (raw !== undefined ? String(raw) : undefined)
+			map: (raw) => {
+				if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+					const range = raw as FormDateRangeValue;
+					if (typeof range.start === 'string' && typeof range.end === 'string') {
+						return { start: range.start, end: range.end };
+					}
+				}
+				return undefined;
+			},
+			equals: (a, b) => a.start === b.start && a.end === b.end
 		});
 	});
 
-	function handleChange(detail: { value: string }) {
-		value = detail.value;
+	function handleChange(detail: FormDateRangeValue) {
+		start = detail.start;
+		end = detail.end;
 		if (bindData && name && form) {
-			form.setData(name, detail.value);
+			form.setData(name, { start: detail.start, end: detail.end });
 			form.clearError(name);
 		}
-		onchange?.(detail.value);
+		onchange?.(detail);
 	}
 </script>
 
 <div class={['w-full space-y-1', className]}>
-	<DatePicker
+	<DateRangePicker
 		{label}
 		{placeholder}
 		{min}
 		{max}
+		{months}
+		{variant}
 		disabled={resolved.disabled}
-		bind:value
+		bind:start
+		bind:end
 		onchange={handleChange}
 	/>
 	{#if resolved.error}

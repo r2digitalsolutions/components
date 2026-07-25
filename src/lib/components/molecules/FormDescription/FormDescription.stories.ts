@@ -1,11 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/svelte';
-import FormGroupStory from './FormGroupStory.svelte';
+import FormDescriptionStory from './FormDescriptionStory.svelte';
 
 const meta = {
-	title: 'Molecules/FormGroup',
-	component: FormGroupStory,
+	title: 'Molecules/FormDescription',
+	component: FormDescriptionStory,
 	tags: ['autodocs']
-} satisfies Meta<typeof FormGroupStory>;
+} satisfies Meta<typeof FormDescriptionStory>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Checkbox from '$lib/components/atoms/Checkbox/Checkbox.svelte';
+	import DateTimePicker from '$lib/components/molecules/DateTimePicker/DateTimePicker.svelte';
 	import FormError from '$lib/components/molecules/FormError/FormError.svelte';
 	import FormDescription from '$lib/components/molecules/FormDescription/FormDescription.svelte';
 	import {
@@ -8,36 +8,39 @@
 		applyFormDataSync
 	} from '$lib/utils/formContext.js';
 
-	interface FormCheckboxProps {
-		id?: string;
+	interface FormDateTimePickerProps {
 		name?: string;
 		label?: string;
+		placeholder?: string;
+		value?: string;
+		date?: string;
+		time?: string;
+		min?: string;
+		max?: string;
 		helperText?: string;
 		errorMessage?: string;
-		checked?: boolean;
 		disabled?: boolean;
-		size?: 'sm' | 'md' | 'lg';
-		value?: string;
-		/** Sync with `form.data[name]` when inside `<Form>`. */
 		bindData?: boolean;
 		class?: string;
-		onchange?: (checked: boolean) => void;
+		onchange?: (detail: { date: string; time: string; value: string }) => void;
 	}
 
 	let {
-		id,
 		name,
 		label,
+		placeholder = 'Select date & time',
+		value = $bindable(''),
+		date = $bindable(''),
+		time = $bindable(''),
+		min,
+		max,
 		helperText,
 		errorMessage,
-		checked = $bindable(false),
 		disabled = false,
-		size = 'md',
-		value,
 		bindData = false,
 		class: className = '',
 		onchange
-	}: FormCheckboxProps = $props();
+	}: FormDateTimePickerProps = $props();
 
 	const form = getFormContext();
 	const resolved = $derived(
@@ -48,33 +51,36 @@
 		if (!bindData || !name || !form) return;
 		applyFormDataSync({
 			fromCtx: form.data[name],
-			getLocal: () => checked,
+			getLocal: () => value,
 			setLocal: (v) => {
-				checked = v;
+				value = v;
 			},
-			map: (raw) => (typeof raw === 'boolean' ? raw : undefined)
+			map: (raw) => (raw !== undefined ? String(raw) : undefined)
 		});
 	});
 
-	function handleChange(next: boolean) {
-		checked = next;
+	function handleChange(detail: { date: string; time: string; value: string }) {
+		date = detail.date;
+		time = detail.time;
+		value = detail.value;
 		if (bindData && name && form) {
-			form.setData(name, next);
+			form.setData(name, detail.value);
 			form.clearError(name);
 		}
-		onchange?.(next);
+		onchange?.(detail);
 	}
 </script>
 
-<div class={['flex w-full flex-col gap-1', className]}>
-	<Checkbox
-		{id}
-		{name}
+<div class={['w-full space-y-1', className]}>
+	<DateTimePicker
 		{label}
-		{value}
-		{size}
+		{placeholder}
+		{min}
+		{max}
 		disabled={resolved.disabled}
-		bind:checked
+		bind:value
+		bind:date
+		bind:time
 		onchange={handleChange}
 	/>
 	{#if resolved.error}

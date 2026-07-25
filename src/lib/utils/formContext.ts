@@ -1,4 +1,4 @@
-import { getContext } from 'svelte';
+import { getContext, untrack } from 'svelte';
 import type {
 	RemoteForm,
 	RemoteFormInput,
@@ -141,4 +141,40 @@ export function resolveFormFieldState(options: {
 		helperText: error ?? helperText,
 		disabled: disabled || Boolean(form?.loading) || Boolean(form?.disabled)
 	};
+}
+
+/**
+ * Push context → local inside an `$effect` that tracks `form.data[name]`.
+ * Local value is read under `untrack` so user input is not overwritten when
+ * the local state updates before `setData` lands.
+ *
+ * @example
+ * ```ts
+ * $effect(() => {
+ *   if (!bindData || !name || !form) return;
+ *   applyFormDataSync({
+ *     fromCtx: form.data[name],
+ *     getLocal: () => value,
+ *     setLocal: (v) => { value = v; },
+ *     map: (raw) => (raw !== undefined ? String(raw) : undefined)
+ *   });
+ * });
+ * ```
+ */
+export function applyFormDataSync<T>(options: {
+	fromCtx: unknown;
+	getLocal: () => T;
+	setLocal: (next: T) => void;
+	map: (raw: unknown) => T | undefined;
+	equals?: (a: T, b: T) => boolean;
+}): void {
+	const { fromCtx, getLocal, setLocal, map, equals = Object.is } = options;
+	const next = map(fromCtx);
+	if (next === undefined) return;
+	if (equals(untrack(getLocal), next)) return;
+	setLocal(next);
+}
+
+export function sameStringArray(a: string[], b: string[]): boolean {
+	return a.length === b.length && a.every((v, i) => v === b[i]);
 }

@@ -1,6 +1,10 @@
 <script lang="ts">
 	import Textarea from '$lib/components/atoms/Textarea/Textarea.svelte';
-	import { getFormContext } from '$lib/utils/formContext.js';
+	import {
+		getFormContext,
+		resolveFormFieldState,
+		applyFormDataSync
+	} from '$lib/utils/formContext.js';
 
 	interface FormTextareaProps {
 		id?: string;
@@ -48,20 +52,20 @@
 	}: FormTextareaProps = $props();
 
 	const form = getFormContext();
-
-	const contextError = $derived(
-		errorMessage ?? (name && form ? form.getError(name) : undefined)
+	const resolved = $derived(
+		resolveFormFieldState({ name, errorMessage, helperText, status, disabled, form })
 	);
-	const resolvedStatus = $derived(contextError ? 'error' : status);
-	const resolvedHelperText = $derived(contextError ?? helperText);
-	const resolvedDisabled = $derived(disabled || Boolean(form?.loading) || Boolean(form?.disabled));
 
 	$effect(() => {
 		if (!bindData || !name || !form) return;
-		const fromCtx = form.data[name];
-		if (fromCtx !== undefined && String(fromCtx) !== value) {
-			value = String(fromCtx);
-		}
+		applyFormDataSync({
+			fromCtx: form.data[name],
+			getLocal: () => value,
+			setLocal: (v) => {
+				value = v;
+			},
+			map: (raw) => (raw !== undefined ? String(raw) : undefined)
+		});
 	});
 
 	function handleInput(e: Event) {
@@ -79,15 +83,15 @@
 		{name}
 		{label}
 		{placeholder}
-		disabled={resolvedDisabled}
+		disabled={resolved.disabled}
 		{readonly}
 		{required}
 		{rows}
 		{maxLength}
 		{showCount}
 		{autoResize}
-		status={resolvedStatus}
-		helperText={resolvedHelperText}
+		status={resolved.status}
+		helperText={resolved.helperText}
 		oninput={handleInput}
 		{onchange}
 		bind:value

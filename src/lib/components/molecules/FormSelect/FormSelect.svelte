@@ -2,7 +2,11 @@
 	import Select, {
 		type SelectOption
 	} from '$lib/components/molecules/Select/Select.svelte';
-	import { getFormContext } from '$lib/utils/formContext.js';
+	import {
+		getFormContext,
+		resolveFormFieldState,
+		applyFormDataSync
+	} from '$lib/utils/formContext.js';
 
 	interface FormSelectProps {
 		id?: string;
@@ -44,20 +48,20 @@
 	}: FormSelectProps = $props();
 
 	const form = getFormContext();
-
-	const contextError = $derived(
-		errorMessage ?? (name && form ? form.getError(name) : undefined)
+	const resolved = $derived(
+		resolveFormFieldState({ name, errorMessage, helperText, status, disabled, form })
 	);
-	const resolvedStatus = $derived(contextError ? 'error' : status);
-	const resolvedHelperText = $derived(contextError ?? helperText);
-	const resolvedDisabled = $derived(disabled || Boolean(form?.loading) || Boolean(form?.disabled));
 
 	$effect(() => {
 		if (!bindData || !name || !form) return;
-		const fromCtx = form.data[name];
-		if (fromCtx !== undefined && String(fromCtx) !== value) {
-			value = String(fromCtx);
-		}
+		applyFormDataSync({
+			fromCtx: form.data[name],
+			getLocal: () => value,
+			setLocal: (v) => {
+				value = v;
+			},
+			map: (raw) => (raw !== undefined ? String(raw) : undefined)
+		});
 	});
 
 	function handleChange(next: string) {
@@ -77,12 +81,12 @@
 		{label}
 		{placeholder}
 		{options}
-		disabled={resolvedDisabled}
+		disabled={resolved.disabled}
 		{required}
 		{searchable}
 		{size}
-		status={resolvedStatus}
-		helperText={resolvedHelperText}
+		status={resolved.status}
+		helperText={resolved.helperText}
 		bind:value
 		onchange={handleChange}
 	/>

@@ -2,7 +2,8 @@
 	import NumberInput from '$lib/components/molecules/NumberInput/NumberInput.svelte';
 	import {
 		getFormContext,
-		resolveFormFieldState
+		resolveFormFieldState,
+		applyFormDataSync
 	} from '$lib/utils/formContext.js';
 
 	interface FormNumberInputProps {
@@ -48,10 +49,14 @@
 
 	$effect(() => {
 		if (!bindData || !name || !form) return;
-		const fromCtx = form.data[name];
-		if (typeof fromCtx === 'number' && fromCtx !== value) {
-			value = fromCtx;
-		}
+		applyFormDataSync({
+			fromCtx: form.data[name],
+			getLocal: () => value,
+			setLocal: (v) => {
+				value = v;
+			},
+			map: (raw) => (typeof raw === 'number' ? raw : undefined)
+		});
 	});
 
 	function handleChange(next: number) {

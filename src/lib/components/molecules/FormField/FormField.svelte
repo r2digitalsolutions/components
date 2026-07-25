@@ -3,6 +3,8 @@
 	import type { Snippet } from 'svelte';
 	import {
 		getFormContext,
+		resolveFormFieldState,
+		applyFormDataSync,
 		type FormFieldStatus
 	} from '$lib/utils/formContext.js';
 
@@ -18,6 +20,10 @@
 		clearError: () => void;
 	}
 
+	/**
+	 * Form-bound text input (email, tel, url, search, …).
+	 * There is no separate `FormTextInput` — use this component.
+	 */
 	interface FormFieldProps {
 		id?: string;
 		name?: string;
@@ -75,20 +81,20 @@
 	}: FormFieldProps = $props();
 
 	const form = getFormContext();
-
-	const contextError = $derived(
-		errorMessage ?? (name && form ? form.getError(name) : undefined)
+	const resolved = $derived(
+		resolveFormFieldState({ name, errorMessage, helperText, status, disabled, form })
 	);
-	const resolvedStatus = $derived<FormFieldStatus>(contextError ? 'error' : status);
-	const resolvedHelperText = $derived(contextError ?? helperText);
-	const resolvedDisabled = $derived(disabled || Boolean(form?.loading) || Boolean(form?.disabled));
 
 	$effect(() => {
 		if (!bindData || !name || !form) return;
-		const fromCtx = form.data[name];
-		if (fromCtx !== undefined && String(fromCtx) !== value) {
-			value = String(fromCtx);
-		}
+		applyFormDataSync({
+			fromCtx: form.data[name],
+			getLocal: () => value,
+			setLocal: (v) => {
+				value = v;
+			},
+			map: (raw) => (raw !== undefined ? String(raw) : undefined)
+		});
 	});
 
 	function setValue(next: string) {
@@ -118,9 +124,9 @@
 			id,
 			name,
 			value,
-			status: resolvedStatus,
-			helperText: resolvedHelperText,
-			disabled: resolvedDisabled,
+			status: resolved.status,
+			helperText: resolved.helperText,
+			disabled: resolved.disabled,
 			required,
 			setValue,
 			clearError: clearFieldError
@@ -132,7 +138,7 @@
 			{label}
 			{placeholder}
 			{type}
-			disabled={resolvedDisabled}
+			disabled={resolved.disabled}
 			{readonly}
 			{required}
 			{clearable}
@@ -141,8 +147,8 @@
 			{trailIcon}
 			oninput={handleInput}
 			{onchange}
-			status={resolvedStatus}
-			helperText={resolvedHelperText}
+			status={resolved.status}
+			helperText={resolved.helperText}
 			bind:value
 		/>
 	{/if}

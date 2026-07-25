@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Checkbox from '$lib/components/atoms/Checkbox/Checkbox.svelte';
+	import DropZone from '$lib/components/molecules/DropZone/DropZone.svelte';
 	import FormError from '$lib/components/molecules/FormError/FormError.svelte';
 	import FormDescription from '$lib/components/molecules/FormDescription/FormDescription.svelte';
 	import {
@@ -8,36 +8,45 @@
 		applyFormDataSync
 	} from '$lib/utils/formContext.js';
 
-	interface FormCheckboxProps {
-		id?: string;
+	interface FormFileUploadProps {
 		name?: string;
 		label?: string;
+		hint?: string;
+		accept?: string;
+		multiple?: boolean;
+		maxFiles?: number;
+		maxSizeMb?: number;
+		showPreview?: boolean;
+		files?: File[];
 		helperText?: string;
 		errorMessage?: string;
-		checked?: boolean;
 		disabled?: boolean;
-		size?: 'sm' | 'md' | 'lg';
-		value?: string;
-		/** Sync with `form.data[name]` when inside `<Form>`. */
 		bindData?: boolean;
 		class?: string;
-		onchange?: (checked: boolean) => void;
+		onchange?: (files: File[]) => void;
+		ondropfiles?: (files: File[]) => void;
+		onremove?: (file: File) => void;
 	}
 
 	let {
-		id,
 		name,
-		label,
+		label = 'Drop files here',
+		hint = 'or click to browse',
+		accept,
+		multiple = true,
+		maxFiles,
+		maxSizeMb = 25,
+		showPreview = true,
+		files = $bindable([] as File[]),
 		helperText,
 		errorMessage,
-		checked = $bindable(false),
 		disabled = false,
-		size = 'md',
-		value,
 		bindData = false,
 		class: className = '',
-		onchange
-	}: FormCheckboxProps = $props();
+		onchange,
+		ondropfiles,
+		onremove
+	}: FormFileUploadProps = $props();
 
 	const form = getFormContext();
 	const resolved = $derived(
@@ -48,16 +57,16 @@
 		if (!bindData || !name || !form) return;
 		applyFormDataSync({
 			fromCtx: form.data[name],
-			getLocal: () => checked,
+			getLocal: () => files,
 			setLocal: (v) => {
-				checked = v;
+				files = v;
 			},
-			map: (raw) => (typeof raw === 'boolean' ? raw : undefined)
+			map: (raw) => (Array.isArray(raw) ? (raw as File[]) : undefined)
 		});
 	});
 
-	function handleChange(next: boolean) {
-		checked = next;
+	function handleChange(next: File[]) {
+		files = next;
 		if (bindData && name && form) {
 			form.setData(name, next);
 			form.clearError(name);
@@ -66,16 +75,20 @@
 	}
 </script>
 
-<div class={['flex w-full flex-col gap-1', className]}>
-	<Checkbox
-		{id}
-		{name}
+<div class={['w-full space-y-1', className]}>
+	<DropZone
 		{label}
-		{value}
-		{size}
+		{hint}
+		{accept}
+		{multiple}
+		{maxFiles}
+		{maxSizeMb}
+		{showPreview}
 		disabled={resolved.disabled}
-		bind:checked
+		bind:files
 		onchange={handleChange}
+		{ondropfiles}
+		{onremove}
 	/>
 	{#if resolved.error}
 		<FormError message={resolved.error} />

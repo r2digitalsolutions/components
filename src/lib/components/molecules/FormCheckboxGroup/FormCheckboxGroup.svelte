@@ -1,43 +1,45 @@
 <script lang="ts">
-	import Checkbox from '$lib/components/atoms/Checkbox/Checkbox.svelte';
+	import CheckboxGroup, {
+		type CheckboxOption
+	} from '$lib/components/molecules/CheckboxGroup/CheckboxGroup.svelte';
 	import FormError from '$lib/components/molecules/FormError/FormError.svelte';
 	import FormDescription from '$lib/components/molecules/FormDescription/FormDescription.svelte';
 	import {
 		getFormContext,
 		resolveFormFieldState,
-		applyFormDataSync
+		applyFormDataSync,
+		sameStringArray
 	} from '$lib/utils/formContext.js';
 
-	interface FormCheckboxProps {
-		id?: string;
+	interface FormCheckboxGroupProps {
 		name?: string;
 		label?: string;
+		options?: CheckboxOption[];
+		value?: string[];
+		orientation?: 'vertical' | 'horizontal';
+		size?: 'sm' | 'md' | 'lg';
 		helperText?: string;
 		errorMessage?: string;
-		checked?: boolean;
 		disabled?: boolean;
-		size?: 'sm' | 'md' | 'lg';
-		value?: string;
-		/** Sync with `form.data[name]` when inside `<Form>`. */
 		bindData?: boolean;
 		class?: string;
-		onchange?: (checked: boolean) => void;
+		onchange?: (value: string[]) => void;
 	}
 
 	let {
-		id,
 		name,
 		label,
+		options = [],
+		value = $bindable<string[]>([]),
+		orientation = 'vertical',
+		size = 'md',
 		helperText,
 		errorMessage,
-		checked = $bindable(false),
 		disabled = false,
-		size = 'md',
-		value,
 		bindData = false,
 		class: className = '',
 		onchange
-	}: FormCheckboxProps = $props();
+	}: FormCheckboxGroupProps = $props();
 
 	const form = getFormContext();
 	const resolved = $derived(
@@ -48,16 +50,17 @@
 		if (!bindData || !name || !form) return;
 		applyFormDataSync({
 			fromCtx: form.data[name],
-			getLocal: () => checked,
+			getLocal: () => value,
 			setLocal: (v) => {
-				checked = v;
+				value = v;
 			},
-			map: (raw) => (typeof raw === 'boolean' ? raw : undefined)
+			map: (raw) => (Array.isArray(raw) ? [...(raw as string[])] : undefined),
+			equals: sameStringArray
 		});
 	});
 
-	function handleChange(next: boolean) {
-		checked = next;
+	function handleChange(next: string[]) {
+		value = next;
 		if (bindData && name && form) {
 			form.setData(name, next);
 			form.clearError(name);
@@ -66,15 +69,15 @@
 	}
 </script>
 
-<div class={['flex w-full flex-col gap-1', className]}>
-	<Checkbox
-		{id}
+<div class={['w-full space-y-1', className]}>
+	<CheckboxGroup
 		{name}
 		{label}
-		{value}
+		{options}
+		{orientation}
 		{size}
 		disabled={resolved.disabled}
-		bind:checked
+		bind:value
 		onchange={handleChange}
 	/>
 	{#if resolved.error}

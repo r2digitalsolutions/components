@@ -1,43 +1,49 @@
 <script lang="ts">
-	import Checkbox from '$lib/components/atoms/Checkbox/Checkbox.svelte';
+	import MultiSelect, {
+		type MultiSelectOption
+	} from '$lib/components/molecules/MultiSelect/MultiSelect.svelte';
 	import FormError from '$lib/components/molecules/FormError/FormError.svelte';
 	import FormDescription from '$lib/components/molecules/FormDescription/FormDescription.svelte';
 	import {
 		getFormContext,
 		resolveFormFieldState,
-		applyFormDataSync
+		applyFormDataSync,
+		sameStringArray
 	} from '$lib/utils/formContext.js';
 
-	interface FormCheckboxProps {
-		id?: string;
+	interface FormMultiSelectProps {
 		name?: string;
 		label?: string;
+		placeholder?: string;
+		options?: MultiSelectOption[];
+		value?: string[];
+		searchable?: boolean;
+		max?: number;
+		emptyText?: string;
 		helperText?: string;
 		errorMessage?: string;
-		checked?: boolean;
 		disabled?: boolean;
-		size?: 'sm' | 'md' | 'lg';
-		value?: string;
-		/** Sync with `form.data[name]` when inside `<Form>`. */
 		bindData?: boolean;
 		class?: string;
-		onchange?: (checked: boolean) => void;
+		onchange?: (value: string[]) => void;
 	}
 
 	let {
-		id,
 		name,
 		label,
+		placeholder = 'Select…',
+		options = [],
+		value = $bindable<string[]>([]),
+		searchable = true,
+		max,
+		emptyText = 'No options found',
 		helperText,
 		errorMessage,
-		checked = $bindable(false),
 		disabled = false,
-		size = 'md',
-		value,
 		bindData = false,
 		class: className = '',
 		onchange
-	}: FormCheckboxProps = $props();
+	}: FormMultiSelectProps = $props();
 
 	const form = getFormContext();
 	const resolved = $derived(
@@ -48,16 +54,17 @@
 		if (!bindData || !name || !form) return;
 		applyFormDataSync({
 			fromCtx: form.data[name],
-			getLocal: () => checked,
+			getLocal: () => value,
 			setLocal: (v) => {
-				checked = v;
+				value = v;
 			},
-			map: (raw) => (typeof raw === 'boolean' ? raw : undefined)
+			map: (raw) => (Array.isArray(raw) ? [...(raw as string[])] : undefined),
+			equals: sameStringArray
 		});
 	});
 
-	function handleChange(next: boolean) {
-		checked = next;
+	function handleChange(next: string[]) {
+		value = next;
 		if (bindData && name && form) {
 			form.setData(name, next);
 			form.clearError(name);
@@ -66,15 +73,16 @@
 	}
 </script>
 
-<div class={['flex w-full flex-col gap-1', className]}>
-	<Checkbox
-		{id}
-		{name}
+<div class={['w-full space-y-1', className]}>
+	<MultiSelect
 		{label}
-		{value}
-		{size}
+		{placeholder}
+		{options}
+		{searchable}
+		{max}
+		{emptyText}
 		disabled={resolved.disabled}
-		bind:checked
+		bind:value
 		onchange={handleChange}
 	/>
 	{#if resolved.error}

@@ -1,46 +1,54 @@
 <script lang="ts">
-	import DatePicker from '$lib/components/molecules/DatePicker/DatePicker.svelte';
-	import FormError from '$lib/components/molecules/FormError/FormError.svelte';
-	import FormDescription from '$lib/components/molecules/FormDescription/FormDescription.svelte';
+	import PinInput from '$lib/components/molecules/PinInput/PinInput.svelte';
 	import {
 		getFormContext,
 		resolveFormFieldState,
 		applyFormDataSync
 	} from '$lib/utils/formContext.js';
 
-	interface FormDatePickerProps {
+	interface FormPinInputProps {
+		id?: string;
 		name?: string;
 		label?: string;
-		placeholder?: string;
+		length?: number;
 		value?: string;
-		min?: string;
-		max?: string;
+		type?: 'text' | 'number' | 'password';
 		helperText?: string;
 		errorMessage?: string;
 		disabled?: boolean;
 		bindData?: boolean;
 		class?: string;
 		onchange?: (value: string) => void;
+		oncomplete?: (value: string) => void;
 	}
 
 	let {
+		id,
 		name,
 		label,
-		placeholder = 'Select date…',
+		length = 4,
 		value = $bindable(''),
-		min,
-		max,
+		type = 'number',
 		helperText,
 		errorMessage,
 		disabled = false,
 		bindData = false,
 		class: className = '',
-		onchange
-	}: FormDatePickerProps = $props();
+		onchange,
+		oncomplete
+	}: FormPinInputProps = $props();
 
 	const form = getFormContext();
 	const resolved = $derived(
 		resolveFormFieldState({ name, errorMessage, helperText, disabled, form })
+	);
+
+	const pinStatus = $derived<'default' | 'error' | 'success'>(
+		resolved.status === 'error'
+			? 'error'
+			: resolved.status === 'success'
+				? 'success'
+				: 'default'
 	);
 
 	$effect(() => {
@@ -55,29 +63,27 @@
 		});
 	});
 
-	function handleChange(detail: { value: string }) {
-		value = detail.value;
+	function handleChange(next: string) {
+		value = next;
 		if (bindData && name && form) {
-			form.setData(name, detail.value);
+			form.setData(name, next);
 			form.clearError(name);
 		}
-		onchange?.(detail.value);
+		onchange?.(next);
 	}
 </script>
 
-<div class={['w-full space-y-1', className]}>
-	<DatePicker
+<div class={['w-full', className]}>
+	<PinInput
+		{id}
 		{label}
-		{placeholder}
-		{min}
-		{max}
+		{length}
+		{type}
 		disabled={resolved.disabled}
+		status={pinStatus}
+		helperText={resolved.helperText}
 		bind:value
 		onchange={handleChange}
+		{oncomplete}
 	/>
-	{#if resolved.error}
-		<FormError message={resolved.error} />
-	{:else if helperText}
-		<FormDescription text={helperText} />
-	{/if}
 </div>

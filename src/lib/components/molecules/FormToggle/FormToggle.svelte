@@ -1,8 +1,12 @@
 <script lang="ts">
 	import Toggle from '$lib/components/atoms/Toggle/Toggle.svelte';
 	import FormError from '$lib/components/molecules/FormError/FormError.svelte';
-	import FieldHint from '$lib/components/atoms/FieldHint/FieldHint.svelte';
-	import { getFormContext } from '$lib/utils/formContext.js';
+	import FormDescription from '$lib/components/molecules/FormDescription/FormDescription.svelte';
+	import {
+		getFormContext,
+		resolveFormFieldState,
+		applyFormDataSync
+	} from '$lib/utils/formContext.js';
 
 	interface FormToggleProps {
 		id?: string;
@@ -39,18 +43,20 @@
 	}: FormToggleProps = $props();
 
 	const form = getFormContext();
-
-	const contextError = $derived(
-		errorMessage ?? (name && form ? form.getError(name) : undefined)
+	const resolved = $derived(
+		resolveFormFieldState({ name, errorMessage, helperText, disabled, form })
 	);
-	const resolvedDisabled = $derived(disabled || Boolean(form?.loading) || Boolean(form?.disabled));
 
 	$effect(() => {
 		if (!bindData || !name || !form) return;
-		const fromCtx = form.data[name];
-		if (typeof fromCtx === 'boolean' && fromCtx !== checked) {
-			checked = fromCtx;
-		}
+		applyFormDataSync({
+			fromCtx: form.data[name],
+			getLocal: () => checked,
+			setLocal: (v) => {
+				checked = v;
+			},
+			map: (raw) => (typeof raw === 'boolean' ? raw : undefined)
+		});
 	});
 
 	function handleChange(next: boolean) {
@@ -68,23 +74,23 @@
 		<div
 			class={[
 				'flex items-center justify-between gap-3 rounded-xl border px-3 py-2.5',
-				contextError ? 'border-red-400' : 'border-border'
+				resolved.error ? 'border-red-400' : 'border-border'
 			]}
 		>
 			<div class="min-w-0">
 				{#if label}
 					<p class="text-sm font-medium text-primary">{label}</p>
 				{/if}
-				{#if contextError}
-					<FormError message={contextError} class="mt-0.5" />
+				{#if resolved.error}
+					<FormError message={resolved.error} class="mt-0.5" />
 				{:else if helperText}
-					<FieldHint text={helperText} class="mt-0.5" />
+					<FormDescription text={helperText} class="mt-0.5" />
 				{/if}
 			</div>
 			<Toggle
 				{id}
 				{size}
-				disabled={resolvedDisabled}
+				disabled={resolved.disabled}
 				labelPosition="right"
 				bind:checked
 				onchange={handleChange}
@@ -97,14 +103,14 @@
 				{label}
 				{size}
 				{labelPosition}
-				disabled={resolvedDisabled}
+				disabled={resolved.disabled}
 				bind:checked
 				onchange={handleChange}
 			/>
-			{#if contextError}
-				<FormError message={contextError} />
+			{#if resolved.error}
+				<FormError message={resolved.error} />
 			{:else if helperText}
-				<FieldHint text={helperText} />
+				<FormDescription text={helperText} />
 			{/if}
 		</div>
 	{/if}

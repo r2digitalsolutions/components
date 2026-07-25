@@ -2,7 +2,8 @@
 	import RadioGroup from '$lib/components/molecules/RadioGroup/RadioGroup.svelte';
 	import {
 		getFormContext,
-		resolveFormFieldState
+		resolveFormFieldState,
+		applyFormDataSync
 	} from '$lib/utils/formContext.js';
 
 	interface RadioOption {
@@ -53,10 +54,14 @@
 
 	$effect(() => {
 		if (!bindData || !name || !form) return;
-		const fromCtx = form.data[name];
-		if (fromCtx !== undefined && String(fromCtx) !== value) {
-			value = String(fromCtx);
-		}
+		applyFormDataSync({
+			fromCtx: form.data[name],
+			getLocal: () => value,
+			setLocal: (v) => {
+				value = v;
+			},
+			map: (raw) => (raw !== undefined ? String(raw) : undefined)
+		});
 	});
 
 	function handleChange(next: string) {
