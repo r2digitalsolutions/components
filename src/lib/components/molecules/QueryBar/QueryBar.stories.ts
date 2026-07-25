@@ -10,4 +10,22 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {};
+export const Default: Story = {
+	args: { variant: 'default' }
+};
+
+export const Empty: Story = {
+	args: { variant: 'empty' }
+};
+
+export const WithSyntaxError: Story = {
+	args: { variant: 'errors' }
+};
+
+export const CatalogQuery: Story = {
+	args: { variant: 'catalog' }
+};
+
+export const Minimal: Story = {
+	args: { variant: 'minimal' }
+};

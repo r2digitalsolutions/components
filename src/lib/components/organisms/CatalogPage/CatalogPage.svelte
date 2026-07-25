@@ -4,20 +4,24 @@
 	import FacetPanel from '$lib/components/molecules/FacetPanel/FacetPanel.svelte';
 	import type { FacetGroupDef } from '$lib/components/molecules/FacetPanel/FacetPanel.svelte';
 	import AdvancedFilters from '$lib/components/molecules/AdvancedFilters/AdvancedFilters.svelte';
-	import type { FilterFieldDef } from '$lib/components/molecules/AdvancedFilters/AdvancedFilters.svelte';
+	import type { FilterFieldDef } from '$lib/utils/advancedFilters.js';
 	import ProductCard from '$lib/components/molecules/ProductCard/ProductCard.svelte';
 	import Chip from '$lib/components/atoms/Chip/Chip.svelte';
 	import EmptyState from '$lib/components/molecules/EmptyState/EmptyState.svelte';
 	import Button from '$lib/components/atoms/Button/Button.svelte';
 	import {
+		asFilterGroup,
 		createEmptyFilterState,
 		filterParamsToSearch,
+		flattenRules,
+		formatRuleLabel,
+		matchGroup,
 		parseFilterParams,
-		type AdvancedFilterClause,
-		type AdvancedFilterValue,
-		type CatalogFilterState,
-		type FilterOperator
+		type AdvancedFilterGroup,
+		type CatalogFilterState
 	} from '$lib/utils/filterParams.js';
+	import type { FilterFieldSchema, FilterValues } from '$lib/utils/filterSchema.js';
+	import { clearFilterValues, isFilterValueActive } from '$lib/utils/filterSchema.js';
 
 	export interface CatalogProduct {
 		id: string;
@@ -37,6 +41,9 @@
 
 	interface CatalogPageProps {
 		products?: CatalogProduct[];
+		/** Preferred: schema JSON for automatic filter UI */
+		filterSchema?: FilterFieldSchema[];
+		/** @deprecated Prefer filterSchema */
 		facetGroups?: FacetGroupDef[];
 		fields?: FilterFieldDef[];
 		state?: CatalogFilterState;
@@ -50,6 +57,7 @@
 
 	let {
 		products = [],
+		filterSchema = [],
 		facetGroups = [],
 		fields = [],
 		state: filters = $bindable(createEmptyFilterState()),
@@ -65,6 +73,24 @@
 	let urlInput = $state('');
 	let showAdvancedPanel = $state(false);
 
+	const resolvedSchema = $derived.by((): FilterFieldSchema[] => {
+		if (filterSchema.length) return filterSchema;
+		const fieldsFromGroups: FilterFieldSchema[] = [
+			{ id: 'price', label: 'Price', type: 'range', min: 0, max: 300, unit: '€' }
+		];
+		for (const g of facetGroups) {
+			fieldsFromGroups.push({
+				id: g.id,
+				label: g.title,
+				type: g.multiple === false ? 'radio' : 'checkbox',
+				options: g.options,
+				multiple: g.multiple ?? true,
+				limit: g.limit
+			});
+		}
+		return fieldsFromGroups;
+	});
+
 	function emit(next: CatalogFilterState) {
 		filters = next;
 		onstatechange?.(next);
@@ -75,56 +101,90 @@
 			...filters,
 			...partial,
 			facets: partial.facets ?? filters.facets,
-			advanced: partial.advanced ?? filters.advanced
+			advanced: partial.advanced ?? filters.advanced,
+			values: partial.values ?? filters.values ?? {}
 		});
 	}
 
-	function productField(p: CatalogProduct, field: string): string | number | string[] | undefined {
+	function onFilterValues(next: FilterValues) {
+		const facets: Record<string, string[]> = {};
+		let price: CatalogFilterState['price'];
+		for (const [id, value] of Object.entries(next)) {
+			if (id === 'price' && Array.isArray(value) && typeof value[0] === 'number') {
+				price = { min: value[0] as number, max: value[1] as number };
+				continue;
+			}
+			if (Array.isArray(value) && value.every((v) => typeof v === 'string') && value.length) {
+				facets[id] = value as string[];
+			} else if (typeof value === 'string' && value) {
+				facets[id] = [value];
+			}
+		}
+		patch({ values: next, facets, price });
+	}
+
+	function productField(
+		p: CatalogProduct,
+		field: string
+	): string | number | string[] | boolean | undefined {
 		if (field === 'brand') return p.brand;
 		if (field === 'color') return p.color;
 		if (field === 'price') return p.price;
 		if (field === 'tags') return p.tags;
 		if (field === 'name') return p.title;
 		if (field === 'title') return p.title;
+		if (field === 'rating') return p.rating;
 		return undefined;
 	}
 
 	const activeChips = $derived.by(() => {
 		const chips: { id: string; label: string; clear: () => void }[] = [];
-		for (const [facetId, values] of Object.entries(filters.facets) as [string, string[]][]) {
-			const group = facetGroups.find((g) => g.id === facetId);
-			for (const v of values) {
-				const opt = group?.options.find((o) => o.id === v);
+		const bag = filters.values ?? {};
+		for (const field of resolvedSchema) {
+			const value = bag[field.id];
+			if (value === undefined || value === null || value === false || value === '') continue;
+			if (field.type === 'range' && Array.isArray(value)) {
 				chips.push({
-					id: `facet:${facetId}:${v}`,
-					label: `${group?.title ?? facetId}: ${opt?.label ?? v}`,
+					id: field.id,
+					label: `${field.label} ${value[0]}–${value[1]}`,
 					clear: () => {
-						const nextValues = (filters.facets[facetId] ?? []).filter((x: string) => x !== v);
-						const facets = { ...filters.facets };
-						if (nextValues.length) facets[facetId] = nextValues;
-						else delete facets[facetId];
-						patch({ facets });
+						const next = { ...bag, [field.id]: undefined };
+						onFilterValues(next);
 					}
+				});
+				continue;
+			}
+			if (Array.isArray(value)) {
+				for (const v of value as string[]) {
+					const opt = field.options?.find((o) => o.id === v);
+					chips.push({
+						id: `${field.id}:${v}`,
+						label: `${field.label}: ${opt?.label ?? v}`,
+						clear: () => {
+							const list = (bag[field.id] as string[]).filter((x) => x !== v);
+							onFilterValues({ ...bag, [field.id]: list });
+						}
+					});
+				}
+				continue;
+			}
+			if (typeof value === 'string' || typeof value === 'number' || value === true) {
+				const opt = field.options?.find((o) => o.id === String(value));
+				chips.push({
+					id: field.id,
+					label: `${field.label}: ${opt?.label ?? value}`,
+					clear: () => onFilterValues({ ...bag, [field.id]: undefined })
 				});
 			}
 		}
-		for (const clause of filters.advanced) {
-			const field = fields.find((f) => f.id === clause.field);
-			const val = Array.isArray(clause.value) ? clause.value.join(', ') : String(clause.value);
+		for (const rule of flattenRules(asFilterGroup(filters.advanced))) {
 			chips.push({
-				id: clause.id,
-				label: `${field?.label ?? clause.field} ${clause.op} ${val}`,
-				clear: () =>
-					patch({
-						advanced: filters.advanced.filter((c: AdvancedFilterClause) => c.id !== clause.id)
-					})
-			});
-		}
-		if (filters.price?.min !== undefined || filters.price?.max !== undefined) {
-			chips.push({
-				id: 'price',
-				label: `Price ${filters.price.min ?? '…'}–${filters.price.max ?? '…'}`,
-				clear: () => patch({ price: undefined })
+				id: rule.id,
+				label: formatRuleLabel(rule, fields),
+				clear: () => {
+					const root = asFilterGroup(filters.advanced);
+					patch({ advanced: removeRuleFromGroup(root, rule.id) });
+				}
 			});
 		}
 		return chips;
@@ -155,25 +215,52 @@
 				});
 			});
 		}
-		for (const [facetId, values] of Object.entries(filters.facets) as [string, string[]][]) {
-			if (!values.length) continue;
+
+		const bag = filters.values ?? {};
+		for (const field of resolvedSchema) {
+			const value = bag[field.id];
+			if (!isFilterValueActive(field, value)) continue;
+
+			if (field.type === 'range' && Array.isArray(value)) {
+				const [min, max] = value as [number, number];
+				list = list.filter((p) => p.price >= min && p.price <= max);
+				continue;
+			}
+
+			if (field.type === 'rating' && typeof value === 'number') {
+				list = list.filter((p) => (p.rating ?? 0) >= value);
+				continue;
+			}
+
+			if (field.type === 'toggle' && value === true) {
+				if (field.id === 'sale') {
+					list = list.filter((p) => (p.tags ?? []).includes('sale') || Boolean(p.compareAt));
+				}
+				continue;
+			}
+
+			const selected = Array.isArray(value)
+				? (value as string[])
+				: typeof value === 'string'
+					? [value]
+					: [];
+			if (!selected.length) continue;
+
 			list = list.filter((p) => {
-				if (facetId === 'brand') return values.includes(p.brand ?? '');
-				if (facetId === 'color') return values.includes(p.color ?? '');
-				if (facetId === 'tags') return values.some((v: string) => (p.tags ?? []).includes(v));
-				return true;
+				if (field.id === 'brand') return selected.includes(p.brand ?? '');
+				if (field.id === 'color') return selected.includes(p.color ?? '');
+				if (field.id === 'tags') return selected.some((v) => (p.tags ?? []).includes(v));
+				const raw = productField(p, field.id);
+				if (Array.isArray(raw)) return selected.some((v) => raw.includes(v));
+				return selected.includes(String(raw ?? ''));
 			});
 		}
-		if (filters.price?.min !== undefined) {
-			const min = filters.price.min;
-			list = list.filter((p) => p.price >= min);
-		}
-		if (filters.price?.max !== undefined) {
-			const max = filters.price.max;
-			list = list.filter((p) => p.price <= max);
-		}
-		for (const clause of filters.advanced) {
-			list = list.filter((p) => matchClause(p, clause.field, clause.op, clause.value));
+
+		const advanced = asFilterGroup(filters.advanced);
+		if (advanced.rules.length) {
+			list = list.filter((p) =>
+				matchGroup(advanced, (fieldId) => productField(p, fieldId))
+			);
 		}
 		const sort = filters.sort ?? 'relevance';
 		if (sort === 'price_asc') list.sort((a, b) => a.price - b.price);
@@ -183,36 +270,13 @@
 		return list;
 	});
 
-	function matchClause(
-		p: CatalogProduct,
-		field: string,
-		op: FilterOperator,
-		value: AdvancedFilterValue
-	): boolean {
-		const raw = productField(p, field);
-
-		if (op === 'between' && Array.isArray(value) && value.length === 2 && typeof value[0] === 'number') {
-			const n = Number(raw);
-			const min = value[0] as number;
-			const max = value[1] as number;
-			return n >= min && n <= max;
-		}
-		if (op === 'in' && Array.isArray(value)) {
-			if (Array.isArray(raw)) return value.some((v) => raw.includes(String(v)));
-			return value.map(String).includes(String(raw));
-		}
-		const left = String(raw ?? '').toLowerCase();
-		const right = String(value).toLowerCase();
-		if (op === 'eq') return left === right;
-		if (op === 'neq') return left !== right;
-		if (op === 'contains') return left.includes(right);
-		const ln = Number(raw);
-		const rn = Number(value);
-		if (op === 'gt') return ln > rn;
-		if (op === 'gte') return ln >= rn;
-		if (op === 'lt') return ln < rn;
-		if (op === 'lte') return ln <= rn;
-		return true;
+	function removeRuleFromGroup(group: AdvancedFilterGroup, ruleId: string): AdvancedFilterGroup {
+		return {
+			...group,
+			rules: group.rules
+				.filter((n) => n.id !== ruleId)
+				.map((n) => (n.type === 'group' ? removeRuleFromGroup(n, ruleId) : n))
+		};
 	}
 
 	function copyUrl() {
@@ -279,7 +343,7 @@
 		{#if showAdvancedPanel}
 			<AdvancedFilters
 				{fields}
-				clauses={filters.advanced}
+				query={asFilterGroup(filters.advanced)}
 				onchange={(advanced) => patch({ advanced })}
 			/>
 		{/if}
@@ -309,12 +373,10 @@
 
 	<div class="grid gap-4 lg:grid-cols-[16rem_1fr]">
 		<FacetPanel
-			groups={facetGroups}
-			facets={filters.facets}
-			price={filters.price}
-			onchangefacets={(facets) => patch({ facets })}
-			onchangeprice={(price) => patch({ price })}
-			onclear={() => patch({ facets: {}, price: undefined })}
+			schema={resolvedSchema}
+			values={filters.values ?? {}}
+			onchange={onFilterValues}
+			onclear={() => onFilterValues(clearFilterValues(resolvedSchema, filters.values ?? {}))}
 		/>
 
 		{#if filtered.length}

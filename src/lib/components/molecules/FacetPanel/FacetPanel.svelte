@@ -1,23 +1,36 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import FacetGroup from '$lib/components/molecules/FacetGroup/FacetGroup.svelte';
-	import type { FacetOption } from '$lib/components/molecules/FacetGroup/FacetGroup.svelte';
-	import RangeSlider from '$lib/components/atoms/RangeSlider/RangeSlider.svelte';
-	import Button from '$lib/components/atoms/Button/Button.svelte';
+	import BuilderFilters from '$lib/components/molecules/BuilderFilters/BuilderFilters.svelte';
 	import type { CatalogPriceRange } from '$lib/utils/filterParams.js';
+	import {
+		type FilterFieldSchema,
+		type FilterOption,
+		type FilterValues
+	} from '$lib/utils/filterSchema.js';
 
+	/** @deprecated Prefer `FilterFieldSchema` in `schema` */
 	export interface FacetGroupDef {
 		id: string;
 		title: string;
-		options: FacetOption[];
+		options: FilterOption[];
 		multiple?: boolean;
 		limit?: number;
+		category?: string;
 	}
 
 	interface FacetPanelProps {
 		title?: string;
+		/**
+		 * Preferred: schema JSON that auto-renders via BuilderFilters.
+		 * Pair with `bind:values` — one bag for all fields.
+		 */
+		schema?: FilterFieldSchema[];
+		values?: FilterValues;
+		/** @deprecated Prefer `schema` + `values` */
 		groups?: FacetGroupDef[];
+		/** @deprecated Prefer `values` */
 		facets?: Record<string, string[]>;
+		/** @deprecated Prefer a `range` field in `schema` */
 		price?: CatalogPriceRange;
 		priceMin?: number;
 		priceMax?: number;
@@ -30,12 +43,17 @@
 		class?: string;
 		children?: Snippet;
 		onclear?: () => void;
+		onchange?: (values: FilterValues) => void;
+		/** @deprecated */
 		onchangefacets?: (facets: Record<string, string[]>) => void;
+		/** @deprecated */
 		onchangeprice?: (price: CatalogPriceRange | undefined) => void;
 	}
 
 	let {
 		title = 'Filters',
+		schema,
+		values = $bindable({} as FilterValues),
 		groups = [],
 		facets = $bindable({} as Record<string, string[]>),
 		price = $bindable<CatalogPriceRange | undefined>(undefined),
@@ -50,113 +68,126 @@
 		class: className = '',
 		children,
 		onclear,
+		onchange,
 		onchangefacets,
 		onchangeprice
 	}: FacetPanelProps = $props();
 
-	const priceValue = $derived<[number, number]>([
-		price?.min ?? priceMin,
-		price?.max ?? priceMax
-	]);
+	const useSchemaApi = $derived(Boolean(schema?.length));
 
-	const hasActive = $derived(
-		Object.values(facets).some((v) => v.length > 0) ||
-			price?.min !== undefined ||
-			price?.max !== undefined
-	);
+	const resolvedSchema = $derived.by((): FilterFieldSchema[] => {
+		if (schema?.length) return schema;
+		const fields: FilterFieldSchema[] = [];
+		if (showPrice) {
+			fields.push({
+				id: 'price',
+				label: 'Price',
+				type: 'range',
+				min: priceMin,
+				max: priceMax,
+				step: priceStep,
+				unit: priceUnit
+			});
+		}
+		for (const g of groups) {
+			fields.push({
+				id: g.id,
+				label: g.title,
+				type: g.multiple === false ? 'radio' : 'checkbox',
+				category: g.category,
+				options: g.options,
+				multiple: g.multiple ?? true,
+				limit: g.limit
+			});
+		}
+		return fields;
+	});
 
-	function setGroup(groupId: string, value: string[]) {
-		const next = { ...facets };
-		if (value.length) next[groupId] = value;
-		else delete next[groupId];
-		facets = next;
-		onchangefacets?.(next);
+	function legacyToValues(): FilterValues {
+		const next: FilterValues = {};
+		for (const [id, list] of Object.entries(facets)) next[id] = [...list];
+		if (showPrice && (price?.min !== undefined || price?.max !== undefined)) {
+			next.price = [price?.min ?? priceMin, price?.max ?? priceMax];
+		}
+		return next;
 	}
 
-	function onPriceInput(value: [number, number]) {
-		const next: CatalogPriceRange = {};
-		if (value[0] > priceMin) next.min = value[0];
-		if (value[1] < priceMax) next.max = value[1];
-		price = next.min !== undefined || next.max !== undefined ? next : undefined;
+	function valuesToLegacy(next: FilterValues) {
+		const nextFacets: Record<string, string[]> = {};
+		for (const [id, value] of Object.entries(next)) {
+			if (id === 'price') continue;
+			if (Array.isArray(value) && value.every((v) => typeof v === 'string')) {
+				if (value.length) nextFacets[id] = value as string[];
+			} else if (typeof value === 'string' && value) {
+				nextFacets[id] = [value];
+			}
+		}
+		facets = nextFacets;
+		onchangefacets?.(nextFacets);
+
+		const range = next.price;
+		if (
+			Array.isArray(range) &&
+			range.length === 2 &&
+			typeof range[0] === 'number' &&
+			typeof range[1] === 'number'
+		) {
+			const p: CatalogPriceRange = {};
+			if (range[0] > priceMin) p.min = range[0];
+			if (range[1] < priceMax) p.max = range[1];
+			price = p.min !== undefined || p.max !== undefined ? p : undefined;
+		} else {
+			price = undefined;
+		}
 		onchangeprice?.(price);
 	}
 
-	function clearAll() {
-		facets = {};
-		price = undefined;
-		onclear?.();
-		onchangefacets?.({});
-		onchangeprice?.(undefined);
+	let legacyValues = $state<FilterValues>({});
+
+	$effect(() => {
+		if (useSchemaApi) return;
+		legacyValues = legacyToValues();
+	});
+
+	function onValuesChange(next: FilterValues) {
+		if (useSchemaApi) {
+			values = next;
+			onchange?.(next);
+			return;
+		}
+		legacyValues = next;
+		valuesToLegacy(next);
+		onchange?.(next);
 	}
 </script>
 
-<aside
-	class={[
-		'w-full rounded-2xl border border-border bg-surface-elevated p-4 shadow-sm',
-		className
-	]}
->
-	<div class="mb-3 flex items-center justify-between gap-2">
-		{#if collapsible}
-			<button
-				type="button"
-				class="flex flex-1 items-center justify-between text-left text-sm font-semibold text-primary"
-				aria-expanded={!collapsed}
-				onclick={() => (collapsed = !collapsed)}
-			>
-				{title}
-				<svg
-					class={['h-4 w-4 text-muted transition-transform', collapsed ? '' : 'rotate-180']}
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2"
-					aria-hidden="true"
-				>
-					<path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-				</svg>
-			</button>
-		{:else}
-			<h2 class="text-sm font-semibold text-primary">{title}</h2>
-		{/if}
-		{#if hasActive}
-			<Button variant="ghost" size="xs" onclick={clearAll}>{clearLabel}</Button>
-		{/if}
-	</div>
-
-	{#if !collapsed}
-		<div class="space-y-5">
-			{#if showPrice}
-				<div class="space-y-2">
-					<p class="text-xs font-semibold uppercase tracking-wide text-muted">Price</p>
-					<RangeSlider
-						min={priceMin}
-						max={priceMax}
-						step={priceStep}
-						unit={priceUnit}
-						size="sm"
-						value={priceValue}
-						oninput={onPriceInput}
-						onchange={onPriceInput}
-					/>
-				</div>
-			{/if}
-
-			{#each groups as group (group.id)}
-				<FacetGroup
-					id={group.id}
-					title={group.title}
-					options={group.options}
-					multiple={group.multiple ?? true}
-					limit={group.limit ?? 6}
-					value={facets[group.id] ?? []}
-					onchange={(v) => setGroup(group.id, v)}
-				/>
-			{/each}
-
-			{#if children}
-				{@render children()}
-			{/if}
+<div class={className}>
+	{#if useSchemaApi}
+		<BuilderFilters
+			schema={resolvedSchema}
+			bind:values
+			{title}
+			{clearLabel}
+			{collapsible}
+			bind:collapsed
+			onchange={onValuesChange}
+			onclear={() => onclear?.()}
+		/>
+	{:else}
+		<BuilderFilters
+			schema={resolvedSchema}
+			bind:values={legacyValues}
+			{title}
+			{clearLabel}
+			{collapsible}
+			bind:collapsed
+			onchange={onValuesChange}
+			onclear={() => onclear?.()}
+		/>
+	{/if}
+	{#if children}
+		<div class="mt-4">
+			{@render children()}
 		</div>
 	{/if}
-</aside>
+</div>

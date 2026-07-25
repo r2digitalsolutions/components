@@ -453,6 +453,9 @@ export { default as FacetGroup } from './components/molecules/FacetGroup/FacetGr
 export type { FacetOption } from './components/molecules/FacetGroup/FacetGroup.svelte';
 export { default as FacetPanel } from './components/molecules/FacetPanel/FacetPanel.svelte';
 export type { FacetGroupDef } from './components/molecules/FacetPanel/FacetPanel.svelte';
+export { default as BuilderFilters } from './components/molecules/BuilderFilters/BuilderFilters.svelte';
+/** @deprecated Use `BuilderFilters` */
+export { default as FilterBuilder } from './components/molecules/BuilderFilters/BuilderFilters.svelte';
 export { default as SortSelect } from './components/molecules/SortSelect/SortSelect.svelte';
 export type { SortOption } from './components/molecules/SortSelect/SortSelect.svelte';
 export { DEFAULT_SORT_OPTIONS } from './components/molecules/SortSelect/SortSelect.svelte';
@@ -460,7 +463,7 @@ export { default as AdvancedFilters } from './components/molecules/AdvancedFilte
 export type {
 	FilterFieldDef,
 	FilterFieldType
-} from './components/molecules/AdvancedFilters/AdvancedFilters.svelte';
+} from './utils/advancedFilters.js';
 export { default as QueryBar } from './components/molecules/QueryBar/QueryBar.svelte';
 export type { QuerySuggestion } from './components/molecules/QueryBar/QueryBar.svelte';
 
@@ -511,6 +514,7 @@ export type {
 } from './components/organisms/Kanban/Kanban.svelte';
 export { default as CookieConsent } from './components/organisms/CookieConsent/CookieConsent.svelte';
 export { default as MusicPlayer } from './components/organisms/MusicPlayer/MusicPlayer.svelte';
+export { default as MusicBarPlayer } from './components/organisms/MusicBarPlayer/MusicBarPlayer.svelte';
 export { default as Footer } from './components/organisms/Footer/Footer.svelte';
 export type {
 	FooterLink,
@@ -565,6 +569,10 @@ export { default as TeamPage } from './components/organisms/TeamPage/TeamPage.sv
 export type { TeamMember } from './components/organisms/TeamPage/TeamPage.svelte';
 export { default as DiscussionPage } from './components/organisms/DiscussionPage/DiscussionPage.svelte';
 export { default as ContactForm } from './components/organisms/ContactForm/ContactForm.svelte';
+export type {
+	ContactTopic,
+	ContactFormPayload
+} from './components/organisms/ContactForm/ContactForm.svelte';
 export { default as ChangePasswordForm } from './components/organisms/ChangePasswordForm/ChangePasswordForm.svelte';
 export { default as BillingPage } from './components/organisms/BillingPage/BillingPage.svelte';
 export { default as StatusPage } from './components/organisms/StatusPage/StatusPage.svelte';
@@ -666,13 +674,53 @@ export type {
 	CatalogFilterState,
 	CatalogPriceRange,
 	AdvancedFilterClause,
+	AdvancedFilterGroup,
+	AdvancedFilterNode,
+	AdvancedFilterRule,
 	AdvancedFilterValue,
-	FilterOperator
+	FilterOperator,
+	FilterCombinator,
+	FilterValueKind
 } from './utils/filterParams.js';
+export {
+	emptyFilterGroup,
+	emptyFilterRule,
+	flattenRules,
+	countRules,
+	matchGroup,
+	matchRuleValue,
+	resolveValueKind,
+	operatorsForField,
+	formatRuleLabel,
+	asFilterGroup,
+	OP_LABELS,
+	DEFAULT_OPS,
+	FILTER_OPERATORS
+} from './utils/filterParams.js';
+export {
+	parseFilterSchema,
+	emptyFilterValues,
+	clearFilterValues,
+	countActiveFilters,
+	groupFilterSchema,
+	isFilterValueActive,
+	serializeFilterValues,
+	parseFilterValues
+} from './utils/filterSchema.js';
+export type {
+	FilterFieldSchema,
+	FilterControlType,
+	FilterOption,
+	FilterValue,
+	FilterValues,
+	FilterCategoryGroup
+} from './utils/filterSchema.js';
 export {
 	tokenizeQuery,
 	validateQuery,
 	parseSimpleClauses,
-	fieldIdsFromDefs
+	fieldIdsFromDefs,
+	DEFAULT_QUERY_EXAMPLES,
+	operatorSuggestionsForField
 } from './utils/queryBar.js';
-export type { QueryToken, QueryTokenKind } from './utils/queryBar.js';
+export type { QueryToken, QueryTokenKind, QueryExample } from './utils/queryBar.js';

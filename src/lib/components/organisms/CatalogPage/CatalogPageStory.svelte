@@ -1,14 +1,78 @@
 <script lang="ts">
 	import CatalogPage from './CatalogPage.svelte';
 	import { createEmptyFilterState, type CatalogFilterState } from '$lib/utils/filterParams.js';
+	import type { FilterFieldSchema } from '$lib/utils/filterSchema.js';
 
 	let filters = $state<CatalogFilterState>(
 		createEmptyFilterState({
 			q: '',
 			sort: 'relevance',
-			facets: {}
+			values: {}
 		})
 	);
+
+	/** Schema JSON — could come from an API; drives BuilderFilters automatically */
+	const filterSchema: FilterFieldSchema[] = [
+		{
+			id: 'price',
+			label: 'Price',
+			type: 'range',
+			category: 'Commerce',
+			min: 0,
+			max: 300,
+			unit: '€'
+		},
+		{
+			id: 'brand',
+			label: 'Brand',
+			type: 'checkbox',
+			category: 'Commerce',
+			options: [
+				{ id: 'nike', label: 'Nike', count: 1 },
+				{ id: 'adidas', label: 'Adidas', count: 1 },
+				{ id: 'puma', label: 'Puma', count: 1 },
+				{ id: 'asics', label: 'Asics', count: 1 },
+				{ id: 'newbalance', label: 'New Balance', count: 1 },
+				{ id: 'hoka', label: 'Hoka', count: 1 }
+			]
+		},
+		{
+			id: 'color',
+			label: 'Color',
+			type: 'checkbox',
+			category: 'Commerce',
+			options: [
+				{ id: 'black', label: 'Black', count: 2 },
+				{ id: 'white', label: 'White', count: 2 },
+				{ id: 'blue', label: 'Blue', count: 1 },
+				{ id: 'red', label: 'Red', count: 1 }
+			]
+		},
+		{
+			id: 'tags',
+			label: 'Tags',
+			type: 'checkbox',
+			category: 'Commerce',
+			options: [
+				{ id: 'sale', label: 'Sale', count: 2 },
+				{ id: 'new', label: 'New', count: 3 },
+				{ id: 'limited', label: 'Limited', count: 1 }
+			]
+		},
+		{
+			id: 'rating',
+			label: 'Min. rating',
+			type: 'rating',
+			category: 'Quality',
+			maxRating: 5
+		},
+		{
+			id: 'sale',
+			label: 'On sale only',
+			type: 'toggle',
+			category: 'Quality'
+		}
+	];
 
 	const products = [
 		{
@@ -90,39 +154,7 @@
 	title="Running shoes"
 	showUrlSync
 	{products}
-	facetGroups={[
-		{
-			id: 'brand',
-			title: 'Brand',
-			options: [
-				{ id: 'nike', label: 'Nike', count: 1 },
-				{ id: 'adidas', label: 'Adidas', count: 1 },
-				{ id: 'puma', label: 'Puma', count: 1 },
-				{ id: 'asics', label: 'Asics', count: 1 },
-				{ id: 'newbalance', label: 'New Balance', count: 1 },
-				{ id: 'hoka', label: 'Hoka', count: 1 }
-			]
-		},
-		{
-			id: 'color',
-			title: 'Color',
-			options: [
-				{ id: 'black', label: 'Black', count: 2 },
-				{ id: 'white', label: 'White', count: 2 },
-				{ id: 'blue', label: 'Blue', count: 1 },
-				{ id: 'red', label: 'Red', count: 1 }
-			]
-		},
-		{
-			id: 'tags',
-			title: 'Tags',
-			options: [
-				{ id: 'sale', label: 'Sale', count: 2 },
-				{ id: 'new', label: 'New', count: 3 },
-				{ id: 'limited', label: 'Limited', count: 1 }
-			]
-		}
-	]}
+	{filterSchema}
 	fields={[
 		{
 			id: 'brand',
@@ -159,6 +191,8 @@
 			]
 		},
 		{ id: 'price', label: 'Price', type: 'number' },
-		{ id: 'name', label: 'Name', type: 'text' }
+		{ id: 'name', label: 'Name', type: 'text' },
+		{ id: 'released', label: 'Released', type: 'date' },
+		{ id: 'featured', label: 'Featured', type: 'boolean' }
 	]}
 />
