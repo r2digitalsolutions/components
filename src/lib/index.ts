@@ -207,6 +207,11 @@ export { default as InfiniteScroll } from './components/molecules/InfiniteScroll
 export type { InfiniteScrollMode } from './components/molecules/InfiniteScroll/InfiniteScroll.svelte';
 export { default as PullToRefresh } from './components/molecules/PullToRefresh/PullToRefresh.svelte';
 export { default as CronBuilder } from './components/molecules/CronBuilder/CronBuilder.svelte';
+export type {
+	CronFrequency,
+	CronPreset
+} from './components/molecules/CronBuilder/CronBuilder.svelte';
+export { CRON_PRESETS } from './components/molecules/CronBuilder/CronBuilder.svelte';
 export { default as TimeAgo } from './components/molecules/TimeAgo/TimeAgo.svelte';
 export { default as Spoiler } from './components/molecules/Spoiler/Spoiler.svelte';
 export { default as PasswordStrength } from './components/molecules/PasswordStrength/PasswordStrength.svelte';
@@ -315,6 +320,12 @@ export type { ComparisonSeries } from './components/molecules/ComparisonCurves/C
 export { default as DonutChart } from './components/molecules/DonutChart/DonutChart.svelte';
 export type { DonutSlice } from './components/molecules/DonutChart/DonutChart.svelte';
 export { default as Gauge } from './components/molecules/Gauge/Gauge.svelte';
+export type {
+	GaugeSize,
+	GaugeVariant,
+	GaugeTone,
+	GaugeZone
+} from './components/molecules/Gauge/Gauge.svelte';
 export { default as HorizontalBarChart } from './components/molecules/HorizontalBarChart/HorizontalBarChart.svelte';
 export type { HBarPoint } from './components/molecules/HorizontalBarChart/HorizontalBarChart.svelte';
 export { default as StackedBarChart } from './components/molecules/StackedBarChart/StackedBarChart.svelte';
