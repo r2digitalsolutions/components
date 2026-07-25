@@ -258,13 +258,18 @@ export { default as Form } from './components/molecules/Form/Form.svelte';
 export {
 	getFormContext,
 	FORM_CONTEXT_KEY,
-	remoteIssuesToErrors
+	remoteIssuesToErrors,
+	isRemoteForm
 } from './utils/formContext.js';
 export type {
 	FormErrors,
 	FormContext,
 	FormDataValues,
+	FormRemote,
+	/** @deprecated Use `FormRemote` */
 	RemoteFormSpread,
+	RemoteForm,
+	RemoteFormInput,
 	RemoteFormIssue
 } from './utils/formContext.js';
 

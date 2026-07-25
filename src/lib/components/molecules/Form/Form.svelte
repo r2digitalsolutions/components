@@ -1,35 +1,40 @@
-<script lang="ts">
+<script
+	lang="ts"
+	generics="TData extends FormDataValues = FormDataValues, TInput extends RemoteFormInput | void = RemoteFormInput, TOutput = unknown"
+>
 	import type { Snippet } from 'svelte';
 	import { setContext } from 'svelte';
+	import type { RemoteFormInput } from '@sveltejs/kit';
 	import Alert from '$lib/components/molecules/Alert/Alert.svelte';
 	import {
 		FORM_CONTEXT_KEY,
+		isRemoteForm,
 		remoteIssuesToErrors,
 		type FormContext,
 		type FormDataValues,
 		type FormErrors,
-		type RemoteFormSpread
+		type FormRemote
 	} from '$lib/utils/formContext.js';
 
 	interface FormProps {
 		/** Field values shared via context (`getFormContext().data`) */
-		data?: FormDataValues;
+		data?: TData;
 		errors?: FormErrors;
 		loading?: boolean;
 		disabled?: boolean;
 		/**
-		 * SvelteKit remote `form()` instance (or `.enhance(...)`).
+		 * SvelteKit `RemoteForm` (or `.enhance(...)` return).
 		 * Spread onto the native `<form>` for progressive enhancement.
 		 * When set, we do **not** call `preventDefault` — Kit owns submit.
 		 */
-		remote?: RemoteFormSpread | null;
+		remote?: FormRemote<TInput, TOutput> | null;
 		/**
-		 * When `remote` is set, sync `remote.fields.allIssues()` → `errors`.
+		 * When `remote` is a full `RemoteForm`, sync `fields.allIssues()` → `errors`.
 		 * @default true
 		 */
 		syncRemoteIssues?: boolean;
 		/** Optional bag for submit/remote result exposed in context */
-		result?: unknown;
+		result?: TOutput;
 		title?: string;
 		description?: string;
 		/** Show a summary alert listing field errors after submit */
@@ -45,13 +50,13 @@
 	}
 
 	let {
-		data = $bindable<FormDataValues>({}),
+		data = $bindable<TData>({} as TData),
 		errors = $bindable<FormErrors>({}),
 		loading = false,
 		disabled = false,
 		remote = null,
 		syncRemoteIssues = true,
-		result = $bindable<unknown>(undefined),
+		result = $bindable<TOutput | undefined>(undefined),
 		title,
 		description,
 		showErrorSummary = true,
@@ -66,8 +71,9 @@
 
 	let submitted = $state(false);
 
+	const kitForm = $derived(isRemoteForm<TInput, TOutput>(remote) ? remote : null);
 	const isRemote = $derived(remote != null);
-	const remotePending = $derived(Boolean(remote?.pending));
+	const remotePending = $derived(Boolean(kitForm?.pending));
 	const busy = $derived(loading || remotePending || disabled);
 
 	const errorEntries = $derived(Object.entries(errors).filter(([, msg]) => Boolean(msg)));
@@ -94,7 +100,7 @@
 		errors = {};
 	}
 
-	function setData(name: string, value: unknown) {
+	function setData<K extends keyof TData & string>(name: K, value: TData[K]) {
 		data = { ...data, [name]: value };
 	}
 
@@ -102,11 +108,10 @@
 		return errors[name];
 	}
 
-	function getData<T = unknown>(name: string) {
-		return data[name] as T | undefined;
+	function getData<K extends keyof TData & string>(name: K) {
+		return data[name];
 	}
 
-	// Keep context getters live so children always see current state
 	setContext(FORM_CONTEXT_KEY, {
 		get data() {
 			return data;
@@ -124,7 +129,7 @@
 			return disabled;
 		},
 		get result() {
-			return result ?? remote?.result;
+			return (result ?? kitForm?.result) as TOutput | undefined;
 		},
 		setError,
 		clearError,
@@ -132,25 +137,20 @@
 		setData,
 		getError,
 		getData
-	} satisfies FormContext);
+	} satisfies FormContext<TData, TOutput>);
 
-	// Bridge Kit remote validation issues → Form errors
 	$effect(() => {
-		if (!isRemote || !syncRemoteIssues) return;
-		const allIssues = remote?.fields?.allIssues;
-		if (typeof allIssues !== 'function') return;
-		errors = remoteIssuesToErrors(allIssues());
+		if (!kitForm || !syncRemoteIssues) return;
+		errors = remoteIssuesToErrors(kitForm.fields.allIssues());
 	});
 
-	// Mirror remote result into bindable result when present
 	$effect(() => {
-		if (!isRemote) return;
-		if (remote?.result !== undefined) result = remote.result;
+		if (!kitForm) return;
+		if (kitForm.result !== undefined) result = kitForm.result;
 	});
 
 	function handleSubmit(e: SubmitEvent) {
 		if (isRemote) {
-			// Kit remote attachment owns the submit lifecycle
 			submitted = true;
 			return;
 		}
@@ -161,7 +161,7 @@
 </script>
 
 <form
-	{...(remote as Record<string | symbol, unknown> | null)}
+	{...(remote as object | null)}
 	class={['w-full', gaps[gap], className]}
 	onsubmit={handleSubmit}
 	novalidate

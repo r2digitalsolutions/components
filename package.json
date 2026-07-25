@@ -38,10 +38,14 @@
 	},
 	"peerDependencies": {
 		"@lucide/svelte": ">=0.400.0",
+		"@sveltejs/kit": ">=2.0.0",
 		"svelte": "^5.0.0"
 	},
 	"peerDependenciesMeta": {
 		"@lucide/svelte": {
+			"optional": true
+		},
+		"@sveltejs/kit": {
 			"optional": true
 		}
 	},

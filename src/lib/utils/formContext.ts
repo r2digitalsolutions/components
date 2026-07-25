@@ -1,62 +1,79 @@
 import { getContext } from 'svelte';
+import type {
+	RemoteForm,
+	RemoteFormInput,
+	RemoteFormIssue
+} from '@sveltejs/kit';
+
+export type { RemoteForm, RemoteFormInput, RemoteFormIssue };
 
 export const FORM_CONTEXT_KEY = 'r2-form';
 
 export type FormErrors = Record<string, string>;
 export type FormDataValues = Record<string, unknown>;
 
-export interface FormContext {
+/**
+ * Spreadable remote form binding: a Kit `RemoteForm` or the object returned by `.enhance(...)`.
+ *
+ * @example
+ * ```ts
+ * remote={createPost}
+ * remote={createPost.enhance(async (form) => { ... })}
+ * ```
+ */
+export type FormRemote<
+	Input extends RemoteFormInput | void = RemoteFormInput,
+	Output = unknown
+> =
+	| RemoteForm<Input, Output>
+	| ReturnType<RemoteForm<Input, Output>['enhance']>;
+
+/** @deprecated Use `FormRemote` (or `RemoteForm` from `@sveltejs/kit`) */
+export type RemoteFormSpread<
+	Input extends RemoteFormInput | void = RemoteFormInput,
+	Output = unknown
+> = FormRemote<Input, Output>;
+
+export interface FormContext<
+	TData extends FormDataValues = FormDataValues,
+	TResult = unknown
+> {
 	/** Current field values (bindable from `<Form bind:data>`) */
-	data: FormDataValues;
+	data: TData;
 	errors: FormErrors;
 	submitted: boolean;
 	loading: boolean;
 	disabled: boolean;
 	/** Last result from a remote form / submit handler, if any */
-	result: unknown;
+	result: TResult | undefined;
 	setError: (name: string, message: string) => void;
 	clearError: (name: string) => void;
 	clearErrors: () => void;
-	setData: (name: string, value: unknown) => void;
+	setData: <K extends keyof TData & string>(name: K, value: TData[K]) => void;
 	getError: (name: string) => string | undefined;
-	getData: <T = unknown>(name: string) => T | undefined;
+	getData: <K extends keyof TData & string>(name: K) => TData[K] | undefined;
 }
 
 /**
  * Access the nearest `<Form>` context from a child component.
  * Returns `null` when used outside a Form.
+ *
+ * @example
+ * ```ts
+ * const form = getFormContext<{ email: string }, { ok: boolean }>();
+ * form?.getData('email');
+ * form?.result?.ok;
+ * ```
  */
-export function getFormContext(): FormContext | null {
-	return getContext<FormContext | null>(FORM_CONTEXT_KEY) ?? null;
-}
-
-/** Issue shape compatible with SvelteKit remote `fields.allIssues()` / field issues. */
-export interface RemoteFormIssue {
-	message: string;
-	path?: PropertyKey[];
+export function getFormContext<
+	TData extends FormDataValues = FormDataValues,
+	TResult = unknown
+>(): FormContext<TData, TResult> | null {
+	return getContext<FormContext<TData, TResult> | null>(FORM_CONTEXT_KEY) ?? null;
 }
 
 /**
- * Structural subset of SvelteKit `RemoteForm` / `.enhance(...)` return value.
- * Spread onto `<form>` the same way as `{...createPost}` — includes the attachment symbol.
- * Kept loose so this package does not hard-depend on `@sveltejs/kit` types.
- */
-export type RemoteFormSpread = {
-	method?: 'POST' | 'GET' | 'post' | 'get' | 'dialog' | 'DIALOG';
-	action?: string;
-	pending?: number;
-	result?: unknown;
-	submitted?: boolean;
-	fields?: {
-		allIssues?: () => RemoteFormIssue[] | undefined;
-		value?: () => FormDataValues;
-	};
-	/** Attachment + any other Kit props */
-	[key: symbol | string]: unknown;
-};
-
-/**
- * Map Kit-style validation issues → `{ field: message }` for `<Form bind:errors>`.
+ * Map Kit `RemoteFormIssue[]` → `{ field: message }` for `<Form bind:errors>`.
  *
  * @example
  * ```ts
@@ -69,12 +86,16 @@ export function remoteIssuesToErrors(
 	if (!issues?.length) return {};
 	const next: FormErrors = {};
 	for (const issue of issues) {
-		const key =
-			issue.path
-				?.map(String)
-				.filter(Boolean)
-				.join('.') || '_form';
+		const key = issue.path.map(String).filter(Boolean).join('.') || '_form';
 		if (!next[key]) next[key] = issue.message;
 	}
 	return next;
+}
+
+/** True when the spread value is a full `RemoteForm` (has `fields` / `pending`). */
+export function isRemoteForm<
+	Input extends RemoteFormInput | void = RemoteFormInput,
+	Output = unknown
+>(remote: FormRemote<Input, Output> | null | undefined): remote is RemoteForm<Input, Output> {
+	return !!remote && 'fields' in remote && typeof (remote as RemoteForm<Input, Output>).fields === 'object';
 }

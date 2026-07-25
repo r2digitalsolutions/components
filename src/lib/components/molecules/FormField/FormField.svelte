@@ -65,8 +65,8 @@
 	// Seed / mirror into Form data bag
 	$effect(() => {
 		if (!bindData || !name || !form) return;
-		const fromCtx = form.getData<string>(name);
-		if (fromCtx !== undefined && fromCtx !== value) {
+		const fromCtx = form.data[name];
+		if (fromCtx !== undefined && String(fromCtx) !== value) {
 			value = String(fromCtx);
 		}
 	});
