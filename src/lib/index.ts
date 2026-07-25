@@ -49,6 +49,16 @@ export { default as Spacer } from './components/atoms/Spacer/Spacer.svelte';
 export { default as FieldHint } from './components/atoms/FieldHint/FieldHint.svelte';
 export type { FieldHintTone } from './components/atoms/FieldHint/FieldHint.svelte';
 export { default as LabeledProgress } from './components/atoms/LabeledProgress/LabeledProgress.svelte';
+export { default as Code } from './components/atoms/Code/Code.svelte';
+export { default as Surface } from './components/atoms/Surface/Surface.svelte';
+export type { SurfaceVariant, SurfacePadding, SurfaceRadius } from './components/atoms/Surface/Surface.svelte';
+export { default as Heading } from './components/atoms/Heading/Heading.svelte';
+export type { HeadingLevel, HeadingSize } from './components/atoms/Heading/Heading.svelte';
+export { default as Text } from './components/atoms/Text/Text.svelte';
+export type { TextSize, TextTone } from './components/atoms/Text/Text.svelte';
+export { default as IconBox } from './components/atoms/IconBox/IconBox.svelte';
+export type { IconBoxTone, IconBoxSize } from './components/atoms/IconBox/IconBox.svelte';
+export { default as Eyebrow } from './components/atoms/Eyebrow/Eyebrow.svelte';
 
 // ── Molecules ────────────────────────────────────────────────────────────────
 export { default as Card } from './components/molecules/Card/Card.svelte';
@@ -207,6 +217,21 @@ export { default as MetricGrid } from './components/molecules/MetricGrid/MetricG
 export type { MetricItem } from './components/molecules/MetricGrid/MetricGrid.svelte';
 export { default as FileRow } from './components/molecules/FileRow/FileRow.svelte';
 export type { FileRowData } from './components/molecules/FileRow/FileRow.svelte';
+export { default as AvatarLabel } from './components/molecules/AvatarLabel/AvatarLabel.svelte';
+export { default as Checklist } from './components/molecules/Checklist/Checklist.svelte';
+export type { ChecklistItem } from './components/molecules/Checklist/Checklist.svelte';
+export { default as PasswordField } from './components/molecules/PasswordField/PasswordField.svelte';
+export { default as FeatureList } from './components/molecules/FeatureList/FeatureList.svelte';
+export type { FeatureListItem } from './components/molecules/FeatureList/FeatureList.svelte';
+export { default as PromoCard } from './components/molecules/PromoCard/PromoCard.svelte';
+export { default as ChipSelect } from './components/molecules/ChipSelect/ChipSelect.svelte';
+export type { ChipSelectOption } from './components/molecules/ChipSelect/ChipSelect.svelte';
+export { default as InfoTile } from './components/molecules/InfoTile/InfoTile.svelte';
+export { default as Quote } from './components/molecules/Quote/Quote.svelte';
+export { default as KeyValue } from './components/molecules/KeyValue/KeyValue.svelte';
+export { default as DangerZone } from './components/molecules/DangerZone/DangerZone.svelte';
+export { default as StepHeader } from './components/molecules/StepHeader/StepHeader.svelte';
+export { default as PropertyRow } from './components/molecules/PropertyRow/PropertyRow.svelte';
 
 // ── Organisms ────────────────────────────────────────────────────────────────
 export { default as FileUploader } from './components/organisms/FileUploader/FileUploader.svelte';
@@ -275,6 +300,17 @@ export { default as DocsLayout } from './components/organisms/DocsLayout/DocsLay
 export { default as DashboardPage } from './components/organisms/DashboardPage/DashboardPage.svelte';
 export { default as SettingsPage } from './components/organisms/SettingsPage/SettingsPage.svelte';
 export { default as CheckoutPage } from './components/organisms/CheckoutPage/CheckoutPage.svelte';
+export { default as TeamPage } from './components/organisms/TeamPage/TeamPage.svelte';
+export type { TeamMember } from './components/organisms/TeamPage/TeamPage.svelte';
+export { default as DiscussionPage } from './components/organisms/DiscussionPage/DiscussionPage.svelte';
+export { default as ContactForm } from './components/organisms/ContactForm/ContactForm.svelte';
+export { default as ChangePasswordForm } from './components/organisms/ChangePasswordForm/ChangePasswordForm.svelte';
+export { default as BillingPage } from './components/organisms/BillingPage/BillingPage.svelte';
+export { default as StatusPage } from './components/organisms/StatusPage/StatusPage.svelte';
+export { default as OnboardingPage } from './components/organisms/OnboardingPage/OnboardingPage.svelte';
+export { default as InviteTeamForm } from './components/organisms/InviteTeamForm/InviteTeamForm.svelte';
+export { default as HelpCenter } from './components/organisms/HelpCenter/HelpCenter.svelte';
+export { default as ErrorPage } from './components/organisms/ErrorPage/ErrorPage.svelte';
 
 // ── Utils ────────────────────────────────────────────────────────────────────
 export { themeStore } from './utils/theme.svelte.js';

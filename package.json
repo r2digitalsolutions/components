@@ -37,8 +37,8 @@
 		}
 	},
 	"peerDependencies": {
-		"svelte": "^5.0.0",
-		"@lucide/svelte": ">=0.400.0"
+		"@lucide/svelte": ">=0.400.0",
+		"svelte": "^5.0.0"
 	},
 	"peerDependenciesMeta": {
 		"@lucide/svelte": {
@@ -47,6 +47,7 @@
 	},
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",
+		"@lucide/svelte": "^1.26.0",
 		"@playwright/test": "^1.61.1",
 		"@storybook/addon-a11y": "^8.6.18",
 		"@storybook/addon-essentials": "^8.6.18",
