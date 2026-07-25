@@ -309,6 +309,28 @@ export { default as InvoiceList } from './components/molecules/InvoiceList/Invoi
 export type { InvoiceListItem } from './components/molecules/InvoiceList/InvoiceList.svelte';
 export { default as ReceiptCard } from './components/molecules/ReceiptCard/ReceiptCard.svelte';
 export type { ReceiptLine } from './components/molecules/ReceiptCard/ReceiptCard.svelte';
+export { default as AccessLevelToggle } from './components/molecules/AccessLevelToggle/AccessLevelToggle.svelte';
+export type { AccessLevel } from './components/molecules/AccessLevelToggle/AccessLevelToggle.svelte';
+export { default as RoleCard } from './components/molecules/RoleCard/RoleCard.svelte';
+export type { RolePermissionSummary } from './components/molecules/RoleCard/RoleCard.svelte';
+export { default as SeatMeter } from './components/molecules/SeatMeter/SeatMeter.svelte';
+export { default as OrgSwitcher } from './components/molecules/OrgSwitcher/OrgSwitcher.svelte';
+export type { OrgItem } from './components/molecules/OrgSwitcher/OrgSwitcher.svelte';
+export { default as SessionRow } from './components/molecules/SessionRow/SessionRow.svelte';
+export type {
+	SessionInfo,
+	SessionDevice
+} from './components/molecules/SessionRow/SessionRow.svelte';
+export { default as WebhookCard } from './components/molecules/WebhookCard/WebhookCard.svelte';
+export type {
+	WebhookEndpoint,
+	WebhookStatus
+} from './components/molecules/WebhookCard/WebhookCard.svelte';
+export { default as FeatureFlagRow } from './components/molecules/FeatureFlagRow/FeatureFlagRow.svelte';
+export type {
+	FeatureFlag,
+	FlagEnvironment
+} from './components/molecules/FeatureFlagRow/FeatureFlagRow.svelte';
 export { default as AvatarLabel } from './components/molecules/AvatarLabel/AvatarLabel.svelte';
 export { default as Checklist } from './components/molecules/Checklist/Checklist.svelte';
 export type { ChecklistItem } from './components/molecules/Checklist/Checklist.svelte';
@@ -650,6 +672,11 @@ export type {
 	PermissionResource,
 	PermissionMap
 } from './components/organisms/PermissionsMatrix/PermissionsMatrix.svelte';
+export { default as RolesPage } from './components/organisms/RolesPage/RolesPage.svelte';
+export type { WorkspaceRole } from './components/organisms/RolesPage/RolesPage.svelte';
+export { default as SessionsPage } from './components/organisms/SessionsPage/SessionsPage.svelte';
+export { default as WebhooksPage } from './components/organisms/WebhooksPage/WebhooksPage.svelte';
+export { default as FeatureFlagsPage } from './components/organisms/FeatureFlagsPage/FeatureFlagsPage.svelte';
 export { default as IntegrationsPage } from './components/organisms/IntegrationsPage/IntegrationsPage.svelte';
 export type { IntegrationItem } from './components/organisms/IntegrationsPage/IntegrationsPage.svelte';
 export { default as Testimonials } from './components/organisms/Testimonials/Testimonials.svelte';
