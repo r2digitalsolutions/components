@@ -1,0 +1,53 @@
+import { Meta, Title, Subtitle } from '@storybook/blocks';
+
+<Meta title="Introduction/How to use" />
+
+<Title>How to use components</Title>
+
+<Subtitle>
+  Storybook demos use internal <code>*Story</code> wrappers. Copy the <strong>real</strong> package
+  API into your app — not <code>CookieConsentStory</code>.
+</Subtitle>
+
+## Install
+
+```bash
+npm i @r2digisolutions/components
+```
+
+Peer dependency: `svelte` ^5.
+
+## Import from the package
+
+```svelte
+<script>
+  import { Button, CookieConsent, PageHeader } from '@r2digisolutions/components';
+</script>
+
+<Button variant="primary">Save</Button>
+```
+
+## Show code in Storybook
+
+On any component page:
+
+1. Open a story section (**Default**, **Card**, …) — each one has its own `args` / props
+2. Open **Docs** or **Show code**
+3. Change **Controls** — the snippet updates with those props
+
+You should see an import from `@r2digisolutions/components` plus the props of that story, e.g.:
+
+```svelte
+<script>
+  import { CookieConsent } from '@r2digisolutions/components';
+</script>
+
+<CookieConsent
+  variant="card"
+  placement="fixed"
+  position="bottom-right"
+  ...
+/>
+```
+
+A global transform builds that from the story `args`. Stories can also set `parameters.docs.source.transformArgs` + `componentName`.

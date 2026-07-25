@@ -135,7 +135,11 @@
 			bind:value
 			aria-describedby={helperText ? helperId : undefined}
 			aria-invalid={status === 'error'}
-			class="flex-1 min-w-0 bg-transparent text-primary placeholder:text-muted outline-none disabled:cursor-not-allowed"
+			class={[
+				'min-w-0 flex-1 bg-transparent text-primary outline-none placeholder:text-muted disabled:cursor-not-allowed',
+				type === 'search' &&
+					'[&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-decoration]:appearance-none'
+			]}
 			{oninput}
 			{onchange}
 			{onfocus}

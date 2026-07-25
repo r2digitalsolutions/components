@@ -1,9 +1,31 @@
 <script lang="ts">
 	import CookieConsent from './CookieConsent.svelte';
 
-	let props = $props<{
+	let {
+		variant = 'bar',
+		placement = 'static',
+		position = 'bottom-center',
+		title = 'Cookies & privacy',
+		description = 'We use cookies to keep the product running and understand how it’s used. You can accept all, reject non-essential ones, or manage preferences.',
+		acceptLabel = 'Accept all',
+		rejectLabel = 'Reject non-essential',
+		customizeLabel = 'Manage',
+		policyLabel = 'Privacy policy',
+		policyHref = '/privacy',
+		showCustomize = true
+	}: {
 		variant?: 'bar' | 'card';
-	}>();
+		placement?: 'fixed' | 'absolute' | 'static';
+		position?: 'bottom-left' | 'bottom-right' | 'bottom-center';
+		title?: string;
+		description?: string;
+		acceptLabel?: string;
+		rejectLabel?: string;
+		customizeLabel?: string;
+		policyLabel?: string;
+		policyHref?: string;
+		showCustomize?: boolean;
+	} = $props();
 
 	let key = $state(0);
 	let lastAction = $state<string | null>(null);
@@ -20,7 +42,8 @@
 			{#if lastAction}
 				Last action: <span class="font-medium text-primary">{lastAction}</span>
 			{:else}
-				Preview uses <code class="text-xs">placement="static"</code> so it stays fully visible in Storybook.
+				Controls → Show code. Canvas forces <code class="text-xs">static</code>; snippet uses
+				<code class="text-xs">placement="{placement}"</code>.
 			{/if}
 		</p>
 		<button
@@ -47,11 +70,19 @@
 		</div>
 
 		{#key key}
+			<!-- Canvas always uses static so the banner stays visible; Show code uses Controls `placement`. -->
 			<CookieConsent
+				{variant}
 				placement="static"
-				variant={props.variant ?? 'bar'}
-				policyHref="#"
-				showCustomize
+				{position}
+				{title}
+				{description}
+				{acceptLabel}
+				{rejectLabel}
+				{customizeLabel}
+				{policyLabel}
+				{policyHref}
+				{showCustomize}
 				onaccept={() => (lastAction = 'Accept all')}
 				onreject={() => (lastAction = 'Reject non-essential')}
 				oncustomize={() => (lastAction = 'Manage')}
