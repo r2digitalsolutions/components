@@ -2,21 +2,34 @@
 	import type { Snippet } from 'svelte';
 	import { setContext } from 'svelte';
 	import Alert from '$lib/components/molecules/Alert/Alert.svelte';
-
-	export type FormErrors = Record<string, string>;
-
-	export interface FormContext {
-		errors: FormErrors;
-		submitted: boolean;
-		loading: boolean;
-		setError: (name: string, message: string) => void;
-		clearError: (name: string) => void;
-		clearErrors: () => void;
-	}
+	import {
+		FORM_CONTEXT_KEY,
+		remoteIssuesToErrors,
+		type FormContext,
+		type FormDataValues,
+		type FormErrors,
+		type RemoteFormSpread
+	} from '$lib/utils/formContext.js';
 
 	interface FormProps {
+		/** Field values shared via context (`getFormContext().data`) */
+		data?: FormDataValues;
 		errors?: FormErrors;
 		loading?: boolean;
+		disabled?: boolean;
+		/**
+		 * SvelteKit remote `form()` instance (or `.enhance(...)`).
+		 * Spread onto the native `<form>` for progressive enhancement.
+		 * When set, we do **not** call `preventDefault` — Kit owns submit.
+		 */
+		remote?: RemoteFormSpread | null;
+		/**
+		 * When `remote` is set, sync `remote.fields.allIssues()` → `errors`.
+		 * @default true
+		 */
+		syncRemoteIssues?: boolean;
+		/** Optional bag for submit/remote result exposed in context */
+		result?: unknown;
 		title?: string;
 		description?: string;
 		/** Show a summary alert listing field errors after submit */
@@ -27,12 +40,18 @@
 		children?: Snippet;
 		header?: Snippet;
 		footer?: Snippet;
+		/** Client-side submit (ignored when `remote` is set — use `remote.enhance`) */
 		onsubmit?: (e: SubmitEvent) => void;
 	}
 
 	let {
+		data = $bindable<FormDataValues>({}),
 		errors = $bindable<FormErrors>({}),
 		loading = false,
+		disabled = false,
+		remote = null,
+		syncRemoteIssues = true,
+		result = $bindable<unknown>(undefined),
 		title,
 		description,
 		showErrorSummary = true,
@@ -46,6 +65,10 @@
 	}: FormProps = $props();
 
 	let submitted = $state(false);
+
+	const isRemote = $derived(remote != null);
+	const remotePending = $derived(Boolean(remote?.pending));
+	const busy = $derived(loading || remotePending || disabled);
 
 	const errorEntries = $derived(Object.entries(errors).filter(([, msg]) => Boolean(msg)));
 	const hasErrors = $derived(errorEntries.length > 0);
@@ -71,7 +94,23 @@
 		errors = {};
 	}
 
-	setContext('r2-form', {
+	function setData(name: string, value: unknown) {
+		data = { ...data, [name]: value };
+	}
+
+	function getError(name: string) {
+		return errors[name];
+	}
+
+	function getData<T = unknown>(name: string) {
+		return data[name] as T | undefined;
+	}
+
+	// Keep context getters live so children always see current state
+	setContext(FORM_CONTEXT_KEY, {
+		get data() {
+			return data;
+		},
 		get errors() {
 			return errors;
 		},
@@ -79,14 +118,42 @@
 			return submitted;
 		},
 		get loading() {
-			return loading;
+			return busy;
+		},
+		get disabled() {
+			return disabled;
+		},
+		get result() {
+			return result ?? remote?.result;
 		},
 		setError,
 		clearError,
-		clearErrors
+		clearErrors,
+		setData,
+		getError,
+		getData
 	} satisfies FormContext);
 
+	// Bridge Kit remote validation issues → Form errors
+	$effect(() => {
+		if (!isRemote || !syncRemoteIssues) return;
+		const allIssues = remote?.fields?.allIssues;
+		if (typeof allIssues !== 'function') return;
+		errors = remoteIssuesToErrors(allIssues());
+	});
+
+	// Mirror remote result into bindable result when present
+	$effect(() => {
+		if (!isRemote) return;
+		if (remote?.result !== undefined) result = remote.result;
+	});
+
 	function handleSubmit(e: SubmitEvent) {
+		if (isRemote) {
+			// Kit remote attachment owns the submit lifecycle
+			submitted = true;
+			return;
+		}
 		e.preventDefault();
 		submitted = true;
 		onsubmit?.(e);
@@ -94,10 +161,11 @@
 </script>
 
 <form
+	{...(remote as Record<string | symbol, unknown> | null)}
 	class={['w-full', gaps[gap], className]}
 	onsubmit={handleSubmit}
 	novalidate
-	aria-busy={loading || undefined}
+	aria-busy={busy || undefined}
 >
 	{#if header}
 		{@render header()}

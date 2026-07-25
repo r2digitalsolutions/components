@@ -1,12 +1,14 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import Button from '$lib/components/atoms/Button/Button.svelte';
+	import { getFormContext } from '$lib/utils/formContext.js';
 
 	interface FormActionsProps {
 		submitLabel?: string;
 		cancelLabel?: string;
 		/** Optional destructive action on the left (e.g. Delete) */
 		dangerLabel?: string;
+		/** When omitted, inherits `loading` from nearest `<Form>` context */
 		loading?: boolean;
 		disabled?: boolean;
 		/** Disable only the primary submit control (e.g. wizard validation) */
@@ -35,7 +37,7 @@
 		submitLabel = 'Save',
 		cancelLabel = 'Cancel',
 		dangerLabel,
-		loading = false,
+		loading,
 		disabled = false,
 		submitDisabled = false,
 		fullWidth = true,
@@ -51,13 +53,15 @@
 		ondanger
 	}: FormActionsProps = $props();
 
+	const form = getFormContext();
+	const resolvedLoading = $derived(loading ?? form?.loading ?? false);
+	const busy = $derived(resolvedLoading || disabled || Boolean(form?.disabled));
+
 	const alignClasses: Record<'start' | 'end' | 'between', string> = {
 		start: 'justify-start',
 		end: 'justify-end',
 		between: 'justify-between'
 	};
-
-	const busy = $derived(loading || disabled);
 </script>
 
 <div
@@ -120,7 +124,7 @@
 		<Button
 			type="submit"
 			{size}
-			{loading}
+			loading={resolvedLoading}
 			disabled={busy || submitDisabled}
 			class={fullWidth ? 'w-full sm:w-auto' : ''}
 			onclick={() => onsubmit?.()}

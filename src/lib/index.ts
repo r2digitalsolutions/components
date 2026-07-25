@@ -255,7 +255,19 @@ export type { FilterChip } from './components/molecules/FilterBar/FilterBar.svel
 export { default as SortableList } from './components/molecules/SortableList/SortableList.svelte';
 export type { SortableItem } from './components/molecules/SortableList/SortableList.svelte';
 export { default as Form } from './components/molecules/Form/Form.svelte';
-export type { FormErrors, FormContext } from './components/molecules/Form/Form.svelte';
+export {
+	getFormContext,
+	FORM_CONTEXT_KEY,
+	remoteIssuesToErrors
+} from './utils/formContext.js';
+export type {
+	FormErrors,
+	FormContext,
+	FormDataValues,
+	RemoteFormSpread,
+	RemoteFormIssue
+} from './utils/formContext.js';
+
 export { default as FieldArray } from './components/molecules/FieldArray/FieldArray.svelte';
 export type { FieldArrayItem } from './components/molecules/FieldArray/FieldArray.svelte';
 export { default as PromptInput } from './components/molecules/PromptInput/PromptInput.svelte';
