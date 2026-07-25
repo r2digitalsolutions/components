@@ -52,7 +52,8 @@
 	class={[
 		'flex min-h-0 min-w-0 flex-col overflow-hidden bg-surface-elevated',
 		chrome && 'border border-border',
-		fill && 'h-full',
+		/* Collapsed docks shrink to the header — never leave an empty filled shell */
+		collapsed ? 'h-auto shrink-0' : fill ? 'h-full' : '',
 		className
 	]}
 >
@@ -66,6 +67,7 @@
 			size={headerSize}
 			{icon}
 			{actions}
+			class={collapsed ? 'border-b-0' : ''}
 			ontoggle={(value) => ontoggle?.(value)}
 		/>
 	{/if}

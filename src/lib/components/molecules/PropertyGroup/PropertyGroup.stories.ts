@@ -4,7 +4,10 @@ import PropertyGroupStory from './PropertyGroupStory.svelte';
 const meta = {
 	title: 'Molecules/PropertyGroup',
 	component: PropertyGroupStory,
-	tags: ['autodocs']
+	tags: ['autodocs'],
+	parameters: {
+		layout: 'padded'
+	}
 } satisfies Meta<typeof PropertyGroupStory>;
 
 export default meta;

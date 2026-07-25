@@ -69,7 +69,12 @@ const preview: Preview = {
 				date: /Date$/i
 			}
 		},
-		layout: 'centered',
+		/**
+		 * Full canvas width by default so stories resize with the Storybook pane.
+		 * Use `layout: 'centered'` only for floating UI (modals, toasts, command palette).
+		 * Use `layout: 'fullscreen'` for shells / full-bleed layouts.
+		 */
+		layout: 'padded',
 		docs: {
 			source: {
 				/**
