@@ -1,8 +1,8 @@
 <script lang="ts">
 	import Image from '$lib/components/atoms/Image/Image.svelte';
 	import NumberInput from '$lib/components/molecules/NumberInput/NumberInput.svelte';
-	import IconButton from '$lib/components/atoms/IconButton/IconButton.svelte';
 	import PriceTag from '$lib/components/molecules/PriceTag/PriceTag.svelte';
+	import X from '@lucide/svelte/icons/x';
 
 	interface CartItemProps {
 		id?: string;
@@ -50,11 +50,16 @@
 					<p class="truncate text-xs text-muted">{subtitle}</p>
 				{/if}
 			</div>
-			<IconButton label="Remove" size="xs" variant="ghost" onclick={() => onremove?.()}>
-				<svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-					<path stroke-linecap="round" stroke-linejoin="round" d="M6 7h12M9 7V5h6v2m-7 3v8m4-8v8m4-8v8M5 7l1 12h12l1-12" />
-				</svg>
-			</IconButton>
+			{#if onremove}
+				<button
+					type="button"
+					class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-overlay hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30"
+					aria-label="Remove"
+					onclick={() => onremove?.()}
+				>
+					<X class="h-4 w-4" strokeWidth={2} />
+				</button>
+			{/if}
 		</div>
 		<div class="flex items-center justify-between gap-3">
 			<div class="w-28">

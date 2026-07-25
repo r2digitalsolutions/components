@@ -47,7 +47,12 @@
 				</div>
 			{/if}
 		</div>
-		<Button size="sm" variant="destructive" onclick={() => (open = true)}>{actionLabel}</Button>
+		<Button
+			size="sm"
+			variant="destructive"
+			class="shrink-0 whitespace-nowrap"
+			onclick={() => (open = true)}>{actionLabel}</Button
+		>
 	</div>
 </Card>
 
