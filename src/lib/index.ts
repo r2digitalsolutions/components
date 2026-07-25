@@ -59,6 +59,9 @@ export type { TextSize, TextTone } from './components/atoms/Text/Text.svelte';
 export { default as IconBox } from './components/atoms/IconBox/IconBox.svelte';
 export type { IconBoxTone, IconBoxSize } from './components/atoms/IconBox/IconBox.svelte';
 export { default as Eyebrow } from './components/atoms/Eyebrow/Eyebrow.svelte';
+export { default as Sparkline } from './components/atoms/Sparkline/Sparkline.svelte';
+export { default as Time } from './components/atoms/Time/Time.svelte';
+export { default as Truncate } from './components/atoms/Truncate/Truncate.svelte';
 
 // ── Molecules ────────────────────────────────────────────────────────────────
 export { default as Card } from './components/molecules/Card/Card.svelte';
@@ -193,6 +196,7 @@ export { default as VolumeControl } from './components/molecules/VolumeControl/V
 export { default as Playlist } from './components/molecules/Playlist/Playlist.svelte';
 export type { PlaylistTrack } from './components/molecules/Playlist/Playlist.svelte';
 export { default as Marquee } from './components/molecules/Marquee/Marquee.svelte';
+export type { MarqueeSeparator } from './components/molecules/Marquee/Marquee.svelte';
 export { default as OfflineBanner } from './components/molecules/OfflineBanner/OfflineBanner.svelte';
 export { default as UnsavedChanges } from './components/molecules/UnsavedChanges/UnsavedChanges.svelte';
 export { default as ErrorBoundary } from './components/molecules/ErrorBoundary/ErrorBoundary.svelte';
@@ -232,6 +236,30 @@ export { default as KeyValue } from './components/molecules/KeyValue/KeyValue.sv
 export { default as DangerZone } from './components/molecules/DangerZone/DangerZone.svelte';
 export { default as StepHeader } from './components/molecules/StepHeader/StepHeader.svelte';
 export { default as PropertyRow } from './components/molecules/PropertyRow/PropertyRow.svelte';
+export { default as Chart } from './components/molecules/Chart/Chart.svelte';
+export type { ChartType, ChartPoint } from './components/molecules/Chart/Chart.svelte';
+export { default as InputGroup } from './components/molecules/InputGroup/InputGroup.svelte';
+export { default as CreditCardInput } from './components/molecules/CreditCardInput/CreditCardInput.svelte';
+export type { CardBrand } from './components/molecules/CreditCardInput/CreditCardInput.svelte';
+export { default as BulkActionBar } from './components/molecules/BulkActionBar/BulkActionBar.svelte';
+export type { BulkAction } from './components/molecules/BulkActionBar/BulkActionBar.svelte';
+export { default as ReactionBar } from './components/molecules/ReactionBar/ReactionBar.svelte';
+export type { ReactionItem } from './components/molecules/ReactionBar/ReactionBar.svelte';
+export { default as AddressFields } from './components/molecules/AddressFields/AddressFields.svelte';
+export { default as RichTextEditor } from './components/molecules/RichTextEditor/RichTextEditor.svelte';
+export { default as EventCalendar } from './components/molecules/EventCalendar/EventCalendar.svelte';
+export type { CalendarEvent } from './components/molecules/EventCalendar/EventCalendar.svelte';
+export { default as CompareSlider } from './components/molecules/CompareSlider/CompareSlider.svelte';
+export { default as PdfViewer } from './components/molecules/PdfViewer/PdfViewer.svelte';
+export { default as ImageGallery } from './components/molecules/ImageGallery/ImageGallery.svelte';
+export type { GalleryImage } from './components/molecules/ImageGallery/ImageGallery.svelte';
+export { default as LogViewer } from './components/molecules/LogViewer/LogViewer.svelte';
+export type { LogEntry, LogLevel } from './components/molecules/LogViewer/LogViewer.svelte';
+export { default as PriceTag } from './components/molecules/PriceTag/PriceTag.svelte';
+export { default as LocaleSwitcher } from './components/molecules/LocaleSwitcher/LocaleSwitcher.svelte';
+export type { LocaleOption } from './components/molecules/LocaleSwitcher/LocaleSwitcher.svelte';
+export { default as NoteCard } from './components/molecules/NoteCard/NoteCard.svelte';
+export type { NoteTone } from './components/molecules/NoteCard/NoteCard.svelte';
 
 // ── Organisms ────────────────────────────────────────────────────────────────
 export { default as FileUploader } from './components/organisms/FileUploader/FileUploader.svelte';
@@ -311,6 +339,18 @@ export { default as OnboardingPage } from './components/organisms/OnboardingPage
 export { default as InviteTeamForm } from './components/organisms/InviteTeamForm/InviteTeamForm.svelte';
 export { default as HelpCenter } from './components/organisms/HelpCenter/HelpCenter.svelte';
 export { default as ErrorPage } from './components/organisms/ErrorPage/ErrorPage.svelte';
+export { default as FileManager } from './components/organisms/FileManager/FileManager.svelte';
+export { default as EmailComposer } from './components/organisms/EmailComposer/EmailComposer.svelte';
+export { default as InvoicePage } from './components/organisms/InvoicePage/InvoicePage.svelte';
+export type { InvoiceLine } from './components/organisms/InvoicePage/InvoicePage.svelte';
+export { default as AnalyticsPage } from './components/organisms/AnalyticsPage/AnalyticsPage.svelte';
+export { default as PaymentForm } from './components/organisms/PaymentForm/PaymentForm.svelte';
+export { default as CartPage } from './components/organisms/CartPage/CartPage.svelte';
+export type { CartItem } from './components/organisms/CartPage/CartPage.svelte';
+export { default as AuditLogPage } from './components/organisms/AuditLogPage/AuditLogPage.svelte';
+export type { AuditEvent } from './components/organisms/AuditLogPage/AuditLogPage.svelte';
+export { default as ApiKeysPage } from './components/organisms/ApiKeysPage/ApiKeysPage.svelte';
+export type { ApiKeyItem } from './components/organisms/ApiKeysPage/ApiKeysPage.svelte';
 
 // ── Utils ────────────────────────────────────────────────────────────────────
 export { themeStore } from './utils/theme.svelte.js';
