@@ -4,11 +4,13 @@
 	let {
 		orientation = 'horizontal',
 		dragging: draggingProp = false,
-		example = 'playground'
+		example = 'playground',
+		revealOnHover = false
 	}: {
 		orientation?: 'horizontal' | 'vertical';
 		dragging?: boolean;
 		example?: 'playground' | 'both';
+		revealOnHover?: boolean;
 	} = $props();
 
 	let containerEl = $state<HTMLDivElement | null>(null);
@@ -113,12 +115,13 @@
 	}
 </script>
 
-<div class="w-full max-w-2xl space-y-3">
+<div class="w-full space-y-3">
 	<div class="space-y-1">
 		<p class="text-sm font-semibold text-primary">Split handle</p>
 		<p class="text-xs text-secondary">
 			Haz clic en el handle (o Tab) para enfocarlo — el anillo brand lo confirma — y usa ← → /
-			↑ ↓. Home/End van a min/max. El hover solo no activa el teclado.
+			↑ ↓. Con <code class="rounded bg-surface-overlay px-1 text-[11px]">revealOnHover</code>:
+			acento fino en idle, grip completo al hover.
 		</p>
 	</div>
 
@@ -143,6 +146,7 @@
 					min={20}
 					max={80}
 					dragging={isDragging}
+					{revealOnHover}
 					onpointerdown={hDrag.start}
 					onpointermove={hDrag.move}
 					onpointerup={hDrag.stop}
@@ -171,6 +175,7 @@
 					min={20}
 					max={80}
 					dragging={isDraggingV}
+					{revealOnHover}
 					onpointerdown={vDrag.start}
 					onpointermove={vDrag.move}
 					onpointerup={vDrag.stop}
@@ -201,6 +206,7 @@
 				min={20}
 				max={80}
 				dragging={showDragging}
+				{revealOnHover}
 				onpointerdown={startDrag}
 				onpointermove={onPointerMove}
 				onpointerup={stopDrag}

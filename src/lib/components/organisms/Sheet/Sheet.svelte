@@ -398,7 +398,7 @@
 		{#if showHandle}
 			<!-- svelte-ignore a11y_no_static_element_interactions -->
 			<div
-				class="flex shrink-0 cursor-grab justify-center pt-3 pb-1 active:cursor-grabbing"
+				class="group/handle flex shrink-0 cursor-grab justify-center pt-3 pb-1 active:cursor-grabbing"
 				style:padding-top={accentColor ? '14px' : undefined}
 				aria-hidden="true"
 				onpointerdown={onHandlePointerDown}
@@ -406,7 +406,14 @@
 				onpointerup={onPointerUp}
 				onpointercancel={onPointerUp}
 			>
-				<span class="h-1 w-10 rounded-full bg-border-strong"></span>
+				<span
+					class={[
+						'h-1 w-10 rounded-full transition-[background-color,transform] duration-150',
+						dragging
+							? 'scale-x-125 bg-brand-500'
+							: 'bg-border-strong group-hover/handle:scale-x-125 group-hover/handle:bg-brand-500/70'
+					]}
+				></span>
 			</div>
 		{/if}
 

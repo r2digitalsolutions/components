@@ -1,6 +1,10 @@
 import type { Preview } from '@storybook/sveltekit';
 import * as svelte from 'svelte';
-import { buildUsageCode } from './usage';
+import {
+	buildFullStoryCode,
+	buildUsageCode,
+	inferComponentName
+} from './usage';
 import '../src/app.css';
 
 // Guard setContext against Svelte 5 set_context_after_init error when Storybook decorators re-run on prop change
@@ -21,16 +25,9 @@ try {
 	// Fallback if setContext property is read-only
 }
 
-function inferComponentName(title: string, storyId?: string): string | null {
-	const fromTitle = title.split('/').pop()?.trim();
-	if (fromTitle && !fromTitle.endsWith('Story')) return fromTitle;
-
-	const fromId = storyId?.split('--')[0]?.split('-').pop();
-	return fromId ?? null;
-}
-
 type DocsSourceConfig = {
 	code?: string;
+	/** When true, emit a minimal public-API snippet from Controls args. */
 	transformArgs?: boolean;
 	componentName?: string;
 	omit?: string[];
@@ -78,10 +75,11 @@ const preview: Preview = {
 		docs: {
 			source: {
 				/**
-				 * Builds copy-pasteable usage from the public package API + live story args.
-				 * - Each story section (Default, Card, …) uses its own `args`
-				 * - Changing Controls updates Show code
-				 * - Optional static `parameters.docs.source.code` still wins when set without transformArgs
+				 * Default: full *Story.svelte example (composition + state), rewritten to
+				 * `@r2digisolutions/components` imports — actually useful to copy.
+				 *
+				 * Opt-in minimal API snippet: `parameters.docs.source.transformArgs: true`
+				 * Static override: `parameters.docs.source.code`
 				 */
 				transform: (
 					src: string,
@@ -96,23 +94,19 @@ const preview: Preview = {
 					const name =
 						sourceCfg?.componentName ?? inferComponentName(ctx.title ?? '', ctx.id);
 
-					// Explicit static source always wins unless the story opts into live args
 					if (sourceCfg?.code && sourceCfg.transformArgs !== true) {
 						return sourceCfg.code;
 					}
 
-					const looksLikeStoryWrapper =
-						/Story\b/.test(src) || /<[A-Z][A-Za-z0-9]*Story\b/.test(src);
-
-					const shouldBuildFromArgs =
-						sourceCfg?.transformArgs === true || looksLikeStoryWrapper || !src?.trim();
-
-					if (name && shouldBuildFromArgs) {
+					if (sourceCfg?.transformArgs === true && name) {
 						return buildUsageCode(name, ctx.args ?? {}, {
 							omit: sourceCfg?.omit,
 							extraProps: sourceCfg?.extraProps
 						});
 					}
+
+					const full = buildFullStoryCode(name, ctx.title, ctx.args);
+					if (full) return full;
 
 					return src;
 				}

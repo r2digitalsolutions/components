@@ -172,6 +172,7 @@ export { default as FloatButton } from './components/molecules/FloatButton/Float
 export { default as SpeedDial } from './components/molecules/SpeedDial/SpeedDial.svelte';
 export type { SpeedDialAction } from './components/molecules/SpeedDial/SpeedDial.svelte';
 export { default as BottomSheet } from './components/molecules/BottomSheet/BottomSheet.svelte';
+export type { BottomSheetSize } from './components/molecules/BottomSheet/BottomSheet.svelte';
 export { default as SwipeAction } from './components/molecules/SwipeAction/SwipeAction.svelte';
 export { default as FilterChips } from './components/molecules/FilterChips/FilterChips.svelte';
 export type { FilterChipItem } from './components/molecules/FilterChips/FilterChips.svelte';

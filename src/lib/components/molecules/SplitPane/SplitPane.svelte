@@ -12,6 +12,11 @@
 		maxSize?: number;
 		/** Which pane the size percentage applies to */
 		sizePane?: 'start' | 'end';
+		/**
+		 * Idle: thin accent line. Hover / focus / drag: full grip.
+		 * Pass-through to SplitHandle.
+		 */
+		revealOnHover?: boolean;
 		class?: string;
 		start?: Snippet;
 		end?: Snippet;
@@ -24,6 +29,7 @@
 		minSize = 15,
 		maxSize = 85,
 		sizePane = 'start',
+		revealOnHover = false,
 		class: className = '',
 		start,
 		end
@@ -129,6 +135,7 @@
 		min={separatorMin}
 		max={separatorMax}
 		dragging={isDragging}
+		{revealOnHover}
 		onpointerdown={startDrag}
 		onpointermove={onPointerMove}
 		onpointerup={stopDrag}

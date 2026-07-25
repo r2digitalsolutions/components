@@ -8,9 +8,10 @@ const meta = {
 	argTypes: {
 		example: { control: 'select', options: ['playground', 'both'] },
 		orientation: { control: 'select', options: ['horizontal', 'vertical'] },
-		dragging: { control: 'boolean' }
+		dragging: { control: 'boolean' },
+		revealOnHover: { control: 'boolean' }
 	},
-	args: { example: 'playground', orientation: 'horizontal', dragging: false }
+	args: { example: 'playground', orientation: 'horizontal', dragging: false, revealOnHover: false }
 } satisfies Meta<typeof SplitHandleStory>;
 
 export default meta;
@@ -18,6 +19,11 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
 	args: { example: 'playground', orientation: 'horizontal' }
+};
+
+export const RevealOnHover: Story = {
+	name: 'Reveal on hover',
+	args: { example: 'playground', revealOnHover: true }
 };
 
 export const Vertical: Story = {
