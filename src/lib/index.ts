@@ -302,7 +302,13 @@ export { default as InputGroup } from './components/molecules/InputGroup/InputGr
 export { default as CreditCardInput } from './components/molecules/CreditCardInput/CreditCardInput.svelte';
 export type { CardBrand } from './components/molecules/CreditCardInput/CreditCardInput.svelte';
 export { default as BulkActionBar } from './components/molecules/BulkActionBar/BulkActionBar.svelte';
-export type { BulkAction } from './components/molecules/BulkActionBar/BulkActionBar.svelte';
+export type {
+	BulkAction,
+	BulkActionVariant,
+	BulkActionBarPlacement,
+	BulkActionBarSize,
+	BulkActionBarTone
+} from './components/molecules/BulkActionBar/BulkActionBar.svelte';
 export { default as ReactionBar } from './components/molecules/ReactionBar/ReactionBar.svelte';
 export type { ReactionItem } from './components/molecules/ReactionBar/ReactionBar.svelte';
 export { default as AddressFields } from './components/molecules/AddressFields/AddressFields.svelte';
