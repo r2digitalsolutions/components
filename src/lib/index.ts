@@ -432,7 +432,10 @@ export { default as ChatWindow } from './components/organisms/ChatWindow/ChatWin
 export { default as CommentThread } from './components/organisms/CommentThread/CommentThread.svelte';
 export type { CommentItem } from './components/organisms/CommentThread/CommentThread.svelte';
 export { default as ActivityFeed } from './components/organisms/ActivityFeed/ActivityFeed.svelte';
-export type { ActivityItem } from './components/organisms/ActivityFeed/ActivityFeed.svelte';
+export type {
+	ActivityItem,
+	ActivityType
+} from './components/organisms/ActivityFeed/ActivityFeed.svelte';
 export { default as SettingsLayout } from './components/organisms/SettingsLayout/SettingsLayout.svelte';
 export type { SettingsNavItem } from './components/organisms/SettingsLayout/SettingsLayout.svelte';
 export { default as PricingTable } from './components/organisms/PricingTable/PricingTable.svelte';
