@@ -29,7 +29,7 @@
 	}
 </script>
 
-<Card class={`w-full max-w-md ${className}`} padding="lg">
+<Card class={`mx-auto w-full max-w-md ${className}`} padding="lg">
 	<div class="mb-6 space-y-1 text-center">
 		<h1 class="text-xl font-semibold text-primary">{title}</h1>
 		<p class="text-sm text-secondary">{subtitle}</p>

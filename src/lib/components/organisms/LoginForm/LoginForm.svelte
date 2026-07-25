@@ -128,11 +128,11 @@
 {/snippet}
 
 {#if variant === 'card'}
-	<Card class={`w-full max-w-md ${className}`} padding="lg" variant="elevated">
+	<Card class={`mx-auto w-full max-w-md ${className}`} padding="lg" variant="elevated">
 		{@render body()}
 	</Card>
 {:else}
-	<div class={['w-full max-w-md', className]}>
+	<div class={['mx-auto w-full max-w-md', className]}>
 		{@render body()}
 	</div>
 {/if}

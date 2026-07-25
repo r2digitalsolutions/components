@@ -732,6 +732,7 @@ export type { AccountSettingsValues } from './components/organisms/SettingsForm/
 
 // ── Templates ────────────────────────────────────────────────────────────────
 export { default as AuthTemplate } from './components/templates/AuthTemplate/AuthTemplate.svelte';
+export type { AuthTemplateView } from './components/templates/AuthTemplate/AuthTemplate.svelte';
 export { default as DashboardTemplate } from './components/templates/DashboardTemplate/DashboardTemplate.svelte';
 export { default as MarketingTemplate } from './components/templates/MarketingTemplate/MarketingTemplate.svelte';
 export { default as ListingTemplate } from './components/templates/ListingTemplate/ListingTemplate.svelte';

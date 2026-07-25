@@ -1,7 +1,5 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import Center from '$lib/components/atoms/Center/Center.svelte';
-	import Container from '$lib/components/atoms/Container/Container.svelte';
 	import BrandMark from '$lib/components/atoms/BrandMark/BrandMark.svelte';
 	import SafeArea from '$lib/components/atoms/SafeArea/SafeArea.svelte';
 
@@ -139,27 +137,30 @@
 				aria-hidden="true"
 			></div>
 
-			<SafeArea top bottom class="relative z-10 flex min-h-0 flex-1 flex-col">
+			<SafeArea top bottom class="relative z-10 flex h-full min-h-0 flex-1 flex-col">
 				{#if mobileHero && showAside}
 					<div class="shrink-0 lg:hidden">
 						{@render marketingPanel(true)}
 					</div>
 				{:else}
-					<div class="px-5 pt-6 text-center lg:hidden">
+					<div class="shrink-0 px-5 pt-6 text-center lg:hidden">
 						<BrandMark name={brand} showName size="md" class="justify-center" />
 						<p class="mt-2 text-sm text-muted">{tagline}</p>
 					</div>
 				{/if}
 
-				<Center padding="none" fill class="min-h-0 flex-1 px-5 py-6 sm:px-8 sm:py-10">
-					<Container size="sm" padding="none" class="w-full">
+				<!-- Form column: true center in remaining space -->
+				<div
+					class="flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto px-5 py-8 sm:px-8 sm:py-10"
+				>
+					<div class="mx-auto w-full max-w-md shrink-0">
 						{#if children}
 							{@render children()}
 						{/if}
-					</Container>
-				</Center>
+					</div>
+				</div>
 
-				<p class="px-5 pb-4 text-center text-[11px] text-muted lg:hidden">{footer}</p>
+				<p class="shrink-0 px-5 pb-4 text-center text-[11px] text-muted lg:hidden">{footer}</p>
 			</SafeArea>
 		</section>
 	</div>
