@@ -1,4 +1,6 @@
 <script lang="ts">
+	import Heart from '@lucide/svelte/icons/heart';
+
 	interface LikeButtonProps {
 		liked?: boolean;
 		count?: number;
@@ -50,20 +52,12 @@
 	{disabled}
 	onclick={toggle}
 >
-	<svg
+	<Heart
 		class={dims[size].icon}
-		viewBox="0 0 24 24"
 		fill={liked ? 'currentColor' : 'none'}
-		stroke="currentColor"
-		stroke-width="2"
+		stroke-width={2}
 		aria-hidden="true"
-	>
-		<path
-			stroke-linecap="round"
-			stroke-linejoin="round"
-			d="M12 21s-6.5-4.35-9.33-8.11C.74 10.36 1.1 6.9 3.9 5.2c2.1-1.28 4.7-.7 6.1 1.2 1.4-1.9 4-2.48 6.1-1.2 2.8 1.7 3.16 5.16 1.23 7.69C18.5 16.65 12 21 12 21z"
-		/>
-	</svg>
+	/>
 	{#if showCount}
 		<span class="tabular-nums">{count}</span>
 	{/if}

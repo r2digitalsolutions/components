@@ -143,7 +143,7 @@
 			class={[
 				'shrink-0 pb-3 font-semibold tracking-wide text-muted',
 				size === 'sm' ? 'text-[10px] uppercase' : 'text-xs uppercase',
-				stickyTitle && 'sticky top-0 z-10 bg-surface-elevated/95 backdrop-blur-sm'
+				stickyTitle && 'sticky top-0 z-10 bg-surface/95 backdrop-blur-sm'
 			]}
 		>
 			{title}

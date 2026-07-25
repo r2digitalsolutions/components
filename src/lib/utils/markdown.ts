@@ -12,6 +12,23 @@ export function escapeHtml(s: string) {
 		.replace(/'/g, '&#39;');
 }
 
+/** Stable heading id for TOC / in-page anchors */
+export function slugifyHeading(text: string) {
+	return text
+		.replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
+		.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+		.replace(/`([^`]+)`/g, '$1')
+		.replace(/[*_~]+/g, '')
+		.trim()
+		.toLowerCase()
+		.normalize('NFD')
+		.replace(/[\u0300-\u036f]/g, '')
+		.replace(/[^a-z0-9\s-]/g, '')
+		.replace(/\s+/g, '-')
+		.replace(/-+/g, '-')
+		.replace(/^-|-$/g, '') || 'section';
+}
+
 function sanitizeUrl(url: string) {
 	const trimmed = url.trim().replace(/^<|>$/g, '');
 	if (/^(https?:|mailto:|tel:|#|\/)/i.test(trimmed)) return trimmed;
@@ -131,6 +148,14 @@ export function renderMarkdown(source: string, _options: MarkdownRenderOptions =
 	const lines = source.replace(/\r\n/g, '\n').split('\n');
 	const out: string[] = [];
 	let i = 0;
+	const usedIds = new Map<string, number>();
+
+	const uniqueId = (raw: string) => {
+		const base = slugifyHeading(raw);
+		const count = usedIds.get(base) ?? 0;
+		usedIds.set(base, count + 1);
+		return count === 0 ? base : `${base}-${count + 1}`;
+	};
 
 	let inCode = false;
 	let codeLang = '';
@@ -244,8 +269,10 @@ export function renderMarkdown(source: string, _options: MarkdownRenderOptions =
 		if (heading) {
 			closeList();
 			const level = heading[1].length;
+			const raw = heading[2];
+			const id = uniqueId(raw);
 			out.push(
-				`<h${level} class="md-h md-h${level}">${renderInline(heading[2])}</h${level}>`
+				`<h${level} id="${escapeHtml(id)}" class="md-h md-h${level} scroll-mt-4">${renderInline(raw)}</h${level}>`
 			);
 			i += 1;
 			continue;

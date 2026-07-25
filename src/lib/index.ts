@@ -391,6 +391,7 @@ export { default as SlugInput } from './components/molecules/SlugInput/SlugInput
 export { default as TimezoneSelect } from './components/molecules/TimezoneSelect/TimezoneSelect.svelte';
 export type { TimezoneOption } from './components/molecules/TimezoneSelect/TimezoneSelect.svelte';
 export { default as DropZone } from './components/molecules/DropZone/DropZone.svelte';
+export type { DropZoneFile } from './components/molecules/DropZone/DropZone.svelte';
 export { default as CouponInput } from './components/molecules/CouponInput/CouponInput.svelte';
 export type { CouponStatus } from './components/molecules/CouponInput/CouponInput.svelte';
 export { default as DownloadButton } from './components/molecules/DownloadButton/DownloadButton.svelte';
@@ -423,6 +424,20 @@ export { default as CartLineItem } from './components/molecules/CartItem/CartIte
 export { default as OrderSummary } from './components/molecules/OrderSummary/OrderSummary.svelte';
 export type { OrderLine } from './components/molecules/OrderSummary/OrderSummary.svelte';
 export { default as AuthCard } from './components/molecules/AuthCard/AuthCard.svelte';
+export { default as FacetGroup } from './components/molecules/FacetGroup/FacetGroup.svelte';
+export type { FacetOption } from './components/molecules/FacetGroup/FacetGroup.svelte';
+export { default as FacetPanel } from './components/molecules/FacetPanel/FacetPanel.svelte';
+export type { FacetGroupDef } from './components/molecules/FacetPanel/FacetPanel.svelte';
+export { default as SortSelect } from './components/molecules/SortSelect/SortSelect.svelte';
+export type { SortOption } from './components/molecules/SortSelect/SortSelect.svelte';
+export { DEFAULT_SORT_OPTIONS } from './components/molecules/SortSelect/SortSelect.svelte';
+export { default as AdvancedFilters } from './components/molecules/AdvancedFilters/AdvancedFilters.svelte';
+export type {
+	FilterFieldDef,
+	FilterFieldType
+} from './components/molecules/AdvancedFilters/AdvancedFilters.svelte';
+export { default as QueryBar } from './components/molecules/QueryBar/QueryBar.svelte';
+export type { QuerySuggestion } from './components/molecules/QueryBar/QueryBar.svelte';
 
 // ── Organisms ────────────────────────────────────────────────────────────────
 export { default as FileUploader } from './components/organisms/FileUploader/FileUploader.svelte';
@@ -516,8 +531,10 @@ export { default as DataListPage } from './components/organisms/DataListPage/Dat
 export { default as Inbox } from './components/organisms/Inbox/Inbox.svelte';
 export { default as ProfilePage } from './components/organisms/ProfilePage/ProfilePage.svelte';
 export { default as DocsLayout } from './components/organisms/DocsLayout/DocsLayout.svelte';
+export type { DocsPage } from './components/organisms/DocsLayout/DocsLayout.svelte';
 export { default as DashboardPage } from './components/organisms/DashboardPage/DashboardPage.svelte';
 export { default as SettingsPage } from './components/organisms/SettingsPage/SettingsPage.svelte';
+export type { SettingsFormValues } from './components/organisms/SettingsPage/SettingsPage.svelte';
 export { default as CheckoutPage } from './components/organisms/CheckoutPage/CheckoutPage.svelte';
 export { default as TeamPage } from './components/organisms/TeamPage/TeamPage.svelte';
 export type { TeamMember } from './components/organisms/TeamPage/TeamPage.svelte';
@@ -538,6 +555,8 @@ export { default as AnalyticsPage } from './components/organisms/AnalyticsPage/A
 export { default as PaymentForm } from './components/organisms/PaymentForm/PaymentForm.svelte';
 export { default as CartPage } from './components/organisms/CartPage/CartPage.svelte';
 export type { CartItem } from './components/organisms/CartPage/CartPage.svelte';
+export { default as CatalogPage } from './components/organisms/CatalogPage/CatalogPage.svelte';
+export type { CatalogProduct } from './components/organisms/CatalogPage/CatalogPage.svelte';
 export { default as AuditLogPage } from './components/organisms/AuditLogPage/AuditLogPage.svelte';
 export type { AuditEvent } from './components/organisms/AuditLogPage/AuditLogPage.svelte';
 export { default as ApiKeysPage } from './components/organisms/ApiKeysPage/ApiKeysPage.svelte';
@@ -592,7 +611,7 @@ export type { CheckoutLine } from './components/templates/CheckoutTemplate/Check
 export { themeStore } from './utils/theme.svelte.js';
 export type { Theme } from './utils/theme.svelte.js';
 export { encodeQR, qrToSvgPath, punchLogoHole } from './utils/qr.js';
-export { renderMarkdown, renderInline, escapeHtml, splitTableRow } from './utils/markdown.js';
+export { renderMarkdown, renderInline, escapeHtml, splitTableRow, slugifyHeading } from './utils/markdown.js';
 export {
 	diffLines,
 	diffWords,
@@ -611,3 +630,24 @@ export {
 	DEFAULT_PAD
 } from './utils/chart.js';
 export type { ChartXY, ChartPad } from './utils/chart.js';
+export {
+	parseFilterParams,
+	serializeFilterParams,
+	filterParamsToSearch,
+	createEmptyFilterState,
+	EMPTY_FILTER_STATE
+} from './utils/filterParams.js';
+export type {
+	CatalogFilterState,
+	CatalogPriceRange,
+	AdvancedFilterClause,
+	AdvancedFilterValue,
+	FilterOperator
+} from './utils/filterParams.js';
+export {
+	tokenizeQuery,
+	validateQuery,
+	parseSimpleClauses,
+	fieldIdsFromDefs
+} from './utils/queryBar.js';
+export type { QueryToken, QueryTokenKind } from './utils/queryBar.js';
