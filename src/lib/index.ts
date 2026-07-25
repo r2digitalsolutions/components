@@ -305,6 +305,10 @@ export { default as MetricGrid } from './components/molecules/MetricGrid/MetricG
 export type { MetricItem } from './components/molecules/MetricGrid/MetricGrid.svelte';
 export { default as FileRow } from './components/molecules/FileRow/FileRow.svelte';
 export type { FileRowData } from './components/molecules/FileRow/FileRow.svelte';
+export { default as InvoiceList } from './components/molecules/InvoiceList/InvoiceList.svelte';
+export type { InvoiceListItem } from './components/molecules/InvoiceList/InvoiceList.svelte';
+export { default as ReceiptCard } from './components/molecules/ReceiptCard/ReceiptCard.svelte';
+export type { ReceiptLine } from './components/molecules/ReceiptCard/ReceiptCard.svelte';
 export { default as AvatarLabel } from './components/molecules/AvatarLabel/AvatarLabel.svelte';
 export { default as Checklist } from './components/molecules/Checklist/Checklist.svelte';
 export type { ChecklistItem } from './components/molecules/Checklist/Checklist.svelte';
@@ -599,7 +603,11 @@ export type {
 } from './components/organisms/FileManager/FileManager.svelte';
 export { default as EmailComposer } from './components/organisms/EmailComposer/EmailComposer.svelte';
 export { default as InvoicePage } from './components/organisms/InvoicePage/InvoicePage.svelte';
-export type { InvoiceLine } from './components/organisms/InvoicePage/InvoicePage.svelte';
+export type {
+	InvoiceLine,
+	InvoiceStatus,
+	InvoiceParty
+} from './components/organisms/InvoicePage/InvoicePage.svelte';
 export { default as AnalyticsPage } from './components/organisms/AnalyticsPage/AnalyticsPage.svelte';
 export { default as PaymentForm } from './components/organisms/PaymentForm/PaymentForm.svelte';
 export { default as CartPage } from './components/organisms/CartPage/CartPage.svelte';
