@@ -94,7 +94,7 @@ export { default as Select } from './components/molecules/Select/Select.svelte';
 export type { SelectOption } from './components/molecules/Select/Select.svelte';
 export { default as PinInput } from './components/molecules/PinInput/PinInput.svelte';
 export { default as Alert } from './components/molecules/Alert/Alert.svelte';
-export type { AlertItem } from './components/molecules/Alert/Alert.svelte';
+export type { AlertItem, AlertVariant } from './components/molecules/Alert/Alert.svelte';
 export { default as Tabs } from './components/molecules/Tabs/Tabs.svelte';
 export type { TabItem } from './components/molecules/Tabs/Tabs.svelte';
 export { default as DropdownMenu } from './components/molecules/DropdownMenu/DropdownMenu.svelte';
@@ -395,6 +395,10 @@ export type { DropZoneFile } from './components/molecules/DropZone/DropZone.svel
 export { default as CouponInput } from './components/molecules/CouponInput/CouponInput.svelte';
 export type { CouponStatus } from './components/molecules/CouponInput/CouponInput.svelte';
 export { default as DownloadButton } from './components/molecules/DownloadButton/DownloadButton.svelte';
+export type {
+	DownloadStatus,
+	DownloadResult
+} from './components/molecules/DownloadButton/DownloadButton.svelte';
 export { default as AppBar } from './components/molecules/AppBar/AppBar.svelte';
 export type { AppBarVariant } from './components/molecules/AppBar/AppBar.svelte';
 export { default as ActionSheet } from './components/molecules/ActionSheet/ActionSheet.svelte';
@@ -403,7 +407,10 @@ export type {
 	ActionSheetItemVariant
 } from './components/molecules/ActionSheet/ActionSheet.svelte';
 export { default as Snackbar } from './components/molecules/Snackbar/Snackbar.svelte';
-export type { SnackbarPosition } from './components/molecules/Snackbar/Snackbar.svelte';
+export type {
+	SnackbarPosition,
+	SnackbarVariant
+} from './components/molecules/Snackbar/Snackbar.svelte';
 export { default as ChipBar } from './components/molecules/ChipBar/ChipBar.svelte';
 export type { ChipBarItem } from './components/molecules/ChipBar/ChipBar.svelte';
 export { default as StickyCTA } from './components/molecules/StickyCTA/StickyCTA.svelte';

@@ -10,12 +10,29 @@
 	}>();
 </script>
 
-<div class="w-96 max-w-full">
+<div class="flex w-full max-w-lg flex-col gap-3">
 	<Alert
 		variant={props.variant ?? 'info'}
-		title={props.title ?? 'Update Available'}
+		title={props.title ?? 'Update available'}
 		message={props.message ?? 'A new software version (v2.4.0) is ready to install.'}
 		items={props.items}
-		dismissible={props.dismissible ?? false}
+		dismissible={props.dismissible ?? true}
+	/>
+	<Alert variant="success" title="Payment received" message="Invoice #1842 was paid successfully." />
+	<Alert
+		variant="warning"
+		title="Quota almost full"
+		message="You have used 92% of your storage plan."
+		dismissible
+	/>
+	<Alert
+		variant="error"
+		title="Sync failed"
+		message="We could not reach the remote repository."
+		items={[
+			{ text: 'Check your network connection' },
+			{ text: 'Retry in a few minutes' }
+		]}
+		dismissible
 	/>
 </div>
