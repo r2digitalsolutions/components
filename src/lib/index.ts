@@ -43,9 +43,16 @@ export { default as Center } from './components/atoms/Center/Center.svelte';
 export { default as ScrollProgress } from './components/atoms/ScrollProgress/ScrollProgress.svelte';
 export { default as QRCode } from './components/atoms/QRCode/QRCode.svelte';
 export { default as NetworkStatus } from './components/atoms/NetworkStatus/NetworkStatus.svelte';
+export { default as CloseButton } from './components/atoms/CloseButton/CloseButton.svelte';
+export { default as CountBadge } from './components/atoms/CountBadge/CountBadge.svelte';
+export { default as Spacer } from './components/atoms/Spacer/Spacer.svelte';
+export { default as FieldHint } from './components/atoms/FieldHint/FieldHint.svelte';
+export type { FieldHintTone } from './components/atoms/FieldHint/FieldHint.svelte';
+export { default as LabeledProgress } from './components/atoms/LabeledProgress/LabeledProgress.svelte';
 
 // ── Molecules ────────────────────────────────────────────────────────────────
 export { default as Card } from './components/molecules/Card/Card.svelte';
+export type { CardVariant, CardPadding } from './components/molecules/Card/Card.svelte';
 export { default as FormField } from './components/molecules/FormField/FormField.svelte';
 export { default as RadioGroup } from './components/molecules/RadioGroup/RadioGroup.svelte';
 export { default as Select } from './components/molecules/Select/Select.svelte';
@@ -169,12 +176,37 @@ export { default as DiffViewer } from './components/molecules/DiffViewer/DiffVie
 export type { DiffMode } from './components/molecules/DiffViewer/DiffViewer.svelte';
 export { default as SignaturePad } from './components/molecules/SignaturePad/SignaturePad.svelte';
 export { default as ImageCropper } from './components/molecules/ImageCropper/ImageCropper.svelte';
+export type { CropAspect, CropFormat } from './components/molecules/ImageCropper/ImageCropper.svelte';
 export { default as AudioPlayer } from './components/molecules/AudioPlayer/AudioPlayer.svelte';
 export { default as VideoPlayer } from './components/molecules/VideoPlayer/VideoPlayer.svelte';
+export { default as VolumeControl } from './components/molecules/VolumeControl/VolumeControl.svelte';
+export { default as Playlist } from './components/molecules/Playlist/Playlist.svelte';
+export type { PlaylistTrack } from './components/molecules/Playlist/Playlist.svelte';
 export { default as Marquee } from './components/molecules/Marquee/Marquee.svelte';
 export { default as OfflineBanner } from './components/molecules/OfflineBanner/OfflineBanner.svelte';
 export { default as UnsavedChanges } from './components/molecules/UnsavedChanges/UnsavedChanges.svelte';
 export { default as ErrorBoundary } from './components/molecules/ErrorBoundary/ErrorBoundary.svelte';
+export { default as StatCard } from './components/molecules/StatCard/StatCard.svelte';
+export type { StatCardTrend } from './components/molecules/StatCard/StatCard.svelte';
+export { default as MediaCard } from './components/molecules/MediaCard/MediaCard.svelte';
+export { default as FormActions } from './components/molecules/FormActions/FormActions.svelte';
+export { default as FormSection } from './components/molecules/FormSection/FormSection.svelte';
+export { default as NotificationRow } from './components/molecules/NotificationRow/NotificationRow.svelte';
+export type {
+	NotificationRowData,
+	NotificationRowType
+} from './components/molecules/NotificationRow/NotificationRow.svelte';
+export { default as SearchBar } from './components/molecules/SearchBar/SearchBar.svelte';
+export { default as SkeletonCard } from './components/molecules/SkeletonCard/SkeletonCard.svelte';
+export { default as UserCard } from './components/molecules/UserCard/UserCard.svelte';
+export type { UserCardStatus } from './components/molecules/UserCard/UserCard.svelte';
+export { default as SettingsRow } from './components/molecules/SettingsRow/SettingsRow.svelte';
+export { default as CommentComposer } from './components/molecules/CommentComposer/CommentComposer.svelte';
+export { default as ActionBar } from './components/molecules/ActionBar/ActionBar.svelte';
+export { default as MetricGrid } from './components/molecules/MetricGrid/MetricGrid.svelte';
+export type { MetricItem } from './components/molecules/MetricGrid/MetricGrid.svelte';
+export { default as FileRow } from './components/molecules/FileRow/FileRow.svelte';
+export type { FileRowData } from './components/molecules/FileRow/FileRow.svelte';
 
 // ── Organisms ────────────────────────────────────────────────────────────────
 export { default as FileUploader } from './components/organisms/FileUploader/FileUploader.svelte';
@@ -214,6 +246,7 @@ export type {
 	KanbanPriority
 } from './components/organisms/Kanban/Kanban.svelte';
 export { default as CookieConsent } from './components/organisms/CookieConsent/CookieConsent.svelte';
+export { default as MusicPlayer } from './components/organisms/MusicPlayer/MusicPlayer.svelte';
 export { default as Footer } from './components/organisms/Footer/Footer.svelte';
 export type { FooterLink, FooterGroup } from './components/organisms/Footer/Footer.svelte';
 export { default as Wizard } from './components/organisms/Wizard/Wizard.svelte';
@@ -234,6 +267,14 @@ export { default as PricingTable } from './components/organisms/PricingTable/Pri
 export type { PricingPlan } from './components/organisms/PricingTable/PricingTable.svelte';
 export { default as FeatureComparison } from './components/organisms/FeatureComparison/FeatureComparison.svelte';
 export type { FeatureRow } from './components/organisms/FeatureComparison/FeatureComparison.svelte';
+export { default as AuthShell } from './components/organisms/AuthShell/AuthShell.svelte';
+export { default as DataListPage } from './components/organisms/DataListPage/DataListPage.svelte';
+export { default as Inbox } from './components/organisms/Inbox/Inbox.svelte';
+export { default as ProfilePage } from './components/organisms/ProfilePage/ProfilePage.svelte';
+export { default as DocsLayout } from './components/organisms/DocsLayout/DocsLayout.svelte';
+export { default as DashboardPage } from './components/organisms/DashboardPage/DashboardPage.svelte';
+export { default as SettingsPage } from './components/organisms/SettingsPage/SettingsPage.svelte';
+export { default as CheckoutPage } from './components/organisms/CheckoutPage/CheckoutPage.svelte';
 
 // ── Utils ────────────────────────────────────────────────────────────────────
 export { themeStore } from './utils/theme.svelte.js';

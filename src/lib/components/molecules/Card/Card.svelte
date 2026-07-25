@@ -1,13 +1,15 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 
-	type CardVariant = 'default' | 'elevated' | 'bordered' | 'ghost';
-	type CardPadding = 'none' | 'sm' | 'md' | 'lg';
+	export type CardVariant = 'default' | 'elevated' | 'bordered' | 'ghost' | 'soft';
+	export type CardPadding = 'none' | 'sm' | 'md' | 'lg';
 
 	interface CardProps {
 		variant?: CardVariant;
 		padding?: CardPadding;
 		hoverable?: boolean;
+		/** Soft tint behind header / footer chrome (DiffViewer-style). Default true. */
+		chrome?: boolean;
 		class?: string;
 		header?: Snippet;
 		footer?: Snippet;
@@ -19,6 +21,7 @@
 		variant = 'default',
 		padding = 'md',
 		hoverable = false,
+		chrome = true,
 		class: className = '',
 		header,
 		footer,
@@ -27,51 +30,66 @@
 	}: CardProps = $props();
 
 	const variantClasses: Record<CardVariant, string> = {
-		default: 'bg-surface-elevated border border-border shadow-sm',
-		elevated: 'bg-surface-elevated shadow-md',
-		bordered: 'bg-transparent border-2 border-border',
-		ghost: 'bg-surface-overlay'
+		default: 'border border-border bg-surface-elevated shadow-sm',
+		elevated: 'border border-border/60 bg-surface-elevated shadow-md',
+		bordered: 'border-2 border-border bg-surface-elevated',
+		ghost: 'border border-transparent bg-surface-overlay/80',
+		soft: 'border border-border/70 bg-surface/80 shadow-sm backdrop-blur-sm'
 	};
 
 	const paddingClasses: Record<CardPadding, string> = {
 		none: '',
-		sm: 'p-3',
-		md: 'p-4 md:p-5',
-		lg: 'p-5 md:p-7'
+		sm: 'px-3 py-2.5',
+		md: 'px-4 py-3.5 sm:px-5 sm:py-4',
+		lg: 'px-5 py-5 sm:px-6 sm:py-6'
 	};
 
-	const isClickable = $derived(!!onclick);
+	const isClickable = $derived(!!onclick || hoverable);
 </script>
+
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <div
 	class={[
-		'rounded-xl overflow-hidden transition-all duration-200',
+		'flex flex-col overflow-hidden rounded-2xl transition-[box-shadow,transform,border-color] duration-200',
 		variantClasses[variant],
 		hoverable &&
-			'hover:shadow-md hover:-translate-y-0.5 hover:border-border-strong cursor-pointer',
-		isClickable && 'cursor-pointer',
+			'cursor-pointer hover:-translate-y-0.5 hover:border-border-strong hover:shadow-md',
+		!!onclick && 'cursor-pointer',
 		className
 	]}
-	role={isClickable ? 'button' : undefined}
-	tabindex={isClickable ? 0 : undefined}
+	role={onclick ? 'button' : undefined}
+	tabindex={onclick ? 0 : undefined}
 	{onclick}
-	onkeydown={isClickable ? (e) => e.key === 'Enter' && onclick?.(e as unknown as MouseEvent) : undefined}
+	onkeydown={onclick
+		? (e) => e.key === 'Enter' && onclick?.(e as unknown as MouseEvent)
+		: undefined}
 >
-
 	{#if header}
-		<div class={['border-b border-border', paddingClasses[padding]]}>
+		<div
+			class={[
+				'border-b border-border',
+				chrome && 'bg-surface/40',
+				paddingClasses[padding]
+			]}
+		>
 			{@render header()}
 		</div>
 	{/if}
 
 	{#if children}
-		<div class={padding !== 'none' ? paddingClasses[padding] : ''}>
+		<div class={['min-w-0 flex-1', padding !== 'none' ? paddingClasses[padding] : '']}>
 			{@render children()}
 		</div>
 	{/if}
 
 	{#if footer}
-		<div class={['border-t border-border bg-surface-overlay', paddingClasses[padding]]}>
+		<div
+			class={[
+				'border-t border-border',
+				chrome ? 'bg-surface/40' : 'bg-surface-overlay/60',
+				paddingClasses[padding]
+			]}
+		>
 			{@render footer()}
 		</div>
 	{/if}

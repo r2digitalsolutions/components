@@ -1,4 +1,6 @@
 <script lang="ts">
+	import Card from '$lib/components/molecules/Card/Card.svelte';
+
 	interface JSONViewerProps {
 		data?: unknown;
 		/** Collapse all nodes by default */
@@ -222,65 +224,60 @@
 	{/if}
 {/snippet}
 
-<div
-	class={[
-		'flex flex-col overflow-hidden rounded-2xl border border-border bg-surface-elevated shadow-sm',
-		className
-	]}
->
-	{#if showToolbar}
-		<div
-			class="flex flex-wrap items-center gap-2 border-b border-border bg-surface/50 px-3 py-2"
-		>
-			<div class="min-w-0 flex-1">
-				<p class="truncate text-xs font-semibold text-primary">{label}</p>
-				<p class="text-[10px] tabular-nums text-muted">
-					{stats.type}{#if stats.keys > 0}
-						· {stats.keys}
-						{stats.type === 'array' ? 'items' : 'keys'}
-					{/if}
-					· {pretty.length} chars
-				</p>
-			</div>
-
-			<div class="flex items-center gap-1">
-				<button
-					type="button"
-					class="rounded-lg px-2 py-1 text-[11px] font-medium text-secondary transition hover:bg-surface-overlay hover:text-primary"
-					onclick={() => setAll(true)}
-				>
-					Expand
-				</button>
-				<button
-					type="button"
-					class="rounded-lg px-2 py-1 text-[11px] font-medium text-secondary transition hover:bg-surface-overlay hover:text-primary"
-					onclick={() => setAll(false)}
-				>
-					Collapse
-				</button>
-				<button
-					type="button"
-					class={[
-						'inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium transition',
-						copied
-							? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
-							: 'text-secondary hover:bg-surface-overlay hover:text-primary'
-					]}
-					onclick={copyJson}
-				>
-					{#if copied}
-						Copied
-					{:else}
-						<svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-							<rect x="9" y="9" width="13" height="13" rx="2" />
-							<path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
-						</svg>
-						Copy
-					{/if}
-				</button>
-			</div>
+{#snippet toolbar()}
+	<div class="flex flex-wrap items-center gap-2 px-3 py-2">
+		<div class="min-w-0 flex-1">
+			<p class="truncate text-xs font-semibold text-primary">{label}</p>
+			<p class="text-[10px] tabular-nums text-muted">
+				{stats.type}{#if stats.keys > 0}
+					· {stats.keys}
+					{stats.type === 'array' ? 'items' : 'keys'}
+				{/if}
+				· {pretty.length} chars
+			</p>
 		</div>
 
+		<div class="flex items-center gap-1">
+			<button
+				type="button"
+				class="rounded-lg px-2 py-1 text-[11px] font-medium text-secondary transition hover:bg-surface-overlay hover:text-primary"
+				onclick={() => setAll(true)}
+			>
+				Expand
+			</button>
+			<button
+				type="button"
+				class="rounded-lg px-2 py-1 text-[11px] font-medium text-secondary transition hover:bg-surface-overlay hover:text-primary"
+				onclick={() => setAll(false)}
+			>
+				Collapse
+			</button>
+			<button
+				type="button"
+				class={[
+					'inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium transition',
+					copied
+						? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
+						: 'text-secondary hover:bg-surface-overlay hover:text-primary'
+				]}
+				onclick={copyJson}
+			>
+				{#if copied}
+					Copied
+				{:else}
+					<svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<rect x="9" y="9" width="13" height="13" rx="2" />
+						<path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+					</svg>
+					Copy
+				{/if}
+			</button>
+		</div>
+	</div>
+{/snippet}
+
+<Card class={className} padding="none" chrome header={showToolbar ? toolbar : undefined}>
+	{#if showToolbar}
 		<div class="border-b border-border px-3 py-2">
 			<label class="relative block">
 				<span class="sr-only">Filter keys</span>
@@ -308,4 +305,4 @@
 	<div class="overflow-auto p-3" style:max-height={maxHeight}>
 		{@render node(parsed, 'root', 0)}
 	</div>
-</div>
+</Card>

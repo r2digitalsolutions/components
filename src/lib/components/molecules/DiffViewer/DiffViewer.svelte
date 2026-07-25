@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Card from '$lib/components/molecules/Card/Card.svelte';
 	import {
 		diffLines,
 		diffStats,
@@ -44,7 +45,6 @@
 	const stats = $derived(diffStats(ops));
 	const splitRows = $derived(toSplitRows(ops, wordDiff));
 
-	/** Index → word parts for unified delete/insert pairs */
 	const unifiedParts = $derived.by(() => {
 		const map = new Map<number, { left: DiffPart[]; right: DiffPart[] }>();
 		if (!wordDiff) return map;
@@ -110,62 +110,53 @@
 	{/if}
 {/snippet}
 
-<div
-	class={[
-		'flex flex-col overflow-hidden rounded-2xl border border-border bg-surface-elevated shadow-sm',
-		className
-	]}
->
-	{#if showToolbar}
-		<header
-			class="flex flex-wrap items-center gap-2 border-b border-border bg-surface/40 px-3 py-2.5"
-		>
-			<div class="min-w-0 flex-1">
-				<p class="truncate text-xs font-semibold text-primary">{title}</p>
-				<p class="mt-0.5 flex flex-wrap items-center gap-2 text-[11px] tabular-nums">
-					<span class="font-medium text-emerald-600 dark:text-emerald-400"
-						>+{stats.additions}</span
-					>
-					<span class="font-medium text-rose-600 dark:text-rose-400">−{stats.deletions}</span>
-					<span class="text-muted">{stats.unchanged} unchanged</span>
-				</p>
-			</div>
+{#snippet toolbar()}
+	<div class="flex flex-wrap items-center gap-2 px-3 py-2.5">
+		<div class="min-w-0 flex-1">
+			<p class="truncate text-xs font-semibold text-primary">{title}</p>
+			<p class="mt-0.5 flex flex-wrap items-center gap-2 text-[11px] tabular-nums">
+				<span class="font-medium text-emerald-600 dark:text-emerald-400">+{stats.additions}</span>
+				<span class="font-medium text-rose-600 dark:text-rose-400">−{stats.deletions}</span>
+				<span class="text-muted">{stats.unchanged} unchanged</span>
+			</p>
+		</div>
 
-			{#if allowModeToggle}
-				<div
-					class="inline-flex rounded-lg border border-border bg-surface p-0.5 text-[11px] font-medium"
-					role="group"
-					aria-label="Diff view mode"
+		{#if allowModeToggle}
+			<div
+				class="inline-flex rounded-lg border border-border bg-surface p-0.5 text-[11px] font-medium"
+				role="group"
+				aria-label="Diff view mode"
+			>
+				<button
+					type="button"
+					class={[
+						'rounded-md px-2.5 py-1 transition',
+						mode === 'unified'
+							? 'bg-surface-elevated text-primary shadow-sm'
+							: 'text-muted hover:text-primary'
+					]}
+					onclick={() => setMode('unified')}
 				>
-					<button
-						type="button"
-						class={[
-							'rounded-md px-2.5 py-1 transition',
-							mode === 'unified'
-								? 'bg-surface-elevated text-primary shadow-sm'
-								: 'text-muted hover:text-primary'
-						]}
-						onclick={() => setMode('unified')}
-					>
-						Unified
-					</button>
-					<button
-						type="button"
-						class={[
-							'rounded-md px-2.5 py-1 transition',
-							mode === 'split'
-								? 'bg-surface-elevated text-primary shadow-sm'
-								: 'text-muted hover:text-primary'
-						]}
-						onclick={() => setMode('split')}
-					>
-						Split
-					</button>
-				</div>
-			{/if}
-		</header>
-	{/if}
+					Unified
+				</button>
+				<button
+					type="button"
+					class={[
+						'rounded-md px-2.5 py-1 transition',
+						mode === 'split'
+							? 'bg-surface-elevated text-primary shadow-sm'
+							: 'text-muted hover:text-primary'
+					]}
+					onclick={() => setMode('split')}
+				>
+					Split
+				</button>
+			</div>
+		{/if}
+	</div>
+{/snippet}
 
+<Card class={className} padding="none" chrome header={showToolbar ? toolbar : undefined}>
 	<div class="overflow-auto font-mono text-[12px] leading-5" style:max-height={maxHeight}>
 		{#if mode === 'split'}
 			<div class="grid min-w-[40rem] grid-cols-2 divide-x divide-border">
@@ -292,4 +283,4 @@
 			{/each}
 		{/if}
 	</div>
-</div>
+</Card>
