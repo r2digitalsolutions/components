@@ -189,14 +189,14 @@
 		<div class="overflow-x-auto">
 			<table class="w-full min-w-[44rem] border-collapse text-left text-sm">
 				<thead>
-					<tr class="border-b border-border bg-surface/50">
+					<tr class="border-b border-border bg-surface-overlay/60">
 						<th
-							class="sticky left-0 z-10 bg-surface/95 px-4 py-3 text-[11px] font-semibold uppercase tracking-wide text-muted backdrop-blur-sm"
+							class="sticky left-0 z-10 border-r border-border bg-surface-overlay/95 px-4 py-3 text-[11px] font-semibold uppercase tracking-wide text-muted backdrop-blur-sm"
 						>
 							Resource
 						</th>
 						{#each roles as role (role.id)}
-							<th class="px-3 py-3 text-center">
+							<th class="border-r border-border/60 px-3 py-3 text-center last:border-r-0">
 								<div class="flex flex-col items-center gap-1">
 									<div class="flex items-center gap-1.5">
 										<span class="text-xs font-semibold text-primary">{role.label}</span>
@@ -239,14 +239,14 @@
 				<tbody>
 					{#each visibleResources as resource (resource.id)}
 						{@const Icon = resource.icon ? ICONS[resource.icon] : null}
-						<tr class="border-b border-border/70 last:border-0 hover:bg-surface-overlay/30">
+						<tr class="border-b border-border last:border-b-0 hover:bg-surface-overlay/40">
 							<td
-								class="sticky left-0 z-10 bg-surface-elevated/95 px-4 py-3 backdrop-blur-sm"
+								class="sticky left-0 z-10 border-r border-border bg-surface-elevated px-4 py-3"
 							>
 								<div class="flex items-center gap-2.5">
 									{#if Icon}
 										<span
-											class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-overlay text-secondary"
+											class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-surface-overlay text-secondary"
 										>
 											<Icon class="h-4 w-4" strokeWidth={2} />
 										</span>
@@ -260,7 +260,7 @@
 								</div>
 							</td>
 							{#each roles as role (role.id)}
-								<td class="px-3 py-3 text-center">
+								<td class="border-r border-border/50 px-3 py-3 text-center last:border-r-0">
 									<div class="flex justify-center">
 										<AccessLevelToggle
 											value={cellLevels(role.id, resource.id)}

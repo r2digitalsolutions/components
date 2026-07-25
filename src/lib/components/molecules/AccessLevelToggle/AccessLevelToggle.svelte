@@ -45,7 +45,10 @@
 </script>
 
 <div
-	class={['inline-flex items-center gap-0.5 rounded-lg bg-surface-overlay p-0.5', className]}
+	class={[
+		'inline-flex items-center gap-0.5 rounded-lg border border-border bg-surface-overlay p-0.5',
+		className
+	]}
 	role="group"
 	aria-label="Access levels"
 >
@@ -67,8 +70,8 @@
 						? 'bg-brand-500 text-white shadow-sm'
 						: level === 'write'
 							? 'bg-sky-500 text-white shadow-sm'
-							: 'bg-surface-elevated text-primary shadow-sm'
-					: 'text-muted hover:text-secondary'
+							: 'border border-border bg-surface-elevated text-primary shadow-sm'
+					: 'text-muted hover:bg-surface-elevated/70 hover:text-secondary'
 			]}
 		>
 			{compact ? LABELS[level].short : LABELS[level].full}
