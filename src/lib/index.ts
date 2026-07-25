@@ -415,7 +415,12 @@ export type {
 export { default as CookieConsent } from './components/organisms/CookieConsent/CookieConsent.svelte';
 export { default as MusicPlayer } from './components/organisms/MusicPlayer/MusicPlayer.svelte';
 export { default as Footer } from './components/organisms/Footer/Footer.svelte';
-export type { FooterLink, FooterGroup } from './components/organisms/Footer/Footer.svelte';
+export type {
+	FooterLink,
+	FooterGroup,
+	FooterSocial,
+	FooterVariant
+} from './components/organisms/Footer/Footer.svelte';
 export { default as Wizard } from './components/organisms/Wizard/Wizard.svelte';
 export { default as Tour } from './components/organisms/Tour/Tour.svelte';
 export type { TourStep } from './components/organisms/Tour/Tour.svelte';
