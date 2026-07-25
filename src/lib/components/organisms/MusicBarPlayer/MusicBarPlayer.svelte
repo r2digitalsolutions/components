@@ -424,7 +424,7 @@
 					</button>
 					<button
 						type="button"
-						class="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-surface-elevated shadow-sm transition hover:scale-105 dark:bg-white dark:text-zinc-900"
+						class="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-900 text-white shadow-sm transition hover:scale-105 hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100"
 						onclick={toggle}
 						aria-label={playing ? 'Pause' : 'Play'}
 					>
@@ -493,7 +493,7 @@
 			<div class="flex items-center justify-end gap-1 sm:gap-2">
 				<button
 					type="button"
-					class="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-surface-elevated md:hidden dark:bg-white dark:text-zinc-900"
+					class="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-900 text-white shadow-sm md:hidden dark:bg-white dark:text-zinc-900"
 					onclick={(e) => {
 						e.stopPropagation();
 						toggle();
