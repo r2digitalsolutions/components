@@ -435,7 +435,11 @@ export type {
 export { default as ReviewCard } from './components/molecules/ReviewCard/ReviewCard.svelte';
 export type { ReviewCardVariant } from './components/molecules/ReviewCard/ReviewCard.svelte';
 export { default as Stories } from './components/molecules/Stories/Stories.svelte';
-export type { StoryItem } from './components/molecules/Stories/Stories.svelte';
+export type {
+	StoryItem,
+	StorySlide,
+	StoriesSize
+} from './components/molecules/Stories/Stories.svelte';
 export { default as CameraButton } from './components/molecules/CameraButton/CameraButton.svelte';
 export { default as SectionHeader } from './components/molecules/SectionHeader/SectionHeader.svelte';
 export { default as StatStrip } from './components/molecules/StatStrip/StatStrip.svelte';
