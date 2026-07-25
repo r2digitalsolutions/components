@@ -23,17 +23,26 @@
 
 	let draft = $state('');
 
-	function add(tag: string) {
-		const next = tag.trim();
-		if (!next || disabled) return;
-		if (value.includes(next)) {
-			draft = '';
-			return;
+	function addMany(raw: string) {
+		if (disabled) return;
+		const parts = raw
+			.split(/[\s,;]+/)
+			.map((p) => p.trim())
+			.filter(Boolean);
+		if (!parts.length) return;
+		let next = [...value];
+		for (const part of parts) {
+			if (next.includes(part)) continue;
+			if (max !== undefined && next.length >= max) break;
+			next.push(part);
 		}
-		if (max !== undefined && value.length >= max) return;
-		value = [...value, next];
+		value = next;
 		draft = '';
 		onchange?.(value);
+	}
+
+	function add(tag: string) {
+		addMany(tag);
 	}
 
 	function remove(tag: string) {
@@ -48,6 +57,13 @@
 		} else if (e.key === 'Backspace' && !draft && value.length) {
 			remove(value[value.length - 1]);
 		}
+	}
+
+	function onPaste(e: ClipboardEvent) {
+		const text = e.clipboardData?.getData('text') ?? '';
+		if (!/[,;\s]/.test(text)) return;
+		e.preventDefault();
+		addMany(`${draft} ${text}`);
 	}
 </script>
 
@@ -76,6 +92,7 @@
 			{placeholder}
 			{disabled}
 			onkeydown={onKeydown}
+			onpaste={onPaste}
 			class="min-w-[8rem] flex-1 bg-transparent px-1 text-sm text-primary outline-none placeholder:text-muted"
 		/>
 	</div>

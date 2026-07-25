@@ -584,6 +584,10 @@ export type {
 export { default as StatusPage } from './components/organisms/StatusPage/StatusPage.svelte';
 export { default as OnboardingPage } from './components/organisms/OnboardingPage/OnboardingPage.svelte';
 export { default as InviteTeamForm } from './components/organisms/InviteTeamForm/InviteTeamForm.svelte';
+export type {
+	InviteRoleOption,
+	InviteTeamPayload
+} from './components/organisms/InviteTeamForm/InviteTeamForm.svelte';
 export { default as HelpCenter } from './components/organisms/HelpCenter/HelpCenter.svelte';
 export { default as ErrorPage } from './components/organisms/ErrorPage/ErrorPage.svelte';
 export { default as FileManager } from './components/organisms/FileManager/FileManager.svelte';
