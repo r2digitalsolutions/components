@@ -182,6 +182,10 @@ export type {
 export { default as BottomSheet } from './components/molecules/BottomSheet/BottomSheet.svelte';
 export type { BottomSheetSize } from './components/molecules/BottomSheet/BottomSheet.svelte';
 export { default as SwipeAction } from './components/molecules/SwipeAction/SwipeAction.svelte';
+export type {
+	SwipeActionItem,
+	SwipeActionVariant
+} from './components/molecules/SwipeAction/SwipeAction.svelte';
 export { default as FilterChips } from './components/molecules/FilterChips/FilterChips.svelte';
 export type { FilterChipItem } from './components/molecules/FilterChips/FilterChips.svelte';
 export { default as VoteControl } from './components/molecules/VoteControl/VoteControl.svelte';
