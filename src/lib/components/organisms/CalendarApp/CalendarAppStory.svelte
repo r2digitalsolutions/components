@@ -101,7 +101,7 @@
 		}
 	]);
 
-	let view = $state<'month' | 'week' | 'day' | 'agenda'>('month');
+	let view = $state<'month' | 'week' | 'day' | 'agenda'>('week');
 	let date = $state(new Date(y, m, Math.min(now.getDate(), 28)));
 	let query = $state('');
 	let selectedEventId = $state<string | null>(null);
@@ -111,14 +111,18 @@
 <div class="space-y-2">
 	<CalendarApp
 		bind:calendars
+		bind:events
 		bind:view
 		bind:date
 		bind:query
 		bind:selectedEventId
-		{events}
+		resizable
 		oncreate={(day) => (last = `create on ${day}`)}
 		ondayclick={(day) => (last = `day ${day}`)}
 		oneventclick={(e) => (last = e.title)}
+		onresize={(e, detail) => (last = `resize ${e.title} → ${detail.startTime}–${detail.endTime}`)}
+		onmove={(e, detail) =>
+			(last = `move ${e.title} → ${detail.date} ${detail.startTime}–${detail.endTime}`)}
 	/>
 	{#if last}
 		<Text size="xs" tone="muted">Last: {last}</Text>

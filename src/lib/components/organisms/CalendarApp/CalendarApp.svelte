@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onDestroy } from 'svelte';
 	import Button from '$lib/components/atoms/Button/Button.svelte';
 	import IconButton from '$lib/components/atoms/IconButton/IconButton.svelte';
 	import Badge from '$lib/components/atoms/Badge/Badge.svelte';
@@ -51,6 +52,14 @@
 		showSearch?: boolean;
 		showCreate?: boolean;
 		weekStartsOn?: 0 | 1;
+		/** Allow resizing timed events in week / day views */
+		resizable?: boolean;
+		/** Allow dragging timed events to a new time / day */
+		draggableEvents?: boolean;
+		/** Snap interval while resizing / dragging (minutes) */
+		resizeSnapMinutes?: number;
+		/** Minimum event duration when resizing (minutes) */
+		resizeMinMinutes?: number;
 		class?: string;
 		onviewchange?: (view: CalendarView) => void;
 		ondatechange?: (date: Date) => void;
@@ -58,10 +67,18 @@
 		ondayclick?: (date: string) => void;
 		oncreate?: (date: string) => void;
 		oncalendartoggle?: (id: string, visible: boolean) => void;
+		onresize?: (
+			event: CalendarAppEvent,
+			detail: { startTime: string; endTime: string }
+		) => void;
+		onmove?: (
+			event: CalendarAppEvent,
+			detail: { date: string; startTime: string; endTime: string }
+		) => void;
 	}
 
 	let {
-		events = [],
+		events = $bindable([] as CalendarAppEvent[]),
 		calendars = $bindable([
 			{ id: 'work', label: 'Work', color: 'brand', visible: true },
 			{ id: 'personal', label: 'Personal', color: 'violet', visible: true },
@@ -75,13 +92,19 @@
 		showSearch = true,
 		showCreate = true,
 		weekStartsOn = 1,
+		resizable = true,
+		draggableEvents = true,
+		resizeSnapMinutes = 15,
+		resizeMinMinutes = 15,
 		class: className = '',
 		onviewchange,
 		ondatechange,
 		oneventclick,
 		ondayclick,
 		oncreate,
-		oncalendartoggle
+		oncalendartoggle,
+		onresize,
+		onmove
 	}: CalendarAppProps = $props();
 
 	const weekdayLabels = $derived(
@@ -289,7 +312,7 @@
 	function hourTop(time?: string) {
 		if (!time) return 0;
 		const [h, m] = time.split(':').map(Number);
-		return ((h - 8) * 60 + (m || 0)) / 60;
+		return ((h - HOUR_START) * 60 + (m || 0)) / 60;
 	}
 
 	function hourSpan(e: CalendarAppEvent) {
@@ -298,6 +321,345 @@
 		const end = e.endTime ? hourTop(e.endTime) : start + 1;
 		return Math.max(0.75, end - start);
 	}
+
+	const HOUR_START = 8;
+	const HOUR_END = 20;
+	const HOUR_PX = 56; // h-14
+	const DRAG_THRESHOLD = 4;
+
+	type ResizeEdge = 'start' | 'end';
+
+	interface LiveDraft {
+		id: string;
+		date: string;
+		startTime: string;
+		endTime: string;
+	}
+
+	interface ResizeSession {
+		id: string;
+		edge: ResizeEdge;
+		column: HTMLElement;
+		origDate: string;
+		origStart: number;
+		origEnd: number;
+		pointerId: number;
+	}
+
+	interface DragSession {
+		id: string;
+		pointerId: number;
+		origDate: string;
+		origStart: number;
+		origEnd: number;
+		duration: number;
+		grabOffset: number;
+		grid: HTMLElement;
+		startX: number;
+		startY: number;
+		active: boolean;
+	}
+
+	let resizeSession = $state<ResizeSession | null>(null);
+	let dragSession = $state<DragSession | null>(null);
+	/** Live preview while resizing or dragging */
+	let liveDraft = $state<LiveDraft | null>(null);
+	let suppressClick = $state(false);
+
+	function parseMinutes(time: string) {
+		const [h, m] = time.split(':').map(Number);
+		return h * 60 + (m || 0);
+	}
+
+	function formatMinutes(total: number) {
+		const clamped = Math.min(HOUR_END * 60, Math.max(HOUR_START * 60, total));
+		const h = Math.floor(clamped / 60);
+		const m = clamped % 60;
+		return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+	}
+
+	function snapMinutes(total: number) {
+		const step = Math.max(5, resizeSnapMinutes);
+		return Math.round(total / step) * step;
+	}
+
+	function displayEvent(e: CalendarAppEvent): CalendarAppEvent {
+		if (liveDraft?.id === e.id) {
+			return {
+				...e,
+				date: liveDraft.date,
+				startTime: liveDraft.startTime,
+				endTime: liveDraft.endTime
+			};
+		}
+		return e;
+	}
+
+	function timedEventsOn(key: string) {
+		return filteredEvents
+			.filter((e) => !e.allDay && e.startTime)
+			.filter((e) => {
+				if (liveDraft?.id === e.id) return liveDraft.date === key;
+				return e.date === key || coversDate(e, key);
+			})
+			.sort((a, b) => {
+				const aStart = liveDraft?.id === a.id ? liveDraft.startTime : (a.startTime ?? '');
+				const bStart = liveDraft?.id === b.id ? liveDraft.startTime : (b.startTime ?? '');
+				return aStart.localeCompare(bStart);
+			});
+	}
+
+	function yToMinutes(clientY: number, column: HTMLElement) {
+		const top = column.getBoundingClientRect().top;
+		const y = clientY - top;
+		const raw = HOUR_START * 60 + (y / HOUR_PX) * 60;
+		return snapMinutes(raw);
+	}
+
+	function columnKeyAt(clientX: number, grid: HTMLElement): string | null {
+		const cols = [...grid.querySelectorAll<HTMLElement>('[data-cal-day]')];
+		for (const col of cols) {
+			const r = col.getBoundingClientRect();
+			if (clientX >= r.left && clientX < r.right) return col.dataset.calDay ?? null;
+		}
+		// Clamp to nearest column when dragging past edges
+		if (!cols.length) return null;
+		const first = cols[0].getBoundingClientRect();
+		const last = cols[cols.length - 1].getBoundingClientRect();
+		if (clientX < first.left) return cols[0].dataset.calDay ?? null;
+		if (clientX >= last.right) return cols[cols.length - 1].dataset.calDay ?? null;
+		return null;
+	}
+
+	function columnEl(grid: HTMLElement, key: string) {
+		return grid.querySelector<HTMLElement>(`[data-cal-day="${key}"]`);
+	}
+
+	function beginResize(e: PointerEvent, ev: CalendarAppEvent, edge: ResizeEdge) {
+		if (!resizable || dragSession || ev.allDay || !ev.startTime) return;
+		e.preventDefault();
+		e.stopPropagation();
+		const handle = e.currentTarget as HTMLElement;
+		const column = handle.closest('[data-cal-day]') as HTMLElement | null;
+		if (!column) return;
+		const start = parseMinutes(ev.startTime);
+		const end = parseMinutes(ev.endTime ?? formatMinutes(start + 60));
+		resizeSession = {
+			id: ev.id,
+			edge,
+			column,
+			origDate: ev.date,
+			origStart: start,
+			origEnd: end,
+			pointerId: e.pointerId
+		};
+		liveDraft = {
+			id: ev.id,
+			date: ev.date,
+			startTime: ev.startTime,
+			endTime: ev.endTime ?? formatMinutes(start + 60)
+		};
+		handle.setPointerCapture(e.pointerId);
+	}
+
+	function moveResize(e: PointerEvent) {
+		const session = resizeSession;
+		if (!session || e.pointerId !== session.pointerId) return;
+		const minDur = Math.max(5, resizeMinMinutes);
+		let start = session.origStart;
+		let end = session.origEnd;
+		const at = yToMinutes(e.clientY, session.column);
+		if (session.edge === 'start') {
+			start = Math.min(at, end - minDur);
+			start = Math.max(HOUR_START * 60, start);
+		} else {
+			end = Math.max(at, start + minDur);
+			end = Math.min(HOUR_END * 60, end);
+		}
+		liveDraft = {
+			id: session.id,
+			date: session.origDate,
+			startTime: formatMinutes(start),
+			endTime: formatMinutes(end)
+		};
+	}
+
+	function endResize(e: PointerEvent) {
+		const session = resizeSession;
+		if (!session || e.pointerId !== session.pointerId) return;
+		const draft = liveDraft;
+		const changed =
+			!!draft &&
+			(draft.startTime !== formatMinutes(session.origStart) ||
+				draft.endTime !== formatMinutes(session.origEnd));
+		resizeSession = null;
+		if (!draft) return;
+		if (changed) {
+			suppressClick = true;
+			const next = events.map((ev) =>
+				ev.id === draft.id
+					? { ...ev, startTime: draft.startTime, endTime: draft.endTime, allDay: false }
+					: ev
+			);
+			events = next;
+			const updated = next.find((ev) => ev.id === draft.id);
+			if (updated) {
+				onresize?.(updated, { startTime: draft.startTime, endTime: draft.endTime });
+			}
+		}
+		liveDraft = null;
+	}
+
+	function cancelResize() {
+		resizeSession = null;
+		if (!dragSession) liveDraft = null;
+	}
+
+	function beginDrag(e: PointerEvent, ev: CalendarAppEvent) {
+		if (!draggableEvents || resizeSession || ev.allDay || !ev.startTime) return;
+		if ((e.target as HTMLElement | null)?.closest?.('[data-resize-handle]')) return;
+		e.preventDefault();
+		const el = e.currentTarget as HTMLElement;
+		const column = el.closest('[data-cal-day]') as HTMLElement | null;
+		const grid = el.closest('[data-cal-grid]') as HTMLElement | null;
+		if (!column || !grid) return;
+		const start = parseMinutes(ev.startTime);
+		const end = parseMinutes(ev.endTime ?? formatMinutes(start + 60));
+		const at = yToMinutes(e.clientY, column);
+		detachDragListeners();
+		dragSession = {
+			id: ev.id,
+			pointerId: e.pointerId,
+			origDate: ev.date,
+			origStart: start,
+			origEnd: end,
+			duration: Math.max(resizeMinMinutes, end - start),
+			grabOffset: at - start,
+			grid,
+			startX: e.clientX,
+			startY: e.clientY,
+			active: false
+		};
+		// Document listeners: the event node remounts when crossing days,
+		// which drops element pointer capture mid-drag.
+		attachDragListeners();
+	}
+
+	function onDocDragMove(e: PointerEvent) {
+		moveDrag(e);
+	}
+
+	function onDocDragUp(e: PointerEvent) {
+		endDrag(e);
+		detachDragListeners();
+	}
+
+	function onDocDragCancel() {
+		cancelDrag();
+		detachDragListeners();
+	}
+
+	function attachDragListeners() {
+		document.addEventListener('pointermove', onDocDragMove, true);
+		document.addEventListener('pointerup', onDocDragUp, true);
+		document.addEventListener('pointercancel', onDocDragCancel, true);
+	}
+
+	function detachDragListeners() {
+		document.removeEventListener('pointermove', onDocDragMove, true);
+		document.removeEventListener('pointerup', onDocDragUp, true);
+		document.removeEventListener('pointercancel', onDocDragCancel, true);
+	}
+
+	function moveDrag(e: PointerEvent) {
+		const session = dragSession;
+		if (!session || e.pointerId !== session.pointerId) return;
+
+		if (!session.active) {
+			const dist = Math.hypot(e.clientX - session.startX, e.clientY - session.startY);
+			if (dist < DRAG_THRESHOLD) return;
+			dragSession = { ...session, active: true };
+			liveDraft = {
+				id: session.id,
+				date: session.origDate,
+				startTime: formatMinutes(session.origStart),
+				endTime: formatMinutes(session.origEnd)
+			};
+		}
+
+		const current = dragSession;
+		if (!current?.active) return;
+
+		const dateKey = columnKeyAt(e.clientX, current.grid) ?? current.origDate;
+		const col = columnEl(current.grid, dateKey) ?? columnEl(current.grid, current.origDate);
+		if (!col) return;
+
+		let start = yToMinutes(e.clientY, col) - current.grabOffset;
+		start = snapMinutes(start);
+		start = Math.max(HOUR_START * 60, Math.min(start, HOUR_END * 60 - current.duration));
+		const end = start + current.duration;
+
+		liveDraft = {
+			id: current.id,
+			date: dateKey,
+			startTime: formatMinutes(start),
+			endTime: formatMinutes(end)
+		};
+	}
+
+	function endDrag(e: PointerEvent) {
+		const session = dragSession;
+		if (!session || e.pointerId !== session.pointerId) return;
+		const draft = liveDraft;
+		const wasActive = session.active;
+		dragSession = null;
+
+		if (!wasActive || !draft) {
+			liveDraft = null;
+			return;
+		}
+
+		const changed =
+			draft.date !== session.origDate ||
+			draft.startTime !== formatMinutes(session.origStart) ||
+			draft.endTime !== formatMinutes(session.origEnd);
+
+		if (changed) {
+			suppressClick = true;
+			const next = events.map((ev) => {
+				if (ev.id !== draft.id) return ev;
+				const updated: CalendarAppEvent = {
+					...ev,
+					date: draft.date,
+					startTime: draft.startTime,
+					endTime: draft.endTime,
+					allDay: false
+				};
+				if (ev.endDate && ev.endDate === ev.date) updated.endDate = draft.date;
+				else if (ev.endDate) updated.endDate = undefined;
+				return updated;
+			});
+			events = next;
+			const updated = next.find((ev) => ev.id === draft.id);
+			if (updated) {
+				onmove?.(updated, {
+					date: draft.date,
+					startTime: draft.startTime,
+					endTime: draft.endTime
+				});
+			}
+		}
+		liveDraft = null;
+	}
+
+	function cancelDrag() {
+		dragSession = null;
+		if (!resizeSession) liveDraft = null;
+	}
+
+	onDestroy(() => {
+		detachDragListeners();
+	});
 </script>
 
 <div
@@ -491,6 +853,7 @@
 
 						<div
 							class="grid"
+							data-cal-grid
 							style:grid-template-columns={`3.5rem repeat(${cols.length}, minmax(0, 1fr))`}
 						>
 							<div class="relative">
@@ -501,24 +864,112 @@
 								{/each}
 							</div>
 							{#each cols as col}
-								<div class="relative border-l border-border">
+								<div class="relative border-l border-border" data-cal-day={col.key}>
 									{#each hours as _}
 										<div class="h-14 border-b border-border/60"></div>
 									{/each}
-									{#each eventsOn(col.key).filter((e) => !e.allDay && e.startTime) as ev (ev.id)}
-										<button
-											type="button"
+									{#each timedEventsOn(col.key) as raw (raw.id)}
+										{@const ev = displayEvent(raw)}
+										{@const tone = eventTone(ev)}
+										{@const resizing = resizeSession?.id === ev.id}
+										{@const dragging = dragSession?.id === ev.id && dragSession.active}
+										<!-- svelte-ignore a11y_no_static_element_interactions -->
+										<div
+											role="button"
+											tabindex="0"
 											class={[
-												'absolute right-1 left-1 overflow-hidden rounded-md border px-1.5 py-1 text-left text-[10px] font-medium shadow-sm',
-												toneSoft[eventTone(ev)]
+												'group/cal-event absolute right-1 left-1 z-[1] overflow-hidden rounded-md border px-1.5 py-1 text-left text-[10px] font-medium shadow-sm',
+												'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30',
+												toneSoft[tone],
+												(resizing || dragging) && 'z-[3] ring-2 ring-brand-500/35',
+												dragging && 'cursor-grabbing opacity-90 shadow-md',
+												draggableEvents && !resizing && 'cursor-grab',
+												(resizable || draggableEvents) && 'touch-none'
 											]}
 											style:top={`${hourTop(ev.startTime) * 3.5}rem`}
 											style:height={`${hourSpan(ev) * 3.5}rem`}
-											onclick={() => selectEvent(ev)}
+											onpointerdown={(e) => beginDrag(e, raw)}
+											onpointermove={(e) => {
+												moveDrag(e);
+												moveResize(e);
+											}}
+											onpointerup={(e) => {
+												endDrag(e);
+												endResize(e);
+											}}
+											onpointercancel={() => {
+												cancelDrag();
+												cancelResize();
+											}}
+											onclick={() => {
+												if (suppressClick) {
+													suppressClick = false;
+													return;
+												}
+												selectEvent(ev);
+											}}
+											onkeydown={(e) => {
+												if (e.key === 'Enter' || e.key === ' ') {
+													e.preventDefault();
+													selectEvent(ev);
+												}
+											}}
 										>
-											<p class="truncate font-semibold">{ev.title}</p>
+											{#if resizable}
+												<!-- Top resize handle -->
+												<div
+													data-resize-handle
+													role="separator"
+													aria-orientation="horizontal"
+													aria-label="Resize start time"
+													class="group/resize absolute inset-x-0 top-0 z-10 flex h-2.5 cursor-ns-resize items-start justify-center"
+													onpointerdown={(e) => beginResize(e, raw, 'start')}
+													onpointermove={moveResize}
+													onpointerup={endResize}
+													onpointercancel={cancelResize}
+												>
+													<span
+														class={[
+															'mt-0.5 h-0.5 w-8 rounded-full transition-[background-color,width,opacity,box-shadow] duration-150',
+															'bg-brand-500/0 group-hover/cal-event:bg-brand-500/45',
+															'group-hover/resize:w-10 group-hover/resize:bg-brand-500 group-hover/resize:shadow-[0_0_0_3px_color-mix(in_oklab,var(--color-brand-500)_25%,transparent)]',
+															resizing &&
+																resizeSession?.edge === 'start' &&
+																'w-10 bg-brand-500 shadow-[0_0_0_3px_color-mix(in_oklab,var(--color-brand-500)_25%,transparent)]'
+														]}
+													></span>
+												</div>
+											{/if}
+
+											<p class="truncate pr-0.5 font-semibold">{ev.title}</p>
 											<p class="truncate opacity-80">{timeLabel(ev)}</p>
-										</button>
+
+											{#if resizable}
+												<!-- Bottom resize handle -->
+												<div
+													data-resize-handle
+													role="separator"
+													aria-orientation="horizontal"
+													aria-label="Resize end time"
+													class="group/resize absolute inset-x-0 bottom-0 z-10 flex h-2.5 cursor-ns-resize items-end justify-center"
+													onpointerdown={(e) => beginResize(e, raw, 'end')}
+													onpointermove={moveResize}
+													onpointerup={endResize}
+													onpointercancel={cancelResize}
+												>
+													<span
+														class={[
+															'mb-0.5 h-0.5 w-8 rounded-full transition-[background-color,width,opacity,box-shadow] duration-150',
+															'bg-brand-500/0 group-hover/cal-event:bg-brand-500/45',
+															'group-hover/resize:w-10 group-hover/resize:bg-brand-500 group-hover/resize:shadow-[0_0_0_3px_color-mix(in_oklab,var(--color-brand-500)_25%,transparent)]',
+															resizing &&
+																resizeSession?.edge === 'end' &&
+																'w-10 bg-brand-500 shadow-[0_0_0_3px_color-mix(in_oklab,var(--color-brand-500)_25%,transparent)]'
+														]}
+													></span>
+												</div>
+											{/if}
+										</div>
 									{/each}
 									{#each eventsOn(col.key).filter((e) => e.allDay || !e.startTime) as ev (ev.id)}
 										<button
