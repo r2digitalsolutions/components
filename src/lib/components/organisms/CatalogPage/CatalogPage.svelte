@@ -1,23 +1,13 @@
 <script lang="ts">
-	import QueryBar from '$lib/components/molecules/QueryBar/QueryBar.svelte';
+	import SearchBar from '$lib/components/molecules/SearchBar/SearchBar.svelte';
 	import SortSelect from '$lib/components/molecules/SortSelect/SortSelect.svelte';
 	import FacetPanel from '$lib/components/molecules/FacetPanel/FacetPanel.svelte';
 	import type { FacetGroupDef } from '$lib/components/molecules/FacetPanel/FacetPanel.svelte';
-	import AdvancedFilters from '$lib/components/molecules/AdvancedFilters/AdvancedFilters.svelte';
-	import type { FilterFieldDef } from '$lib/utils/advancedFilters.js';
 	import ProductCard from '$lib/components/molecules/ProductCard/ProductCard.svelte';
 	import Chip from '$lib/components/atoms/Chip/Chip.svelte';
 	import EmptyState from '$lib/components/molecules/EmptyState/EmptyState.svelte';
-	import Button from '$lib/components/atoms/Button/Button.svelte';
 	import {
-		asFilterGroup,
 		createEmptyFilterState,
-		filterParamsToSearch,
-		flattenRules,
-		formatRuleLabel,
-		matchGroup,
-		parseFilterParams,
-		type AdvancedFilterGroup,
 		type CatalogFilterState
 	} from '$lib/utils/filterParams.js';
 	import type { FilterFieldSchema, FilterValues } from '$lib/utils/filterSchema.js';
@@ -41,15 +31,13 @@
 
 	interface CatalogPageProps {
 		products?: CatalogProduct[];
-		/** Preferred: schema JSON for automatic filter UI */
+		/** Schema JSON for automatic filter UI */
 		filterSchema?: FilterFieldSchema[];
 		/** @deprecated Prefer filterSchema */
 		facetGroups?: FacetGroupDef[];
-		fields?: FilterFieldDef[];
 		state?: CatalogFilterState;
 		title?: string;
-		showAdvanced?: boolean;
-		showUrlSync?: boolean;
+		searchPlaceholder?: string;
 		class?: string;
 		onstatechange?: (state: CatalogFilterState) => void;
 		onadd?: (id: string) => void;
@@ -59,19 +47,13 @@
 		products = [],
 		filterSchema = [],
 		facetGroups = [],
-		fields = [],
 		state: filters = $bindable(createEmptyFilterState()),
 		title = 'Catalog',
-		showAdvanced = true,
-		showUrlSync = false,
+		searchPlaceholder = 'Search products…',
 		class: className = '',
 		onstatechange,
 		onadd
 	}: CatalogPageProps = $props();
-
-	let urlPreview = $state('');
-	let urlInput = $state('');
-	let showAdvancedPanel = $state(false);
 
 	const resolvedSchema = $derived.by((): FilterFieldSchema[] => {
 		if (filterSchema.length) return filterSchema;
@@ -131,8 +113,7 @@
 		if (field === 'color') return p.color;
 		if (field === 'price') return p.price;
 		if (field === 'tags') return p.tags;
-		if (field === 'name') return p.title;
-		if (field === 'title') return p.title;
+		if (field === 'name' || field === 'title') return p.title;
 		if (field === 'rating') return p.rating;
 		return undefined;
 	}
@@ -147,10 +128,7 @@
 				chips.push({
 					id: field.id,
 					label: `${field.label} ${value[0]}–${value[1]}`,
-					clear: () => {
-						const next = { ...bag, [field.id]: undefined };
-						onFilterValues(next);
-					}
+					clear: () => onFilterValues({ ...bag, [field.id]: undefined })
 				});
 				continue;
 			}
@@ -177,16 +155,6 @@
 				});
 			}
 		}
-		for (const rule of flattenRules(asFilterGroup(filters.advanced))) {
-			chips.push({
-				id: rule.id,
-				label: formatRuleLabel(rule, fields),
-				clear: () => {
-					const root = asFilterGroup(filters.advanced);
-					patch({ advanced: removeRuleFromGroup(root, rule.id) });
-				}
-			});
-		}
 		return chips;
 	});
 
@@ -194,26 +162,13 @@
 		let list = [...products];
 		const q = filters.q.trim().toLowerCase();
 		if (q) {
-			list = list.filter((p) => {
-				if (
+			list = list.filter(
+				(p) =>
 					p.title.toLowerCase().includes(q) ||
 					p.subtitle?.toLowerCase().includes(q) ||
-					p.brand?.toLowerCase().includes(q)
-				) {
-					return true;
-				}
-				return q.split(/\s+AND\s+/i).every((part: string) => {
-					const m = part.match(/^(\w+)\s*[:=]\s*(.+)$/);
-					if (!m) return true;
-					const field = m[1];
-					const value = m[2].replace(/^"|"$/g, '').toLowerCase();
-					if (field === 'brand') return (p.brand ?? '').toLowerCase() === value;
-					if (field === 'color') return (p.color ?? '').toLowerCase() === value;
-					if (field === 'tags') return (p.tags ?? []).some((t) => t.toLowerCase() === value);
-					const raw = productField(p, field);
-					return `${raw ?? ''}`.toLowerCase().includes(value);
-				});
-			});
+					p.brand?.toLowerCase().includes(q) ||
+					(p.tags ?? []).some((t) => t.toLowerCase().includes(q))
+			);
 		}
 
 		const bag = filters.values ?? {};
@@ -256,12 +211,6 @@
 			});
 		}
 
-		const advanced = asFilterGroup(filters.advanced);
-		if (advanced.rules.length) {
-			list = list.filter((p) =>
-				matchGroup(advanced, (fieldId) => productField(p, fieldId))
-			);
-		}
 		const sort = filters.sort ?? 'relevance';
 		if (sort === 'price_asc') list.sort((a, b) => a.price - b.price);
 		else if (sort === 'price_desc') list.sort((a, b) => b.price - a.price);
@@ -270,134 +219,90 @@
 		return list;
 	});
 
-	function removeRuleFromGroup(group: AdvancedFilterGroup, ruleId: string): AdvancedFilterGroup {
-		return {
-			...group,
-			rules: group.rules
-				.filter((n) => n.id !== ruleId)
-				.map((n) => (n.type === 'group' ? removeRuleFromGroup(n, ruleId) : n))
-		};
-	}
-
-	function copyUrl() {
-		urlPreview = filterParamsToSearch(filters);
-		urlInput = urlPreview;
-		if (typeof navigator !== 'undefined' && navigator.clipboard && urlPreview) {
-			void navigator.clipboard.writeText(urlPreview);
-		}
-	}
-
-	function applyUrl() {
-		emit(parseFilterParams(urlInput || urlPreview));
-	}
-
 	function clearAll() {
 		emit(createEmptyFilterState({ sort: filters.sort }));
 	}
 </script>
 
-<div class={['w-full space-y-4', className]}>
-	<div class="flex flex-wrap items-end justify-between gap-3">
-		<div>
-			<h1 class="text-xl font-semibold text-primary">{title}</h1>
-			<p class="text-sm text-muted">{filtered.length} of {products.length} products</p>
-		</div>
-		<SortSelect value={filters.sort ?? 'relevance'} onchange={(v) => patch({ sort: v })} />
-	</div>
-
-	<QueryBar
-		value={filters.q}
-		{fields}
-		onchange={(q) => patch({ q })}
-		onsubmit={(q) => patch({ q })}
-	/>
-
-	{#if activeChips.length}
-		<div class="flex flex-wrap items-center gap-1.5">
-			{#each activeChips as chip (chip.id)}
-				<Chip size="sm" dismissible ondismiss={chip.clear}>{chip.label}</Chip>
-			{/each}
-			<button
-				type="button"
-				class="text-xs font-medium text-muted hover:text-primary"
-				onclick={clearAll}
-			>
-				Clear all
-			</button>
-		</div>
-	{/if}
-
-	{#if showAdvanced}
-		<div class="flex flex-wrap gap-2">
-			<Button
-				variant="secondary"
-				size="sm"
-				onclick={() => (showAdvancedPanel = !showAdvancedPanel)}
-			>
-				{showAdvancedPanel ? 'Hide advanced' : 'Advanced filters'}
-			</Button>
-			{#if showUrlSync}
-				<Button variant="outline" size="sm" onclick={copyUrl}>Copy URL params</Button>
-			{/if}
-		</div>
-		{#if showAdvancedPanel}
-			<AdvancedFilters
-				{fields}
-				query={asFilterGroup(filters.advanced)}
-				onchange={(advanced) => patch({ advanced })}
-			/>
-		{/if}
-	{/if}
-
-	{#if showUrlSync}
-		<div
-			class="flex flex-col gap-2 rounded-xl border border-border bg-surface-overlay/60 p-3 sm:flex-row sm:items-end"
-		>
-			<label class="min-w-0 flex-1 space-y-1">
-				<span class="text-xs font-medium text-muted">URL query</span>
-				<input
-					class="w-full rounded-lg border border-border bg-surface-elevated px-2.5 py-1.5 font-mono text-xs text-primary"
-					bind:value={urlInput}
-					placeholder="?q=brand:nike&f.brand=nike&sort=price_asc"
-				/>
-			</label>
-			<div class="flex gap-2">
-				<Button variant="secondary" size="sm" onclick={copyUrl}>Serialize</Button>
-				<Button variant="primary" size="sm" onclick={applyUrl}>Apply from URL</Button>
+<div class={['w-full space-y-5', className]}>
+	<div class="space-y-3">
+		<div class="flex flex-wrap items-end justify-between gap-3">
+			<div class="min-w-0">
+				<h1 class="text-xl font-semibold tracking-tight text-primary sm:text-2xl">{title}</h1>
+				<p class="text-sm text-muted">
+					<span class="font-medium tabular-nums text-primary">{filtered.length}</span>
+					of {products.length} products
+					{#if filters.q.trim()}
+						for “{filters.q.trim()}”
+					{/if}
+				</p>
 			</div>
+			<SortSelect value={filters.sort ?? 'relevance'} onchange={(v) => patch({ sort: v })} />
 		</div>
-		{#if urlPreview}
-			<p class="font-mono text-[11px] text-muted">{urlPreview}</p>
-		{/if}
-	{/if}
 
-	<div class="grid gap-4 lg:grid-cols-[16rem_1fr]">
-		<FacetPanel
-			schema={resolvedSchema}
-			values={filters.values ?? {}}
-			onchange={onFilterValues}
-			onclear={() => onFilterValues(clearFilterValues(resolvedSchema, filters.values ?? {}))}
+		<SearchBar
+			value={filters.q}
+			placeholder={searchPlaceholder}
+			size="lg"
+			variant="soft"
+			showButton={false}
+			oninput={(q) => patch({ q })}
+			onsubmit={(q) => patch({ q })}
+			onclear={() => patch({ q: '' })}
 		/>
 
-		{#if filtered.length}
-			<div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-				{#each filtered as product (product.id)}
-					<ProductCard
-						title={product.title}
-						subtitle={product.subtitle}
-						image={product.image}
-						price={product.price}
-						compareAt={product.compareAt}
-						currency={product.currency ?? 'EUR'}
-						badge={product.badge}
-						rating={product.rating}
-						reviews={product.reviews}
-						onadd={() => onadd?.(product.id)}
-					/>
+		{#if activeChips.length}
+			<div class="flex flex-wrap items-center gap-1.5">
+				{#each activeChips as chip (chip.id)}
+					<Chip size="sm" dismissible ondismiss={chip.clear}>{chip.label}</Chip>
 				{/each}
+				<button
+					type="button"
+					class="text-xs font-medium text-muted hover:text-primary"
+					onclick={clearAll}
+				>
+					Clear all
+				</button>
 			</div>
-		{:else}
-			<EmptyState title="No products" description="Try adjusting filters or clearing the query." />
 		{/if}
+	</div>
+
+	<div class="grid gap-5 lg:grid-cols-[16rem_minmax(0,1fr)]">
+		<aside class="min-w-0">
+			<FacetPanel
+				schema={resolvedSchema}
+				values={filters.values ?? {}}
+				onchange={onFilterValues}
+				onclear={() => onFilterValues(clearFilterValues(resolvedSchema, filters.values ?? {}))}
+			/>
+		</aside>
+
+		<section class="min-w-0">
+			{#if filtered.length}
+				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+					{#each filtered as product (product.id)}
+						<ProductCard
+							title={product.title}
+							subtitle={product.subtitle}
+							brand={product.brand}
+							image={product.image}
+							price={product.price}
+							compareAt={product.compareAt}
+							currency={product.currency ?? 'EUR'}
+							badge={product.badge}
+							rating={product.rating}
+							reviews={product.reviews}
+							wishlist
+							onadd={() => onadd?.(product.id)}
+						/>
+					{/each}
+				</div>
+			{:else}
+				<EmptyState
+					title="No products"
+					description="Try adjusting filters or clearing the search."
+				/>
+			{/if}
+		</section>
 	</div>
 </div>

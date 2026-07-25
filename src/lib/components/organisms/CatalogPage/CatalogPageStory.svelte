@@ -11,7 +11,6 @@
 		})
 	);
 
-	/** Schema JSON — could come from an API; drives BuilderFilters automatically */
 	const filterSchema: FilterFieldSchema[] = [
 		{
 			id: 'price',
@@ -86,7 +85,8 @@
 			compareAt: 149,
 			rating: 4.5,
 			reviews: 210,
-			badge: 'New'
+			badge: 'New',
+			image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800&q=80'
 		},
 		{
 			id: '2',
@@ -99,7 +99,8 @@
 			compareAt: 189,
 			rating: 4.7,
 			reviews: 340,
-			badge: 'Sale'
+			badge: 'Sale',
+			image: 'https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=800&q=80'
 		},
 		{
 			id: '3',
@@ -110,7 +111,8 @@
 			tags: ['new', 'limited'],
 			price: 119,
 			rating: 4.2,
-			reviews: 88
+			reviews: 88,
+			image: 'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=800&q=80'
 		},
 		{
 			id: '4',
@@ -121,7 +123,8 @@
 			tags: [],
 			price: 179,
 			rating: 4.8,
-			reviews: 512
+			reviews: 512,
+			image: 'https://images.unsplash.com/photo-1551107696-a4b0c56f4df2?w=800&q=80'
 		},
 		{
 			id: '5',
@@ -133,7 +136,8 @@
 			price: 139,
 			compareAt: 160,
 			rating: 4.4,
-			reviews: 156
+			reviews: 156,
+			image: 'https://images.unsplash.com/photo-1539185441755-769473a23570?w=800&q=80'
 		},
 		{
 			id: '6',
@@ -144,55 +148,12 @@
 			tags: ['new'],
 			price: 145,
 			rating: 4.6,
-			reviews: 273
+			reviews: 273,
+			image: 'https://images.unsplash.com/photo-1460353581641-37baddab0fa2?w=800&q=80'
 		}
 	];
 </script>
 
-<CatalogPage
-	bind:state={filters}
-	title="Running shoes"
-	showUrlSync
-	{products}
-	{filterSchema}
-	fields={[
-		{
-			id: 'brand',
-			label: 'Brand',
-			type: 'select',
-			options: [
-				{ value: 'nike', label: 'Nike' },
-				{ value: 'adidas', label: 'Adidas' },
-				{ value: 'puma', label: 'Puma' },
-				{ value: 'asics', label: 'Asics' },
-				{ value: 'newbalance', label: 'New Balance' },
-				{ value: 'hoka', label: 'Hoka' }
-			]
-		},
-		{
-			id: 'color',
-			label: 'Color',
-			type: 'select',
-			options: [
-				{ value: 'black', label: 'Black' },
-				{ value: 'white', label: 'White' },
-				{ value: 'blue', label: 'Blue' },
-				{ value: 'red', label: 'Red' }
-			]
-		},
-		{
-			id: 'tags',
-			label: 'Tags',
-			type: 'multiselect',
-			options: [
-				{ value: 'sale', label: 'Sale' },
-				{ value: 'new', label: 'New' },
-				{ value: 'limited', label: 'Limited' }
-			]
-		},
-		{ id: 'price', label: 'Price', type: 'number' },
-		{ id: 'name', label: 'Name', type: 'text' },
-		{ id: 'released', label: 'Released', type: 'date' },
-		{ id: 'featured', label: 'Featured', type: 'boolean' }
-	]}
-/>
+<div class="p-4 sm:p-6">
+	<CatalogPage bind:state={filters} title="Running shoes" {products} {filterSchema} />
+</div>
