@@ -108,3 +108,37 @@ export function isRemoteForm<
 >(remote: FormRemote<Input, Output> | null | undefined): remote is RemoteForm<Input, Output> {
 	return !!remote && 'fields' in remote && typeof (remote as RemoteForm<Input, Output>).fields === 'object';
 }
+
+/**
+ * Shared resolution for form-aware controls (error / status / disabled).
+ */
+export function resolveFormFieldState(options: {
+	name?: string;
+	errorMessage?: string;
+	helperText?: string;
+	status?: FormFieldStatus;
+	disabled?: boolean;
+	form?: FormContext | null;
+}): {
+	error?: string;
+	status: FormFieldStatus;
+	helperText?: string;
+	disabled: boolean;
+} {
+	const {
+		name,
+		errorMessage,
+		helperText,
+		status = 'default',
+		disabled = false,
+		form = null
+	} = options;
+
+	const error = errorMessage ?? (name && form ? form.getError(name) : undefined);
+	return {
+		error,
+		status: error ? 'error' : status,
+		helperText: error ?? helperText,
+		disabled: disabled || Boolean(form?.loading) || Boolean(form?.disabled)
+	};
+}

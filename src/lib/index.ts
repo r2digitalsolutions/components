@@ -96,6 +96,13 @@ export { default as FormCheckbox } from './components/molecules/FormCheckbox/For
 export { default as FormToggle } from './components/molecules/FormToggle/FormToggle.svelte';
 export { default as FormPasswordInput } from './components/molecules/FormPasswordInput/FormPasswordInput.svelte';
 export { default as FormError } from './components/molecules/FormError/FormError.svelte';
+export { default as FormGroup } from './components/molecules/FormGroup/FormGroup.svelte';
+export { default as FormDescription } from './components/molecules/FormDescription/FormDescription.svelte';
+export { default as FormLabel } from './components/molecules/FormLabel/FormLabel.svelte';
+export { default as FormRadioGroup } from './components/molecules/FormRadioGroup/FormRadioGroup.svelte';
+export { default as FormNumberInput } from './components/molecules/FormNumberInput/FormNumberInput.svelte';
+export { default as FormDatePicker } from './components/molecules/FormDatePicker/FormDatePicker.svelte';
+export { default as I18nProvider } from './components/molecules/I18nProvider/I18nProvider.svelte';
 export { default as RadioGroup } from './components/molecules/RadioGroup/RadioGroup.svelte';
 export { default as Select } from './components/molecules/Select/Select.svelte';
 export type { SelectOption } from './components/molecules/Select/Select.svelte';
@@ -267,7 +274,8 @@ export {
 	FORM_CONTEXT_KEY,
 	remoteIssuesToErrors,
 	isRemoteForm,
-	fieldPath
+	fieldPath,
+	resolveFormFieldState
 } from './utils/formContext.js';
 export type {
 	FormErrors,
@@ -281,6 +289,35 @@ export type {
 	RemoteFormInput,
 	RemoteFormIssue
 } from './utils/formContext.js';
+
+export {
+	validateForm,
+	isFormDirty,
+	firstFormError
+} from './utils/formValidate.js';
+export type {
+	BuiltinRule,
+	CustomRule,
+	PatternRule,
+	FieldRule,
+	FormRules,
+	ValidateOptions
+} from './utils/formValidate.js';
+
+export {
+	UI_DICTIONARIES,
+	resolveLocaleTag,
+	getDictionary,
+	formatMessage
+} from './utils/i18n.js';
+export type {
+	LocaleCode,
+	UiMessages,
+	MessageKey,
+	MessageParams
+} from './utils/i18n.js';
+
+export { i18n } from './utils/i18n.svelte.js';
 
 export { default as FieldArray } from './components/molecules/FieldArray/FieldArray.svelte';
 export type {

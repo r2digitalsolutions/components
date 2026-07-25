@@ -2,6 +2,7 @@
 	import type { Snippet } from 'svelte';
 	import Button from '$lib/components/atoms/Button/Button.svelte';
 	import { getFormContext } from '$lib/utils/formContext.js';
+	import { i18n } from '$lib/utils/i18n.svelte.js';
 
 	interface FormActionsProps {
 		submitLabel?: string;
@@ -34,8 +35,8 @@
 	}
 
 	const {
-		submitLabel = 'Save',
-		cancelLabel = 'Cancel',
+		submitLabel,
+		cancelLabel,
 		dangerLabel,
 		loading,
 		disabled = false,
@@ -54,6 +55,8 @@
 	}: FormActionsProps = $props();
 
 	const form = getFormContext();
+	const resolvedSubmitLabel = $derived(submitLabel ?? i18n.t('save'));
+	const resolvedCancelLabel = $derived(cancelLabel ?? i18n.t('cancel'));
 	const resolvedLoading = $derived(loading ?? form?.loading ?? false);
 	const busy = $derived(resolvedLoading || disabled || Boolean(form?.disabled));
 
@@ -118,7 +121,7 @@
 				class={fullWidth ? 'w-full sm:w-auto' : ''}
 				onclick={() => oncancel?.()}
 			>
-				{cancelLabel}
+				{resolvedCancelLabel}
 			</Button>
 		{/if}
 		<Button
@@ -129,7 +132,7 @@
 			class={fullWidth ? 'w-full sm:w-auto' : ''}
 			onclick={() => onsubmit?.()}
 		>
-			{submitLabel}
+			{resolvedSubmitLabel}
 		</Button>
 	</div>
 </div>

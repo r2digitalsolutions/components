@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import { i18n } from '$lib/utils/i18n.svelte.js';
 
 	interface LabelProps {
 		for?: string;
@@ -18,6 +19,8 @@
 		class: className = '',
 		children
 	}: LabelProps = $props();
+
+	const optionalLabel = $derived(i18n.t('optional'));
 
 	const sizeClasses: Record<'sm' | 'md' | 'lg', string> = {
 		sm: 'text-xs',
@@ -40,6 +43,6 @@
 	{#if required}
 		<span class="text-red-500" aria-hidden="true">*</span>
 	{:else if optional}
-		<span class="font-normal text-muted">(optional)</span>
+		<span class="font-normal text-muted">({optionalLabel})</span>
 	{/if}
 </label>

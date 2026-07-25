@@ -15,6 +15,7 @@
 		type FormErrors,
 		type FormRemote
 	} from '$lib/utils/formContext.js';
+	import { i18n } from '$lib/utils/i18n.svelte.js';
 
 	interface FormProps {
 		/** Field values shared via context (`getFormContext().data`) */
@@ -60,7 +61,7 @@
 		title,
 		description,
 		showErrorSummary = true,
-		errorSummaryTitle = 'Please fix the following',
+		errorSummaryTitle,
 		gap = 'md',
 		class: className = '',
 		children,
@@ -70,6 +71,9 @@
 	}: FormProps = $props();
 
 	let submitted = $state(false);
+	const resolvedErrorSummaryTitle = $derived(
+		errorSummaryTitle ?? i18n.t('errorSummary')
+	);
 
 	const kitForm = $derived(isRemoteForm<TInput, TOutput>(remote) ? remote : null);
 	const isRemote = $derived(remote != null);
@@ -181,7 +185,7 @@
 	{/if}
 
 	{#if showErrorSummary && submitted && hasErrors}
-		<Alert variant="error" title={errorSummaryTitle} dismissible={false}>
+		<Alert variant="error" title={resolvedErrorSummaryTitle} dismissible={false}>
 			<ul class="mt-1 list-disc space-y-0.5 pl-4 text-sm">
 				{#each errorEntries as [field, message] (field)}
 					<li>

@@ -3,6 +3,7 @@
 	import Button from '$lib/components/atoms/Button/Button.svelte';
 	import FormError from '$lib/components/molecules/FormError/FormError.svelte';
 	import { fieldPath, getFormContext } from '$lib/utils/formContext.js';
+	import { i18n } from '$lib/utils/i18n.svelte.js';
 
 	export interface FieldArrayItem {
 		id: string;
@@ -48,8 +49,8 @@
 		bindData = false,
 		min = 0,
 		max = Infinity,
-		addLabel = 'Add item',
-		emptyLabel = 'No items yet',
+		addLabel,
+		emptyLabel,
 		sortable = false,
 		disabled = false,
 		class: className = '',
@@ -59,6 +60,8 @@
 	}: FieldArrayProps = $props();
 
 	const form = getFormContext();
+	const resolvedAddLabel = $derived(addLabel ?? i18n.t('addItem'));
+	const resolvedEmptyLabel = $derived(emptyLabel ?? i18n.t('noItems'));
 	const resolvedDisabled = $derived(
 		disabled || Boolean(form?.loading) || Boolean(form?.disabled)
 	);
@@ -129,7 +132,7 @@
 
 	{#if items.length === 0}
 		<p class="rounded-xl border border-dashed border-border px-4 py-6 text-center text-sm text-muted">
-			{emptyLabel}
+			{resolvedEmptyLabel}
 		</p>
 	{:else}
 		<ul class="flex flex-col gap-2">
@@ -187,7 +190,7 @@
 
 	{#if canAdd}
 		<div>
-			<Button variant="outline" size="sm" onclick={add}>{addLabel}</Button>
+			<Button variant="outline" size="sm" onclick={add}>{resolvedAddLabel}</Button>
 		</div>
 	{/if}
 </div>
