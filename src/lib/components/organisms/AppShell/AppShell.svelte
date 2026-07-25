@@ -18,6 +18,8 @@
 		fullHeight?: boolean;
 		/** Card chrome (border/radius) — typical for demos, not production apps. */
 		framed?: boolean;
+		/** Extra classes for the main content region (e.g. `p-0` for flush panels). */
+		mainClass?: string;
 		class?: string;
 		actions?: Snippet;
 		children?: Snippet;
@@ -34,6 +36,7 @@
 		showNavbar = true,
 		fullHeight = true,
 		framed = false,
+		mainClass = '',
 		class: className = '',
 		actions,
 		children
@@ -73,7 +76,7 @@
 				{/snippet}
 			</Navbar>
 		{/if}
-		<main class="min-h-0 flex-1 overflow-auto p-6">
+		<main class={['min-h-0 flex-1 overflow-auto p-6', mainClass]}>
 			{#if children}{@render children()}{/if}
 		</main>
 	</div>

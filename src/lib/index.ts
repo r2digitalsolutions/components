@@ -591,6 +591,12 @@ export type {
 export { default as HelpCenter } from './components/organisms/HelpCenter/HelpCenter.svelte';
 export { default as ErrorPage } from './components/organisms/ErrorPage/ErrorPage.svelte';
 export { default as FileManager } from './components/organisms/FileManager/FileManager.svelte';
+export type {
+	FileManagerItem,
+	FileManagerFolder,
+	FileManagerView,
+	FileManagerSort
+} from './components/organisms/FileManager/FileManager.svelte';
 export { default as EmailComposer } from './components/organisms/EmailComposer/EmailComposer.svelte';
 export { default as InvoicePage } from './components/organisms/InvoicePage/InvoicePage.svelte';
 export type { InvoiceLine } from './components/organisms/InvoicePage/InvoicePage.svelte';
