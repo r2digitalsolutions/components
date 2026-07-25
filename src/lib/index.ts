@@ -238,3 +238,4 @@ export type { FeatureRow } from './components/organisms/FeatureComparison/Featur
 export { themeStore } from './utils/theme.svelte.js';
 export type { Theme } from './utils/theme.svelte.js';
 export { encodeQR, qrToSvgPath, punchLogoHole } from './utils/qr.js';
+export { renderMarkdown, renderInline, escapeHtml, splitTableRow } from './utils/markdown.js';
