@@ -1,13 +1,21 @@
 <script lang="ts">
 	import LoginForm from './LoginForm.svelte';
 
-	let props = $props<{ loading?: boolean }>();
+	let {
+		loading = false,
+		variant = 'card' as 'card' | 'plain'
+	}: {
+		loading?: boolean;
+		variant?: 'card' | 'plain';
+	} = $props();
+
 	let last = $state('');
 </script>
 
 <div class="flex min-h-[28rem] w-full items-center justify-center bg-surface p-6">
 	<LoginForm
-		loading={props.loading ?? false}
+		{loading}
+		{variant}
 		onsubmit={(p) => (last = p.email)}
 	/>
 </div>

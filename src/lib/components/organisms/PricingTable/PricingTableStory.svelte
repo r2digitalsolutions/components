@@ -1,5 +1,6 @@
 <script lang="ts">
 	import PricingTable, {
+		type PricingComparisonRow,
 		type PricingLayout,
 		type PricingPlan
 	} from './PricingTable.svelte';
@@ -10,8 +11,9 @@
 		columns?: 2 | 3 | 4;
 		showBillingToggle?: boolean;
 		showFeatures?: boolean;
+		showComparison?: boolean;
 		maxFeatures?: number;
-		planSet?: 'three' | 'two' | 'four' | 'bento';
+		planSet?: 'three' | 'two' | 'four' | 'bento' | 'comparison';
 		selectedId?: string;
 	}>();
 
@@ -40,7 +42,7 @@
 			periodYearly: 'yr',
 			description: 'For growing teams',
 			featured: true,
-			badge: 'Most popular',
+			badge: 'Popular',
 			features: [
 				'Unlimited projects',
 				'Priority support',
@@ -157,9 +159,25 @@
 		}
 	];
 
+	const comparisonRows: PricingComparisonRow[] = [
+		{ id: 'projects', label: 'Projects', values: ['3', 'Unlimited', 'Unlimited'] },
+		{ id: 'components', label: 'All components', values: [false, true, true] },
+		{ id: 'storybook', label: 'Storybook kit', values: [false, true, true] },
+		{ id: 'sso', label: 'SSO', values: [false, false, true] },
+		{ id: 'audit', label: 'Audit logs', values: [false, false, true] },
+		{ id: 'support', label: 'Support', values: ['Community', 'Priority', 'Dedicated'] },
+		{ id: 'sla', label: 'SLA', values: [false, false, true] }
+	];
+
 	const planSet = $derived(props.planSet ?? 'three');
 	const plans = $derived(
-		planSet === 'two' ? two : planSet === 'four' ? four : planSet === 'bento' ? bentoPlans : three
+		planSet === 'two'
+			? two
+			: planSet === 'four'
+				? four
+				: planSet === 'bento'
+					? bentoPlans
+					: three
 	);
 
 	let selectedId = $state('');
@@ -171,11 +189,12 @@
 
 	const widthClass = $derived.by(() => {
 		const layout = props.layout ?? 'grid';
-		if (layout === 'vertical') return 'w-[28rem] max-w-full';
-		if (layout === 'horizontal') return 'w-[48rem] max-w-full';
-		if (layout === 'bento' || layout === 'split') return 'w-[52rem] max-w-full';
-		if ((props.columns ?? 3) >= 4 || planSet === 'four') return 'w-[56rem] max-w-full';
-		return 'w-[48rem] max-w-full';
+		if (layout === 'vertical') return 'w-112 max-w-full';
+		if (layout === 'table' || props.showComparison) return 'w-208 max-w-full';
+		if (layout === 'horizontal') return 'w-192 max-w-full';
+		if (layout === 'bento' || layout === 'split') return 'w-208 max-w-full';
+		if ((props.columns ?? 3) >= 4 || planSet === 'four') return 'w-224 max-w-full';
+		return 'w-192 max-w-full';
 	});
 </script>
 
@@ -188,7 +207,9 @@
 		bind:billingPeriod
 		showBillingToggle={props.showBillingToggle ?? false}
 		showFeatures={props.showFeatures ?? true}
+		showComparison={props.showComparison ?? false}
 		maxFeatures={props.maxFeatures}
+		comparisonRows={planSet === 'comparison' || props.layout === 'table' ? comparisonRows : undefined}
 		onselect={(id) => (selectedId = id)}
 	>
 		{#snippet footer()}

@@ -5,7 +5,8 @@
 		| 'vertical'
 		| 'bento'
 		| 'compact'
-		| 'split';
+		| 'split'
+		| 'table';
 
 	export type PricingFeature =
 		| string
@@ -32,6 +33,14 @@
 		/** Bento cell span override */
 		span?: 1 | 2;
 	}
+
+	/** Explicit comparison matrix row (optional; table layout can auto-build) */
+	export interface PricingComparisonRow {
+		id: string;
+		label: string;
+		/** One value per plan, in the same order as `plans` */
+		values: (boolean | string)[];
+	}
 </script>
 
 <script lang="ts">
@@ -52,6 +61,10 @@
 		/** Show monthly/yearly toggle when plans have priceYearly */
 		showBillingToggle?: boolean;
 		billingPeriod?: 'monthly' | 'yearly';
+		/** Explicit feature matrix for `layout="table"` (auto-built when omitted) */
+		comparisonRows?: PricingComparisonRow[];
+		/** Append comparison matrix below card layouts */
+		showComparison?: boolean;
 		class?: string;
 		footer?: Snippet;
 		onselect?: (id: string) => void;
@@ -68,6 +81,8 @@
 		maxFeatures,
 		showBillingToggle = false,
 		billingPeriod = $bindable<'monthly' | 'yearly'>('monthly'),
+		comparisonRows,
+		showComparison = false,
 		class: className = '',
 		footer,
 		onselect,
@@ -91,7 +106,7 @@
 	const containerClass = $derived.by(() => {
 		switch (layout) {
 			case 'horizontal':
-				return 'flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory';
+				return 'flex items-stretch gap-4 overflow-x-auto pb-2 snap-x snap-mandatory';
 			case 'vertical':
 				return 'flex flex-col gap-3';
 			case 'bento':
@@ -142,6 +157,40 @@
 		return { visible: list, more: 0 };
 	}
 
+	function planFeatureMap(plan: PricingPlan) {
+		const map = new Map<string, boolean | string>();
+		for (const f of plan.features) {
+			if (typeof f === 'string') map.set(f, true);
+			else map.set(f.label, f.included === false ? false : true);
+		}
+		return map;
+	}
+
+	const resolvedComparisonRows = $derived.by((): PricingComparisonRow[] => {
+		if (comparisonRows?.length) return comparisonRows;
+
+		const labels: string[] = [];
+		const seen = new Set<string>();
+		for (const plan of plans) {
+			for (const f of plan.features) {
+				const label = typeof f === 'string' ? f : f.label;
+				if (!seen.has(label)) {
+					seen.add(label);
+					labels.push(label);
+				}
+			}
+		}
+
+		const maps = plans.map(planFeatureMap);
+		return labels.map((label, i) => ({
+			id: `feat-${i}-${label}`,
+			label,
+			values: maps.map((m) => m.get(label) ?? false)
+		}));
+	});
+
+	const showMatrix = $derived(layout === 'table' || showComparison);
+
 	function select(id: string, disabled?: boolean) {
 		if (disabled) return;
 		selectedId = id;
@@ -177,7 +226,7 @@
 {#snippet featureRows(plan: PricingPlan, dense = false)}
 	{@const { visible, more } = featureList(plan)}
 	{#if showFeatures && visible.length}
-		<ul class={['flex-1', dense ? 'space-y-1.5' : 'space-y-2']}>
+		<ul class={dense ? 'space-y-1.5' : 'space-y-2'}>
 			{#each visible as feature (feature.label)}
 				<li
 					class={[
@@ -225,7 +274,9 @@
 					<div class="flex flex-wrap items-center gap-2">
 						<p class="text-sm font-semibold text-primary">{plan.name}</p>
 						{#if badgeText}
-							<Badge size="sm" variant="primary">{badgeText}</Badge>
+							<Badge size="sm" variant="primary" class="shrink-0 whitespace-nowrap">
+								{badgeText}
+							</Badge>
 						{/if}
 					</div>
 					{#if plan.description}
@@ -237,8 +288,8 @@
 						</div>
 					{/if}
 				</div>
-				<div class="flex shrink-0 flex-col items-stretch gap-3 sm:items-end">
-					<p>
+				<div class="flex shrink-0 flex-col items-stretch gap-3 sm:w-40 sm:items-stretch">
+					<p class="sm:text-right">
 						<span class={['font-semibold text-primary', large ? 'text-4xl' : 'text-2xl']}>
 							{displayPrice(plan)}
 						</span>
@@ -258,7 +309,7 @@
 			</div>
 		</div>
 	{:else}
-		<div class={[cardShell(plan, dense), large && 'justify-center']}>
+		<div class={cardShell(plan, dense)}>
 			<div class={['flex items-start justify-between gap-2', dense ? 'mb-3' : 'mb-4']}>
 				<div class="min-w-0">
 					<p class={['font-semibold text-primary', large ? 'text-base' : 'text-sm']}>
@@ -271,7 +322,9 @@
 					{/if}
 				</div>
 				{#if badgeText}
-					<Badge size="sm" variant="primary">{badgeText}</Badge>
+					<Badge size="sm" variant="primary" class="shrink-0 whitespace-nowrap">
+						{badgeText}
+					</Badge>
 				{/if}
 			</div>
 
@@ -289,21 +342,150 @@
 				{/if}
 			</p>
 
-			<div class={dense ? 'mb-4' : 'mb-6'}>
+			<div class="mb-auto flex-1">
 				{@render featureRows(plan, dense)}
 			</div>
 
-			<Button
-				variant={plan.featured || selectedId === plan.id ? 'primary' : 'secondary'}
-				fullWidth
-				size={dense ? 'sm' : 'md'}
-				disabled={plan.disabled}
-				onclick={() => select(plan.id, plan.disabled)}
-			>
-				{plan.cta ?? 'Get started'}
-			</Button>
+			<div class={['shrink-0', dense ? 'pt-3' : 'pt-6']}>
+				<Button
+					variant={plan.featured || selectedId === plan.id ? 'primary' : 'secondary'}
+					fullWidth
+					size={dense ? 'sm' : 'md'}
+					disabled={plan.disabled}
+					onclick={() => select(plan.id, plan.disabled)}
+				>
+					{plan.cta ?? 'Get started'}
+				</Button>
+			</div>
 		</div>
 	{/if}
+{/snippet}
+
+{#snippet matrixCell(value: boolean | string)}
+	{#if typeof value === 'boolean'}
+		{#if value}
+			<span class="inline-flex text-brand-600 dark:text-brand-400" aria-label="Included">
+				<svg class="mx-auto h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+				</svg>
+			</span>
+		{:else}
+			<span class="text-muted" aria-label="Not included">—</span>
+		{/if}
+	{:else}
+		<span class="text-sm font-medium text-primary">{value}</span>
+	{/if}
+{/snippet}
+
+{#snippet comparisonTable(withPricingHeader: boolean)}
+	{@const colCount = Math.max(plans.length, 1)}
+	{@const labelCol = 'minmax(10rem, 13rem)'}
+	{@const planCols = `repeat(${colCount}, minmax(9rem, 1fr))`}
+	{@const matrixCols = `${labelCol} ${planCols}`}
+	<div class="w-full overflow-x-auto rounded-2xl border border-border bg-surface-elevated shadow-sm">
+		{#if withPricingHeader}
+			<!-- Same column template as matrix rows so cards line up with values -->
+			<div
+				class="grid min-w-160 divide-x divide-border border-b border-border"
+				style:grid-template-columns={matrixCols}
+			>
+				<div class="bg-surface-overlay/30" aria-hidden="true"></div>
+				{#each plans as plan (plan.id)}
+					{@const badgeText = plan.badge ?? (plan.featured ? featuredBadgeLabel : undefined)}
+					<div
+						class={[
+							'flex flex-col items-center px-4 py-6 text-center',
+							plan.featured && 'bg-brand-50/70 dark:bg-brand-950/25'
+						]}
+					>
+						<div class="flex min-h-6 flex-wrap items-center justify-center gap-1.5">
+							<span class="text-sm font-semibold text-primary">{plan.name}</span>
+							{#if badgeText}
+								<Badge size="sm" variant="primary" class="whitespace-nowrap">{badgeText}</Badge>
+							{/if}
+						</div>
+						<p class="mt-1 min-h-8 max-w-44 text-xs leading-snug text-secondary">
+							{plan.description ?? '\u00a0'}
+						</p>
+						<p class="mt-3">
+							<span class="text-3xl font-semibold tracking-tight text-primary">
+								{displayPrice(plan)}
+							</span>
+							{#if displayPeriod(plan)}
+								<span class="text-xs text-muted">{displayPeriod(plan)}</span>
+							{/if}
+						</p>
+						<Button
+							variant={plan.featured || selectedId === plan.id ? 'primary' : 'secondary'}
+							size="sm"
+							class="mt-4 w-full max-w-40"
+							disabled={plan.disabled}
+							onclick={() => select(plan.id, plan.disabled)}
+						>
+							{plan.cta ?? 'Get started'}
+						</Button>
+					</div>
+				{/each}
+			</div>
+		{/if}
+
+		<div
+			class="border-b border-border bg-surface-overlay/60 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted"
+		>
+			What's included
+		</div>
+
+		<div class="min-w-160" role="table" aria-label="Plan feature comparison">
+			<div
+				class="grid divide-x divide-border border-b border-border bg-surface/80"
+				style:grid-template-columns={matrixCols}
+				role="row"
+			>
+				<div class="px-4 py-2.5" role="columnheader"></div>
+				{#each plans as plan (plan.id)}
+					<div
+						class={[
+							'px-4 py-2.5 text-center text-xs font-semibold text-secondary',
+							plan.featured && 'bg-brand-50/40 text-brand-700 dark:bg-brand-950/15 dark:text-brand-300'
+						]}
+						role="columnheader"
+					>
+						{plan.name}
+					</div>
+				{/each}
+			</div>
+
+			{#each resolvedComparisonRows as row, ri (row.id)}
+				<div
+					class={[
+						'grid divide-x divide-border border-b border-border last:border-b-0',
+						ri % 2 === 1 && 'bg-surface-overlay/20'
+					]}
+					style:grid-template-columns={matrixCols}
+					role="row"
+				>
+					<div
+						class="flex items-center px-4 py-3.5 text-sm font-medium text-primary"
+						role="rowheader"
+					>
+						{row.label}
+					</div>
+					{#each row.values as value, vi}
+						{@const plan = plans[vi]}
+						<div
+							class={[
+								'flex items-center justify-center px-4 py-3.5 text-center',
+								plan?.featured && 'bg-brand-50/30 dark:bg-brand-950/10'
+							]}
+							role="cell"
+						>
+							{@render matrixCell(value)}
+						</div>
+					{/each}
+				</div>
+			{/each}
+		</div>
+	</div>
 {/snippet}
 
 <div class={['w-full space-y-4', className]}>
@@ -321,9 +503,11 @@
 		</div>
 	{/if}
 
-	{#if layout === 'split' && featuredPlan}
+	{#if layout === 'table'}
+		{@render comparisonTable(true)}
+	{:else if layout === 'split' && featuredPlan}
 		<div class={containerClass} role="list">
-			<div role="listitem" class="min-w-0">
+			<div role="listitem" class="h-full min-w-0">
 				{@render planCard(featuredPlan, { large: true })}
 			</div>
 			<div class="flex min-w-0 flex-col gap-3" role="list">
@@ -337,7 +521,7 @@
 	{:else if layout === 'bento'}
 		<div class={containerClass} role="list">
 			{#each plans as plan (plan.id)}
-				<div role="listitem" class={bentoSpan(plan)}>
+				<div role="listitem" class={['h-full', bentoSpan(plan)]}>
 					{@render planCard(plan, { large: !!plan.featured, dense: !plan.featured })}
 				</div>
 			{/each}
@@ -345,7 +529,7 @@
 	{:else if layout === 'horizontal'}
 		<div class={containerClass} role="list">
 			{#each plans as plan (plan.id)}
-				<div role="listitem" class="min-w-72 w-72 shrink-0 snap-start">
+				<div role="listitem" class="h-auto min-w-72 w-72 shrink-0 snap-start self-stretch">
 					{@render planCard(plan)}
 				</div>
 			{/each}
@@ -360,12 +544,18 @@
 		</div>
 	{:else}
 		<!-- grid | compact -->
-		<div class={containerClass} role="list">
+		<div class={['items-stretch', containerClass]} role="list">
 			{#each plans as plan (plan.id)}
-				<div role="listitem" class="min-w-0">
+				<div role="listitem" class="h-full min-w-0">
 					{@render planCard(plan, { dense: layout === 'compact' })}
 				</div>
 			{/each}
+		</div>
+	{/if}
+
+	{#if showMatrix && layout !== 'table'}
+		<div class="pt-2">
+			{@render comparisonTable(false)}
 		</div>
 	{/if}
 
