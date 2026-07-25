@@ -24,8 +24,10 @@
 
 	const style = $derived(
 		[
-			top && `padding-top: max(${offset}, env(safe-area-inset-top, 0px))`,
-			bottom && `padding-bottom: max(${offset}, env(safe-area-inset-bottom, 0px))`,
+			top &&
+				`padding-top: max(${offset}, env(safe-area-inset-top, 0px), var(--phone-safe-top, 0px))`,
+			bottom &&
+				`padding-bottom: max(${offset}, env(safe-area-inset-bottom, 0px), var(--phone-safe-bottom, 0px))`,
 			left && `padding-left: max(${offset}, env(safe-area-inset-left, 0px))`,
 			right && `padding-right: max(${offset}, env(safe-area-inset-right, 0px))`
 		]

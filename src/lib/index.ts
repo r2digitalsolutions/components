@@ -696,6 +696,7 @@ export type {
 export { default as ComingSoonPage } from './components/organisms/ComingSoonPage/ComingSoonPage.svelte';
 export { default as MaintenancePage } from './components/organisms/MaintenancePage/MaintenancePage.svelte';
 export { default as MobileShell } from './components/organisms/MobileShell/MobileShell.svelte';
+export type { MobileShellNavVariant } from './components/organisms/MobileShell/MobileShell.svelte';
 export { default as BlogPost } from './components/organisms/BlogPost/BlogPost.svelte';
 export { default as LandingHero } from './components/organisms/LandingHero/LandingHero.svelte';
 export { default as SearchResults } from './components/organisms/SearchResults/SearchResults.svelte';

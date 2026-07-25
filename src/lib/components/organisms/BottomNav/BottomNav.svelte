@@ -85,9 +85,39 @@
 
 	const sizes = $derived(
 		{
-			sm: { bar: 'h-14', fab: 'h-12 w-12', fabIcon: 'h-5 w-5', icon: 'h-4 w-4', label: 'text-[10px]', notch: 30, gap: 48, pad: 'pt-7' },
-			md: { bar: 'h-16', fab: 'h-14 w-14', fabIcon: 'h-6 w-6', icon: 'h-5 w-5', label: 'text-[11px]', notch: 34, gap: 56, pad: 'pt-8' },
-			lg: { bar: 'h-[4.5rem]', fab: 'h-16 w-16', fabIcon: 'h-7 w-7', icon: 'h-6 w-6', label: 'text-xs', notch: 38, gap: 64, pad: 'pt-9' }
+			sm: {
+				bar: 'h-14',
+				fab: 'h-12 w-12',
+				fabIcon: 'h-5 w-5',
+				icon: 'h-4 w-4',
+				iconWrap: 'h-8 w-8',
+				label: 'text-[10px]',
+				notch: 30,
+				gap: 48,
+				pad: 'pt-7'
+			},
+			md: {
+				bar: 'h-16',
+				fab: 'h-14 w-14',
+				fabIcon: 'h-6 w-6',
+				icon: 'h-5 w-5',
+				iconWrap: 'h-9 w-9',
+				label: 'text-[11px]',
+				notch: 34,
+				gap: 56,
+				pad: 'pt-8'
+			},
+			lg: {
+				bar: 'h-[4.5rem]',
+				fab: 'h-16 w-16',
+				fabIcon: 'h-7 w-7',
+				icon: 'h-6 w-6',
+				iconWrap: 'h-10 w-10',
+				label: 'text-xs',
+				notch: 38,
+				gap: 64,
+				pad: 'pt-9'
+			}
 		}[size]
 	);
 
@@ -106,7 +136,7 @@
 		onclick={() => select(item.id, item.disabled)}
 		aria-current={active ? 'page' : undefined}
 		class={[
-			'group relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1 px-1',
+			'group relative flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-1',
 			'rounded-xl transition-colors duration-200',
 			'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30',
 			active ? 'text-brand-600 dark:text-brand-400' : 'text-muted hover:text-primary',
@@ -115,8 +145,11 @@
 	>
 		<span
 			class={[
-				'relative inline-flex items-center justify-center transition-transform duration-200',
-				active && 'scale-110'
+				'relative inline-flex items-center justify-center rounded-2xl transition-[transform,background-color,box-shadow] duration-200',
+				sizes.iconWrap,
+				active
+					? 'bg-brand-500/12 text-brand-600 shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--color-brand-500)_22%,transparent)] dark:text-brand-400'
+					: 'bg-transparent group-hover:bg-surface-overlay/80'
 			]}
 		>
 			<svg
@@ -124,29 +157,29 @@
 				viewBox="0 0 24 24"
 				fill="none"
 				stroke="currentColor"
-				stroke-width={active ? '2.35' : '1.85'}
+				stroke-width={active ? '2.25' : '1.85'}
 				aria-hidden="true"
 			>
 				<path stroke-linecap="round" stroke-linejoin="round" d={iconPaths[item.icon ?? 'home']} />
 			</svg>
 			{#if item.badge !== undefined && item.badge !== ''}
 				<span
-					class="absolute -right-2 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-semibold text-white shadow-sm"
+					class="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-semibold text-white shadow-sm"
 				>
 					{item.badge}
 				</span>
 			{/if}
 		</span>
 		{#if showLabels}
-			<span class={['truncate font-medium leading-none transition-colors', sizes.label]}>
+			<span
+				class={[
+					'truncate font-medium leading-none transition-colors',
+					sizes.label,
+					active && 'text-brand-600 dark:text-brand-400'
+				]}
+			>
 				{item.label}
 			</span>
-		{/if}
-		{#if active && !fabItem}
-			<span
-				class="absolute top-0 h-1 w-5 rounded-b-full bg-brand-500"
-				aria-hidden="true"
-			></span>
 		{/if}
 	</button>
 {/snippet}
@@ -201,13 +234,11 @@
 		class={[
 			'relative flex w-full items-center',
 			sizes.bar,
-			variant === 'default' && 'bg-surface-elevated',
-			variant === 'default' && !fabItem && 'border-t border-border',
+			variant === 'default' && 'bg-transparent',
 			(variant === 'floating' || variant === 'notch') && 'rounded-2xl bg-surface-elevated',
 			variant === 'pill' && 'rounded-full bg-surface-elevated',
 			elevated && variant !== 'default' && 'shadow-lg',
-			elevated && variant === 'default' && fabItem && 'shadow-[0_-4px_16px_rgba(0,0,0,0.06)]',
-			blur && 'bg-surface-elevated/95 backdrop-blur-md',
+			blur && variant !== 'default' && 'bg-surface-elevated/95 backdrop-blur-md',
 			useNotch && 'notched-bar'
 		]}
 	>

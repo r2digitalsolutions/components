@@ -51,7 +51,8 @@
 		sticky && 'sticky top-0',
 		elevated && variant !== 'transparent' && 'shadow-sm',
 		surface[variant],
-		safeTop && 'pt-[env(safe-area-inset-top,0px)]',
+		safeTop &&
+			'pt-[max(env(safe-area-inset-top,0px),var(--phone-safe-top,0px))]',
 		className
 	]}
 >
