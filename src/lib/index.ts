@@ -331,7 +331,12 @@ export type { HBarPoint } from './components/molecules/HorizontalBarChart/Horizo
 export { default as StackedBarChart } from './components/molecules/StackedBarChart/StackedBarChart.svelte';
 export type { StackedSeries } from './components/molecules/StackedBarChart/StackedBarChart.svelte';
 export { default as Heatmap } from './components/molecules/Heatmap/Heatmap.svelte';
-export type { HeatmapCell } from './components/molecules/Heatmap/Heatmap.svelte';
+export type {
+	HeatmapCell,
+	HeatmapPalette,
+	HeatmapSize
+} from './components/molecules/Heatmap/Heatmap.svelte';
+export { HEATMAP_PALETTES } from './components/molecules/Heatmap/Heatmap.svelte';
 export { default as InputGroup } from './components/molecules/InputGroup/InputGroup.svelte';
 export { default as CreditCardInput } from './components/molecules/CreditCardInput/CreditCardInput.svelte';
 export type { CardBrand } from './components/molecules/CreditCardInput/CreditCardInput.svelte';
