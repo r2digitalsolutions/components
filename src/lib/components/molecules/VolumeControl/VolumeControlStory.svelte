@@ -15,12 +15,13 @@
 	<p class="text-sm font-semibold text-primary">Volume control</p>
 	<p class="text-xs text-secondary">
 		{#if variant === 'compact'}
-			Solo icono; el slider aparece al hover/focus.
+			Solo icono; el slider se expande al hover y se mantiene al arrastrar.
 		{:else}
 			Mute + slider siempre visible.
 		{/if}
 	</p>
-	<div class="flex justify-end">
+	<div class="flex items-center justify-end gap-3 rounded-xl bg-surface px-3 py-2">
+		<span class="text-[11px] text-muted">Hover →</span>
 		<VolumeControl {variant} bind:value={volume} bind:muted showValue={variant === 'inline'} />
 	</div>
 	<p class="font-mono text-[11px] text-muted">

@@ -1,29 +1,45 @@
 <script lang="ts">
 	import ActionBar from './ActionBar.svelte';
+	import Input from '$lib/components/atoms/Input/Input.svelte';
+	import Text from '$lib/components/atoms/Text/Text.svelte';
 
-	let props = $props<{ dirty?: boolean; loading?: boolean }>();
+	let props = $props<{ dirty?: boolean; loading?: boolean; variant?: 'dock' | 'inline' }>();
+
+	let name = $state('Acme Workspace');
 	let dirty = $state(true);
+	let baseline = 'Acme Workspace';
+
 	$effect(() => {
-		dirty = props.dirty ?? true;
+		if (props.dirty !== undefined) dirty = props.dirty;
+	});
+
+	$effect(() => {
+		dirty = name !== baseline;
 	});
 </script>
 
-<div class="relative max-w-xl overflow-hidden rounded-2xl border border-border bg-surface">
-	<div class="space-y-3 p-4">
-		<p class="text-sm text-primary">Edit workspace settings</p>
-		<p class="text-xs text-muted">Change a field to mark the form dirty, then save from the action bar.</p>
-		<button
-			type="button"
-			class="text-xs font-medium text-brand-600 hover:underline"
-			onclick={() => (dirty = !dirty)}
-		>
-			Toggle dirty state
-		</button>
+<div class="relative mx-auto max-w-lg overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
+	<div class="space-y-4 p-5 pb-16">
+		<div>
+			<p class="text-sm font-semibold text-primary">Workspace settings</p>
+			<Text size="xs" tone="muted" class="mt-0.5">
+				Edit the name — the action bar tracks unsaved state.
+			</Text>
+		</div>
+		<Input size="sm" label="Name" bind:value={name} />
 	</div>
+
 	<ActionBar
 		{dirty}
 		loading={props.loading ?? false}
-		onsubmit={() => (dirty = false)}
-		oncancel={() => (dirty = false)}
+		variant={props.variant ?? 'dock'}
+		onsubmit={() => {
+			baseline = name;
+			dirty = false;
+		}}
+		oncancel={() => {
+			name = baseline;
+			dirty = false;
+		}}
 	/>
 </div>

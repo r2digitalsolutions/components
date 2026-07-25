@@ -246,6 +246,7 @@ export type { UserChipStatus } from './components/molecules/UserChip/UserChip.sv
 export { default as SettingsRow } from './components/molecules/SettingsRow/SettingsRow.svelte';
 export { default as CommentComposer } from './components/molecules/CommentComposer/CommentComposer.svelte';
 export { default as ActionBar } from './components/molecules/ActionBar/ActionBar.svelte';
+export type { ActionBarVariant } from './components/molecules/ActionBar/ActionBar.svelte';
 export { default as MetricGrid } from './components/molecules/MetricGrid/MetricGrid.svelte';
 export type { MetricItem } from './components/molecules/MetricGrid/MetricGrid.svelte';
 export { default as FileRow } from './components/molecules/FileRow/FileRow.svelte';
