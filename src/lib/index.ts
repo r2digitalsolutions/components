@@ -70,6 +70,7 @@ export { default as BrandMark } from './components/atoms/BrandMark/BrandMark.sve
 export type { BrandMarkSize } from './components/atoms/BrandMark/BrandMark.svelte';
 export { default as StepMark } from './components/atoms/StepMark/StepMark.svelte';
 export type { StepMarkState } from './components/atoms/StepMark/StepMark.svelte';
+export { default as RadialProgress } from './components/atoms/RadialProgress/RadialProgress.svelte';
 
 // ── Molecules ────────────────────────────────────────────────────────────────
 export { default as Card } from './components/molecules/Card/Card.svelte';
@@ -280,6 +281,23 @@ export { default as StepHeader } from './components/molecules/StepHeader/StepHea
 export { default as PropertyRow } from './components/molecules/PropertyRow/PropertyRow.svelte';
 export { default as Chart } from './components/molecules/Chart/Chart.svelte';
 export type { ChartType, ChartPoint } from './components/molecules/Chart/Chart.svelte';
+export { default as AreaLineChart } from './components/molecules/AreaLineChart/AreaLineChart.svelte';
+export type { AreaLinePoint } from './components/molecules/AreaLineChart/AreaLineChart.svelte';
+export { default as MultiLineChart } from './components/molecules/MultiLineChart/MultiLineChart.svelte';
+export type { MultiLineSeries } from './components/molecules/MultiLineChart/MultiLineChart.svelte';
+export { default as BarChart } from './components/molecules/BarChart/BarChart.svelte';
+export type { BarChartPoint } from './components/molecules/BarChart/BarChart.svelte';
+export { default as ComparisonCurves } from './components/molecules/ComparisonCurves/ComparisonCurves.svelte';
+export type { ComparisonSeries } from './components/molecules/ComparisonCurves/ComparisonCurves.svelte';
+export { default as DonutChart } from './components/molecules/DonutChart/DonutChart.svelte';
+export type { DonutSlice } from './components/molecules/DonutChart/DonutChart.svelte';
+export { default as Gauge } from './components/molecules/Gauge/Gauge.svelte';
+export { default as HorizontalBarChart } from './components/molecules/HorizontalBarChart/HorizontalBarChart.svelte';
+export type { HBarPoint } from './components/molecules/HorizontalBarChart/HorizontalBarChart.svelte';
+export { default as StackedBarChart } from './components/molecules/StackedBarChart/StackedBarChart.svelte';
+export type { StackedSeries } from './components/molecules/StackedBarChart/StackedBarChart.svelte';
+export { default as Heatmap } from './components/molecules/Heatmap/Heatmap.svelte';
+export type { HeatmapCell } from './components/molecules/Heatmap/Heatmap.svelte';
 export { default as InputGroup } from './components/molecules/InputGroup/InputGroup.svelte';
 export { default as CreditCardInput } from './components/molecules/CreditCardInput/CreditCardInput.svelte';
 export type { CardBrand } from './components/molecules/CreditCardInput/CreditCardInput.svelte';
@@ -429,3 +447,14 @@ export {
 	toSplitRows
 } from './utils/diff.js';
 export type { DiffOp, DiffOpType, DiffPart, DiffStats, SplitRow } from './utils/diff.js';
+export {
+	mapPoints,
+	smoothLinePath,
+	linearLinePath,
+	areaPath,
+	scaleDomain,
+	tipAlign,
+	formatTick,
+	DEFAULT_PAD
+} from './utils/chart.js';
+export type { ChartXY, ChartPad } from './utils/chart.js';
