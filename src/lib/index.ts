@@ -575,6 +575,12 @@ export type {
 } from './components/organisms/ContactForm/ContactForm.svelte';
 export { default as ChangePasswordForm } from './components/organisms/ChangePasswordForm/ChangePasswordForm.svelte';
 export { default as BillingPage } from './components/organisms/BillingPage/BillingPage.svelte';
+export type {
+	BillingStatus,
+	BillingUsageItem,
+	BillingPaymentMethod,
+	BillingInvoice
+} from './components/organisms/BillingPage/BillingPage.svelte';
 export { default as StatusPage } from './components/organisms/StatusPage/StatusPage.svelte';
 export { default as OnboardingPage } from './components/organisms/OnboardingPage/OnboardingPage.svelte';
 export { default as InviteTeamForm } from './components/organisms/InviteTeamForm/InviteTeamForm.svelte';
