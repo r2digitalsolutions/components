@@ -5,10 +5,26 @@ const meta = {
 	title: 'Molecules/UserCard',
 	component: UserCardStory,
 	tags: ['autodocs'],
-	args: { name: 'Ada Lovelace', role: 'Staff Engineer', badge: 'Admin' }
+	argTypes: {
+		example: { control: 'select', options: ['gallery', 'single', 'team'] },
+		variant: { control: 'select', options: ['profile', 'compact', 'cover'] }
+	},
+	args: { example: 'gallery', variant: 'profile' }
 } satisfies Meta<typeof UserCardStory>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {};
+export const Default: Story = {
+	name: 'Gallery',
+	args: { example: 'gallery' }
+};
+
+export const Cover: Story = {
+	args: { example: 'single', variant: 'cover' }
+};
+
+export const CompactTeam: Story = {
+	name: 'Compact team',
+	args: { example: 'team' }
+};

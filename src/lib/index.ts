@@ -163,6 +163,19 @@ export { default as TypingIndicator } from './components/molecules/TypingIndicat
 export { default as CheckboxGroup } from './components/molecules/CheckboxGroup/CheckboxGroup.svelte';
 export type { CheckboxOption } from './components/molecules/CheckboxGroup/CheckboxGroup.svelte';
 export { default as FloatButton } from './components/molecules/FloatButton/FloatButton.svelte';
+export { default as SpeedDial } from './components/molecules/SpeedDial/SpeedDial.svelte';
+export type { SpeedDialAction } from './components/molecules/SpeedDial/SpeedDial.svelte';
+export { default as BottomSheet } from './components/molecules/BottomSheet/BottomSheet.svelte';
+export { default as SwipeAction } from './components/molecules/SwipeAction/SwipeAction.svelte';
+export { default as FilterChips } from './components/molecules/FilterChips/FilterChips.svelte';
+export type { FilterChipItem } from './components/molecules/FilterChips/FilterChips.svelte';
+export { default as VoteControl } from './components/molecules/VoteControl/VoteControl.svelte';
+export { default as BookmarkButton } from './components/molecules/BookmarkButton/BookmarkButton.svelte';
+export { default as AnchorNav } from './components/molecules/AnchorNav/AnchorNav.svelte';
+export type { AnchorItem } from './components/molecules/AnchorNav/AnchorNav.svelte';
+export { default as Poll } from './components/molecules/Poll/Poll.svelte';
+export type { PollOption } from './components/molecules/Poll/Poll.svelte';
+export { default as NewsletterSignup } from './components/molecules/NewsletterSignup/NewsletterSignup.svelte';
 export { default as TimeAgo } from './components/molecules/TimeAgo/TimeAgo.svelte';
 export { default as Spoiler } from './components/molecules/Spoiler/Spoiler.svelte';
 export { default as PasswordStrength } from './components/molecules/PasswordStrength/PasswordStrength.svelte';
@@ -220,8 +233,16 @@ export type {
 } from './components/molecules/NotificationRow/NotificationRow.svelte';
 export { default as SearchBar } from './components/molecules/SearchBar/SearchBar.svelte';
 export { default as SkeletonCard } from './components/molecules/SkeletonCard/SkeletonCard.svelte';
+export type { SkeletonCardLayout } from './components/molecules/SkeletonCard/SkeletonCard.svelte';
 export { default as UserCard } from './components/molecules/UserCard/UserCard.svelte';
-export type { UserCardStatus } from './components/molecules/UserCard/UserCard.svelte';
+export type {
+	UserCardStatus,
+	UserCardVariant
+} from './components/molecules/UserCard/UserCard.svelte';
+export { default as UserListItem } from './components/molecules/UserListItem/UserListItem.svelte';
+export type { UserListItemStatus } from './components/molecules/UserListItem/UserListItem.svelte';
+export { default as UserChip } from './components/molecules/UserChip/UserChip.svelte';
+export type { UserChipStatus } from './components/molecules/UserChip/UserChip.svelte';
 export { default as SettingsRow } from './components/molecules/SettingsRow/SettingsRow.svelte';
 export { default as CommentComposer } from './components/molecules/CommentComposer/CommentComposer.svelte';
 export { default as ActionBar } from './components/molecules/ActionBar/ActionBar.svelte';
@@ -360,6 +381,12 @@ export { default as AuditLogPage } from './components/organisms/AuditLogPage/Aud
 export type { AuditEvent } from './components/organisms/AuditLogPage/AuditLogPage.svelte';
 export { default as ApiKeysPage } from './components/organisms/ApiKeysPage/ApiKeysPage.svelte';
 export type { ApiKeyItem } from './components/organisms/ApiKeysPage/ApiKeysPage.svelte';
+export { default as Changelog } from './components/organisms/Changelog/Changelog.svelte';
+export type { ChangelogEntry } from './components/organisms/Changelog/Changelog.svelte';
+export { default as Roadmap } from './components/organisms/Roadmap/Roadmap.svelte';
+export type { RoadmapItem, RoadmapStatus } from './components/organisms/Roadmap/Roadmap.svelte';
+export { default as FAQ } from './components/organisms/FAQ/FAQ.svelte';
+export type { FaqItem } from './components/organisms/FAQ/FAQ.svelte';
 
 // ── Utils ────────────────────────────────────────────────────────────────────
 export { themeStore } from './utils/theme.svelte.js';
