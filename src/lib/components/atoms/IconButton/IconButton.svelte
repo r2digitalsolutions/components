@@ -35,7 +35,7 @@
 	const isDisabled = $derived(disabled || loading);
 
 	const baseClasses =
-		'relative inline-flex items-center justify-center touch-target transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 select-none cursor-pointer disabled:cursor-not-allowed disabled:opacity-50';
+		'relative inline-flex items-center justify-center transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 select-none cursor-pointer disabled:cursor-not-allowed disabled:opacity-50';
 
 	const variantClasses: Record<IconButtonVariant, string> = {
 		primary:
@@ -72,6 +72,7 @@
 		baseClasses,
 		variantClasses[variant],
 		sizeClasses[size],
+		(size === 'md' || size === 'lg' || size === 'xl') && 'touch-target',
 		rounded ? 'rounded-full' : 'rounded-lg',
 		className
 	]}

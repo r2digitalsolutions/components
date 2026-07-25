@@ -62,6 +62,9 @@ export { default as Eyebrow } from './components/atoms/Eyebrow/Eyebrow.svelte';
 export { default as Sparkline } from './components/atoms/Sparkline/Sparkline.svelte';
 export { default as Time } from './components/atoms/Time/Time.svelte';
 export { default as Truncate } from './components/atoms/Truncate/Truncate.svelte';
+export { default as SplitHandle } from './components/atoms/SplitHandle/SplitHandle.svelte';
+export type { SplitOrientation } from './components/atoms/SplitHandle/SplitHandle.svelte';
+export { default as PanelHeader } from './components/atoms/PanelHeader/PanelHeader.svelte';
 
 // ── Molecules ────────────────────────────────────────────────────────────────
 export { default as Card } from './components/molecules/Card/Card.svelte';
@@ -132,6 +135,11 @@ export { default as CurrencyInput } from './components/molecules/CurrencyInput/C
 export { default as TransferList } from './components/molecules/TransferList/TransferList.svelte';
 export type { TransferOption } from './components/molecules/TransferList/TransferList.svelte';
 export { default as Resizable } from './components/molecules/Resizable/Resizable.svelte';
+export { default as SplitPane } from './components/molecules/SplitPane/SplitPane.svelte';
+export { default as Panel } from './components/molecules/Panel/Panel.svelte';
+export type { PanelPadding } from './components/molecules/Panel/Panel.svelte';
+export { default as PropertyField } from './components/molecules/PropertyField/PropertyField.svelte';
+export { default as PropertyGroup } from './components/molecules/PropertyGroup/PropertyGroup.svelte';
 export { default as NavigationMenu } from './components/molecules/NavigationMenu/NavigationMenu.svelte';
 export type { NavMenuItem, NavMenuChild } from './components/molecules/NavigationMenu/NavigationMenu.svelte';
 export { default as ChatBubble } from './components/molecules/ChatBubble/ChatBubble.svelte';
@@ -286,6 +294,7 @@ export type { BottomNavItem, BottomNavIcon } from './components/organisms/Bottom
 export { default as CommandPalette } from './components/organisms/CommandPalette/CommandPalette.svelte';
 export type { CommandItem } from './components/organisms/CommandPalette/CommandPalette.svelte';
 export { default as AppShell } from './components/organisms/AppShell/AppShell.svelte';
+export { default as EditorShell } from './components/organisms/EditorShell/EditorShell.svelte';
 export { default as LoginForm } from './components/organisms/LoginForm/LoginForm.svelte';
 export { default as Menubar } from './components/organisms/Menubar/Menubar.svelte';
 export type { MenubarItem, MenubarSubItem } from './components/organisms/Menubar/Menubar.svelte';
