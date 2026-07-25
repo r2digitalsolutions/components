@@ -427,6 +427,7 @@ export type { ShareChannel } from './components/molecules/ShareSheet/ShareSheet.
 export { default as PhoneFrame } from './components/molecules/PhoneFrame/PhoneFrame.svelte';
 export type { PhoneFrameSize } from './components/molecules/PhoneFrame/PhoneFrame.svelte';
 export { default as SearchSheet } from './components/molecules/SearchSheet/SearchSheet.svelte';
+export type { SearchSheetItem } from './components/molecules/SearchSheet/SearchSheet.svelte';
 export { default as ProductCard } from './components/molecules/ProductCard/ProductCard.svelte';
 export type {
 	ProductCardVariant,
