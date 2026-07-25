@@ -111,6 +111,9 @@ export { default as FormDateTimePicker } from './components/molecules/FormDateTi
 export { default as FormFileUpload } from './components/molecules/FormFileUpload/FormFileUpload.svelte';
 export { default as FormPinInput } from './components/molecules/FormPinInput/FormPinInput.svelte';
 export { default as I18nProvider } from './components/molecules/I18nProvider/I18nProvider.svelte';
+export { default as PermissionsProvider } from './components/molecules/PermissionsProvider/PermissionsProvider.svelte';
+export { default as Can } from './components/molecules/Can/Can.svelte';
+export { default as ShowIf } from './components/molecules/ShowIf/ShowIf.svelte';
 export { default as RadioGroup } from './components/molecules/RadioGroup/RadioGroup.svelte';
 export { default as Select } from './components/molecules/Select/Select.svelte';
 export type { SelectOption } from './components/molecules/Select/Select.svelte';
@@ -328,6 +331,28 @@ export type {
 } from './utils/i18n.js';
 
 export { i18n } from './utils/i18n.svelte.js';
+
+export {
+	PERMISSION_LEVELS,
+	LEVEL_RANK,
+	levelSatisfies,
+	mergeLevels,
+	getRoleLevels,
+	getEffectiveLevels,
+	can,
+	hasRole,
+	hasAnyRole,
+	hasAllRoles,
+	checkPermission
+} from './utils/permissions.js';
+export type { PermissionCheck } from './utils/permissions.js';
+
+export {
+	permissions,
+	getPermissionsContext,
+	PERMISSIONS_CONTEXT_KEY
+} from './utils/permissions.svelte.js';
+export type { PermissionsState } from './utils/permissions.svelte.js';
 
 export { default as FieldArray } from './components/molecules/FieldArray/FieldArray.svelte';
 export type {
