@@ -49,7 +49,12 @@
 		className
 	]}
 >
-	<div class="flex items-center justify-between gap-2 px-3 py-4">
+	<div
+		class={[
+			'flex items-center gap-2 px-3 py-4',
+			collapsed ? 'justify-center' : 'justify-between'
+		]}
+	>
 		{#if !collapsed}
 			<span class="truncate text-sm font-semibold text-primary">{brand}</span>
 		{/if}
