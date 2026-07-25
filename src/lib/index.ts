@@ -698,6 +698,12 @@ export { default as MaintenancePage } from './components/organisms/MaintenancePa
 export { default as MobileShell } from './components/organisms/MobileShell/MobileShell.svelte';
 export type { MobileShellNavVariant } from './components/organisms/MobileShell/MobileShell.svelte';
 export { default as BlogPost } from './components/organisms/BlogPost/BlogPost.svelte';
+export type {
+	BlogAuthor,
+	BlogRelatedPost,
+	BlogAdjacentPost,
+	BlogPostLayout
+} from './components/organisms/BlogPost/BlogPost.svelte';
 export { default as LandingHero } from './components/organisms/LandingHero/LandingHero.svelte';
 export { default as SearchResults } from './components/organisms/SearchResults/SearchResults.svelte';
 export type { SearchResultItem } from './components/organisms/SearchResults/SearchResults.svelte';
