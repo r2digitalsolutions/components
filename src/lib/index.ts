@@ -170,7 +170,15 @@ export { default as CheckboxGroup } from './components/molecules/CheckboxGroup/C
 export type { CheckboxOption } from './components/molecules/CheckboxGroup/CheckboxGroup.svelte';
 export { default as FloatButton } from './components/molecules/FloatButton/FloatButton.svelte';
 export { default as SpeedDial } from './components/molecules/SpeedDial/SpeedDial.svelte';
-export type { SpeedDialAction } from './components/molecules/SpeedDial/SpeedDial.svelte';
+export type {
+	SpeedDialAction,
+	SpeedDialPosition,
+	SpeedDialDirection,
+	SpeedDialLabels,
+	SpeedDialSize,
+	SpeedDialVariant,
+	SpeedDialIconName
+} from './components/molecules/SpeedDial/SpeedDial.svelte';
 export { default as BottomSheet } from './components/molecules/BottomSheet/BottomSheet.svelte';
 export type { BottomSheetSize } from './components/molecules/BottomSheet/BottomSheet.svelte';
 export { default as SwipeAction } from './components/molecules/SwipeAction/SwipeAction.svelte';
