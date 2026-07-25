@@ -166,6 +166,7 @@ export type { MentionSuggestion } from './components/molecules/MentionInput/Ment
 export { default as MarkdownPreview } from './components/molecules/MarkdownPreview/MarkdownPreview.svelte';
 export { default as JSONViewer } from './components/molecules/JSONViewer/JSONViewer.svelte';
 export { default as DiffViewer } from './components/molecules/DiffViewer/DiffViewer.svelte';
+export type { DiffMode } from './components/molecules/DiffViewer/DiffViewer.svelte';
 export { default as SignaturePad } from './components/molecules/SignaturePad/SignaturePad.svelte';
 export { default as ImageCropper } from './components/molecules/ImageCropper/ImageCropper.svelte';
 export { default as AudioPlayer } from './components/molecules/AudioPlayer/AudioPlayer.svelte';
@@ -239,3 +240,10 @@ export { themeStore } from './utils/theme.svelte.js';
 export type { Theme } from './utils/theme.svelte.js';
 export { encodeQR, qrToSvgPath, punchLogoHole } from './utils/qr.js';
 export { renderMarkdown, renderInline, escapeHtml, splitTableRow } from './utils/markdown.js';
+export {
+	diffLines,
+	diffWords,
+	diffStats,
+	toSplitRows
+} from './utils/diff.js';
+export type { DiffOp, DiffOpType, DiffPart, DiffStats, SplitRow } from './utils/diff.js';
