@@ -5,7 +5,13 @@ const meta = {
 	title: 'Molecules/OfflineBanner',
 	component: OfflineBannerStory,
 	tags: ['autodocs'],
-	argTypes: { forced: { control: 'boolean' } },
+	argTypes: {
+		forced: {
+			control: 'select',
+			options: [false, true, null],
+			labels: { false: 'Offline', true: 'Online', null: 'Auto (navigator)' }
+		}
+	},
 	args: { forced: false }
 } satisfies Meta<typeof OfflineBannerStory>;
 

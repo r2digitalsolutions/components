@@ -76,7 +76,7 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <span
 	bind:this={triggerEl}
-	class={['inline-flex', className]}
+	class={['inline-flex min-w-0 max-w-full', className]}
 	onmouseenter={show}
 	onmouseleave={hide}
 	onfocusin={show}
