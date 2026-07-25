@@ -313,8 +313,13 @@ export { default as ReactionBar } from './components/molecules/ReactionBar/React
 export type { ReactionItem } from './components/molecules/ReactionBar/ReactionBar.svelte';
 export { default as AddressFields } from './components/molecules/AddressFields/AddressFields.svelte';
 export { default as RichTextEditor } from './components/molecules/RichTextEditor/RichTextEditor.svelte';
+export type { RichTextEditorVariant } from './components/molecules/RichTextEditor/RichTextEditor.svelte';
 export { default as EventCalendar } from './components/molecules/EventCalendar/EventCalendar.svelte';
-export type { CalendarEvent } from './components/molecules/EventCalendar/EventCalendar.svelte';
+export type {
+	CalendarEvent,
+	CalendarEventColor
+} from './components/molecules/EventCalendar/EventCalendar.svelte';
+
 export { default as CompareSlider } from './components/molecules/CompareSlider/CompareSlider.svelte';
 export { default as PdfViewer } from './components/molecules/PdfViewer/PdfViewer.svelte';
 export { default as ImageGallery } from './components/molecules/ImageGallery/ImageGallery.svelte';
@@ -332,6 +337,9 @@ export { default as FileUploader } from './components/organisms/FileUploader/Fil
 export { default as ProfileHeaderUploader } from './components/organisms/ProfileHeaderUploader/ProfileHeaderUploader.svelte';
 export { default as Dialog } from './components/organisms/Dialog/Dialog.svelte';
 export { default as Drawer } from './components/organisms/Drawer/Drawer.svelte';
+export { default as Sheet } from './components/organisms/Sheet/Sheet.svelte';
+export type { SheetSize, SheetAccent } from './components/organisms/Sheet/Sheet.svelte';
+export { SHEET_SIZE_SNAPS } from './components/organisms/Sheet/Sheet.svelte';
 export { default as DataTable } from './components/organisms/DataTable/DataTable.svelte';
 export type { DataTableColumn } from './components/organisms/DataTable/DataTable.svelte';
 export { default as ToastContainer } from './components/organisms/Toast/ToastContainer.svelte';
@@ -424,6 +432,13 @@ export { default as Roadmap } from './components/organisms/Roadmap/Roadmap.svelt
 export type { RoadmapItem, RoadmapStatus } from './components/organisms/Roadmap/Roadmap.svelte';
 export { default as FAQ } from './components/organisms/FAQ/FAQ.svelte';
 export type { FaqItem } from './components/organisms/FAQ/FAQ.svelte';
+export { default as CalendarApp } from './components/organisms/CalendarApp/CalendarApp.svelte';
+export type {
+	CalendarView,
+	CalendarTone,
+	CalendarSource,
+	CalendarAppEvent
+} from './components/organisms/CalendarApp/CalendarApp.svelte';
 export { default as PermissionsMatrix } from './components/organisms/PermissionsMatrix/PermissionsMatrix.svelte';
 export type {
 	PermissionLevel,
