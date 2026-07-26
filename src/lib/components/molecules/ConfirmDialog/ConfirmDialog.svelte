@@ -9,6 +9,7 @@
 		confirmLabel?: string;
 		cancelLabel?: string;
 		confirmLoading?: boolean;
+		confirmDisabled?: boolean;
 		children?: Snippet;
 		onconfirm?: () => void;
 		oncancel?: () => void;
@@ -22,6 +23,7 @@
 		confirmLabel = 'Delete',
 		cancelLabel = 'Cancel',
 		confirmLoading = false,
+		confirmDisabled = false,
 		children,
 		onconfirm,
 		oncancel,
@@ -36,6 +38,7 @@
 	{confirmLabel}
 	{cancelLabel}
 	{confirmLoading}
+	{confirmDisabled}
 	tone="danger"
 	confirmVariant="destructive"
 	size="sm"
