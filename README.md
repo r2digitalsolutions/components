@@ -33,13 +33,21 @@ pnpm build     # showcase app + prepack
 
 ## Publicación
 
-El versionado usa [bumpp](https://github.com/antfu/bumpp) (semver). Al crear un tag `v*`, GitHub Actions publica en npm.
+El versionado usa [bumpp](https://github.com/antfu/bumpp) (semver). Al crear un tag `v*`, GitHub Actions publica en npm con **Trusted Publishing (OIDC)** — sin `NPM_TOKEN`.
 
 ### Requisitos previos (una sola vez)
 
 1. Acceso al scope npm `@r2digisolutions`
-2. Automation token en [npmjs.com](https://www.npmjs.com/) → Access Tokens
-3. Secret `NPM_TOKEN` en el repo GitHub (`Settings` → `Secrets and variables` → `Actions`)
+2. En [npmjs.com](https://www.npmjs.com/) → tu paquete (o créalo) → **Settings → Trusted Publisher**:
+   - Provider: **GitHub Actions**
+   - Organization / user: `r2digitalsolutions`
+   - Repository: `components`
+   - Workflow filename: `publish.yml`
+3. (Opcional) Borra el secret `NPM_TOKEN` del repo si lo tenías; ya no hace falta
+
+Si el paquete aún no existe en npm, créalo una vez desde la web o con un publish local autenticado; después el Trusted Publisher se encarga de los releases por CI.
+
+Docs: https://docs.npmjs.com/trusted-publishers/
 
 ### Subir versión
 
