@@ -792,7 +792,10 @@ export {
 	scrollBoardToAutoCells
 } from './components/molecules/WidgetCanvas/widgetCanvasContext.js';
 export { default as WidgetPicker } from './components/molecules/WidgetPicker/WidgetPicker.svelte';
-export type { WidgetCatalogItem } from './components/molecules/WidgetPicker/WidgetPicker.svelte';
+export type {
+	WidgetCatalogItem,
+	WidgetPickerLayout
+} from './components/molecules/WidgetPicker/WidgetPicker.svelte';
 export { default as SessionPresenceBadge } from './components/molecules/SessionPresenceBadge/SessionPresenceBadge.svelte';
 export type { SessionPresence } from './components/molecules/SessionPresenceBadge/SessionPresenceBadge.svelte';
 export { default as FloatingWindow } from './components/molecules/FloatingWindow/FloatingWindow.svelte';
@@ -1110,7 +1113,8 @@ export type {
 export { default as DashboardBuilderPage } from './components/organisms/DashboardBuilderPage/DashboardBuilderPage.svelte';
 export type {
 	DashboardBuilderWidgetType,
-	DashboardBuilderWidget
+	DashboardBuilderWidget,
+	DashboardBuilderSidebarTab
 } from './components/organisms/DashboardBuilderPage/DashboardBuilderPage.svelte';
 export { default as DesktopShell } from './components/organisms/DesktopShell/DesktopShell.svelte';
 export type { DesktopWindow } from './components/organisms/DesktopShell/DesktopShell.svelte';
@@ -1152,9 +1156,10 @@ export {
 	serializeLayout,
 	parseLayout,
 	layoutBounds,
-	rescaleLayout
+	rescaleLayout,
+	resizeItemByEdge
 } from './utils/layoutGrid.js';
-export type { GridItem, LayoutGridOptions, GridDensity } from './utils/layoutGrid.js';
+export type { GridItem, LayoutGridOptions, GridDensity, GridResizeEdge } from './utils/layoutGrid.js';
 export { encodeQR, qrToSvgPath, punchLogoHole } from './utils/qr.js';
 export { renderMarkdown, renderInline, escapeHtml, splitTableRow, slugifyHeading } from './utils/markdown.js';
 export {

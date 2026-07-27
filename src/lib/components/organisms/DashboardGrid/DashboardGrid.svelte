@@ -17,7 +17,8 @@
 		clampItem,
 		compactLayout,
 		rescaleLayout,
-		removeItem
+		removeItem,
+		resizeItemByEdge
 	} from '$lib/utils/layoutGrid.js';
 
 	export type { GridItem };
@@ -217,16 +218,36 @@
 		if (resizingId) {
 			const dx = Math.round((e.clientX - origin.x) / (cw + gap));
 			const dy = Math.round((e.clientY - origin.y) / (rh + gap));
-			const patch: Partial<GridItem> = {};
-			if (resizeEdge === 'e' || resizeEdge === 'se') patch.w = origin.itemW + dx;
-			if (resizeEdge === 's' || resizeEdge === 'se') patch.h = origin.itemH + dy;
-			emit(updateItem(layout, resizingId, patch, { cols, compact }));
+			const current = layout.find((it) => it.id === resizingId);
+			if (!current) return;
+			const next = resizeItemByEdge(
+				{
+					x: origin.itemX,
+					y: origin.itemY,
+					w: origin.itemW,
+					h: origin.itemH,
+					minW: current.minW,
+					minH: current.minH,
+					maxW: current.maxW,
+					maxH: current.maxH
+				},
+				resizeEdge,
+				dx,
+				dy,
+				cols
+			);
+			// No compact while resizing — west/north must keep the anchored edge stable
+			emit(updateItem(layout, resizingId, next, { cols, compact: false }));
 		}
 	}
 
 	function onPointerUp() {
+		const wasResizing = !!resizingId;
 		draggingId = null;
 		resizingId = null;
+		if (wasResizing && compact) {
+			emit(compactLayout(layout, cols));
+		}
 	}
 
 	function styleFor(item: GridItem): string {

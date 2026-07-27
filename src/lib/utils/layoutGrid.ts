@@ -171,6 +171,94 @@ export function layoutBounds(layout: GridItem[]): { cols: number; rows: number }
 	return { cols, rows };
 }
 
+export type GridResizeEdge = 'se' | 'e' | 's' | 'sw' | 'w' | 'ne' | 'n' | 'nw';
+
+/**
+ * Compute next x/y/w/h when dragging a resize edge/corner.
+ * Anchors the opposite side for west/north edges.
+ */
+export function resizeItemByEdge(
+	item: Pick<GridItem, 'x' | 'y' | 'w' | 'h' | 'minW' | 'minH' | 'maxW' | 'maxH'>,
+	edge: GridResizeEdge,
+	dx: number,
+	dy: number,
+	cols: number = DEFAULT_COLS
+): Pick<GridItem, 'x' | 'y' | 'w' | 'h'> {
+	const minW = item.minW ?? 1;
+	const minH = item.minH ?? 1;
+	const maxW = item.maxW ?? cols;
+	const maxH = item.maxH ?? 50;
+
+	let x = item.x;
+	let y = item.y;
+	let w = item.w;
+	let h = item.h;
+
+	const fromEast = edge === 'e' || edge === 'ne' || edge === 'se';
+	const fromWest = edge === 'w' || edge === 'nw' || edge === 'sw';
+	const fromSouth = edge === 's' || edge === 'se' || edge === 'sw';
+	const fromNorth = edge === 'n' || edge === 'ne' || edge === 'nw';
+
+	if (fromEast) w = item.w + dx;
+	if (fromWest) {
+		w = item.w - dx;
+		x = item.x + dx;
+	}
+	if (fromSouth) h = item.h + dy;
+	if (fromNorth) {
+		h = item.h - dy;
+		y = item.y + dy;
+	}
+
+	// Keep min size by pinning the opposite edge
+	if (w < minW) {
+		if (fromWest) x = item.x + item.w - minW;
+		w = minW;
+	}
+	if (h < minH) {
+		if (fromNorth) y = item.y + item.h - minH;
+		h = minH;
+	}
+
+	if (w > maxW) {
+		if (fromWest) x = item.x + item.w - maxW;
+		w = maxW;
+	}
+	if (h > maxH) {
+		if (fromNorth) y = item.y + item.h - maxH;
+		h = maxH;
+	}
+
+	// Clamp to grid bounds while preserving the anchored edge
+	if (x < 0) {
+		if (fromWest) w += x;
+		x = 0;
+	}
+	if (y < 0) {
+		if (fromNorth) h += y;
+		y = 0;
+	}
+	if (x + w > cols) {
+		if (fromEast) w = cols - x;
+		else if (fromWest) {
+			x = cols - w;
+			if (x < 0) {
+				w += x;
+				x = 0;
+			}
+		} else {
+			w = cols - x;
+		}
+	}
+
+	w = Math.max(minW, Math.min(maxW, w, cols));
+	h = Math.max(minH, Math.min(maxH, h));
+	x = Math.max(0, Math.min(x, cols - w));
+	y = Math.max(0, y);
+
+	return { x, y, w, h };
+}
+
 /**
  * Scale X/W when the column count changes so widgets keep relative proportions.
  */
