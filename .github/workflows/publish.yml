@@ -8,6 +8,8 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    # Must match Trusted Publisher "Environment" on npmjs.com
+    environment: production
     permissions:
       contents: read
       id-token: write
@@ -20,11 +22,12 @@ jobs:
         with:
           version: 10
 
+      # Do NOT set registry-url here — it writes an empty _authToken into .npmrc
+      # and breaks OIDC Trusted Publishing (misleading 404 on PUT).
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version-file: '.node-version'
-          registry-url: 'https://registry.npmjs.org'
           cache: pnpm
 
       - name: Install dependencies
@@ -33,7 +36,12 @@ jobs:
       - name: Build package
         run: pnpm prepack
 
-      # OIDC Trusted Publishing: do NOT set NODE_AUTH_TOKEN
-      # npm 11.5+ (bundled with Node 25) is enough — avoid npm@12 (no Node 25)
       - name: Publish to npm
-        run: npm publish --access public --provenance
+        run: |
+          # Empty NODE_AUTH_TOKEN short-circuits OIDC → misleading 404
+          unset NODE_AUTH_TOKEN
+          # Drop auth lines that setup-node may have injected earlier
+          if [ -f .npmrc ]; then
+            sed -i '/_authToken/d;/always-auth/d' .npmrc
+          fi
+          npm publish --access public --provenance
