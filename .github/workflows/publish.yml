@@ -44,4 +44,5 @@ jobs:
           if [ -f .npmrc ]; then
             sed -i '/_authToken/d;/always-auth/d' .npmrc
           fi
-          npm publish --access public --provenance
+          # Provenance requires a PUBLIC GitHub repo — this one is private
+          npm publish --access public --provenance=false

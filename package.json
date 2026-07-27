@@ -9,7 +9,8 @@
 		"url": "git+https://github.com/r2digitalsolutions/components.git"
 	},
 	"publishConfig": {
-		"access": "public"
+		"access": "public",
+		"provenance": false
 	},
 	"scripts": {
 		"dev": "vite dev",
