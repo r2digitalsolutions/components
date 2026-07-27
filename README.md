@@ -15,7 +15,14 @@ Todo lo que está en `src/lib` forma parte de la librería. `src/routes` sirve c
 
 ```sh
 pnpm storybook
+pnpm storybook:build   # salida en storybook-static/
 ```
+
+En cada push a `main`, GitHub Actions publica Storybook en Pages:
+
+`https://r2digitalsolutions.github.io/components/`
+
+Requisito (una vez): en el repo → **Settings → Pages → Source: GitHub Actions**.
 
 ## Build
 
