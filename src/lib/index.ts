@@ -498,6 +498,15 @@ export type { AccessLevel } from './components/molecules/AccessLevelToggle/Acces
 export { default as RoleCard } from './components/molecules/RoleCard/RoleCard.svelte';
 export type { RolePermissionSummary } from './components/molecules/RoleCard/RoleCard.svelte';
 export { default as SeatMeter } from './components/molecules/SeatMeter/SeatMeter.svelte';
+export { default as WorkspaceCard } from './components/molecules/WorkspaceCard/WorkspaceCard.svelte';
+export type {
+	WorkspaceItem,
+	WorkspaceSeats,
+	WorkspaceCardTone,
+	WorkspaceCardStatus,
+	WorkspaceCardLayout,
+	WorkspaceCard as WorkspaceCardData
+} from './components/molecules/WorkspaceCard/WorkspaceCard.svelte';
 export { default as OrgSwitcher } from './components/molecules/OrgSwitcher/OrgSwitcher.svelte';
 export type { OrgItem } from './components/molecules/OrgSwitcher/OrgSwitcher.svelte';
 export { default as SessionRow } from './components/molecules/SessionRow/SessionRow.svelte';
@@ -1055,7 +1064,11 @@ export type {
 	OrderStatus
 } from './components/organisms/OrderTrackingPage/OrderTrackingPage.svelte';
 export { default as MobileAccountPage } from './components/organisms/MobileAccountPage/MobileAccountPage.svelte';
-export type { AccountSettingItem } from './components/organisms/MobileAccountPage/MobileAccountPage.svelte';
+export type {
+	AccountSettingItem,
+	AccountToggleItem,
+	AccountSection
+} from './components/organisms/MobileAccountPage/MobileAccountPage.svelte';
 export { default as BacklogPage } from './components/organisms/BacklogPage/BacklogPage.svelte';
 export type {
 	BacklogTask,
@@ -1071,12 +1084,14 @@ export { default as ExploreFeedPage } from './components/organisms/ExploreFeedPa
 export type {
 	ExploreFeedItem,
 	ExploreFeedGroup,
-	ExploreSuggestion
+	ExploreSuggestion,
+	ExploreFeaturedItem
 } from './components/organisms/ExploreFeedPage/ExploreFeedPage.svelte';
 export { default as MultiWorkspaceDashboard } from './components/organisms/MultiWorkspaceDashboard/MultiWorkspaceDashboard.svelte';
 export type {
-	WorkspaceSeats,
-	WorkspaceCard
+	WorkspaceInvite,
+	WorkspaceViewMode,
+	WorkspaceFilterId
 } from './components/organisms/MultiWorkspaceDashboard/MultiWorkspaceDashboard.svelte';
 export { default as LeadDetailPage } from './components/organisms/LeadDetailPage/LeadDetailPage.svelte';
 export type {
