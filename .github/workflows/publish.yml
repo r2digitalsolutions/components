@@ -49,11 +49,40 @@ jobs:
           # Provenance requires a PUBLIC GitHub repo — this one is private
           npm publish --access public --provenance=false
 
+      - name: Build release notes
+        id: notes
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          PREV="$(git describe --tags --abbrev=0 "${TAG}^" 2>/dev/null || true)"
+
+          {
+            echo "## @r2digisolutions/components \`${TAG#v}\`"
+            echo ""
+            echo "**npm:** https://www.npmjs.com/package/@r2digisolutions/components/v/${TAG#v}"
+            echo ""
+            if [ -n "$PREV" ]; then
+              echo "### Changes since \`${PREV}\`"
+              echo ""
+              git log "${PREV}..${TAG}" --pretty=format:'- %s (%h)' --no-merges
+              echo ""
+              echo ""
+              echo "**Full diff:** https://github.com/${GITHUB_REPOSITORY}/compare/${PREV}...${TAG}"
+            else
+              echo "### Commits"
+              echo ""
+              git log "${TAG}" --pretty=format:'- %s (%h)' --no-merges -30
+              echo ""
+            fi
+          } > RELEASE_NOTES.md
+
+          echo "——— Release notes ———"
+          cat RELEASE_NOTES.md
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
           name: ${{ github.ref_name }}
-          generate_release_notes: true
+          body_path: RELEASE_NOTES.md
           draft: false
           prerelease: ${{ contains(github.ref_name, '-') }}

@@ -39,6 +39,7 @@ jobs:
         run: pnpm storybook:build
         env:
           STORYBOOK_BASE: /components/
+          STORYBOOK_DISABLE_TELEMETRY: 1
 
       - name: Add .nojekyll
         run: touch storybook-static/.nojekyll

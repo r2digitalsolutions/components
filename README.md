@@ -65,7 +65,7 @@ pnpm release
 Esto hace bump de versión, commit, tag `vX.Y.Z` y push. CI entonces:
 
 1. Publica `@r2digisolutions/components` en npm
-2. Crea un **GitHub Release** con notas generadas desde los commits desde el tag anterior
+2. Crea un **GitHub Release** con el enlace a npm y la lista de commits desde el tag anterior
 
 Mismo flujo que usan muchas libs con `bumpp` / `release-it` (tag → CI → npm + GitHub Release).
 

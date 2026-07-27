@@ -15,6 +15,7 @@ export { default as Avatar } from './components/atoms/Avatar/Avatar.svelte';
 export { default as Spinner } from './components/atoms/Spinner/Spinner.svelte';
 export { default as Toggle } from './components/atoms/Toggle/Toggle.svelte';
 export { default as Checkbox } from './components/atoms/Checkbox/Checkbox.svelte';
+export { default as MarqueeRect } from './components/atoms/MarqueeRect/MarqueeRect.svelte';
 export { default as Chip } from './components/atoms/Chip/Chip.svelte';
 export { default as Tooltip } from './components/atoms/Tooltip/Tooltip.svelte';
 export { default as Divider } from './components/atoms/Divider/Divider.svelte';
@@ -601,6 +602,7 @@ export type {
 	BulkActionBarSize,
 	BulkActionBarTone
 } from './components/molecules/BulkActionBar/BulkActionBar.svelte';
+export { default as ConditionalFormatPanel } from './components/molecules/ConditionalFormatPanel/ConditionalFormatPanel.svelte';
 export { default as ReactionBar } from './components/molecules/ReactionBar/ReactionBar.svelte';
 export type { ReactionItem } from './components/molecules/ReactionBar/ReactionBar.svelte';
 export { default as AddressFields } from './components/molecules/AddressFields/AddressFields.svelte';
@@ -825,6 +827,70 @@ export type { SheetSize, SheetAccent } from './components/organisms/Sheet/Sheet.
 export { SHEET_SIZE_SNAPS } from './components/organisms/Sheet/Sheet.svelte';
 export { default as DataTable } from './components/organisms/DataTable/DataTable.svelte';
 export type { DataTableColumn } from './components/organisms/DataTable/DataTable.svelte';
+export { default as DataGrid } from './components/organisms/DataGrid/DataGrid.svelte';
+export type {
+	DataGridColumn,
+	DataGridEditType,
+	DataGridEditConfig,
+	DataGridEditOption,
+	DataGridViewMode,
+	DataGridFilter,
+	Breakpoint,
+	CellRef,
+	GridSelection,
+	CellNote,
+	GridMark,
+	MarkColor,
+	MarkPreset,
+	ConditionalFormatRule,
+	ConditionalFormatStyle,
+	FormatCondition,
+	FormatTarget,
+	SortDir
+} from './components/organisms/DataGrid/DataGrid.svelte';
+export {
+	EMPTY_SELECTION,
+	noteKey,
+	markKey,
+	selectionCount,
+	selectionLabel,
+	evaluateFormatRules,
+	evaluateCondition,
+	styleToCss,
+	inferCellEditor,
+	resolveCellEditor,
+	coerceEditValue,
+	draftFromValue,
+	MARK_COLORS,
+	MARK_TINT,
+	MARK_SWATCH,
+	markTint,
+	markSwatch,
+	isMarkPreset,
+	BREAKPOINT_MIN,
+	matchesMinBreakpoint,
+	isColumnVisibleAtWidth,
+	filterRows,
+	cellText,
+	uniqueColumnValues
+} from './components/organisms/DataGrid/DataGrid.svelte';
+export { default as ResourceStudio } from './components/organisms/ResourceStudio/ResourceStudio.svelte';
+export type {
+	FieldType,
+	ResourceField,
+	ResourceCapabilities,
+	ResourceDefinition,
+	ResourceStudioMode,
+	ResourceStudioLayout,
+	ResourceStudioLabels,
+	ResourceStudioView
+} from './components/organisms/ResourceStudio/ResourceStudio.svelte';
+export {
+	DEFAULT_CAPABILITIES,
+	resolveCapabilities,
+	fieldsToColumns,
+	fieldsToSchema
+} from './components/organisms/ResourceStudio/ResourceStudio.svelte';
 export { default as GanttChart } from './components/organisms/GanttChart/GanttChart.svelte';
 export type { GanttTask } from './components/organisms/GanttChart/GanttChart.svelte';
 export { default as ToastContainer } from './components/organisms/Toast/ToastContainer.svelte';
@@ -1144,6 +1210,7 @@ export { default as DashboardTemplate } from './components/templates/DashboardTe
 export type { DashboardTemplateDensity } from './components/templates/DashboardTemplate/DashboardTemplate.svelte';
 export { default as MarketingTemplate } from './components/templates/MarketingTemplate/MarketingTemplate.svelte';
 export { default as ListingTemplate } from './components/templates/ListingTemplate/ListingTemplate.svelte';
+export { default as ResourceStudioTemplate } from './components/templates/ResourceStudioTemplate/ResourceStudioTemplate.svelte';
 export { default as CheckoutTemplate } from './components/templates/CheckoutTemplate/CheckoutTemplate.svelte';
 export type {
 	CheckoutLine,
@@ -1178,6 +1245,23 @@ export {
 	resizeItemByEdge
 } from './utils/layoutGrid.js';
 export type { GridItem, LayoutGridOptions, GridDensity, GridResizeEdge } from './utils/layoutGrid.js';
+export {
+	attachMarqueeSelect,
+	collectMarqueeItems,
+	defaultMarqueeIgnore,
+	getMarqueeModifier,
+	hitTestIds,
+	normalizeRect,
+	rectsIntersect,
+	resolveMarqueeSelection
+} from './utils/marqueeSelect.js';
+export type {
+	AttachMarqueeSelectOptions,
+	MarqueeDragState,
+	MarqueeItemRect,
+	MarqueeModifier,
+	MarqueeRect as MarqueeRectBox
+} from './utils/marqueeSelect.js';
 export { encodeQR, qrToSvgPath, punchLogoHole } from './utils/qr.js';
 export { renderMarkdown, renderInline, escapeHtml, splitTableRow, slugifyHeading } from './utils/markdown.js';
 export {

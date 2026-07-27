@@ -45,6 +45,9 @@
 
 	let rootEl = $state<HTMLDivElement | null>(null);
 	let svEl = $state<HTMLDivElement | null>(null);
+	let triggerEl = $state<HTMLButtonElement | null>(null);
+	let panelEl = $state<HTMLDivElement | null>(null);
+	let panelStyle = $state('');
 
 	let hue = $state(250);
 	let sat = $state(0.72);
@@ -52,6 +55,8 @@
 	let alp = $state(1);
 	let dragging: 'sv' | 'hue' | 'alpha' | null = null;
 	let syncing = false;
+
+	const panelId = `color-picker-${Math.random().toString(36).slice(2, 9)}`;
 
 	const rgba = $derived(hsvToRgb(hue, sat, val));
 
@@ -66,10 +71,11 @@
 		const parsed = parseColor(value);
 		if (!parsed) return;
 		const hsv = rgbToHsv(parsed.r, parsed.g, parsed.b);
-		hue = hsv.h;
-		sat = hsv.s;
-		val = hsv.v;
-		alp = alpha ? parsed.a : 1;
+		if (hue !== hsv.h) hue = hsv.h;
+		if (sat !== hsv.s) sat = hsv.s;
+		if (val !== hsv.v) val = hsv.v;
+		const nextAlp = alpha ? parsed.a : 1;
+		if (alp !== nextAlp) alp = nextAlp;
 	});
 
 	function commit() {
@@ -96,15 +102,11 @@
 		commit();
 	}
 
-	function onDocPointerDown(e: PointerEvent) {
-		if (!open || !rootEl) return;
-		const path = typeof e.composedPath === 'function' ? e.composedPath() : [];
-		if (path.includes(rootEl) || rootEl.contains(e.target as Node)) return;
-		open = false;
-	}
-
 	function onKey(e: KeyboardEvent) {
-		if (e.key === 'Escape' && open) open = false;
+		if (e.key === 'Escape' && open) {
+			open = false;
+			hidePanel();
+		}
 	}
 
 	function onPointer(e: PointerEvent) {
@@ -162,14 +164,63 @@
 			Math.abs(pa.a - pb.a) < 0.01
 		);
 	}
+
+	function positionPanel() {
+		if (!triggerEl) return;
+		const rect = triggerEl.getBoundingClientRect();
+		const gap = 8;
+		const panelW = 288;
+		const approxH = 340;
+		const spaceBelow = window.innerHeight - rect.bottom - gap;
+		const spaceAbove = rect.top - gap;
+		const openUp = spaceBelow < Math.min(approxH, 220) && spaceAbove > spaceBelow;
+		const left = Math.min(Math.max(8, rect.left), window.innerWidth - panelW - 8);
+		panelStyle = [
+			`top:${openUp ? 'auto' : `${rect.bottom + gap}px`}`,
+			`bottom:${openUp ? `${window.innerHeight - rect.top + gap}px` : 'auto'}`,
+			`left:${left}px`,
+			`width:${panelW}px`,
+			`margin:0`
+		].join(';');
+	}
+
+	function showPanel() {
+		if (disabled || !panelEl) return;
+		positionPanel();
+		if (!panelEl.matches(':popover-open')) panelEl.showPopover();
+	}
+
+	function hidePanel() {
+		if (panelEl?.matches(':popover-open')) panelEl.hidePopover();
+	}
+
+	function togglePanel() {
+		if (disabled) return;
+		if (panelEl?.matches(':popover-open')) hidePanel();
+		else showPanel();
+	}
+
+	function handleBeforeToggle(event: ToggleEvent) {
+		if (event.newState === 'open') {
+			if (disabled) {
+				event.preventDefault();
+				return;
+			}
+			positionPanel();
+		}
+	}
+
+	function handleToggle(event: ToggleEvent) {
+		open = event.newState === 'open';
+	}
 </script>
 
-<svelte:document
-	onpointerdown={onDocPointerDown}
-	onkeydown={onKey}
-	onpointermove={onPointer}
-	onpointerup={onPointerUp}
+<svelte:window
+	onscroll={() => open && positionPanel()}
+	onresize={() => open && positionPanel()}
 />
+
+<svelte:document onkeydown={onKey} onpointermove={onPointer} onpointerup={onPointerUp} />
 
 <div class={['relative w-full max-w-xs', className]} bind:this={rootEl}>
 	{#if label}
@@ -178,9 +229,12 @@
 
 	<button
 		type="button"
+		bind:this={triggerEl}
 		{disabled}
 		aria-expanded={open}
-		onclick={() => !disabled && (open = !open)}
+		aria-controls={panelId}
+		aria-haspopup="dialog"
+		onclick={togglePanel}
 		class={[
 			'flex h-10 w-full items-center gap-2.5 rounded-xl border border-border bg-surface-elevated px-2.5 text-left transition-colors',
 			'hover:bg-surface-overlay focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/20',
@@ -197,99 +251,115 @@
 		</svg>
 	</button>
 
-	{#if open}
+	<div
+		bind:this={panelEl}
+		id={panelId}
+		popover="auto"
+		role="dialog"
+		aria-label="Color picker"
+		class="color-picker-panel z-50 rounded-2xl border border-border bg-surface-elevated p-3 shadow-xl"
+		style={panelStyle}
+		onbeforetoggle={handleBeforeToggle}
+		ontoggle={handleToggle}
+	>
 		<div
-			role="dialog"
-			aria-label="Color picker"
-			class="absolute left-0 z-50 mt-2 w-72 rounded-2xl border border-border bg-surface-elevated p-3 shadow-xl"
+			bind:this={svEl}
+			role="presentation"
+			class="relative h-36 w-full cursor-crosshair touch-none overflow-hidden rounded-xl"
+			style:background={`linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, hsl(${hue} 100% 50%))`}
+			onpointerdown={startSv}
 		>
-			<!-- Saturation / Value -->
-			<div
-				bind:this={svEl}
-				role="presentation"
-				class="relative h-36 w-full cursor-crosshair touch-none overflow-hidden rounded-xl"
-				style:background={`linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, hsl(${hue} 100% 50%))`}
-				onpointerdown={startSv}
-			>
-				<span
-					class="pointer-events-none absolute h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow"
-					style:left={`${sat * 100}%`}
-					style:top={`${(1 - val) * 100}%`}
-					style:background={preview}
-				></span>
-			</div>
+			<span
+				class="pointer-events-none absolute h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow"
+				style:left={`${sat * 100}%`}
+				style:top={`${(1 - val) * 100}%`}
+				style:background={preview}
+			></span>
+		</div>
 
-			<!-- Hue -->
-			<label class="mt-3 block">
-				<span class="sr-only">Hue</span>
+		<label class="mt-3 block">
+			<span class="sr-only">Hue</span>
+			<input
+				type="range"
+				min="0"
+				max="360"
+				step="1"
+				value={hue}
+				oninput={onHueInput}
+				class="cp-hue h-3 w-full cursor-pointer appearance-none rounded-full"
+			/>
+		</label>
+
+		{#if alpha}
+			<label class="mt-2 block">
+				<span class="sr-only">Opacity</span>
 				<input
 					type="range"
 					min="0"
-					max="360"
-					step="1"
-					value={hue}
-					oninput={onHueInput}
-					class="cp-hue h-3 w-full cursor-pointer appearance-none rounded-full"
+					max="1"
+					step="0.01"
+					value={alp}
+					oninput={onAlphaInput}
+					class="cp-alpha h-3 w-full cursor-pointer appearance-none rounded-full"
+					style:--cp-alpha-color={`rgba(${rgba.r},${rgba.g},${rgba.b},1)`}
 				/>
 			</label>
+		{/if}
 
+		<div class="mt-3 flex items-center gap-2">
+			<span class="cp-checker relative h-9 w-9 shrink-0 overflow-hidden rounded-lg border border-border">
+				<span class="absolute inset-0" style:background={preview}></span>
+			</span>
+			<input
+				type="text"
+				value={formatted}
+				onchange={onHexInput}
+				onkeydown={(e) => e.key === 'Enter' && onHexInput(e)}
+				class="h-9 min-w-0 flex-1 rounded-lg border border-border bg-surface px-2.5 font-mono text-xs text-primary outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+				aria-label="Color value"
+			/>
 			{#if alpha}
-				<label class="mt-2 block">
-					<span class="sr-only">Opacity</span>
-					<input
-						type="range"
-						min="0"
-						max="1"
-						step="0.01"
-						value={alp}
-						oninput={onAlphaInput}
-						class="cp-alpha h-3 w-full cursor-pointer appearance-none rounded-full"
-						style:--cp-alpha-color={`rgb(${rgba.r},${rgba.g},${rgba.b},1)`}
-					/>
-				</label>
-			{/if}
-
-			<div class="mt-3 flex items-center gap-2">
-				<span class="cp-checker relative h-9 w-9 shrink-0 overflow-hidden rounded-lg border border-border">
-					<span class="absolute inset-0" style:background={preview}></span>
+				<span class="w-10 shrink-0 text-right font-mono text-[11px] text-muted">
+					{Math.round(alp * 100)}%
 				</span>
-				<input
-					type="text"
-					value={formatted}
-					onchange={onHexInput}
-					onkeydown={(e) => e.key === 'Enter' && onHexInput(e)}
-					class="h-9 min-w-0 flex-1 rounded-lg border border-border bg-surface px-2.5 font-mono text-xs text-primary outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
-					aria-label="Color value"
-				/>
-				{#if alpha}
-					<span class="w-10 shrink-0 text-right font-mono text-[11px] text-muted">
-						{Math.round(alp * 100)}%
-					</span>
-				{/if}
-			</div>
-
-			{#if showSwatches}
-				<div class="mt-3 flex flex-wrap gap-1.5">
-					{#each swatches as swatch (swatch)}
-						<button
-							type="button"
-							onclick={() => pickSwatch(swatch)}
-							class={[
-								'cp-checker relative h-7 w-7 overflow-hidden rounded-full border border-border transition-transform hover:scale-110',
-								sameColor(value, swatch) && 'ring-2 ring-brand-500 ring-offset-2 ring-offset-surface-elevated'
-							]}
-							aria-label={`Select ${swatch}`}
-						>
-							<span class="absolute inset-0" style:background={swatch}></span>
-						</button>
-					{/each}
-				</div>
 			{/if}
 		</div>
-	{/if}
+
+		{#if showSwatches}
+			<div class="mt-3 flex flex-wrap gap-1.5">
+				{#each swatches as swatch (swatch)}
+					<button
+						type="button"
+						onclick={() => pickSwatch(swatch)}
+						class={[
+							'cp-checker relative h-7 w-7 overflow-hidden rounded-full border border-border transition-transform hover:scale-110',
+							sameColor(value, swatch) &&
+								'ring-2 ring-brand-500 ring-offset-2 ring-offset-surface-elevated'
+						]}
+						aria-label={`Select ${swatch}`}
+					>
+						<span class="absolute inset-0" style:background={swatch}></span>
+					</button>
+				{/each}
+			</div>
+		{/if}
+	</div>
 </div>
 
 <style>
+
+	.color-picker-panel {
+		position: fixed;
+	}
+
+	.color-picker-panel:popover-open {
+		display: block;
+	}
+
+	.color-picker-panel:not(:popover-open) {
+		display: none;
+	}
+
 	.cp-checker {
 		background-color: #fff;
 		background-image:
