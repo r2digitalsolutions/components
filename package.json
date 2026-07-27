@@ -1,6 +1,6 @@
 {
 	"name": "@r2digisolutions/components",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"private": false,
 	"description": "R2DigiSolutions Svelte 5 component library — Atomic Design, Tailwind 4, Light/Dark mode",
 	"license": "MIT",
@@ -9,8 +9,7 @@
 		"url": "git+https://github.com/r2digitalsolutions/components.git"
 	},
 	"publishConfig": {
-		"access": "public",
-		"provenance": true
+		"access": "public"
 	},
 	"scripts": {
 		"dev": "vite dev",
