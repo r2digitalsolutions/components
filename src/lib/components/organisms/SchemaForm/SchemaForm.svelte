@@ -40,6 +40,7 @@
 		placeholder?: string;
 		helperText?: string;
 		required?: boolean;
+		disabled?: boolean;
 		options?: SchemaFieldOption[];
 		/** Group heading before this field */
 		section?: string;
@@ -151,6 +152,7 @@
 					placeholder={field.placeholder}
 					helperText={field.helperText}
 					required={field.required}
+					disabled={field.disabled}
 					bindData
 				/>
 			{:else if type === 'select'}
@@ -160,6 +162,7 @@
 					placeholder={field.placeholder ?? 'Select…'}
 					helperText={field.helperText}
 					required={field.required}
+					disabled={field.disabled}
 					options={field.options ?? []}
 					bindData
 				/>
@@ -168,6 +171,7 @@
 					name={field.name}
 					label={field.label}
 					helperText={field.helperText}
+					disabled={field.disabled}
 					bindData
 				/>
 			{:else if type === 'checkbox'}
@@ -175,6 +179,7 @@
 					name={field.name}
 					label={field.label}
 					helperText={field.helperText}
+					disabled={field.disabled}
 					bindData
 				/>
 			{:else if type === 'password'}
@@ -184,6 +189,7 @@
 					placeholder={field.placeholder}
 					helperText={field.helperText}
 					required={field.required}
+					disabled={field.disabled}
 					bindData
 				/>
 			{:else if type === 'date'}
@@ -191,7 +197,7 @@
 					<DatePicker
 						label={field.label}
 						placeholder={field.placeholder ?? 'Select date…'}
-						disabled={loading}
+						disabled={loading || field.disabled}
 						value={String(values[field.name] ?? '')}
 						onchange={(detail) => setValue(field.name, detail.value)}
 					/>
@@ -207,7 +213,7 @@
 					label={field.label}
 					options={field.options ?? []}
 					required={field.required}
-					disabled={loading}
+					disabled={loading || field.disabled}
 					status={fieldError ? 'error' : 'default'}
 					helperText={fieldError ?? field.helperText}
 					value={String(values[field.name] ?? '')}
@@ -219,7 +225,7 @@
 						label={field.label}
 						placeholder={field.placeholder ?? 'Select…'}
 						options={field.options ?? []}
-						disabled={loading}
+						disabled={loading || field.disabled}
 						value={Array.isArray(values[field.name]) ? (values[field.name] as string[]) : []}
 						onchange={(v) => setValue(field.name, v)}
 					/>
@@ -237,6 +243,7 @@
 					placeholder={field.placeholder}
 					helperText={field.helperText}
 					required={field.required}
+					disabled={field.disabled}
 					bindData
 				/>
 			{/if}

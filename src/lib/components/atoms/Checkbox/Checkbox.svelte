@@ -10,7 +10,10 @@
 		value?: string;
 		size?: 'sm' | 'md' | 'lg';
 		class?: string;
+		/** Accessible name when no visible label is provided. */
+		'aria-label'?: string;
 		onchange?: (checked: boolean) => void;
+		onclick?: (e: MouseEvent) => void;
 	}
 
 	let {
@@ -24,7 +27,9 @@
 		value,
 		size = 'md',
 		class: className = '',
-		onchange
+		'aria-label': ariaLabel,
+		onchange,
+		onclick
 	}: CheckboxProps = $props();
 
 	const inputId = $derived(id ?? `checkbox-${Math.random().toString(36).slice(2, 9)}`);
@@ -48,7 +53,7 @@
 		onchange?.(checked);
 	}
 
-	// Apply indeterminate state via action
+	/** Keep DOM indeterminate in sync without bind loops. */
 	function setIndeterminate(node: HTMLInputElement) {
 		$effect(() => {
 			node.indeterminate = indeterminate;
@@ -64,7 +69,8 @@
 			{name}
 			{value}
 			{disabled}
-			bind:checked
+			checked={checked}
+			aria-label={ariaLabel ?? label}
 			{@attach setIndeterminate}
 			class={[
 				'shrink-0 cursor-pointer border-2 border-border bg-surface-elevated appearance-none transition-all duration-150',
@@ -86,6 +92,7 @@
 				background-repeat: no-repeat;
 			"
 			onchange={handleChange}
+			{onclick}
 		/>
 	</div>
 

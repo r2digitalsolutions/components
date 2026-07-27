@@ -169,15 +169,29 @@
 			onclear?.();
 		}
 	}
+
+	/** Dock sticks to the viewport bottom; portal avoids parent transform/overflow traps. */
+	function portalDock(node: HTMLElement) {
+		if (!(placement === 'dock' && sticky)) return {};
+		document.body.appendChild(node);
+		return {
+			destroy() {
+				node.remove();
+			}
+		};
+	}
+
+	const dockFixed = $derived(placement === 'dock' && sticky);
 </script>
 
 <svelte:window onkeydown={onKeydown} />
 
 {#if count > 0}
 	<div
+		use:portalDock
 		class={[
 			placement === 'dock' && 'pointer-events-none z-30 flex justify-center',
-			placement === 'dock' && sticky && 'sticky bottom-3 px-3',
+			dockFixed && 'fixed inset-x-0 bottom-3 z-50 px-3',
 			placement === 'inline' && sticky && 'sticky bottom-0 z-20',
 			className
 		]}
@@ -210,14 +224,14 @@
 					</span>
 				{/if}
 
-				<div class="min-w-0 flex-1">
+				<div class="flex min-w-0 flex-1 flex-col leading-tight">
 					<p class="truncate text-xs font-semibold text-primary sm:text-sm">{selectionText}</p>
 					{#if description}
 						<p class="truncate text-[11px] text-muted">{description}</p>
 					{:else if canSelectAll}
 						<button
 							type="button"
-							class="mt-0.5 text-[11px] font-medium text-brand-600 hover:underline dark:text-brand-400"
+							class="w-fit text-left text-[11px] font-medium text-brand-600 hover:underline dark:text-brand-400"
 							onclick={() => onselectall?.()}
 						>
 							Select all {total}
@@ -225,7 +239,7 @@
 					{:else if canSelectNone}
 						<button
 							type="button"
-							class="mt-0.5 text-[11px] font-medium text-secondary hover:underline"
+							class="w-fit text-left text-[11px] font-medium text-secondary hover:underline"
 							onclick={() => onselectnone?.()}
 						>
 							Clear selection
@@ -233,7 +247,7 @@
 					{:else if resolvedHint}
 						<p
 							class={[
-								'mt-0.5 text-[11px]',
+								'text-[11px]',
 								pendingConfirm ? 'text-amber-700 dark:text-amber-300' : 'text-muted'
 							]}
 						>

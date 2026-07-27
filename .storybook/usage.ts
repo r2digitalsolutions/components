@@ -7,12 +7,18 @@
 
 const WRAPPER_ONLY_ARGS = new Set(['content', 'footerText', 'example', 'variant']);
 
-/** Raw sources for every *Story.svelte under the library. */
-export const storyRawModules = import.meta.glob('../src/lib/components/**/*Story.svelte', {
+/**
+ * Lazy (non-eager) map of *Story.svelte raw sources.
+ * Must NOT be eager: bundling every story into preview.ts freezes Docs
+ * and triggers "Failed to fetch dynamically imported module: preview.ts".
+ */
+const storyRawLoaders = import.meta.glob('../src/lib/components/**/*Story.svelte', {
 	query: '?raw',
-	import: 'default',
-	eager: true
-}) as Record<string, string>;
+	import: 'default'
+}) as Record<string, () => Promise<string>>;
+
+/** Sync cache populated on demand (docs "Show code" only). */
+const storyRawCache = new Map<string, string>();
 
 export function formatPropValue(value: unknown): string {
 	if (typeof value === 'string') {
@@ -131,21 +137,37 @@ export function inferComponentName(title: string, storyId?: string): string | nu
 	return fromId ?? null;
 }
 
-/** Resolve the companion *Story.svelte raw source for a docs title. */
-export function findStoryRawSource(componentName: string | null, title?: string): string | null {
+function resolveStoryLoaderPath(componentName: string | null, title?: string): string | null {
 	const name = componentName ?? title?.split('/').pop()?.trim() ?? null;
 	if (!name) return null;
 
 	const storyFile = `${name}Story.svelte`;
-	const entries = Object.entries(storyRawModules);
+	const paths = Object.keys(storyRawLoaders);
 
-	const exact = entries.find(
-		([path]) => path.endsWith(`/${name}/${storyFile}`) || path.endsWith(`/${storyFile}`)
+	const exact = paths.find(
+		(path) => path.endsWith(`/${name}/${storyFile}`) || path.endsWith(`/${storyFile}`)
 	);
-	if (exact) return exact[1];
+	if (exact) return exact;
 
-	const loose = entries.find(([path]) => path.endsWith(storyFile));
-	return loose?.[1] ?? null;
+	return paths.find((path) => path.endsWith(storyFile)) ?? null;
+}
+
+/** Resolve the companion *Story.svelte raw source for a docs title (sync cache only). */
+export function findStoryRawSource(componentName: string | null, title?: string): string | null {
+	const path = resolveStoryLoaderPath(componentName, title);
+	if (!path) return null;
+	return storyRawCache.get(path) ?? null;
+}
+
+/** Prefetch a story source into the sync cache (fire-and-forget from docs). */
+export function prefetchStoryRawSource(componentName: string | null, title?: string): void {
+	const path = resolveStoryLoaderPath(componentName, title);
+	if (!path || storyRawCache.has(path)) return;
+	const loader = storyRawLoaders[path];
+	if (!loader) return;
+	void loader().then((raw) => {
+		storyRawCache.set(path, raw);
+	});
 }
 
 /**

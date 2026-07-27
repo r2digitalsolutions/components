@@ -2,7 +2,8 @@ import type { Preview } from '@storybook/sveltekit';
 import {
 	buildFullStoryCode,
 	buildUsageCode,
-	inferComponentName
+	inferComponentName,
+	prefetchStoryRawSource
 } from './usage';
 import '../src/app.css';
 
@@ -86,6 +87,8 @@ const preview: Preview = {
 						});
 					}
 
+					// Warm cache async; first paint may fall back to Storybook's own source.
+					prefetchStoryRawSource(name, ctx.title);
 					const full = buildFullStoryCode(name, ctx.title, ctx.args);
 					if (full) return full;
 

@@ -19,6 +19,7 @@
 		onchange?: (e: Event) => void;
 		onfocus?: (e: FocusEvent) => void;
 		onblur?: (e: FocusEvent) => void;
+		onkeydown?: (e: KeyboardEvent) => void;
 	}
 
 	let {
@@ -40,7 +41,8 @@
 		oninput,
 		onchange,
 		onfocus,
-		onblur
+		onblur,
+		onkeydown
 	}: TextareaProps = $props();
 
 	const textareaId = $derived(id ?? `textarea-${Math.random().toString(36).slice(2, 9)}`);
@@ -118,6 +120,7 @@
 			{onchange}
 			{onfocus}
 			{onblur}
+			{onkeydown}
 		></textarea>
 	</div>
 

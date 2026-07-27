@@ -10,7 +10,7 @@
 		label?: string;
 		placeholder?: string;
 		value?: string;
-		type?: 'text' | 'email' | 'password' | 'number' | 'search' | 'tel' | 'url';
+		type?: 'text' | 'email' | 'password' | 'number' | 'search' | 'tel' | 'url' | 'date';
 		status?: InputStatus;
 		helperText?: string;
 		disabled?: boolean;
@@ -21,10 +21,15 @@
 		leadIcon?: Snippet;
 		trailIcon?: Snippet;
 		class?: string;
+		autofocus?: boolean;
+		min?: number;
+		max?: number;
+		step?: number;
 		oninput?: (e: Event) => void;
 		onchange?: (e: Event) => void;
 		onfocus?: (e: FocusEvent) => void;
 		onblur?: (e: FocusEvent) => void;
+		onkeydown?: (e: KeyboardEvent) => void;
 	}
 
 	let {
@@ -40,6 +45,10 @@
 		readonly = false,
 		required = false,
 		clearable = false,
+		autofocus = false,
+		min,
+		max,
+		step,
 		size = 'md',
 		leadIcon,
 		trailIcon,
@@ -47,7 +56,8 @@
 		oninput,
 		onchange,
 		onfocus,
-		onblur
+		onblur,
+		onkeydown
 	}: InputProps = $props();
 
 	const inputId = $derived(id ?? `input-${Math.random().toString(36).slice(2, 9)}`);
@@ -132,6 +142,10 @@
 			{disabled}
 			{readonly}
 			{required}
+			{autofocus}
+			{min}
+			{max}
+			{step}
 			bind:value
 			aria-describedby={helperText ? helperId : undefined}
 			aria-invalid={status === 'error'}
@@ -144,6 +158,7 @@
 			{onchange}
 			{onfocus}
 			{onblur}
+			{onkeydown}
 		/>
 
 		{#if hasClear}

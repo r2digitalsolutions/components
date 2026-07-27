@@ -61,7 +61,7 @@
 		id={inputId}
 		type="checkbox"
 		class="sr-only"
-		bind:checked
+		checked={checked}
 		{disabled}
 		onchange={handleChange}
 	/>
