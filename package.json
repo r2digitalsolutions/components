@@ -107,5 +107,8 @@
 		"ui",
 		"tailwindcss",
 		"atomic-design"
-	]
+	],
+	"dependencies": {
+		"@xyflow/svelte": "^1.6.2"
+	}
 }

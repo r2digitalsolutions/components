@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import SearchInput from '$lib/components/molecules/SearchInput/SearchInput.svelte';
 
 	export interface ContextMenuItem {
 		id: string;
@@ -7,7 +8,12 @@
 		disabled?: boolean;
 		destructive?: boolean;
 		separator?: boolean;
+		/** Non-interactive section header (category title). */
+		header?: boolean;
 		shortcut?: string;
+		/** Group label — items sharing a category are shown under one header. */
+		category?: string;
+		description?: string;
 	}
 
 	export interface ContextMenuAnchor {
@@ -20,29 +26,83 @@
 		open?: boolean;
 		/** Screen coordinates for the menu (clientX / clientY). */
 		anchor?: ContextMenuAnchor | null;
+		/** Show a search field and filter items by label / description / category. */
+		searchable?: boolean;
+		searchPlaceholder?: string;
 		class?: string;
 		children?: Snippet;
 		onselect?: (id: string, item: ContextMenuItem) => void;
+		onclose?: () => void;
 	}
 
 	let {
 		items = [],
 		open = $bindable(false),
 		anchor = $bindable<ContextMenuAnchor | null>(null),
+		searchable = false,
+		searchPlaceholder = 'Search…',
 		class: className = '',
 		children,
-		onselect
+		onselect,
+		onclose
 	}: ContextMenuProps = $props();
 
 	let menuX = $state(0);
 	let menuY = $state(0);
 	let menuEl = $state<HTMLDivElement | null>(null);
 	let highlighted = $state(-1);
-	/** Ignore the click/pointer that browsers fire right after `contextmenu`. */
-	let suppressOutsideUntil = $state(0);
+	let query = $state('');
+	const menuId = `ctx-menu-${Math.random().toString(36).slice(2, 9)}`;
+
+	const filteredItems = $derived.by(() => {
+		const q = query.trim().toLowerCase();
+		if (!q) return items;
+		return items.filter((item) => {
+			if (item.separator || item.header) return false;
+			return (
+				item.label.toLowerCase().includes(q) ||
+				item.description?.toLowerCase().includes(q) ||
+				item.category?.toLowerCase().includes(q) ||
+				item.id.toLowerCase().includes(q)
+			);
+		});
+	});
+
+	/** Flat list with auto category headers when items carry `category`. */
+	const displayItems = $derived.by(() => {
+		const src = filteredItems;
+		const hasCategories = src.some((i) => i.category && !i.header && !i.separator);
+		if (!hasCategories) return src;
+
+		const actionable = src
+			.filter((i) => !i.separator && !i.header)
+			.slice()
+			.sort((a, b) => {
+				const ca = a.category ?? 'Other';
+				const cb = b.category ?? 'Other';
+				if (ca !== cb) return ca.localeCompare(cb);
+				return a.label.localeCompare(b.label);
+			});
+
+		const out: ContextMenuItem[] = [];
+		let lastCat = '';
+		let seq = 0;
+		for (const item of actionable) {
+			const cat = item.category ?? 'Other';
+			if (cat !== lastCat) {
+				if (out.length) out.push({ id: `sep:${seq++}`, label: '', separator: true });
+				out.push({ id: `hdr:${seq++}`, label: cat, header: true });
+				lastCat = cat;
+			}
+			out.push(item);
+		}
+		return out;
+	});
 
 	const enabledIndexes = $derived(
-		items.map((item, i) => (item.separator || item.disabled ? -1 : i)).filter((i) => i !== -1)
+		displayItems
+			.map((item, i) => (item.separator || item.header || item.disabled ? -1 : i))
+			.filter((i) => i !== -1)
 	);
 
 	function placeMenu(x: number, y: number) {
@@ -58,22 +118,44 @@
 		});
 	}
 
+	function showMenu() {
+		if (!menuEl) return;
+		if (!menuEl.matches(':popover-open')) menuEl.showPopover();
+	}
+
+	function hideMenu() {
+		if (menuEl?.matches(':popover-open')) menuEl.hidePopover();
+	}
+
 	function openAt(x: number, y: number) {
 		anchor = { x, y };
 		open = true;
 		highlighted = -1;
-		suppressOutsideUntil = performance.now() + 500;
+		query = '';
 		placeMenu(x, y);
+		// Defer so the click/pointerup that follows `contextmenu` does not light-dismiss.
+		requestAnimationFrame(() => {
+			requestAnimationFrame(() => {
+				if (open) showMenu();
+			});
+		});
 	}
 
 	function close() {
+		if (menuEl?.matches(':popover-open')) {
+			menuEl.hidePopover();
+			return;
+		}
+		if (!open && !anchor) return;
 		open = false;
 		anchor = null;
 		highlighted = -1;
+		query = '';
+		onclose?.();
 	}
 
 	function selectItem(item: ContextMenuItem) {
-		if (item.disabled || item.separator) return;
+		if (item.disabled || item.separator || item.header) return;
 		onselect?.(item.id, item);
 		close();
 	}
@@ -84,28 +166,32 @@
 		openAt(event.clientX, event.clientY);
 	}
 
-	function isOutsideEvent(event: Event) {
-		if (!open) return false;
-		if (performance.now() < suppressOutsideUntil) return false;
-		const target = event.target as Node | null;
-		if (menuEl && target && menuEl.contains(target)) return false;
-		return true;
-	}
-
-	function handleOutsidePointer(event: PointerEvent) {
-		if (event.button === 2) return;
-		if (!isOutsideEvent(event)) return;
-		close();
-	}
-
-	function handleOutsideClick(event: MouseEvent) {
-		if (event.button === 2) return;
-		if (!isOutsideEvent(event)) return;
-		close();
+	function onToggle(event: ToggleEvent) {
+		if (event.newState === 'open') {
+			open = true;
+			return;
+		}
+		open = false;
+		anchor = null;
+		highlighted = -1;
+		query = '';
+		onclose?.();
 	}
 
 	function handleKeydown(event: KeyboardEvent) {
-		if (!open) return;
+		if (!open && !menuEl?.matches(':popover-open')) return;
+		const tag = (event.target as HTMLElement)?.tagName;
+		if (tag === 'INPUT' || tag === 'TEXTAREA') {
+			if (event.key === 'Escape') {
+				event.preventDefault();
+				close();
+			}
+			if (event.key === 'ArrowDown' || event.key === 'ArrowUp' || event.key === 'Enter') {
+				/* allow nav from search */
+			} else {
+				return;
+			}
+		}
 		switch (event.key) {
 			case 'Escape':
 				event.preventDefault();
@@ -121,8 +207,9 @@
 				break;
 			case 'Enter':
 			case ' ': {
+				if (tag === 'INPUT' && event.key === ' ') return;
 				event.preventDefault();
-				const item = highlighted >= 0 ? items[highlighted] : undefined;
+				const item = highlighted >= 0 ? displayItems[highlighted] : undefined;
 				if (item) selectItem(item);
 				break;
 			}
@@ -139,49 +226,62 @@
 		}
 	}
 
-	/** Render menu in document.body so overflow/transform ancestors cannot clip it. */
-	function portal(node: HTMLElement) {
-		document.body.appendChild(node);
-		return {
-			destroy() {
-				node.remove();
-			}
-		};
-	}
-
 	$effect(() => {
-		if (!open || !anchor) return;
-		suppressOutsideUntil = performance.now() + 500;
+		if (!open || !anchor) {
+			if (!open) hideMenu();
+			return;
+		}
+		query = '';
+		highlighted = -1;
 		placeMenu(anchor.x, anchor.y);
+		requestAnimationFrame(() => {
+			requestAnimationFrame(() => {
+				if (open) showMenu();
+			});
+		});
 	});
 </script>
 
-<svelte:window
-	onpointerdown={handleOutsidePointer}
-	onclick={handleOutsideClick}
-	onkeydown={handleKeydown}
-/>
+<svelte:window onkeydown={handleKeydown} />
 
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class={['h-full min-h-0 w-full', className]} oncontextmenu={handleContextMenu}>
-	{#if children}
+{#if children}
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div class={['h-full min-h-0 w-full', className]} oncontextmenu={handleContextMenu}>
 		{@render children()}
-	{/if}
-</div>
+	</div>
+{/if}
 
-{#if open}
-	<div
-		use:portal
-		bind:this={menuEl}
-		role="menu"
-		tabindex={-1}
-		aria-label="Context menu"
-		style="position:fixed;top:{menuY}px;left:{menuX}px;z-index:9999;"
-		class="min-w-44 rounded-xl border border-border bg-surface-elevated p-1.5 shadow-xl outline-none"
-	>
-		{#each items as item, index (item.id)}
+<!-- Native Popover API — top layer, light dismiss, no manual portal -->
+<div
+	bind:this={menuEl}
+	id={menuId}
+	popover="auto"
+	role="menu"
+	tabindex={-1}
+	aria-label="Context menu"
+	ontoggle={onToggle}
+	style={`top:${menuY}px;left:${menuX}px;margin:0;`}
+	class={[
+		'context-menu-popover flex max-h-[min(28rem,70vh)] min-w-52 max-w-72 flex-col overflow-hidden rounded-xl border border-border bg-surface-elevated shadow-xl outline-none',
+		!children && className
+	]}
+>
+	{#if searchable}
+		<div class="border-b border-border p-2">
+			<SearchInput bind:value={query} placeholder={searchPlaceholder} size="sm" />
+		</div>
+	{/if}
+	<div class="min-h-0 flex-1 overflow-auto p-1.5">
+		{#each displayItems as item, index (item.id)}
 			{#if item.separator}
 				<div class="my-1 h-px bg-border" role="separator"></div>
+			{:else if item.header}
+				<p
+					class="px-2.5 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wide text-muted"
+					role="presentation"
+				>
+					{item.label}
+				</p>
 			{:else}
 				<!-- svelte-ignore a11y_click_events_have_key_events -->
 				<!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -197,22 +297,44 @@
 						highlighted = -1;
 					}}
 					class={[
-						'flex cursor-pointer items-center justify-between gap-4 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors',
+						'flex cursor-pointer items-start justify-between gap-3 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors',
 						item.disabled && 'cursor-not-allowed opacity-40',
 						highlighted === index && !item.disabled && 'bg-surface-overlay',
 						item.destructive ? 'text-red-600 dark:text-red-400' : 'text-primary'
 					]}
 				>
-					<span class="truncate">{item.label}</span>
+					<span class="min-w-0">
+						<span class="block truncate">{item.label}</span>
+						{#if item.description}
+							<span class="block truncate text-[11px] font-normal text-muted">{item.description}</span>
+						{/if}
+					</span>
 					{#if item.shortcut}
 						<kbd
-							class="shrink-0 rounded border border-border bg-surface-overlay px-1.5 py-0.5 font-mono text-[10px] text-secondary"
+							class="mt-0.5 shrink-0 rounded border border-border bg-surface-overlay px-1.5 py-0.5 font-mono text-[10px] text-secondary"
 						>
 							{item.shortcut}
 						</kbd>
 					{/if}
 				</div>
 			{/if}
+		{:else}
+			<p class="px-3 py-6 text-center text-xs text-muted">No matches</p>
 		{/each}
 	</div>
-{/if}
+</div>
+
+<style>
+	/* UA popover defaults to inset:0 — position via top/left only.
+	   Tailwind `flex` overrides UA display:none — hide until open. */
+	.context-menu-popover {
+		position: fixed;
+	}
+	.context-menu-popover:not(:popover-open) {
+		display: none !important;
+	}
+	.context-menu-popover:popover-open {
+		inset: unset;
+		display: flex;
+	}
+</style>

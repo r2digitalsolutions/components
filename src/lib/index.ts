@@ -706,6 +706,8 @@ export type {
 	FilterFieldDef,
 	FilterFieldType
 } from './utils/advancedFilters.js';
+export { default as QueryBuilder } from './components/molecules/QueryBuilder/QueryBuilder.svelte';
+export { default as FilterList } from './components/molecules/FilterList/FilterList.svelte';
 export { default as QueryBar } from './components/molecules/QueryBar/QueryBar.svelte';
 export type { QuerySuggestion } from './components/molecules/QueryBar/QueryBar.svelte';
 export { default as FilterSummary } from './components/molecules/FilterSummary/FilterSummary.svelte';
@@ -737,6 +739,34 @@ export { default as PaymentMethodCard } from './components/molecules/PaymentMeth
 export type { PaymentCardBrand } from './components/molecules/PaymentMethodCard/PaymentMethodCard.svelte';
 export { default as UsageBreakdown } from './components/molecules/UsageBreakdown/UsageBreakdown.svelte';
 export type { UsageBreakdownItem } from './components/molecules/UsageBreakdown/UsageBreakdown.svelte';
+export { default as RelationPicker } from './components/molecules/RelationPicker/RelationPicker.svelte';
+export type { RelationOption } from './components/molecules/RelationPicker/RelationPicker.svelte';
+export { default as VersionHistoryPanel } from './components/molecules/VersionHistoryPanel/VersionHistoryPanel.svelte';
+export type { VersionRevision } from './components/molecules/VersionHistoryPanel/VersionHistoryPanel.svelte';
+export { default as ConflictResolver } from './components/molecules/ConflictResolver/ConflictResolver.svelte';
+export type { ConflictResolution } from './components/molecules/ConflictResolver/ConflictResolver.svelte';
+export { default as BulkEditPanel } from './components/molecules/BulkEditPanel/BulkEditPanel.svelte';
+export type {
+	BulkEditField,
+	BulkEditFieldType
+} from './components/molecules/BulkEditPanel/BulkEditPanel.svelte';
+export { default as SchemaFieldBuilder } from './components/molecules/SchemaFieldBuilder/SchemaFieldBuilder.svelte';
+export { default as ColumnVisibilityMenu } from './components/molecules/ColumnVisibilityMenu/ColumnVisibilityMenu.svelte';
+export type { ColumnVisibilityItem } from './components/molecules/ColumnVisibilityMenu/ColumnVisibilityMenu.svelte';
+export { default as ExpressionEditor } from './components/molecules/ExpressionEditor/ExpressionEditor.svelte';
+export { default as Terminal } from './components/molecules/Terminal/Terminal.svelte';
+export type { TerminalLine, TerminalLineKind } from './components/molecules/Terminal/Terminal.svelte';
+export { default as SecretField } from './components/molecules/SecretField/SecretField.svelte';
+export { default as TraceWaterfall } from './components/molecules/TraceWaterfall/TraceWaterfall.svelte';
+export type { TraceSpan } from './components/molecules/TraceWaterfall/TraceWaterfall.svelte';
+export { default as AiAssistPanel } from './components/molecules/AiAssistPanel/AiAssistPanel.svelte';
+export type {
+	AiAssistMessage,
+	AiAssistRole
+} from './components/molecules/AiAssistPanel/AiAssistPanel.svelte';
+export { default as NodeGraph } from './components/molecules/NodeGraph/NodeGraph.svelte';
+export { default as NodePalette } from './components/molecules/NodePalette/NodePalette.svelte';
+
 export { default as NotificationSettingsGroup } from './components/molecules/NotificationSettingsGroup/NotificationSettingsGroup.svelte';
 export type { NotificationSettingItem } from './components/molecules/NotificationSettingsGroup/NotificationSettingsGroup.svelte';
 export { default as RecentSearches } from './components/molecules/RecentSearches/RecentSearches.svelte';
@@ -912,6 +942,7 @@ export { default as CommandPalette } from './components/organisms/CommandPalette
 export type { CommandItem } from './components/organisms/CommandPalette/CommandPalette.svelte';
 export { default as AppShell } from './components/organisms/AppShell/AppShell.svelte';
 export { default as EditorShell } from './components/organisms/EditorShell/EditorShell.svelte';
+export { default as BlueprintEditor } from './components/organisms/BlueprintEditor/BlueprintEditor.svelte';
 export { default as LoginForm } from './components/organisms/LoginForm/LoginForm.svelte';
 export type {
 	LoginFormVariant,
@@ -939,6 +970,12 @@ export type {
 	FooterVariant
 } from './components/organisms/Footer/Footer.svelte';
 export { default as Wizard } from './components/organisms/Wizard/Wizard.svelte';
+export { default as ImportWizard } from './components/organisms/ImportWizard/ImportWizard.svelte';
+export type {
+	ImportColumn,
+	ImportMapping,
+	ImportResult
+} from './components/organisms/ImportWizard/ImportWizard.svelte';
 export { default as Tour } from './components/organisms/Tour/Tour.svelte';
 export type { TourStep } from './components/organisms/Tour/Tour.svelte';
 export { default as FeedbackWidget } from './components/organisms/FeedbackWidget/FeedbackWidget.svelte';
@@ -1088,6 +1125,8 @@ export { default as MaintenancePage } from './components/organisms/MaintenancePa
 export { default as MobileShell } from './components/organisms/MobileShell/MobileShell.svelte';
 export type { MobileShellNavVariant } from './components/organisms/MobileShell/MobileShell.svelte';
 export { default as BlogPost } from './components/organisms/BlogPost/BlogPost.svelte';
+export { default as BlogEditor } from './components/organisms/BlogEditor/BlogEditor.svelte';
+export { default as BlogRenderer } from './components/organisms/BlogRenderer/BlogRenderer.svelte';
 export type {
 	BlogAuthor,
 	BlogRelatedPost,
@@ -1343,3 +1382,125 @@ export {
 	operatorSuggestionsForField
 } from './utils/queryBar.js';
 export type { QueryToken, QueryTokenKind, QueryExample } from './utils/queryBar.js';
+export {
+	queryStringToGroup,
+	groupToQueryString,
+	groupToFilterItems,
+	removeRuleFromGroup,
+	setFlatRules
+} from './utils/queryBridge.js';
+export {
+	emptyBlogDocument,
+	createBlock,
+	createComponentBlock,
+	serializeBlogDocument,
+	parseBlogDocument,
+	registerBlogComponent,
+	unregisterBlogComponent,
+	getBlogComponent,
+	listBlogComponents,
+	clearBlogComponentRegistry,
+	NATIVE_BLOCK_TYPES,
+	defaultDataForType
+} from './utils/blogDocument.js';
+export type {
+	BlogDocument,
+	BlogBlock,
+	BlogBlockType,
+	BlogBlockData,
+	BlogComponentRegistration,
+	BlogHeadingData,
+	BlogParagraphData,
+	BlogImageData,
+	BlogCodeData,
+	BlogCalloutData,
+	BlogQuoteData,
+	BlogListData,
+	BlogMarkdownData,
+	BlogComponentData
+} from './utils/blogDocument.js';
+export {
+	emptyGraphDocument,
+	createGraphNode,
+	createGraphEdge,
+	createVarGetNode,
+	createVarSetNode,
+	duplicateGraphSelection,
+	cloneGraphDocument,
+	extractGraphSelection,
+	encodeGraphClipboard,
+	decodeGraphClipboard,
+	pasteGraphSelection,
+	alignGraphNodes,
+	distributeGraphNodes,
+	selectionBounds,
+	createCommentFromSelection,
+	createRerouteNode,
+	insertRerouteOnEdge,
+	breakLinksAtHandle,
+	collapseSelectionToFunction,
+	expandCollapsedGraph,
+	GRAPH_CLIPBOARD_MIME,
+	serializeGraphDocument,
+	parseGraphDocument,
+	removeNode,
+	removeEdge,
+	updateNodePosition,
+	nodeCenter,
+	nodeSize,
+	portPosition,
+	findPort,
+	edgeEndpoints,
+	edgePathFromPoints,
+	edgePathForPorts,
+	snap,
+	fitView,
+	defaultPortsForType,
+	resolveNodeType,
+	pinsCompatible,
+	pinColor,
+	variablePinColor,
+	defaultValueForPinType,
+	variablePlaceItems,
+	filterNodeTypesForGraph,
+	nodeTypeAllowedInContext,
+	formatPortLiteral,
+	parsePortLiteral,
+	isDataPort,
+	wiredInputIdsByNode,
+	validateGraph,
+	groupNodeTypesByCategory,
+	emptyBlueprintDocument,
+	DEFAULT_NODE_TYPES,
+	DEFAULT_BLUEPRINT_NODE_TYPES,
+	DEFAULT_NODE_WIDTH,
+	DEFAULT_NODE_HEIGHT,
+	PORT_SIZE,
+	EDGE_PORT_PAD,
+	PIN_TYPE_COLORS
+} from './utils/nodeGraph.js';
+export { simulateBlueprint } from './utils/blueprintRuntime.js';
+export type {
+	BlueprintLogEntry,
+	BlueprintLogLevel,
+	SimulateBlueprintOptions,
+	SimulateBlueprintResult
+} from './utils/blueprintRuntime.js';
+export type {
+	GraphDocument,
+	GraphNode,
+	GraphEdge,
+	GraphNodeData,
+	GraphPort,
+	GraphPortSide,
+	GraphNodeTypeDef,
+	GraphNodeContext,
+	PinKind,
+	PinDataType,
+	GraphValidationIssue,
+	BlueprintDocument,
+	BlueprintVariable,
+	AlignAxis,
+	DistributeAxis,
+	GraphClipboardPayload
+} from './utils/nodeGraph.js';
