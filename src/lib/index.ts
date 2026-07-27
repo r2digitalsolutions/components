@@ -771,7 +771,10 @@ export {
 	WIDGET_CANVAS_CONTEXT,
 	snapToGrid,
 	snapWidgetRect,
-	clampWidgetRect
+	clampWidgetRect,
+	computeAutoCellSize,
+	fitBoardToAutoCells,
+	scrollBoardToAutoCells
 } from './components/molecules/WidgetCanvas/widgetCanvasContext.js';
 export { default as WidgetPicker } from './components/molecules/WidgetPicker/WidgetPicker.svelte';
 export type { WidgetCatalogItem } from './components/molecules/WidgetPicker/WidgetPicker.svelte';

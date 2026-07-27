@@ -209,7 +209,7 @@
 		{/if}
 	</div>
 {:else}
-	<div class="grid max-w-3xl gap-4 sm:grid-cols-2">
+	<div class="grid max-w-3xl items-start gap-4 sm:grid-cols-2">
 		{#each widgets as w (w.id)}
 			<WidgetFrame
 				title={w.title}
@@ -220,7 +220,7 @@
 				collapsible
 				onreload={() => reloadNamed(w.title)}
 				ondragstart={() => (log = `Drag ${w.title}`)}
-				onresizestart={(_, edge) => (log = `Resize ${w.title} (${edge})`)}
+				onchange={(r) => (log = `Resize ${w.title} → ${Math.round(r.w)}×${Math.round(r.h)}`)}
 				onremove={() => {
 					widgets = widgets.filter((x) => x.id !== w.id);
 					log = `Removed ${w.title}`;

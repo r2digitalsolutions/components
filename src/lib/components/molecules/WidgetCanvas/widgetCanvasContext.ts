@@ -16,10 +16,56 @@ export interface WidgetCanvasContext {
 	readonly showGrid: boolean;
 	readonly snap: boolean;
 	readonly cellSize: number;
+	readonly autoCells: number;
+	readonly cellSizeMode: 'fixed' | 'auto';
 	getBounds: () => WidgetCanvasBounds;
 	snapValue: (value: number) => number;
 	snapRect: (rect: WidgetRect, minW: number, minH: number) => WidgetRect;
 	clampRect: (rect: WidgetRect, minW: number, minH: number) => WidgetRect;
+}
+
+/** Tamaño de celda cuadrada para que quepan `autoCells` en el eje más corto del viewport */
+export function computeAutoCellSize(
+	boundsW: number,
+	boundsH: number,
+	autoCells: number
+): number {
+	const n = Math.max(1, Math.floor(autoCells));
+	if (boundsW <= 0 || boundsH <= 0) return 24;
+	const raw = Math.floor(Math.min(boundsW, boundsH) / n);
+	return Math.max(8, raw);
+}
+
+/** Tablero exacto N×N celdas dentro del viewport (sin cortes) — fit/fullscreen */
+export function fitBoardToAutoCells(
+	viewportW: number,
+	viewportH: number,
+	autoCells: number
+): { width: number; height: number; cellSize: number } {
+	const cellSize = computeAutoCellSize(viewportW, viewportH, autoCells);
+	const n = Math.max(1, Math.floor(autoCells));
+	return {
+		cellSize,
+		width: cellSize * n,
+		height: cellSize * n
+	};
+}
+
+/**
+ * Scroll + auto: celda según viewport visible; tablero = múltiplos de celda
+ * a partir de width/height deseados (sigue habiendo scroll).
+ */
+export function scrollBoardToAutoCells(
+	viewportW: number,
+	viewportH: number,
+	desiredW: number,
+	desiredH: number,
+	autoCells: number
+): { width: number; height: number; cellSize: number } {
+	const cellSize = computeAutoCellSize(viewportW, viewportH, autoCells);
+	const width = Math.max(cellSize * autoCells, Math.ceil(desiredW / cellSize) * cellSize);
+	const height = Math.max(cellSize * autoCells, Math.ceil(desiredH / cellSize) * cellSize);
+	return { cellSize, width, height };
 }
 
 export function snapToGrid(value: number, cellSize: number, enabled: boolean): number {

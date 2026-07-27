@@ -107,15 +107,18 @@
 			padX,
 			variant === 'card' &&
 				'overflow-hidden rounded-xl border border-border bg-surface-elevated',
-			variant === 'flush' && 'rounded-lg',
-			variant === 'plain' && 'rounded-md',
+			variant === 'plain' && 'rounded-lg',
 			selected &&
 				(variant === 'card'
 					? 'border-brand-500/40 bg-brand-50/50 ring-1 ring-brand-500/15 dark:bg-brand-950/25'
-					: 'bg-brand-500/10'),
+					: 'bg-brand-50 dark:bg-brand-950/40'),
 			clickable &&
 				!disabled &&
 				'cursor-pointer hover:bg-surface-overlay/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30',
+			variant === 'flush' &&
+				clickable &&
+				!disabled &&
+				'focus-visible:ring-inset',
 			variant === 'card' &&
 				clickable &&
 				!disabled &&
@@ -140,7 +143,8 @@
 	{#if accent !== 'none'}
 		<span
 			class={[
-				'pointer-events-none absolute top-2 bottom-2 left-0 w-0.5 rounded-r-full',
+				'pointer-events-none absolute left-0 w-0.5',
+				variant === 'flush' ? 'inset-y-0' : 'top-2 bottom-2 rounded-r-full',
 				accentClass[accent]
 			]}
 			aria-hidden="true"

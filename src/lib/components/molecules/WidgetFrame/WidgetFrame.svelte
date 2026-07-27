@@ -99,6 +99,10 @@
 	let start = $state({ px: 0, py: 0, x: 0, y: 0, w: 0, h: 0 });
 	let localBusy = $state(false);
 	let zIndex = $state(1);
+	/** Tamaño local cuando resizable sin freeform (EditableChrome, etc.) */
+	let localW = $state<number | null>(null);
+	let localH = $state<number | null>(null);
+	let rootEl = $state<HTMLDivElement | null>(null);
 
 	const showDragHandle = $derived((editable || freeform) && draggable);
 	const showResizeHandle = $derived((editable || freeform) && resizable && !collapsed);
@@ -106,6 +110,9 @@
 	const busy = $derived(loading || reloading || localBusy);
 	const snapEnabled = $derived(snap ?? canvas?.snap ?? false);
 	const busyText = $derived(reloading || localBusy ? reloadingText : loadingText);
+	/** DashboardGrid (u otro padre) gestiona el resize vía onresizestart */
+	const delegateResize = $derived(!freeform && !!onresizestart);
+	const builtinResize = $derived(freeform || (resizable && !delegateResize));
 	const showHeader = $derived(
 		!!title ||
 			showDragHandle ||
@@ -160,19 +167,33 @@
 		e.stopPropagation();
 		bringToFront();
 		onresizestart?.(e, nextEdge);
-		if (!freeform) return;
+		if (delegateResize || !builtinResize) return;
+
 		mode = 'resize';
 		edge = nextEdge;
-		start = { px: e.clientX, py: e.clientY, ...rect };
+		if (freeform) {
+			start = { px: e.clientX, py: e.clientY, ...rect };
+		} else {
+			const box = rootEl?.getBoundingClientRect();
+			start = {
+				px: e.clientX,
+				py: e.clientY,
+				x: 0,
+				y: 0,
+				w: localW ?? box?.width ?? minW,
+				h: localH ?? box?.height ?? minH
+			};
+		}
 		(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
 	}
 
 	function onPointerMove(e: PointerEvent) {
-		if (!freeform || !mode) return;
+		if (!mode || !builtinResize) return;
 		const dx = e.clientX - start.px;
 		const dy = e.clientY - start.py;
 
 		if (mode === 'move') {
+			if (!freeform) return;
 			emitRect({
 				...rect,
 				x: start.x + dx,
@@ -196,13 +217,23 @@
 		h = Math.max(minH, h);
 		if (edge.includes('w')) x = start.x + (start.w - w);
 		if (edge.includes('n')) y = start.y + (start.h - h);
-		emitRect({ x, y, w, h });
+
+		if (freeform) {
+			emitRect({ x, y, w, h });
+		} else {
+			localW = w;
+			localH = h;
+			onchange?.({ x: 0, y: 0, w, h });
+		}
 	}
 
 	function onPointerUp() {
+		if (mode === 'resize' && freeform) {
+			mode = null;
+			emitRect({ ...rect });
+			return;
+		}
 		mode = null;
-		// Aplica snap al soltar (si snapMode === 'release').
-		emitRect({ ...rect });
 	}
 
 	function toggleCollapse() {
@@ -221,21 +252,27 @@
 	}
 
 	const freeformEdges: { edge: WidgetResizeEdge; class: string }[] = [
-		{ edge: 'e', class: 'top-3 bottom-3 -right-px w-1 cursor-e-resize' },
-		{ edge: 's', class: 'left-3 right-3 -bottom-px h-1 cursor-s-resize' },
-		{ edge: 'w', class: 'top-3 bottom-3 -left-px w-1 cursor-w-resize' },
-		{ edge: 'n', class: 'left-3 right-3 -top-px h-1 cursor-n-resize' },
-		{ edge: 'se', class: '-right-px -bottom-px h-2.5 w-2.5 cursor-se-resize' },
-		{ edge: 'sw', class: '-left-px -bottom-px h-2.5 w-2.5 cursor-sw-resize' },
-		{ edge: 'ne', class: '-right-px -top-px h-2.5 w-2.5 cursor-ne-resize' },
-		{ edge: 'nw', class: '-left-px -top-px h-2.5 w-2.5 cursor-nw-resize' }
+		{ edge: 'e', class: 'top-2 bottom-2 -right-px w-1.5 cursor-e-resize' },
+		{ edge: 's', class: 'left-2 right-2 -bottom-px h-1.5 cursor-s-resize' },
+		{ edge: 'w', class: 'top-2 bottom-2 -left-px w-1.5 cursor-w-resize' },
+		{ edge: 'n', class: 'left-2 right-2 -top-px h-1.5 cursor-n-resize' },
+		{ edge: 'se', class: '-right-px -bottom-px h-3 w-3 cursor-se-resize' },
+		{ edge: 'sw', class: '-left-px -bottom-px h-3 w-3 cursor-sw-resize' },
+		{ edge: 'ne', class: '-right-px -top-px h-3 w-3 cursor-ne-resize' },
+		{ edge: 'nw', class: '-left-px -top-px h-3 w-3 cursor-nw-resize' }
 	];
 
-	const rootStyle = $derived(
-		freeform
-			? `left:${rect.x}px;top:${rect.y}px;width:${rect.w}px;height:${collapsed ? 'auto' : `${rect.h}px`};z-index:${mode ? zIndex + 1000 : zIndex};`
-			: undefined
-	);
+	const rootStyle = $derived.by(() => {
+		if (freeform) {
+			return `left:${rect.x}px;top:${rect.y}px;width:${rect.w}px;height:${collapsed ? 'auto' : `${rect.h}px`};z-index:${mode ? zIndex + 1000 : zIndex};`;
+		}
+		if (localW != null) {
+			const h =
+				collapsed || localH == null ? 'auto' : `${localH}px`;
+			return `width:${localW}px;height:${h};`;
+		}
+		return undefined;
+	});
 
 	const btnClass =
 		'inline-flex h-7 w-7 items-center justify-center rounded-md text-muted transition-colors hover:bg-surface-overlay hover:text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 disabled:opacity-50';
@@ -244,19 +281,21 @@
 	const edgeAccent = $derived(
 		[
 			'absolute z-10 touch-none rounded-sm bg-transparent transition-colors',
-			'hover:bg-brand-500/60 focus-visible:bg-brand-500/60 focus-visible:outline-none',
+			'hover:bg-brand-500/70 focus-visible:bg-brand-500/70 focus-visible:outline-none',
 			mode === 'resize'
-				? 'pointer-events-auto bg-brand-500/30'
-				: 'pointer-events-none group-hover/widget:pointer-events-auto group-hover/widget:bg-brand-500/25'
+				? 'pointer-events-auto bg-brand-500/40'
+				: 'pointer-events-none group-hover/widget:pointer-events-auto group-hover/widget:bg-brand-500/35'
 		].join(' ')
 	);
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
+	bind:this={rootEl}
 	class={[
 		'group/widget flex min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-surface-elevated',
 		freeform ? 'absolute shadow-md' : 'relative',
+		collapsed && 'h-auto self-start',
 		mode === 'move' && 'cursor-grabbing opacity-95',
 		mode === 'resize' && 'ring-1 ring-brand-500/40',
 		className
@@ -334,7 +373,11 @@
 						class={btnClass}
 						aria-expanded={!collapsed}
 						aria-label={collapsed ? 'Expand widget' : 'Collapse widget'}
-						onclick={toggleCollapse}
+						onpointerdown={(e) => e.stopPropagation()}
+						onclick={(e) => {
+							e.stopPropagation();
+							toggleCollapse();
+						}}
 					>
 						<ChevronDown
 							class={['h-3.5 w-3.5 transition-transform', collapsed && '-rotate-90']}
@@ -405,43 +448,22 @@
 	{/if}
 
 	{#if showResizeHandle}
-		{#if freeform}
-			{#each freeformEdges as h (h.edge)}
-				<!-- svelte-ignore a11y_no_static_element_interactions -->
-				<div
-					class={[edgeAccent, h.class]}
-					role="separator"
-					aria-orientation={h.edge === 'e' || h.edge === 'w' ? 'vertical' : 'horizontal'}
-					aria-label={`Resize ${title ?? 'widget'} (${h.edge})`}
-					onpointerdown={(e) => beginResize(e, h.edge)}
-				></div>
-			{/each}
-		{:else}
-			<button
-				type="button"
-				class={[edgeAccent, 'right-0 top-1/2 h-6 w-1 -translate-y-1/2 cursor-e-resize']}
-				aria-label={`Resize ${title ?? 'widget'} horizontally`}
-				onpointerdown={(e) => beginResize(e, 'e')}
-			></button>
-			<button
-				type="button"
-				class={[edgeAccent, 'bottom-0 left-1/2 h-1 w-6 -translate-x-1/2 cursor-s-resize']}
-				aria-label={`Resize ${title ?? 'widget'} vertically`}
-				onpointerdown={(e) => beginResize(e, 's')}
-			></button>
-			<button
-				type="button"
-				class={[edgeAccent, 'right-0 bottom-0 h-2.5 w-2.5 cursor-se-resize']}
-				aria-label={`Resize ${title ?? 'widget'}`}
-				onpointerdown={(e) => beginResize(e, 'se')}
-			></button>
-		{/if}
+		{#each freeformEdges as h (h.edge)}
+			<!-- svelte-ignore a11y_no_static_element_interactions -->
+			<div
+				class={[edgeAccent, h.class]}
+				role="separator"
+				aria-orientation={h.edge === 'e' || h.edge === 'w' ? 'vertical' : 'horizontal'}
+				aria-label={`Resize ${title ?? 'widget'} (${h.edge})`}
+				onpointerdown={(e) => beginResize(e, h.edge)}
+			></div>
+		{/each}
 
 		<!-- SE grip (visual only, small) -->
 		<div
 			class={[
 				'pointer-events-none absolute bottom-0.5 right-0.5 z-20 flex h-2.5 w-2.5 items-center justify-center',
-				'text-muted/50 transition-colors group-hover/widget:text-brand-500'
+				'text-muted/60 transition-colors group-hover/widget:text-brand-500'
 			]}
 			aria-hidden="true"
 		>

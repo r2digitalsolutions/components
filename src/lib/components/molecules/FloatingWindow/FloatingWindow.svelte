@@ -71,6 +71,9 @@
 	function onTitlePointerDown(e: PointerEvent) {
 		if (e.button !== 0 && e.pointerType === 'mouse') return;
 		if (rect.maximized) return;
+		const target = e.target as HTMLElement | null;
+		// No iniciar drag desde botones / acciones del header
+		if (target?.closest('button, a, input, [data-window-controls]')) return;
 		focus();
 		mode = 'move';
 		start = { px: e.clientX, py: e.clientY, ...rect };
@@ -147,15 +150,28 @@
 	}
 
 	const edges: { edge: WindowResizeEdge; class: string }[] = [
-		{ edge: 'n', class: 'left-2 right-2 top-0 h-1.5 cursor-n-resize' },
-		{ edge: 's', class: 'left-2 right-2 bottom-0 h-1.5 cursor-s-resize' },
-		{ edge: 'e', class: 'top-2 bottom-2 right-0 w-1.5 cursor-e-resize' },
-		{ edge: 'w', class: 'top-2 bottom-2 left-0 w-1.5 cursor-w-resize' },
-		{ edge: 'ne', class: 'right-0 top-0 h-3 w-3 cursor-ne-resize' },
-		{ edge: 'nw', class: 'left-0 top-0 h-3 w-3 cursor-nw-resize' },
-		{ edge: 'se', class: 'right-0 bottom-0 h-3 w-3 cursor-se-resize' },
-		{ edge: 'sw', class: 'left-0 bottom-0 h-3 w-3 cursor-sw-resize' }
+		{ edge: 'n', class: 'left-2 right-2 -top-px h-1.5 cursor-n-resize' },
+		{ edge: 's', class: 'left-2 right-2 -bottom-px h-1.5 cursor-s-resize' },
+		{ edge: 'e', class: 'top-2 bottom-2 -right-px w-1.5 cursor-e-resize' },
+		{ edge: 'w', class: 'top-2 bottom-2 -left-px w-1.5 cursor-w-resize' },
+		{ edge: 'ne', class: '-right-px -top-px h-3 w-3 cursor-ne-resize' },
+		{ edge: 'nw', class: '-left-px -top-px h-3 w-3 cursor-nw-resize' },
+		{ edge: 'se', class: '-right-px -bottom-px h-3 w-3 cursor-se-resize' },
+		{ edge: 'sw', class: '-left-px -bottom-px h-3 w-3 cursor-sw-resize' }
 	];
+
+	const edgeAccent = $derived(
+		[
+			'absolute z-20 touch-none rounded-sm bg-transparent transition-colors',
+			'hover:bg-brand-500/70',
+			mode === 'resize'
+				? 'pointer-events-auto bg-brand-500/40'
+				: 'pointer-events-none group-hover/window:pointer-events-auto group-hover/window:bg-brand-500/35'
+		].join(' ')
+	);
+
+	const btnClass =
+		'inline-flex h-6 w-6 items-center justify-center rounded-md text-muted hover:bg-surface-elevated hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40';
 
 	const windowStyle = $derived(
 		rect.maximized
@@ -171,9 +187,10 @@
 		aria-label={title}
 		tabindex="-1"
 		class={[
-			'absolute flex flex-col overflow-hidden rounded-xl border bg-surface-elevated shadow-lg',
+			'group/window absolute flex flex-col overflow-hidden rounded-xl border bg-surface-elevated shadow-lg',
 			active ? 'border-brand-500/50 ring-1 ring-brand-500/30' : 'border-border',
 			rect.maximized ? 'inset-2' : '',
+			mode === 'resize' && 'ring-1 ring-brand-500/40',
 			className
 		]}
 		style={windowStyle}
@@ -186,19 +203,29 @@
 		<div
 			class="flex shrink-0 cursor-grab items-center gap-2 border-b border-border bg-surface-overlay/60 px-2 py-1.5 active:cursor-grabbing"
 			onpointerdown={onTitlePointerDown}
-			ondblclick={toggleMaximize}
+			ondblclick={(e) => {
+				const target = e.target as HTMLElement | null;
+				if (target?.closest('button, a, input, [data-window-controls]')) return;
+				toggleMaximize();
+			}}
 		>
 			<div class="min-w-0 flex-1 truncate text-sm font-semibold text-primary">{title}</div>
-			{#if actions}
-				<div class="flex items-center gap-1">
-					{@render actions()}
-				</div>
-			{/if}
-			<div class="flex items-center gap-0.5">
+
+			<div
+				data-window-controls
+				class="flex shrink-0 items-center gap-0.5"
+				onpointerdown={(e) => e.stopPropagation()}
+			>
+				{#if actions}
+					<div class="mr-0.5 flex items-center gap-1">
+						{@render actions()}
+					</div>
+				{/if}
+
 				{#if minimizable}
 					<button
 						type="button"
-						class="inline-flex h-6 w-6 items-center justify-center rounded-md text-muted hover:bg-surface-elevated hover:text-primary"
+						class={btnClass}
 						aria-label="Minimize"
 						onclick={(e) => {
 							e.stopPropagation();
@@ -211,7 +238,7 @@
 				{#if maximizable}
 					<button
 						type="button"
-						class="inline-flex h-6 w-6 items-center justify-center rounded-md text-muted hover:bg-surface-elevated hover:text-primary"
+						class={btnClass}
 						aria-label={rect.maximized ? 'Restore' : 'Maximize'}
 						onclick={(e) => {
 							e.stopPropagation();
@@ -224,7 +251,7 @@
 				{#if closable}
 					<button
 						type="button"
-						class="inline-flex h-6 w-6 items-center justify-center rounded-md text-muted hover:bg-red-500/10 hover:text-red-600"
+						class={[btnClass, 'hover:bg-red-500/10 hover:text-red-600']}
 						aria-label="Close"
 						onclick={(e) => {
 							e.stopPropagation();
@@ -245,10 +272,25 @@
 			{#each edges as h (h.edge)}
 				<!-- svelte-ignore a11y_no_static_element_interactions -->
 				<div
-					class={['absolute z-20', h.class]}
+					class={[edgeAccent, h.class]}
+					role="separator"
+					aria-orientation={h.edge === 'e' || h.edge === 'w' ? 'vertical' : 'horizontal'}
+					aria-label={`Resize ${title} (${h.edge})`}
 					onpointerdown={(e) => onResizePointerDown(e, h.edge)}
 				></div>
 			{/each}
+
+			<div
+				class={[
+					'pointer-events-none absolute bottom-0.5 right-0.5 z-30 flex h-2.5 w-2.5 items-center justify-center',
+					'text-muted/60 transition-colors group-hover/window:text-brand-500'
+				]}
+				aria-hidden="true"
+			>
+				<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.75" class="h-2.5 w-2.5">
+					<path stroke-linecap="round" d="M7 11L11 7M4 11L11 4" />
+				</svg>
+			</div>
 		{/if}
 	</div>
 {/if}
