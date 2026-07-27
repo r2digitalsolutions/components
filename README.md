@@ -62,7 +62,12 @@ pnpm release:major   # 0.0.1 → 1.0.0
 pnpm release
 ```
 
-Esto hace bump de versión, commit, tag `vX.Y.Z` y push. CI construye con `pnpm prepack` y publica `@r2digisolutions/components`.
+Esto hace bump de versión, commit, tag `vX.Y.Z` y push. CI entonces:
+
+1. Publica `@r2digisolutions/components` en npm
+2. Crea un **GitHub Release** con notas generadas desde los commits desde el tag anterior
+
+Mismo flujo que usan muchas libs con `bumpp` / `release-it` (tag → CI → npm + GitHub Release).
 
 ### Instalación (consumidores)
 

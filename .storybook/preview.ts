@@ -1,29 +1,10 @@
 import type { Preview } from '@storybook/sveltekit';
-import * as svelte from 'svelte';
 import {
 	buildFullStoryCode,
 	buildUsageCode,
 	inferComponentName
 } from './usage';
 import '../src/app.css';
-
-// Guard setContext against Svelte 5 set_context_after_init error when Storybook decorators re-run on prop change
-const originalSetContext = svelte.setContext;
-try {
-	(svelte as unknown as Record<string, unknown>).setContext = (key: unknown, context: unknown) => {
-		try {
-			return originalSetContext(key, context);
-		} catch (err: unknown) {
-			const error = err as { code?: string; message?: string };
-			if (error?.code === 'set_context_after_init' || error?.message?.includes('set_context_after_init')) {
-				return context;
-			}
-			throw err;
-		}
-	};
-} catch {
-	// Fallback if setContext property is read-only
-}
 
 type DocsSourceConfig = {
 	code?: string;

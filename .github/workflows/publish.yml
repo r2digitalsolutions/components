@@ -11,11 +11,13 @@ jobs:
     # Must match Trusted Publisher "Environment" on npmjs.com
     environment: production
     permissions:
-      contents: read
+      contents: write
       id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -46,3 +48,12 @@ jobs:
           fi
           # Provenance requires a PUBLIC GitHub repo — this one is private
           npm publish --access public --provenance=false
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          generate_release_notes: true
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}
