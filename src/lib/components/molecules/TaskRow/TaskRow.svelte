@@ -11,6 +11,8 @@
 		priority?: TaskPriority;
 		due?: string;
 		assignee?: string;
+		/** Hide completion checkbox — stakeholder / read-only lists */
+		readonly?: boolean;
 		class?: string;
 		ontoggle?: (completed: boolean) => void;
 		onclick?: () => void;
@@ -22,6 +24,7 @@
 		priority,
 		due = '',
 		assignee = '',
+		readonly = false,
 		class: className = '',
 		ontoggle,
 		onclick
@@ -60,12 +63,14 @@
 </script>
 
 {#snippet content()}
-	<SelectionBox
-		bind:checked={completed}
-		size="md"
-		label={`Mark "${title}" as ${completed ? 'incomplete' : 'complete'}`}
-		onchange={handleToggle}
-	/>
+	{#if !readonly}
+		<SelectionBox
+			bind:checked={completed}
+			size="md"
+			label={`Mark "${title}" as ${completed ? 'incomplete' : 'complete'}`}
+			onchange={handleToggle}
+		/>
+	{/if}
 
 	<div class="min-w-0 flex-1">
 		<p

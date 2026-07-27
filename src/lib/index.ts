@@ -1049,7 +1049,11 @@ export type {
 export { default as MobileAccountPage } from './components/organisms/MobileAccountPage/MobileAccountPage.svelte';
 export type { AccountSettingItem } from './components/organisms/MobileAccountPage/MobileAccountPage.svelte';
 export { default as BacklogPage } from './components/organisms/BacklogPage/BacklogPage.svelte';
-export type { BacklogTask } from './components/organisms/BacklogPage/BacklogPage.svelte';
+export type {
+	BacklogTask,
+	BacklogView,
+	BacklogSort
+} from './components/organisms/BacklogPage/BacklogPage.svelte';
 export { default as AssetPickerPage } from './components/organisms/AssetPickerPage/AssetPickerPage.svelte';
 export type {
 	AssetPickerView,

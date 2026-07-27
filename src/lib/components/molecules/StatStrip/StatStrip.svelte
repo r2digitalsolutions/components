@@ -12,11 +12,20 @@
 	}
 
 	const { items = [], class: className = '' }: StatStripProps = $props();
+
+	const gridClass = $derived.by(() => {
+		const n = items.length;
+		if (n <= 1) return 'grid-cols-1';
+		if (n === 2) return 'grid-cols-2';
+		if (n === 3) return 'grid-cols-2 sm:grid-cols-3';
+		return 'grid-cols-2 sm:grid-cols-4';
+	});
 </script>
 
 <div
 	class={[
-		'grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-4',
+		'grid gap-px overflow-hidden rounded-xl border border-border bg-border',
+		gridClass,
 		className
 	]}
 >
