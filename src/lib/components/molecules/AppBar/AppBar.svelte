@@ -77,12 +77,14 @@
 			</button>
 		{/if}
 
-		<div class="min-w-0 flex-1">
+		<div class="flex min-w-0 flex-1 flex-col justify-center gap-0 leading-none">
 			{#if title}
-				<p class="truncate text-base font-semibold tracking-tight text-primary">{title}</p>
+				<p class="truncate text-[15px] font-semibold tracking-tight text-primary leading-tight">
+					{title}
+				</p>
 			{/if}
 			{#if subtitle}
-				<p class="truncate text-xs text-muted">{subtitle}</p>
+				<p class="truncate text-[11px] leading-tight text-muted">{subtitle}</p>
 			{/if}
 		</div>
 

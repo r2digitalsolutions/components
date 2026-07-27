@@ -84,6 +84,57 @@ export { default as PulseDot } from './components/atoms/PulseDot/PulseDot.svelte
 export type { PulseTone } from './components/atoms/PulseDot/PulseDot.svelte';
 export { default as SectionTitle } from './components/atoms/SectionTitle/SectionTitle.svelte';
 export { default as CornerBadge } from './components/atoms/CornerBadge/CornerBadge.svelte';
+export { default as DragHandle } from './components/atoms/DragHandle/DragHandle.svelte';
+export type { DragHandleSize, DragHandleOrientation } from './components/atoms/DragHandle/DragHandle.svelte';
+export { default as SnapIndicator } from './components/atoms/SnapIndicator/SnapIndicator.svelte';
+export type { SnapIndicatorSize, SnapIndicatorVariant } from './components/atoms/SnapIndicator/SnapIndicator.svelte';
+export { default as HighlightMark } from './components/atoms/HighlightMark/HighlightMark.svelte';
+export type { HighlightMarkTone } from './components/atoms/HighlightMark/HighlightMark.svelte';
+export { default as TrendArrow } from './components/atoms/TrendArrow/TrendArrow.svelte';
+export type { TrendDirection, TrendArrowSize } from './components/atoms/TrendArrow/TrendArrow.svelte';
+export { default as FadeMask } from './components/atoms/FadeMask/FadeMask.svelte';
+export type { FadeMaskEdge, FadeMaskSize } from './components/atoms/FadeMask/FadeMask.svelte';
+export { default as VersionTag } from './components/atoms/VersionTag/VersionTag.svelte';
+export type { VersionTagTone, VersionTagSize } from './components/atoms/VersionTag/VersionTag.svelte';
+export { default as WaveBars } from './components/atoms/WaveBars/WaveBars.svelte';
+export { default as LatencyPill } from './components/atoms/LatencyPill/LatencyPill.svelte';
+export type { LatencyPillTone, LatencyPillSize } from './components/atoms/LatencyPill/LatencyPill.svelte';
+export { default as SkeletonAvatar } from './components/atoms/SkeletonAvatar/SkeletonAvatar.svelte';
+export type { SkeletonAvatarSize, SkeletonAvatarShape } from './components/atoms/SkeletonAvatar/SkeletonAvatar.svelte';
+export { default as HitArea } from './components/atoms/HitArea/HitArea.svelte';
+export type { HitAreaElement } from './components/atoms/HitArea/HitArea.svelte';
+export { default as Prose } from './components/atoms/Prose/Prose.svelte';
+export type {
+	ProseSize,
+	ProseDensity,
+	ProseTone,
+	ProseAlign,
+	ProseMaxWidth
+} from './components/atoms/Prose/Prose.svelte';
+export { default as CaretBlink } from './components/atoms/CaretBlink/CaretBlink.svelte';
+export type {
+	CaretBlinkHeight,
+	CaretBlinkTone,
+	CaretBlinkSpeed,
+	CaretBlinkShape,
+	CaretBlinkThickness
+} from './components/atoms/CaretBlink/CaretBlink.svelte';
+export { default as RailMark } from './components/atoms/RailMark/RailMark.svelte';
+export type {
+	RailMarkSide,
+	RailMarkThickness,
+	RailMarkTone,
+	RailMarkInset,
+	RailMarkLength
+} from './components/atoms/RailMark/RailMark.svelte';
+export { default as Inset } from './components/atoms/Inset/Inset.svelte';
+export type { InsetPadding, InsetRounded } from './components/atoms/Inset/Inset.svelte';
+export { default as SelectionBox } from './components/atoms/SelectionBox/SelectionBox.svelte';
+export type {
+	SelectionBoxSize,
+	SelectionBoxTone,
+	SelectionBoxRadius
+} from './components/atoms/SelectionBox/SelectionBox.svelte';
 
 // ── Molecules ────────────────────────────────────────────────────────────────
 export { default as Card } from './components/molecules/Card/Card.svelte';
@@ -474,6 +525,12 @@ export { default as PromoCard } from './components/molecules/PromoCard/PromoCard
 export { default as ChipSelect } from './components/molecules/ChipSelect/ChipSelect.svelte';
 export type { ChipSelectOption } from './components/molecules/ChipSelect/ChipSelect.svelte';
 export { default as InfoTile } from './components/molecules/InfoTile/InfoTile.svelte';
+export { default as Tile } from './components/molecules/Tile/Tile.svelte';
+export type {
+	TileAccent,
+	TileVariant,
+	TileSize
+} from './components/molecules/Tile/Tile.svelte';
 export { default as Quote } from './components/molecules/Quote/Quote.svelte';
 export { default as KeyValue } from './components/molecules/KeyValue/KeyValue.svelte';
 export { default as DangerZone } from './components/molecules/DangerZone/DangerZone.svelte';
@@ -636,6 +693,95 @@ export type {
 } from './utils/advancedFilters.js';
 export { default as QueryBar } from './components/molecules/QueryBar/QueryBar.svelte';
 export type { QuerySuggestion } from './components/molecules/QueryBar/QueryBar.svelte';
+export { default as FilterSummary } from './components/molecules/FilterSummary/FilterSummary.svelte';
+export type { FilterSummaryItem } from './components/molecules/FilterSummary/FilterSummary.svelte';
+export { default as SavedSearchRow } from './components/molecules/SavedSearchRow/SavedSearchRow.svelte';
+export { default as QuickActionGrid } from './components/molecules/QuickActionGrid/QuickActionGrid.svelte';
+export type {
+	QuickAction,
+	QuickActionTone,
+	QuickActionSize,
+	QuickActionLayout,
+	QuickActionIconName
+} from './components/molecules/QuickActionGrid/QuickActionGrid.svelte';
+export { default as CommandHintRow } from './components/molecules/CommandHintRow/CommandHintRow.svelte';
+export { default as UploadQueue } from './components/molecules/UploadQueue/UploadQueue.svelte';
+export type {
+	UploadQueueStatus,
+	UploadQueueFile
+} from './components/molecules/UploadQueue/UploadQueue.svelte';
+export { default as PresenceList } from './components/molecules/PresenceList/PresenceList.svelte';
+export type {
+	PresenceStatus,
+	PresenceUser
+} from './components/molecules/PresenceList/PresenceList.svelte';
+export { default as TaskRow } from './components/molecules/TaskRow/TaskRow.svelte';
+export type { TaskPriority } from './components/molecules/TaskRow/TaskRow.svelte';
+export { default as TaskSummaryCard } from './components/molecules/TaskSummaryCard/TaskSummaryCard.svelte';
+export { default as PaymentMethodCard } from './components/molecules/PaymentMethodCard/PaymentMethodCard.svelte';
+export type { PaymentCardBrand } from './components/molecules/PaymentMethodCard/PaymentMethodCard.svelte';
+export { default as UsageBreakdown } from './components/molecules/UsageBreakdown/UsageBreakdown.svelte';
+export type { UsageBreakdownItem } from './components/molecules/UsageBreakdown/UsageBreakdown.svelte';
+export { default as NotificationSettingsGroup } from './components/molecules/NotificationSettingsGroup/NotificationSettingsGroup.svelte';
+export type { NotificationSettingItem } from './components/molecules/NotificationSettingsGroup/NotificationSettingsGroup.svelte';
+export { default as RecentSearches } from './components/molecules/RecentSearches/RecentSearches.svelte';
+export { default as SegmentedPager } from './components/molecules/SegmentedPager/SegmentedPager.svelte';
+export type { SegmentedPagerPage } from './components/molecules/SegmentedPager/SegmentedPager.svelte';
+export { default as GoalProgress } from './components/molecules/GoalProgress/GoalProgress.svelte';
+export type { GoalProgressTone } from './components/molecules/GoalProgress/GoalProgress.svelte';
+export { default as AuditEventRow } from './components/molecules/AuditEventRow/AuditEventRow.svelte';
+export type { AuditEventSeverity } from './components/molecules/AuditEventRow/AuditEventRow.svelte';
+export { default as QuietHoursRow } from './components/molecules/QuietHoursRow/QuietHoursRow.svelte';
+export type { QuietHoursValue } from './components/molecules/QuietHoursRow/QuietHoursRow.svelte';
+export { default as EntityPreview } from './components/molecules/EntityPreview/EntityPreview.svelte';
+export { default as StickerPicker } from './components/molecules/StickerPicker/StickerPicker.svelte';
+export type { Sticker } from './components/molecules/StickerPicker/StickerPicker.svelte';
+export { default as AttachmentChip } from './components/molecules/AttachmentChip/AttachmentChip.svelte';
+export { default as ThreadReply } from './components/molecules/ThreadReply/ThreadReply.svelte';
+export { default as VoiceNoteRecorder } from './components/molecules/VoiceNoteRecorder/VoiceNoteRecorder.svelte';
+export type { VoiceNoteStatus } from './components/molecules/VoiceNoteRecorder/VoiceNoteRecorder.svelte';
+export { default as AddonPicker } from './components/molecules/AddonPicker/AddonPicker.svelte';
+export type { BillingAddon } from './components/molecules/AddonPicker/AddonPicker.svelte';
+export { default as ShippingEstimate } from './components/molecules/ShippingEstimate/ShippingEstimate.svelte';
+export type { ShippingOption } from './components/molecules/ShippingEstimate/ShippingEstimate.svelte';
+export { default as SmartSuggestion } from './components/molecules/SmartSuggestion/SmartSuggestion.svelte';
+export { default as DateGroupedList } from './components/molecules/DateGroupedList/DateGroupedList.svelte';
+export type {
+	DateGroupedListItem,
+	DateGroupedListGroup,
+	DateGroupedAccent
+} from './components/molecules/DateGroupedList/DateGroupedList.svelte';
+export { default as BentoGrid } from './components/molecules/BentoGrid/BentoGrid.svelte';
+export type {
+	BentoItem,
+	BentoGridCols,
+	BentoGridGap
+} from './components/molecules/BentoGrid/BentoGrid.svelte';
+export { default as WidgetFrame } from './components/molecules/WidgetFrame/WidgetFrame.svelte';
+export type {
+	WidgetResizeEdge,
+	WidgetRect
+} from './components/molecules/WidgetFrame/WidgetFrame.svelte';
+export { default as WidgetCanvas } from './components/molecules/WidgetCanvas/WidgetCanvas.svelte';
+export type {
+	WidgetCanvasContext,
+	WidgetCanvasBounds
+} from './components/molecules/WidgetCanvas/widgetCanvasContext.js';
+export {
+	WIDGET_CANVAS_CONTEXT,
+	snapToGrid,
+	snapWidgetRect,
+	clampWidgetRect
+} from './components/molecules/WidgetCanvas/widgetCanvasContext.js';
+export { default as WidgetPicker } from './components/molecules/WidgetPicker/WidgetPicker.svelte';
+export type { WidgetCatalogItem } from './components/molecules/WidgetPicker/WidgetPicker.svelte';
+export { default as SessionPresenceBadge } from './components/molecules/SessionPresenceBadge/SessionPresenceBadge.svelte';
+export type { SessionPresence } from './components/molecules/SessionPresenceBadge/SessionPresenceBadge.svelte';
+export { default as FloatingWindow } from './components/molecules/FloatingWindow/FloatingWindow.svelte';
+export type {
+	WindowRect,
+	WindowResizeEdge
+} from './components/molecules/FloatingWindow/FloatingWindow.svelte';
 
 // ── Organisms ────────────────────────────────────────────────────────────────
 export { default as FileUploader } from './components/organisms/FileUploader/FileUploader.svelte';
@@ -879,6 +1025,60 @@ export type {
 	SchemaFormValue,
 	SchemaFormValues
 } from './components/organisms/SchemaForm/SchemaForm.svelte';
+export { default as NotificationPreferencesPage } from './components/organisms/NotificationPreferencesPage/NotificationPreferencesPage.svelte';
+export type {
+	NotificationPreferenceItem,
+	NotificationPreferenceGroup
+} from './components/organisms/NotificationPreferencesPage/NotificationPreferencesPage.svelte';
+export { default as SecuritySettingsPage } from './components/organisms/SecuritySettingsPage/SecuritySettingsPage.svelte';
+export { default as ProjectOverviewPage } from './components/organisms/ProjectOverviewPage/ProjectOverviewPage.svelte';
+export type {
+	ProjectTaskSummary,
+	ProjectGoal,
+	ProjectTask
+} from './components/organisms/ProjectOverviewPage/ProjectOverviewPage.svelte';
+export { default as OrderTrackingPage } from './components/organisms/OrderTrackingPage/OrderTrackingPage.svelte';
+export type {
+	TrackingEvent,
+	DeliveryAddress,
+	OrderStatus
+} from './components/organisms/OrderTrackingPage/OrderTrackingPage.svelte';
+export { default as MobileAccountPage } from './components/organisms/MobileAccountPage/MobileAccountPage.svelte';
+export type { AccountSettingItem } from './components/organisms/MobileAccountPage/MobileAccountPage.svelte';
+export { default as BacklogPage } from './components/organisms/BacklogPage/BacklogPage.svelte';
+export type { BacklogTask } from './components/organisms/BacklogPage/BacklogPage.svelte';
+export { default as AssetPickerPage } from './components/organisms/AssetPickerPage/AssetPickerPage.svelte';
+export type {
+	AssetPickerView,
+	PickerAsset
+} from './components/organisms/AssetPickerPage/AssetPickerPage.svelte';
+export { default as ExploreFeedPage } from './components/organisms/ExploreFeedPage/ExploreFeedPage.svelte';
+export type {
+	ExploreFeedItem,
+	ExploreFeedGroup,
+	ExploreSuggestion
+} from './components/organisms/ExploreFeedPage/ExploreFeedPage.svelte';
+export { default as MultiWorkspaceDashboard } from './components/organisms/MultiWorkspaceDashboard/MultiWorkspaceDashboard.svelte';
+export type {
+	WorkspaceSeats,
+	WorkspaceCard
+} from './components/organisms/MultiWorkspaceDashboard/MultiWorkspaceDashboard.svelte';
+export { default as LeadDetailPage } from './components/organisms/LeadDetailPage/LeadDetailPage.svelte';
+export type {
+	LeadProfile,
+	LeadEvent,
+	LeadReply,
+	RelatedLead
+} from './components/organisms/LeadDetailPage/LeadDetailPage.svelte';
+export { default as DashboardGrid } from './components/organisms/DashboardGrid/DashboardGrid.svelte';
+export type { DashboardWidgetMeta } from './components/organisms/DashboardGrid/DashboardGrid.svelte';
+export { default as DashboardBuilderPage } from './components/organisms/DashboardBuilderPage/DashboardBuilderPage.svelte';
+export type {
+	DashboardBuilderWidgetType,
+	DashboardBuilderWidget
+} from './components/organisms/DashboardBuilderPage/DashboardBuilderPage.svelte';
+export { default as DesktopShell } from './components/organisms/DesktopShell/DesktopShell.svelte';
+export type { DesktopWindow } from './components/organisms/DesktopShell/DesktopShell.svelte';
 
 // ── Templates ────────────────────────────────────────────────────────────────
 export { default as AuthTemplate } from './components/templates/AuthTemplate/AuthTemplate.svelte';
@@ -893,10 +1093,31 @@ export type {
 	CheckoutStep,
 	CheckoutShippingOption
 } from './components/templates/CheckoutTemplate/CheckoutTemplate.svelte';
+export { default as DesktopTemplate } from './components/templates/DesktopTemplate/DesktopTemplate.svelte';
 
 // ── Utils ────────────────────────────────────────────────────────────────────
 export { themeStore } from './utils/theme.svelte.js';
 export type { Theme } from './utils/theme.svelte.js';
+export { pageVisibility } from './utils/pageVisibility.svelte.js';
+export type { VisibilityState } from './utils/pageVisibility.svelte.js';
+export { network } from './utils/network.svelte.js';
+export {
+	DEFAULT_COLS,
+	DEFAULT_ROW_HEIGHT,
+	DEFAULT_GAP,
+	clampItem,
+	rectsOverlap,
+	findCollisions,
+	resolveCollisions,
+	compactLayout,
+	updateItem,
+	addItem,
+	removeItem,
+	serializeLayout,
+	parseLayout,
+	layoutBounds
+} from './utils/layoutGrid.js';
+export type { GridItem, LayoutGridOptions } from './utils/layoutGrid.js';
 export { encodeQR, qrToSvgPath, punchLogoHole } from './utils/qr.js';
 export { renderMarkdown, renderInline, escapeHtml, splitTableRow, slugifyHeading } from './utils/markdown.js';
 export {
