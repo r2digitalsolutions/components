@@ -57,23 +57,27 @@
 
 <div
 	class={[
-		'overflow-hidden rounded-xl border border-border bg-zinc-950 text-zinc-100 shadow-sm',
+		'flex flex-col overflow-hidden rounded-xl border border-border bg-surface-elevated text-primary shadow-sm',
 		className
 	]}
 >
 	{#if filename || language}
-		<div class="flex items-center justify-between border-b border-zinc-800 bg-zinc-900/80 px-3 py-1.5">
-			<span class="truncate font-mono text-[11px] text-zinc-400">{filename || language}</span>
-			<span class="rounded bg-zinc-800 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-zinc-500">
+		<div
+			class="flex shrink-0 items-center justify-between border-b border-border bg-surface-overlay/80 px-3 py-1.5"
+		>
+			<span class="truncate font-mono text-[11px] text-secondary">{filename || language}</span>
+			<span
+				class="rounded bg-surface-overlay px-1.5 py-0.5 font-mono text-[10px] tracking-wide text-muted uppercase"
+			>
 				{language}
 			</span>
 		</div>
 	{/if}
 
-	<div class="relative flex" style:min-height={`${minHeight}px`}>
+	<div class="relative flex min-h-0 flex-1" style:min-height={`${minHeight}px`}>
 		{#if showLineNumbers}
 			<div
-				class="select-none border-r border-zinc-800 bg-zinc-950/80 py-3 pl-3 pr-2 text-right font-mono text-[11px] leading-5 text-zinc-600"
+				class="select-none border-r border-border bg-surface-overlay/60 py-3 pr-2 pl-3 text-right font-mono text-[11px] leading-5 text-muted"
 				aria-hidden="true"
 			>
 				{#each lineNums as n (n)}
@@ -82,11 +86,10 @@
 			</div>
 		{/if}
 
-		<div class="relative min-w-0 flex-1">
+		<div class="relative min-h-0 min-w-0 flex-1">
 			<textarea
 				bind:this={textareaEl}
-				class="absolute inset-0 z-10 h-full w-full resize-none bg-transparent p-3 font-mono text-[12px] leading-5 text-transparent caret-zinc-100 outline-none selection:bg-brand-500/40"
-				style:min-height={`${minHeight}px`}
+				class="absolute inset-0 z-10 h-full w-full resize-none bg-transparent p-3 font-mono text-[12px] leading-5 text-transparent caret-[var(--text-primary)] outline-none selection:bg-brand-500/40"
 				{value}
 				{readonly}
 				{placeholder}
@@ -100,7 +103,7 @@
 			></textarea>
 			<pre
 				bind:this={preEl}
-				class="pointer-events-none absolute inset-0 overflow-auto whitespace-pre p-3 font-mono text-[12px] leading-5 text-zinc-200"
+				class="pointer-events-none absolute inset-0 overflow-auto whitespace-pre p-3 font-mono text-[12px] leading-5 text-primary"
 				aria-hidden="true"
 			><code>{value || ' '}</code></pre>
 		</div>

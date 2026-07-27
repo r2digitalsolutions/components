@@ -35,8 +35,28 @@ export const CmsCollections: Story = { args: { example: 'cms' } };
 export const ReadOnlyCatalog: Story = { args: { example: 'readOnly' } };
 export const SqlBrowser: Story = { args: { example: 'sqlBrowser' } };
 export const CustomQuerySlot: Story = { args: { example: 'customQuery' } };
-export const WithNotesAndRules: Story = { args: { example: 'notesAndRules' } };
-export const BulkWorkflow: Story = { args: { example: 'bulkWorkflow' } };
+export const WithNotesAndRules: Story = {
+	args: { example: 'notesAndRules' },
+	parameters: {
+		docs: {
+			description: {
+				story:
+					'Orders with cell notes, row/cell conditional format rules, and the Rules panel open from the toolbar.'
+			}
+		}
+	}
+};
+export const BulkWorkflow: Story = {
+	args: { example: 'bulkWorkflow' },
+	parameters: {
+		docs: {
+			description: {
+				story:
+					'Ops queue: rows pre-selected, dock shows Approve / Reject / Assign, plus an Activity tab for the workflow.'
+			}
+		}
+	}
+};
 export const EmptyAndLoading: Story = { args: { example: 'empty' } };
 export const Loading: Story = { args: { example: 'loading' } };
 export const MainOnly: Story = { args: { example: 'mainOnly' } };

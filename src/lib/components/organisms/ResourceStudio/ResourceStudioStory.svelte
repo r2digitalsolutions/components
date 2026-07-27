@@ -10,6 +10,7 @@
 	import Badge from '$lib/components/atoms/Badge/Badge.svelte';
 	import Button from '$lib/components/atoms/Button/Button.svelte';
 	import CodeEditor from '$lib/components/molecules/CodeEditor/CodeEditor.svelte';
+	import type { BulkAction } from '$lib/components/molecules/BulkActionBar/BulkActionBar.svelte';
 
 	type Example =
 		| 'crudAdmin'
@@ -259,12 +260,28 @@
 		}
 	];
 
+	const bulkOrders: ResourceDefinition = {
+		...orders,
+		description: 'Select rows → bulk approve / reject / assign',
+		capabilities: {
+			notes: false,
+			conditionalFormat: false,
+			duplicate: true,
+			bulkEdit: true,
+			delete: true,
+			export: true,
+			create: false,
+			editable: false
+		},
+		defaultFormatRules: []
+	};
+
 	const resources = $derived.by((): ResourceDefinition[] => {
 		if (example === 'cms') return [posts, pages, media];
 		if (example === 'readOnly') return readOnlyResources;
 		if (example === 'sqlBrowser' || example === 'customQuery') return [sqlUsers, sqlOrders];
-		if (example === 'notesAndRules' || example === 'bulkWorkflow')
-			return [orders, users, products];
+		if (example === 'notesAndRules') return [orders, users, products];
+		if (example === 'bulkWorkflow') return [bulkOrders];
 		if (example === 'mainOnly') return [orders];
 		if (example === 'permissions') return permissionResources;
 		if (example === 'empty' || example === 'loading') return [users, products, orders];
@@ -274,18 +291,31 @@
 	let activeResourceId = $state('users');
 	let selection = $state<GridSelection>(EMPTY_SELECTION);
 	let notes = $state<CellNote[]>([
-		{ rowId: 'o3', columnId: 'status', text: 'Chargeback risk — follow up' }
+		{ rowId: 'o3', columnId: 'status', text: 'Chargeback risk — follow up' },
+		{ rowId: 'o5', columnId: 'total', text: 'High value — verify manually' }
 	]);
 	let formatRules = $state<ConditionalFormatRule[]>([]);
+	let formatPanelOpen = $state(false);
 	let query = $state('');
 	let page = $state(1);
 	let sql = $state('select * from orders where total > 500;');
 	let gql = $state('query {\n  orders(where: { total: { _gt: 500 } }) {\n    id\n    total\n  }\n}');
 	let log = $state('');
+	let activeMode = $state<'browse' | 'detail' | 'schema' | 'query' | 'activity'>('browse');
+
+	const bulkActions: BulkAction[] = [
+		{ id: 'approve', label: 'Approve', variant: 'primary' },
+		{ id: 'reject', label: 'Reject', variant: 'destructive', confirm: true, confirmLabel: 'Reject' },
+		{ id: 'assign', label: 'Assign', variant: 'secondary' },
+		{ id: 'export', label: 'Export', variant: 'secondary' },
+		{ id: 'duplicate', label: 'Duplicate', variant: 'ghost', overflow: true }
+	];
 
 	$effect(() => {
-		// Reset selection when the Storybook example changes — do not fight user clicks.
-		if (example === 'mainOnly' || example === 'notesAndRules' || example === 'bulkWorkflow') {
+		// Reset when the Storybook example changes — do not fight user clicks mid-story.
+		if (example === 'mainOnly' || example === 'notesAndRules') {
+			activeResourceId = 'orders';
+		} else if (example === 'bulkWorkflow') {
 			activeResourceId = 'orders';
 		} else if (example === 'cms') {
 			activeResourceId = 'posts';
@@ -298,9 +328,19 @@
 		} else {
 			activeResourceId = 'users';
 		}
-		selection = EMPTY_SELECTION;
 		page = 1;
 		query = '';
+		formatPanelOpen = example === 'notesAndRules';
+		activeMode =
+			example === 'sqlBrowser' || example === 'customQuery'
+				? 'query'
+				: example === 'bulkWorkflow'
+					? 'browse'
+					: 'browse';
+		selection =
+			example === 'bulkWorkflow'
+				? { type: 'rows', ids: ['o2', 'o3', 'o5'] }
+				: EMPTY_SELECTION;
 	});
 
 	$effect(() => {
@@ -323,6 +363,8 @@
 		}
 		if (example === 'cms') return ['browse', 'detail', 'schema'] as const;
 		if (example === 'mainOnly') return ['browse', 'detail'] as const;
+		if (example === 'bulkWorkflow') return ['browse', 'activity', 'detail'] as const;
+		if (example === 'notesAndRules') return ['browse', 'detail', 'schema'] as const;
 		return ['browse', 'detail', 'schema'] as const;
 	});
 
@@ -346,7 +388,20 @@
 						query: 'GraphQL',
 						runQuery: 'Execute'
 					}
-				: undefined
+				: example === 'bulkWorkflow'
+					? {
+							resources: 'Queues',
+							records: 'orders',
+							activity: 'Workflow',
+							detail: 'Order'
+						}
+					: example === 'notesAndRules'
+						? {
+								resources: 'Resources',
+								records: 'orders',
+								detail: 'Order'
+							}
+						: undefined
 	);
 
 	function mutateInsert(record: Record<string, unknown>) {
@@ -391,9 +446,12 @@
 			bind:selection
 			bind:notes
 			bind:formatRules
+			bind:formatPanelOpen
+			bind:activeMode
 			modes={[...modes]}
 			{layout}
 			{labels}
+			actions={example === 'bulkWorkflow' ? bulkActions : undefined}
 			views={example === 'cms'
 				? [
 						{ id: 'all', label: 'All' },
@@ -411,34 +469,80 @@
 			onduplicate={(ids) => {
 				log = `duplicate ${ids.join(',')}`;
 			}}
+			onaction={(id, ids) => {
+				log = `${id} → ${ids.join(', ')}`;
+			}}
 			onsearch={(q) => {
 				log = `search ${q}`;
 			}}
 		>
+			{#snippet activityPanel()}
+				<div class="space-y-3 rounded-xl border border-border bg-surface-elevated p-4">
+					<p class="text-sm font-semibold text-primary">Bulk workflow</p>
+					<p class="text-xs text-secondary">
+						Orders are pre-selected. Use the dock to Approve, Reject or Assign in one step —
+						typical ops queue.
+					</p>
+					<ol class="list-decimal space-y-1.5 pl-4 text-xs text-secondary">
+						<li>Select rows (checkbox or Shift)</li>
+						<li>Choose a bulk action in the bottom dock</li>
+						<li>Confirm destructive steps when prompted</li>
+					</ol>
+					{#if selection.type === 'rows' && selection.ids.length}
+						<p class="text-xs font-medium text-brand-600 dark:text-brand-400">
+							{selection.ids.length} selected: {selection.ids.join(', ')}
+						</p>
+					{:else}
+						<p class="text-xs text-muted">No rows selected.</p>
+					{/if}
+					{#if log}
+						<p class="rounded-lg bg-surface-overlay px-2 py-1.5 font-mono text-[11px] text-secondary">
+							Last action: {log}
+						</p>
+					{/if}
+				</div>
+			{/snippet}
+
 			{#snippet queryPanel()}
 				{#if example === 'sqlBrowser'}
-					<div class="space-y-2">
-						<p class="text-xs font-semibold text-secondary">SQL runner (slot)</p>
-						<CodeEditor bind:value={sql} language="sql" class="min-h-32" />
-						<Button
-							size="sm"
-							variant="primary"
-							onclick={() => {
-								log = `run sql: ${sql}`;
-							}}>Run SQL</Button
-						>
+					<div class="flex h-full min-h-0 flex-1 flex-col gap-2">
+						<p class="shrink-0 text-xs font-semibold text-secondary">SQL runner (slot)</p>
+						<CodeEditor
+							bind:value={sql}
+							language="sql"
+							filename="query.sql"
+							class="min-h-0 flex-1"
+							minHeight={240}
+						/>
+						<div class="flex shrink-0 justify-end">
+							<Button
+								size="sm"
+								variant="primary"
+								onclick={() => {
+									log = `run sql: ${sql}`;
+								}}>Run SQL</Button
+							>
+						</div>
 					</div>
 				{:else}
-					<div class="space-y-2">
-						<p class="text-xs font-semibold text-secondary">GraphQL (custom slot)</p>
-						<CodeEditor bind:value={gql} language="graphql" class="min-h-32" />
-						<Button
-							size="sm"
-							variant="primary"
-							onclick={() => {
-								log = `run graphql`;
-							}}>Execute</Button
-						>
+					<div class="flex h-full min-h-0 flex-1 flex-col gap-2">
+						<p class="shrink-0 text-xs font-semibold text-secondary">GraphQL (custom slot)</p>
+						<CodeEditor
+							bind:value={gql}
+							language="graphql"
+							filename="query.graphql"
+							class="min-h-0 flex-1"
+							minHeight={240}
+						/>
+						<div class="flex shrink-0 justify-end">
+							<Button
+								size="sm"
+								variant="primary"
+								onclick={() => {
+									log = `run graphql`;
+								}}>Execute</Button
+							>
+						</div>
 					</div>
 				{/if}
 			{/snippet}

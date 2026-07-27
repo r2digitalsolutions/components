@@ -145,11 +145,18 @@ export function attachMarqueeSelect(
 	let dragging = false;
 	let pointerId: number | null = null;
 
+	function unbindWindow() {
+		window.removeEventListener('pointermove', onPointerMove);
+		window.removeEventListener('pointerup', onPointerUp);
+		window.removeEventListener('pointercancel', onPointerUp);
+	}
+
 	function finish(e: PointerEvent) {
 		if (!active) return;
 		active = false;
 		const wasDragging = dragging;
 		dragging = false;
+		unbindWindow();
 		if (pointerId != null) {
 			try {
 				container.releasePointerCapture(pointerId);
@@ -180,11 +187,15 @@ export function attachMarqueeSelect(
 		active = true;
 		dragging = false;
 		pointerId = e.pointerId;
-		// Do NOT capture yet — capture suppresses click on the original target (cells/rows).
+		// Defer capture until drag threshold so cell/row clicks still fire.
+		window.addEventListener('pointermove', onPointerMove);
+		window.addEventListener('pointerup', onPointerUp);
+		window.addEventListener('pointercancel', onPointerUp);
 	}
 
 	function onPointerMove(e: PointerEvent) {
 		if (!active) return;
+		if (pointerId != null && e.pointerId !== pointerId) return;
 		const pt = pointerInContainer(e, container);
 		const dx = pt.x - originX;
 		const dy = pt.y - originY;
@@ -211,6 +222,7 @@ export function attachMarqueeSelect(
 	}
 
 	function onPointerUp(e: PointerEvent) {
+		if (pointerId != null && e.pointerId !== pointerId) return;
 		finish(e);
 	}
 
@@ -219,16 +231,11 @@ export function attachMarqueeSelect(
 	}
 
 	container.addEventListener('pointerdown', onPointerDown);
-	container.addEventListener('pointermove', onPointerMove);
-	container.addEventListener('pointerup', onPointerUp);
-	container.addEventListener('pointercancel', onPointerUp);
 	container.addEventListener('lostpointercapture', onLostCapture);
 
 	return () => {
+		unbindWindow();
 		container.removeEventListener('pointerdown', onPointerDown);
-		container.removeEventListener('pointermove', onPointerMove);
-		container.removeEventListener('pointerup', onPointerUp);
-		container.removeEventListener('pointercancel', onPointerUp);
 		container.removeEventListener('lostpointercapture', onLostCapture);
 	};
 }

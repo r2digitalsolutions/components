@@ -66,6 +66,12 @@
 		labels?: ResourceStudioLabels;
 		views?: ResourceStudioView[];
 		activeViewId?: string;
+		/** Filter `records` locally by the search box. Set false for server-side search. */
+		clientSearch?: boolean;
+		/** Open / bind the conditional format rules panel. */
+		formatPanelOpen?: boolean;
+		/** Override bulk dock actions (defaults from capabilities). */
+		actions?: BulkAction[];
 		class?: string;
 		toolbar?: Snippet;
 		sidebarItem?: Snippet<[ResourceDefinition, boolean]>;
@@ -90,6 +96,8 @@
 		onexport?: (ids: string[] | 'all') => void;
 		onimport?: (file: File) => void;
 		oncelledit?: (id: string, fieldId: string, value: unknown) => void;
+		/** Fired for dock actions not handled built-in (e.g. custom bulk workflow). */
+		onaction?: (id: string, rowIds: string[]) => void;
 		onselectionchange?: (s: GridSelection) => void;
 		onnoteschange?: (notes: CellNote[]) => void;
 		onformatruleschange?: (rules: ConditionalFormatRule[]) => void;
@@ -116,6 +124,9 @@
 		labels = {},
 		views = [],
 		activeViewId = $bindable(''),
+		clientSearch = true,
+		formatPanelOpen = $bindable(false),
+		actions,
 		class: className = '',
 		toolbar,
 		sidebarItem,
@@ -140,6 +151,7 @@
 		onexport,
 		onimport,
 		oncelledit,
+		onaction,
 		onselectionchange,
 		onnoteschange,
 		onformatruleschange,
@@ -156,7 +168,6 @@
 	let pendingDeleteIds = $state<string[]>([]);
 	let importOpen = $state(false);
 	let focusedRecord = $state<Record<string, unknown> | null>(null);
-	let showFormatPanel = $state(false);
 	let draftForm = $state<SchemaFormValues>({});
 
 	const formSchema = $derived(
@@ -203,8 +214,29 @@
 		return [...map.entries()];
 	});
 
+	const filteredRecords = $derived.by(() => {
+		const q = query.trim().toLowerCase();
+		if (!clientSearch || !q) return records;
+		const fieldIds =
+			activeResource?.fields.filter((f) => !f.hidden).map((f) => f.id) ??
+			(records[0] ? Object.keys(records[0]) : []);
+		return records.filter((row) =>
+			fieldIds.some((id) => String(row[id] ?? '').toLowerCase().includes(q))
+		);
+	});
+
+	const visibleCount = $derived(
+		clientSearch ? filteredRecords.length : (totalRecords ?? records.length)
+	);
+
 	const totalPages = $derived(
-		Math.max(1, Math.ceil((totalRecords ?? records.length) / Math.max(pageSize, 1)))
+		Math.max(
+			1,
+			Math.ceil(
+				(clientSearch ? filteredRecords.length : (totalRecords ?? records.length)) /
+					Math.max(pageSize, 1)
+			)
+		)
 	);
 
 	const showSidebar = $derived(layout !== 'main-only');
@@ -332,7 +364,7 @@
 			return;
 		}
 		if (id === 'format' && caps.conditionalFormat) {
-			showFormatPanel = true;
+			formatPanelOpen = true;
 			return;
 		}
 		if (id === 'edit' && ids[0]) {
@@ -340,16 +372,18 @@
 			if (row) openEdit(row);
 			return;
 		}
+		onaction?.(id, ids);
 		void sel;
 	}
 
 	const dockActions = $derived.by((): BulkAction[] => {
+		if (actions) return actions;
 		const list: BulkAction[] = [];
 		if (caps.notes) list.push({ id: 'note', label: 'Note', variant: 'secondary' });
 		if (caps.update) list.push({ id: 'edit', label: 'Edit', variant: 'secondary' });
 		if (caps.duplicate) list.push({ id: 'duplicate', label: 'Duplicate', variant: 'secondary' });
 		if (caps.export) list.push({ id: 'export', label: 'Export', variant: 'secondary' });
-		if (caps.conditionalFormat) list.push({ id: 'format', label: 'Format', variant: 'secondary' });
+		if (caps.conditionalFormat) list.push({ id: 'format', label: 'Rules', variant: 'secondary' });
 		list.push({ id: 'copy', label: 'Copy', variant: 'ghost' });
 		if (caps.delete)
 			list.push({ id: 'delete', label: 'Delete', variant: 'destructive', confirm: true });
@@ -536,6 +570,15 @@
 			{#if caps.create}
 				<Button size="sm" variant="primary" onclick={openCreate}>{L.addRecord}</Button>
 			{/if}
+			{#if caps.conditionalFormat}
+				<Button
+					size="sm"
+					variant={formatPanelOpen ? 'secondary' : 'ghost'}
+					onclick={() => (formatPanelOpen = !formatPanelOpen)}
+				>
+					Rules{formatRules.length ? ` (${formatRules.length})` : ''}
+				</Button>
+			{/if}
 			{#if caps.import}
 				<Button size="sm" variant="secondary" onclick={() => (importOpen = true)}>Import</Button>
 			{/if}
@@ -579,10 +622,13 @@
 					placeholder={L.searchPlaceholder}
 					class="min-w-[12rem] flex-1"
 					onsubmit={(q) => onsearch?.(q)}
-					oninput={() => onsearch?.(query)}
+					oninput={() => {
+						page = 1;
+						onsearch?.(query);
+					}}
 				/>
 				<span class="text-[11px] text-muted tabular-nums">
-					{totalRecords ?? records.length}
+					{visibleCount}
 					{L.records}
 				</span>
 			{/if}
@@ -591,7 +637,9 @@
 		<div class="flex min-h-0 flex-1 flex-col lg:flex-row">
 			<div class="flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-hidden p-3">
 				{#if activeMode === 'query' && queryPanel}
-					<div class="min-h-0 flex-1 overflow-auto rounded-xl border border-border bg-surface-elevated p-3">
+					<div
+						class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-surface-elevated p-3"
+					>
 						{@render queryPanel()}
 					</div>
 				{:else if activeMode === 'activity' && activityPanel}
@@ -617,13 +665,15 @@
 							<Skeleton class="h-9 w-full" />
 						{/each}
 					</div>
-				{:else if records.length === 0}
+				{:else if filteredRecords.length === 0}
 					{#if empty}
 						{@render empty()}
 					{:else}
 						<EmptyState
 							title={`No ${L.records}`}
-							description="Create a record or adjust your search."
+							description={query.trim()
+								? 'No matches for your search.'
+								: 'Create a record or adjust your search.'}
 						>
 							{#snippet action()}
 								{#if caps.create}
@@ -637,7 +687,7 @@
 						<DataGrid
 							class="min-h-0 flex-1"
 							{columns}
-							rows={records}
+							rows={filteredRecords}
 							rowKey={primaryKey}
 							bind:selection
 							bind:notes
@@ -654,7 +704,7 @@
 							selectCells={false}
 							selectColumns={false}
 							selectOnClick={false}
-							marqueeSelect={false}
+							marqueeSelect
 							contextMenu
 							actions={dockActions}
 							compact
@@ -670,7 +720,7 @@
 							onrowdblclick={onRowDblClick}
 						/>
 
-						{#if (totalRecords ?? 0) > pageSize || totalPages > 1}
+						{#if visibleCount > pageSize || totalPages > 1}
 							<div class="flex shrink-0 justify-end">
 								<Pagination
 									bind:page
@@ -682,7 +732,7 @@
 					</div>
 				{/if}
 
-				{#if showFormatPanel && caps.conditionalFormat && activeMode === 'browse'}
+				{#if formatPanelOpen && caps.conditionalFormat && activeMode === 'browse'}
 					<div class="shrink-0 space-y-2">
 						<ConditionalFormatPanel
 							bind:rules={formatRules}
@@ -690,7 +740,7 @@
 							onchange={(r) => onformatruleschange?.(r)}
 						/>
 						<div class="flex justify-end">
-							<Button size="sm" variant="ghost" onclick={() => (showFormatPanel = false)}
+							<Button size="sm" variant="ghost" onclick={() => (formatPanelOpen = false)}
 								>Hide rules</Button
 							>
 						</div>
