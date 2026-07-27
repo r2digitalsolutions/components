@@ -27,16 +27,13 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
           cache: pnpm
 
-      # Trusted Publishing (OIDC) needs a recent npm CLI
-      - name: Update npm
-        run: npm install -g npm@latest
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Build package
         run: pnpm prepack
 
-      # Do NOT set NODE_AUTH_TOKEN — it forces legacy tokens over OIDC
+      # OIDC Trusted Publishing: do NOT set NODE_AUTH_TOKEN
+      # npm 11.5+ (bundled with Node 25) is enough — avoid npm@12 (no Node 25)
       - name: Publish to npm
         run: npm publish --access public --provenance
