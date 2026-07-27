@@ -170,3 +170,40 @@ export function layoutBounds(layout: GridItem[]): { cols: number; rows: number }
 	}
 	return { cols, rows };
 }
+
+/**
+ * Scale X/W when the column count changes so widgets keep relative proportions.
+ */
+export function rescaleLayout(
+	layout: GridItem[],
+	fromCols: number,
+	toCols: number,
+	options: LayoutGridOptions = {}
+): GridItem[] {
+	if (toCols <= 0) return layout;
+	if (fromCols <= 0 || fromCols === toCols) {
+		const clamped = layout.map((it) => clampItem(it, toCols));
+		return options.compact === false ? clamped : compactLayout(clamped, toCols);
+	}
+
+	const scale = toCols / fromCols;
+	const next = layout.map((it) => {
+		const w = Math.max(it.minW ?? 1, Math.round(it.w * scale));
+		const x = Math.round(it.x * scale);
+		return clampItem({ ...it, x, w }, toCols);
+	});
+
+	return options.compact === false ? next : compactLayout(next, toCols);
+}
+
+export type GridDensity = 'comfortable' | 'default' | 'compact' | 'dense';
+
+export const GRID_DENSITY: Record<
+	GridDensity,
+	{ cols: number; rowHeight: number; gap: number }
+> = {
+	comfortable: { cols: 12, rowHeight: 96, gap: 16 },
+	default: { cols: 12, rowHeight: 80, gap: 12 },
+	compact: { cols: 12, rowHeight: 64, gap: 8 },
+	dense: { cols: 12, rowHeight: 52, gap: 6 }
+};

@@ -776,6 +776,7 @@ export type {
 	WidgetResizeEdge,
 	WidgetRect
 } from './components/molecules/WidgetFrame/WidgetFrame.svelte';
+export { default as DashboardGridToolbar } from './components/molecules/DashboardGridToolbar/DashboardGridToolbar.svelte';
 export { default as WidgetCanvas } from './components/molecules/WidgetCanvas/WidgetCanvas.svelte';
 export type {
 	WidgetCanvasContext,
@@ -1101,7 +1102,11 @@ export type {
 	RelatedLead
 } from './components/organisms/LeadDetailPage/LeadDetailPage.svelte';
 export { default as DashboardGrid } from './components/organisms/DashboardGrid/DashboardGrid.svelte';
-export type { DashboardWidgetMeta } from './components/organisms/DashboardGrid/DashboardGrid.svelte';
+export type {
+	DashboardWidgetMeta,
+	DashboardGridSettings,
+	DashboardGridDensity
+} from './components/organisms/DashboardGrid/DashboardGrid.svelte';
 export { default as DashboardBuilderPage } from './components/organisms/DashboardBuilderPage/DashboardBuilderPage.svelte';
 export type {
 	DashboardBuilderWidgetType,
@@ -1135,6 +1140,7 @@ export {
 	DEFAULT_COLS,
 	DEFAULT_ROW_HEIGHT,
 	DEFAULT_GAP,
+	GRID_DENSITY,
 	clampItem,
 	rectsOverlap,
 	findCollisions,
@@ -1145,9 +1151,10 @@ export {
 	removeItem,
 	serializeLayout,
 	parseLayout,
-	layoutBounds
+	layoutBounds,
+	rescaleLayout
 } from './utils/layoutGrid.js';
-export type { GridItem, LayoutGridOptions } from './utils/layoutGrid.js';
+export type { GridItem, LayoutGridOptions, GridDensity } from './utils/layoutGrid.js';
 export { encodeQR, qrToSvgPath, punchLogoHole } from './utils/qr.js';
 export { renderMarkdown, renderInline, escapeHtml, splitTableRow, slugifyHeading } from './utils/markdown.js';
 export {
