@@ -36,16 +36,16 @@
 	class={[
 		'flex items-start justify-between gap-4',
 		variant === 'card' && 'rounded-xl border border-border bg-surface-elevated px-4 py-3',
-		variant === 'flush' && 'px-1 py-3.5',
+		variant === 'flush' && 'px-4 py-3',
 		variant === 'plain' && 'py-2',
 		disabled && 'opacity-60',
 		className
 	]}
 >
-	<div class="min-w-0 space-y-1">
-		<p class="text-sm font-medium text-primary">{title}</p>
+	<div class="min-w-0 space-y-0.5">
+		<p class="text-sm font-medium leading-snug text-primary">{title}</p>
 		{#if description}
-			<p class="text-xs leading-relaxed text-muted">{description}</p>
+			<p class="text-xs leading-snug text-muted">{description}</p>
 		{/if}
 		{#if hint}
 			<FieldHint text={hint} tone="muted" />

@@ -309,7 +309,7 @@
 			{#snippet icon()}
 				<Bell class="h-4 w-4" />
 			{/snippet}
-			<div class="divide-y divide-border">
+			<div class="-mx-4 divide-y divide-border sm:-mx-5">
 				<SettingsRow
 					variant="flush"
 					title="Product updates"
@@ -348,7 +348,7 @@
 			{#snippet icon()}
 				<Shield class="h-4 w-4" />
 			{/snippet}
-			<div class="divide-y divide-border">
+			<div class="-mx-4 divide-y divide-border sm:-mx-5">
 				<SettingsRow
 					variant="flush"
 					title="Public profile"

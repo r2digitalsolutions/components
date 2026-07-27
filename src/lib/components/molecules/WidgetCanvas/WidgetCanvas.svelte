@@ -89,8 +89,7 @@
 				boardW = layout.width;
 				boardH = layout.height;
 			} else {
-				/** -2px: deja sitio al box-shadow del tablero (si no, overflow:hidden lo recorta) */
-				const layout = fitBoardToAutoCells(Math.max(0, vw - 2), Math.max(0, vh - 2), n);
+				const layout = fitBoardToAutoCells(vw, vh, n);
 				cellSize = layout.cellSize;
 				boardW = layout.width;
 				boardH = layout.height;
@@ -170,17 +169,18 @@
 	});
 
 	const gridLine = 'color-mix(in oklab, var(--color-border, #e5e7eb) 70%, transparent)';
-	/** Rejilla + borde der/inf (el background repetido no pinta la última línea en el edge) */
+	/**
+	 * Offset -1px: sin la línea gruesa en izq/arriba (queda en el edge del board),
+	 * y sí aparece la de der/abajo (que el repeat normal no pinta).
+	 */
 	const gridStyle = $derived(
 		showGrid
 			? [
 					`background-image:`,
 					`linear-gradient(to right, ${gridLine} 1px, transparent 1px),`,
-					`linear-gradient(to bottom, ${gridLine} 1px, transparent 1px),`,
-					`linear-gradient(to left, ${gridLine} 1px, transparent 1px),`,
-					`linear-gradient(to top, ${gridLine} 1px, transparent 1px);`,
-					`background-size:${cellSize}px ${cellSize}px,${cellSize}px ${cellSize}px,100% 100%,100% 100%;`,
-					`background-repeat:repeat,repeat,no-repeat,no-repeat;`
+					`linear-gradient(to bottom, ${gridLine} 1px, transparent 1px);`,
+					`background-size:${cellSize}px ${cellSize}px;`,
+					`background-position:-1px -1px;`
 				].join('')
 			: ''
 	);
@@ -191,9 +191,7 @@
 			mode !== 'scroll' && cellSizeMode === 'auto'
 				? `margin:${Math.max(0, (viewportH - b.height) / 2)}px ${Math.max(0, (viewportW - b.width) / 2)}px 0;`
 				: '';
-		/** Fuera del box: los widgets no lo tapan; fit reserva 2px para que no lo recorte overflow */
-		const frame = `box-shadow:0 0 0 1px var(--color-border, #e5e7eb);`;
-		return `width:${b.width}px;height:${b.height}px;min-width:${b.width}px;min-height:${b.height}px;${center}${frame}${gridStyle}`;
+		return `width:${b.width}px;height:${b.height}px;min-width:${b.width}px;min-height:${b.height}px;${center}${gridStyle}`;
 	});
 </script>
 
@@ -265,11 +263,17 @@
 	{/if}
 
 	<div
-		class={['w-full rounded-2xl border border-border bg-surface-overlay/40', overflowClass].join(' ')}
+		class={['w-full rounded-2xl border border-border bg-surface', overflowClass].join(' ')}
 		style={`height:${effectiveViewportHeight};`}
 		bind:this={viewportEl}
 	>
-		<div class="relative overflow-hidden bg-surface" style={boardStyle}>
+		<div
+			class={[
+				'relative overflow-hidden bg-surface',
+				mode !== 'scroll' && cellSizeMode === 'auto' && 'ring-1 ring-border'
+			]}
+			style={boardStyle}
+		>
 			{#if children}
 				{@render children()}
 			{/if}

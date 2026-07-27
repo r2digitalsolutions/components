@@ -106,10 +106,10 @@
 	}: NotificationPreferencesPageProps = $props();
 </script>
 
-<div class={['mx-auto w-full max-w-2xl space-y-6', className]}>
+<div class={['mx-auto w-full max-w-2xl space-y-5', className]}>
 	<PageHeader {title} {description} />
 
-	<Stack gap="lg">
+	<Stack gap="md">
 		{#each groups as group (group.id)}
 			<NotificationSettingsGroup
 				title={group.title}

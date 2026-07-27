@@ -30,10 +30,10 @@
 	{/if}
 
 	<div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-		<div class="min-w-0 space-y-1">
+		<div class="min-w-0 space-y-0.5">
 			<h1 class="truncate text-2xl font-semibold tracking-tight text-primary">{title}</h1>
 			{#if description}
-				<p class="max-w-2xl text-sm text-muted leading-relaxed">{description}</p>
+				<p class="max-w-2xl text-sm leading-snug text-muted">{description}</p>
 			{/if}
 			{#if meta}
 				<div class="pt-1">

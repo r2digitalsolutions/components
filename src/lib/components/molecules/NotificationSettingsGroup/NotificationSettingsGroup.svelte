@@ -26,11 +26,11 @@
 	}: NotificationSettingsGroupProps = $props();
 </script>
 
-<section class={['w-full space-y-3', className]}>
-	<header class="space-y-1 px-1">
-		<h3 class="text-sm font-semibold text-primary">{title}</h3>
+<section class={['w-full space-y-2', className]}>
+	<header class="space-y-0.5">
+		<h3 class="text-sm font-semibold leading-snug text-primary">{title}</h3>
 		{#if description}
-			<p class="text-xs leading-relaxed text-muted">{description}</p>
+			<p class="text-xs leading-snug text-muted">{description}</p>
 		{/if}
 	</header>
 
