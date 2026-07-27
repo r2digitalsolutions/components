@@ -11,6 +11,8 @@
 		/** Soft warning threshold as fraction of total (default 0.8) */
 		warnAt?: number;
 		planName?: string;
+		/** Nested card chrome — less padding, no outer shadow */
+		compact?: boolean;
 		class?: string;
 		onupgrade?: () => void;
 		onmanage?: () => void;
@@ -22,6 +24,7 @@
 		total = 10,
 		warnAt = 0.8,
 		planName,
+		compact = false,
 		class: className = '',
 		onupgrade,
 		onmanage
@@ -34,46 +37,76 @@
 	);
 </script>
 
-<div
-	class={[
-		'w-full rounded-2xl border border-border bg-surface-elevated p-4 shadow-sm',
-		className
-	]}
->
-	<div class="flex items-start gap-3">
-		<span
-			class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-500/10 text-brand-600 dark:text-brand-400"
-		>
-			<Users class="h-5 w-5" strokeWidth={2} />
-		</span>
-		<div class="min-w-0 flex-1 space-y-3">
-			<div class="flex flex-wrap items-center justify-between gap-2">
-				<div class="min-w-0">
-					<p class="text-sm font-semibold text-primary">{label}</p>
-					<p class="text-xs text-muted">
-						<span class="tabular-nums font-medium text-secondary">{used}</span>
-						of
-						<span class="tabular-nums">{total}</span>
-						used · {remaining} left
-					</p>
-				</div>
-				{#if planName}
-					<Badge size="sm" variant="secondary">{planName}</Badge>
+{#if compact}
+	<div class={['w-full space-y-2', className]}>
+		<div class="flex flex-wrap items-center justify-between gap-2">
+			<p class="text-xs font-medium text-muted">
+				{label}
+				<span class="tabular-nums text-secondary">
+					· {used}/{total}
+				</span>
+				{#if remaining === 0}
+					<span class="text-amber-600 dark:text-amber-400"> · full</span>
 				{/if}
-			</div>
-
-			<Meter value={used} max={total} {tone} size="sm" showValue={false} />
-
-			{#if onupgrade || onmanage}
-				<div class="flex flex-wrap gap-2">
-					{#if onupgrade && ratio >= warnAt}
-						<Button size="xs" onclick={() => onupgrade?.()}>Upgrade seats</Button>
-					{/if}
-					{#if onmanage}
-						<Button size="xs" variant="ghost" onclick={() => onmanage?.()}>Manage</Button>
-					{/if}
-				</div>
+			</p>
+			{#if planName}
+				<Badge size="sm" variant="secondary">{planName}</Badge>
 			{/if}
 		</div>
+		<Meter value={used} max={total} {tone} size="sm" showValue={false} />
+		{#if onupgrade || onmanage}
+			<div class="flex flex-wrap gap-2">
+				{#if onupgrade && ratio >= warnAt}
+					<Button size="xs" onclick={() => onupgrade?.()}>Upgrade</Button>
+				{/if}
+				{#if onmanage}
+					<Button size="xs" variant="ghost" onclick={() => onmanage?.()}>Manage</Button>
+				{/if}
+			</div>
+		{/if}
 	</div>
-</div>
+{:else}
+	<div
+		class={[
+			'w-full rounded-2xl border border-border bg-surface-elevated p-4 shadow-sm',
+			className
+		]}
+	>
+		<div class="flex items-start gap-3">
+			<span
+				class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-500/10 text-brand-600 dark:text-brand-400"
+			>
+				<Users class="h-5 w-5" strokeWidth={2} />
+			</span>
+			<div class="min-w-0 flex-1 space-y-3">
+				<div class="flex flex-wrap items-center justify-between gap-2">
+					<div class="min-w-0">
+						<p class="text-sm font-semibold text-primary">{label}</p>
+						<p class="text-xs text-muted">
+							<span class="tabular-nums font-medium text-secondary">{used}</span>
+							of
+							<span class="tabular-nums">{total}</span>
+							used · {remaining} left
+						</p>
+					</div>
+					{#if planName}
+						<Badge size="sm" variant="secondary">{planName}</Badge>
+					{/if}
+				</div>
+
+				<Meter value={used} max={total} {tone} size="sm" showValue={false} />
+
+				{#if onupgrade || onmanage}
+					<div class="flex flex-wrap gap-2">
+						{#if onupgrade && ratio >= warnAt}
+							<Button size="xs" onclick={() => onupgrade?.()}>Upgrade seats</Button>
+						{/if}
+						{#if onmanage}
+							<Button size="xs" variant="ghost" onclick={() => onmanage?.()}>Manage</Button>
+						{/if}
+					</div>
+				{/if}
+			</div>
+		</div>
+	</div>
+{/if}
