@@ -61,7 +61,12 @@
 						<p class="text-xs text-muted">Last changed 3 months ago</p>
 					</div>
 				</div>
-				<Button size="sm" variant="secondary" onclick={() => onchangePassword?.()}>
+				<Button
+					size="sm"
+					variant="secondary"
+					class="shrink-0 whitespace-nowrap"
+					onclick={() => onchangePassword?.()}
+				>
 					Change password
 				</Button>
 			</div>

@@ -734,6 +734,11 @@ export type { AuditEventSeverity } from './components/molecules/AuditEventRow/Au
 export { default as QuietHoursRow } from './components/molecules/QuietHoursRow/QuietHoursRow.svelte';
 export type { QuietHoursValue } from './components/molecules/QuietHoursRow/QuietHoursRow.svelte';
 export { default as EntityPreview } from './components/molecules/EntityPreview/EntityPreview.svelte';
+export { default as SelectCard } from './components/molecules/SelectCard/SelectCard.svelte';
+export type {
+	SelectCardLayout,
+	SelectCardCheck
+} from './components/molecules/SelectCard/SelectCard.svelte';
 export { default as StickerPicker } from './components/molecules/StickerPicker/StickerPicker.svelte';
 export type { Sticker } from './components/molecules/StickerPicker/StickerPicker.svelte';
 export { default as AttachmentChip } from './components/molecules/AttachmentChip/AttachmentChip.svelte';
@@ -1038,7 +1043,10 @@ export { default as ProjectOverviewPage } from './components/organisms/ProjectOv
 export type {
 	ProjectTaskSummary,
 	ProjectGoal,
-	ProjectTask
+	ProjectTask,
+	ProjectStatus,
+	ProjectLink,
+	ProjectMilestone
 } from './components/organisms/ProjectOverviewPage/ProjectOverviewPage.svelte';
 export { default as OrderTrackingPage } from './components/organisms/OrderTrackingPage/OrderTrackingPage.svelte';
 export type {
