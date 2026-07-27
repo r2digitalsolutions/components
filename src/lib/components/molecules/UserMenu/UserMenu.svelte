@@ -28,6 +28,8 @@
 		/** `ghost` for navbars; `outline` for standalone */
 		variant?: 'ghost' | 'outline';
 		align?: 'start' | 'end';
+		/** Open menu above (`top`) or below (`bottom`) the trigger */
+		side?: 'top' | 'bottom';
 		showMeta?: boolean;
 		/** Show email/role under the name in the trigger */
 		showSubtitle?: boolean;
@@ -61,6 +63,7 @@
 		size = 'md',
 		variant = 'outline',
 		align = 'end',
+		side = 'bottom',
 		showMeta = true,
 		showSubtitle = true,
 		showChevron = true,
@@ -168,7 +171,8 @@
 	{#if open}
 		<div
 			class={[
-				'absolute top-full z-50 mt-2 w-[min(100vw-2rem,18rem)] overflow-hidden rounded-2xl border border-border bg-surface-elevated shadow-xl',
+				'absolute z-50 w-[min(100vw-2rem,18rem)] overflow-hidden rounded-2xl border border-border bg-surface-elevated shadow-xl',
+				side === 'top' ? 'bottom-full mb-2' : 'top-full mt-2',
 				align === 'end' ? 'right-0' : 'left-0'
 			]}
 			role="menu"

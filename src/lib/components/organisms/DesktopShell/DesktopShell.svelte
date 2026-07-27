@@ -79,7 +79,7 @@
 		| 'paper'
 		| 'custom';
 
-	export type DesktopShellHeight = 'sm' | 'md' | 'lg' | 'xl';
+	export type DesktopShellHeight = 'sm' | 'md' | 'lg' | 'xl' | 'full';
 
 	type ContextTarget =
 		| { type: 'desktop' }
@@ -129,7 +129,8 @@
 		sm: 'h-[28rem]',
 		md: 'h-[36rem]',
 		lg: 'h-[44rem]',
-		xl: 'h-[min(52rem,85vh)]'
+		xl: 'h-[min(52rem,85vh)]',
+		full: 'h-full min-h-0 rounded-none border-0 shadow-none'
 	};
 
 	const WALLPAPER_CLASS: Record<Exclude<DesktopWallpaper, 'custom'>, string> = {
@@ -1052,6 +1053,7 @@
 							size="sm"
 							variant="ghost"
 							align="end"
+							side="top"
 							showSubtitle={false}
 							showChevron={false}
 							items={userItems}

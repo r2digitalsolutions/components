@@ -62,10 +62,11 @@
 		if (left + menuW > window.innerWidth - pad) {
 			left = Math.max(pad, window.innerWidth - menuW - pad);
 		}
+		// inset:auto must come BEFORE top/left — shorthand would clear them
 		if (openUp) {
-			menuStyle = `position:fixed;bottom:${Math.round(window.innerHeight - rect.top + 6)}px;left:${Math.round(left)}px;margin:0;inset:auto;`;
+			menuStyle = `position:fixed;margin:0;inset:auto;bottom:${Math.round(window.innerHeight - rect.top + 6)}px;left:${Math.round(left)}px;`;
 		} else {
-			menuStyle = `position:fixed;top:${Math.round(rect.bottom + 6)}px;left:${Math.round(left)}px;margin:0;inset:auto;`;
+			menuStyle = `position:fixed;margin:0;inset:auto;top:${Math.round(rect.bottom + 6)}px;left:${Math.round(left)}px;`;
 		}
 	}
 
@@ -220,3 +221,10 @@
 		{/each}
 	{/if}
 </div>
+
+<style>
+	/* UA popover defaults to inset:0 — force anchor via inline style */
+	.menubar-popover:popover-open {
+		inset: unset;
+	}
+</style>

@@ -6,7 +6,7 @@ const meta = {
 	component: DesktopShellStory,
 	tags: ['autodocs'],
 	parameters: {
-		layout: 'padded'
+		layout: 'fullscreen'
 	},
 	argTypes: {
 		example: {

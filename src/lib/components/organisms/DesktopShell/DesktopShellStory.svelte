@@ -132,7 +132,7 @@
 	let showStart = $state(true);
 	let showMenubar = $state(true);
 	let showCommandPalette = $state(true);
-	let height = $state<'sm' | 'md' | 'lg' | 'xl'>('md');
+	let height = $state<'sm' | 'md' | 'lg' | 'xl' | 'full'>('full');
 	let startOpen = $state(false);
 	let commandOpen = $state(false);
 	let last = $state('');
@@ -149,7 +149,7 @@
 			showStart = true;
 			showMenubar = true;
 			showCommandPalette = true;
-			height = 'md';
+			height = 'full';
 			startOpen = false;
 			commandOpen = false;
 		} else if (example === 'icons') {
@@ -163,7 +163,7 @@
 			showStart = true;
 			showMenubar = true;
 			showCommandPalette = true;
-			height = 'md';
+			height = 'full';
 			startOpen = false;
 			commandOpen = false;
 		} else if (example === 'empty') {
@@ -177,7 +177,7 @@
 			showStart = true;
 			showMenubar = true;
 			showCommandPalette = true;
-			height = 'md';
+			height = 'full';
 			startOpen = true;
 			commandOpen = false;
 		} else if (example === 'many') {
@@ -205,7 +205,7 @@
 			showStart = true;
 			showMenubar = true;
 			showCommandPalette = true;
-			height = 'lg';
+			height = 'full';
 			startOpen = false;
 			commandOpen = false;
 		} else if (example === 'widgets') {
@@ -219,7 +219,7 @@
 			showStart = true;
 			showMenubar = true;
 			showCommandPalette = true;
-			height = 'lg';
+			height = 'full';
 			startOpen = false;
 			commandOpen = false;
 		} else if (example === 'commands') {
@@ -233,7 +233,7 @@
 			showStart = true;
 			showMenubar = true;
 			showCommandPalette = true;
-			height = 'md';
+			height = 'full';
 			startOpen = false;
 			commandOpen = true;
 		} else if (example === 'apps') {
@@ -256,7 +256,7 @@
 			showStart = true;
 			showMenubar = true;
 			showCommandPalette = true;
-			height = 'lg';
+			height = 'full';
 			startOpen = false;
 			commandOpen = false;
 		} else if (example === 'tall') {
@@ -270,7 +270,7 @@
 			showStart = true;
 			showMenubar = true;
 			showCommandPalette = true;
-			height = 'xl';
+			height = 'full';
 			startOpen = false;
 			commandOpen = false;
 		} else {
@@ -284,127 +284,129 @@
 			showStart = true;
 			showMenubar = true;
 			showCommandPalette = true;
-			height = 'md';
+			height = 'full';
 			startOpen = false;
 			commandOpen = false;
 		}
 	});
 </script>
 
-<div class="space-y-3 p-2 sm:p-4">
+<div class="flex h-dvh min-h-0 flex-col">
 	{#if last}
-		<p class="text-xs text-muted">Last: {last}</p>
+		<p class="shrink-0 px-3 pt-2 text-xs text-muted">Last: {last}</p>
 	{/if}
 	{#if example === 'widgets'}
-		<p class="text-xs text-muted">
+		<p class="shrink-0 px-3 pt-2 text-xs text-muted">
 			Widgets a la derecha · clic derecho en icono / ventana / widget / escritorio · reloj abre calendario.
 		</p>
 	{/if}
 
-	<DesktopShell
-		bind:windows
-		bind:activeId
-		bind:wallpaper
-		bind:widgets
-		bind:startOpen
-		bind:commandOpen
-		bind:showDesktopIcons
-		bind:showWidgets
-		apps={catalog}
-		brand="Acme OS"
-		brandMark="A"
-		{showTaskbar}
-		{showStart}
-		{showMenubar}
-		{showCommandPalette}
-		{height}
-		onopen={(id) => (last = `Opened ${id}`)}
-		onclose={(id) => (last = `Closed ${id}`)}
-		onuseraction={(id) => (last = `User · ${id}`)}
-		onmenu={(id, parent) => (last = `Menu · ${parent}/${id}`)}
-	>
-		{#snippet render(win)}
-			<div class="h-full p-3 sm:p-4">
-				{#if win.kind === 'files'}
-					<div class="space-y-3">
-						<div class="flex items-center justify-between gap-2">
-							<p class="text-sm font-medium text-primary">Documents</p>
-							<Badge size="sm" variant="secondary">12</Badge>
+	<div class="min-h-0 flex-1">
+		<DesktopShell
+			bind:windows
+			bind:activeId
+			bind:wallpaper
+			bind:widgets
+			bind:startOpen
+			bind:commandOpen
+			bind:showDesktopIcons
+			bind:showWidgets
+			apps={catalog}
+			brand="Acme OS"
+			brandMark="A"
+			{showTaskbar}
+			{showStart}
+			{showMenubar}
+			{showCommandPalette}
+			{height}
+			onopen={(id) => (last = `Opened ${id}`)}
+			onclose={(id) => (last = `Closed ${id}`)}
+			onuseraction={(id) => (last = `User · ${id}`)}
+			onmenu={(id, parent) => (last = `Menu · ${parent}/${id}`)}
+		>
+			{#snippet render(win)}
+				<div class="h-full p-3 sm:p-4">
+					{#if win.kind === 'files'}
+						<div class="space-y-3">
+							<div class="flex items-center justify-between gap-2">
+								<p class="text-sm font-medium text-primary">Documents</p>
+								<Badge size="sm" variant="secondary">12</Badge>
+							</div>
+							<List
+								size="sm"
+								variant="plain"
+								items={[
+									{ id: '1', label: 'Q3 roadmap.pdf' },
+									{ id: '2', label: 'Brand guidelines.fig' },
+									{ id: '3', label: 'Invoice-2048.csv' },
+									{ id: '4', label: 'Onboarding checklist.md' }
+								]}
+							/>
 						</div>
-						<List
-							size="sm"
-							variant="plain"
-							items={[
-								{ id: '1', label: 'Q3 roadmap.pdf' },
-								{ id: '2', label: 'Brand guidelines.fig' },
-								{ id: '3', label: 'Invoice-2048.csv' },
-								{ id: '4', label: 'Onboarding checklist.md' }
-							]}
-						/>
-					</div>
-				{:else if win.kind === 'mail'}
-					<div class="space-y-2">
-						{#each [
-							{ from: 'Maya', subject: 'Design review tomorrow', time: '10:12' },
-							{ from: 'Ops', subject: 'Deploy window confirmed', time: '09:40' },
-							{ from: 'Billing', subject: 'Invoice ready', time: 'Yesterday' }
-						] as mail, i (i)}
-							<button
-								type="button"
-								class="flex w-full flex-col rounded-lg border border-border bg-surface px-3 py-2 text-left hover:border-brand-500/30"
-							>
-								<div class="flex items-center justify-between gap-2">
-									<span class="text-sm font-medium text-primary">{mail.from}</span>
-									<span class="text-[11px] text-muted">{mail.time}</span>
-								</div>
-								<span class="truncate text-xs text-secondary">{mail.subject}</span>
-							</button>
-						{/each}
-					</div>
-				{:else if win.kind === 'music'}
-					<div class="flex h-full flex-col justify-between gap-4">
-						<div>
-							<p class="text-xs uppercase tracking-wide text-muted">Now playing</p>
-							<p class="mt-1 text-base font-semibold text-primary">Midnight Grid</p>
-							<p class="text-sm text-secondary">Neon Transit · Album 04</p>
+					{:else if win.kind === 'mail'}
+						<div class="space-y-2">
+							{#each [
+								{ from: 'Maya', subject: 'Design review tomorrow', time: '10:12' },
+								{ from: 'Ops', subject: 'Deploy window confirmed', time: '09:40' },
+								{ from: 'Billing', subject: 'Invoice ready', time: 'Yesterday' }
+							] as mail, i (i)}
+								<button
+									type="button"
+									class="flex w-full flex-col rounded-lg border border-border bg-surface px-3 py-2 text-left hover:border-brand-500/30"
+								>
+									<div class="flex items-center justify-between gap-2">
+										<span class="text-sm font-medium text-primary">{mail.from}</span>
+										<span class="text-[11px] text-muted">{mail.time}</span>
+									</div>
+									<span class="truncate text-xs text-secondary">{mail.subject}</span>
+								</button>
+							{/each}
 						</div>
-						<div class="h-1.5 overflow-hidden rounded-full bg-surface-overlay">
-							<div class="h-full w-2/3 rounded-full bg-brand-500"></div>
+					{:else if win.kind === 'music'}
+						<div class="flex h-full flex-col justify-between gap-4">
+							<div>
+								<p class="text-xs uppercase tracking-wide text-muted">Now playing</p>
+								<p class="mt-1 text-base font-semibold text-primary">Midnight Grid</p>
+								<p class="text-sm text-secondary">Neon Transit · Album 04</p>
+							</div>
+							<div class="h-1.5 overflow-hidden rounded-full bg-surface-overlay">
+								<div class="h-full w-2/3 rounded-full bg-brand-500"></div>
+							</div>
+							<div class="flex gap-2">
+								<Button size="sm" variant="secondary" class="flex-1">Prev</Button>
+								<Button size="sm" class="flex-1">Pause</Button>
+								<Button size="sm" variant="secondary" class="flex-1">Next</Button>
+							</div>
 						</div>
-						<div class="flex gap-2">
-							<Button size="sm" variant="secondary" class="flex-1">Prev</Button>
-							<Button size="sm" class="flex-1">Pause</Button>
-							<Button size="sm" variant="secondary" class="flex-1">Next</Button>
-						</div>
-					</div>
-				{:else if win.kind === 'notes'}
-					<textarea
-						class="h-full min-h-[10rem] w-full resize-none rounded-lg border border-border bg-surface p-3 text-sm text-primary outline-none focus:ring-2 focus:ring-brand-500/30"
-						placeholder="Write a note…"
-					>Desktop polish checklist
+					{:else if win.kind === 'notes'}
+						<textarea
+							class="h-full min-h-[10rem] w-full resize-none rounded-lg border border-border bg-surface p-3 text-sm text-primary outline-none focus:ring-2 focus:ring-brand-500/30"
+							placeholder="Write a note…"
+						>Desktop polish checklist
 - Lucide icons (same size)
 - Context menus by target
 - Clock + Calendar popover
 - Top menubar + widgets</textarea>
-				{:else if win.kind === 'settings'}
-					<div class="space-y-1">
-						<SettingsRow title="Dark accents" description="Tint window chrome" checked />
-						<SettingsRow title="Desktop icons" description="Show app shortcuts" checked />
-						<SettingsRow title="Clock panel" description="Calendar in popover" checked />
-					</div>
-				{:else if win.kind === 'stats'}
-					<div class="grid grid-cols-2 gap-2">
-						<StatCard label="Sessions" value="1,284" delta="+8%" trend="up" variant="ghost" />
-						<StatCard label="Latency" value="42ms" delta="-3ms" trend="up" variant="ghost" />
-						<StatCard label="Errors" value="0.2%" delta="-0.1%" trend="up" variant="ghost" />
-						<StatCard label="Uptime" value="99.9%" delta="30d" trend="neutral" variant="ghost" />
-					</div>
-				{:else}
-					<p class="text-sm text-secondary">
-						Window <strong class="text-primary">{win.title}</strong>
-					</p>
-				{/if}
-			</div>
-		{/snippet}
-	</DesktopShell>
+					{:else if win.kind === 'settings'}
+						<div class="space-y-1">
+							<SettingsRow title="Dark accents" description="Tint window chrome" checked />
+							<SettingsRow title="Desktop icons" description="Show app shortcuts" checked />
+							<SettingsRow title="Clock panel" description="Calendar in popover" checked />
+						</div>
+					{:else if win.kind === 'stats'}
+						<div class="grid grid-cols-2 gap-2">
+							<StatCard label="Sessions" value="1,284" delta="+8%" trend="up" variant="ghost" />
+							<StatCard label="Latency" value="42ms" delta="-3ms" trend="up" variant="ghost" />
+							<StatCard label="Errors" value="0.2%" delta="-0.1%" trend="up" variant="ghost" />
+							<StatCard label="Uptime" value="99.9%" delta="30d" trend="neutral" variant="ghost" />
+						</div>
+					{:else}
+						<p class="text-sm text-secondary">
+							Window <strong class="text-primary">{win.title}</strong>
+						</p>
+					{/if}
+				</div>
+			{/snippet}
+		</DesktopShell>
+	</div>
 </div>
