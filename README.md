@@ -1,59 +1,60 @@
-# Svelte library
+# @r2digisolutions/components
 
-Everything you need to build a Svelte library, powered by [`sv`](https://npmjs.com/package/sv).
+Librería de componentes Svelte 5 — Atomic Design, Tailwind 4, Light/Dark mode.
 
-Read more about creating a library [in the docs](https://svelte.dev/docs/kit/packaging).
-
-## Creating a project
-
-If you're seeing this, you've probably already done this step. Congrats!
+## Desarrollo
 
 ```sh
-# create a new project in the current directory
-npx sv create
-
-# create a new project in my-app
-npx sv create my-app
+pnpm install
+pnpm dev
 ```
 
-## Developing
+Todo lo que está en `src/lib` forma parte de la librería. `src/routes` sirve como showcase.
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+## Storybook
 
 ```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
+pnpm storybook
 ```
 
-Everything inside `src/lib` is part of your library, everything inside `src/routes` can be used as a showcase or preview app.
-
-## Building
-
-To build your library:
+## Build
 
 ```sh
-npm pack
+pnpm prepack   # genera dist/ con svelte-package + publint
+pnpm build     # showcase app + prepack
 ```
 
-To create a production version of your showcase app:
+## Publicación
+
+El versionado usa [bumpp](https://github.com/antfu/bumpp) (semver). Al crear un tag `v*`, GitHub Actions publica en npm.
+
+### Requisitos previos (una sola vez)
+
+1. Acceso al scope npm `@r2digisolutions`
+2. Automation token en [npmjs.com](https://www.npmjs.com/) → Access Tokens
+3. Secret `NPM_TOKEN` en el repo GitHub (`Settings` → `Secrets and variables` → `Actions`)
+
+### Subir versión
+
+Working tree limpio, en `main`:
 
 ```sh
-npm run build
+pnpm release:patch   # 0.0.1 → 0.0.2
+pnpm release:minor   # 0.0.1 → 0.1.0
+pnpm release:major   # 0.0.1 → 1.0.0
+
+# O interactivo:
+pnpm release
 ```
 
-You can preview the production build with `npm run preview`.
+Esto hace bump de versión, commit, tag `vX.Y.Z` y push. CI construye con `pnpm prepack` y publica `@r2digisolutions/components`.
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
-
-## Publishing
-
-Go into the `package.json` and give your package the desired name through the `"name"` option. Also consider adding a `"license"` field and point it to a `LICENSE` file which you can create from a template (one popular option is the [MIT license](https://opensource.org/license/mit/)).
-
-To publish your library to [npm](https://www.npmjs.com):
+### Instalación (consumidores)
 
 ```sh
-npm publish
+pnpm add @r2digisolutions/components
 ```
-# components
+
+## Licencia
+
+MIT

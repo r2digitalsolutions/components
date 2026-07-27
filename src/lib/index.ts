@@ -206,6 +206,10 @@ export { default as CopyButton } from './components/molecules/CopyButton/CopyBut
 export { default as SegmentedControl } from './components/molecules/SegmentedControl/SegmentedControl.svelte';
 export type { SegmentItem } from './components/molecules/SegmentedControl/SegmentedControl.svelte';
 export { default as Popover } from './components/molecules/Popover/Popover.svelte';
+export type {
+	PopoverPlacement,
+	PopoverAlign
+} from './components/molecules/Popover/Popover.svelte';
 export { default as HoverCard } from './components/molecules/HoverCard/HoverCard.svelte';
 export { default as Timeline } from './components/molecules/Timeline/Timeline.svelte';
 export type { TimelineItem } from './components/molecules/Timeline/Timeline.svelte';
@@ -798,6 +802,13 @@ export type {
 } from './components/molecules/WidgetPicker/WidgetPicker.svelte';
 export { default as SessionPresenceBadge } from './components/molecules/SessionPresenceBadge/SessionPresenceBadge.svelte';
 export type { SessionPresence } from './components/molecules/SessionPresenceBadge/SessionPresenceBadge.svelte';
+export { default as DesktopAppIcon } from './components/molecules/DesktopAppIcon/DesktopAppIcon.svelte';
+export type {
+	DesktopIconId,
+	DesktopAppIconSize,
+	DesktopAppIconTone,
+	DesktopAppIconSurface
+} from './components/molecules/DesktopAppIcon/DesktopAppIcon.svelte';
 export { default as FloatingWindow } from './components/molecules/FloatingWindow/FloatingWindow.svelte';
 export type {
 	WindowRect,
@@ -1117,7 +1128,14 @@ export type {
 	DashboardBuilderSidebarTab
 } from './components/organisms/DashboardBuilderPage/DashboardBuilderPage.svelte';
 export { default as DesktopShell } from './components/organisms/DesktopShell/DesktopShell.svelte';
-export type { DesktopWindow } from './components/organisms/DesktopShell/DesktopShell.svelte';
+export type {
+	DesktopWindow,
+	DesktopApp,
+	DesktopWidget,
+	DesktopWidgetKind,
+	DesktopWallpaper,
+	DesktopShellHeight
+} from './components/organisms/DesktopShell/DesktopShell.svelte';
 
 // ── Templates ────────────────────────────────────────────────────────────────
 export { default as AuthTemplate } from './components/templates/AuthTemplate/AuthTemplate.svelte';
