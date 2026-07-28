@@ -1520,6 +1520,7 @@ export {
 	getSubtreeIds,
 	getAncestors,
 	isEffectivelyVisible,
+	paintTransformForLayer,
 	isDescendant,
 	canReparent,
 	ANCHOR_PRESETS,

@@ -9,6 +9,7 @@ import {
 	applyScrollBoxOffsets,
 	computeAbsoluteRects,
 	isEffectivelyVisible,
+	paintTransformForLayer,
 	reparentLayer,
 	scrollBoxOverflow,
 	scrollBarMetrics,
@@ -45,6 +46,32 @@ describe('isEffectivelyVisible', () => {
 		const layers = [parent, child];
 		expect(isEffectivelyVisible(layers, parent.id)).toBe(false);
 		expect(isEffectivelyVisible(layers, child.id)).toBe(false);
+	});
+});
+
+describe('paintTransformForLayer', () => {
+	it('orbits children around a rotated parent center', () => {
+		const parent = createCanvasLayer('group', {
+			name: 'Parent',
+			rotation: 90,
+			rect: { x: 0, y: 0, w: 100, h: 100 },
+			zIndex: 0
+		});
+		const child = createCanvasLayer('rect', {
+			name: 'Child',
+			parentId: parent.id,
+			rect: { x: 60, y: 10, w: 20, h: 20 },
+			zIndex: 0
+		});
+		const layers = [parent, child];
+		const abs = new Map([
+			[parent.id, parent.rect],
+			[child.id, child.rect]
+		]);
+		const xf = paintTransformForLayer(layers, child.id, abs);
+		expect(xf).toContain('rotate(90deg)');
+		// Parent center (50,50) relative to child top-left (60,10) → (-10, 40)
+		expect(xf).toContain('translate(-10px, 40px)');
 	});
 });
 

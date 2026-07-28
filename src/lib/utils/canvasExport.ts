@@ -26,6 +26,31 @@ function applyLayerTransform(
 	ctx.translate(-cx, -cy);
 }
 
+/** Rotate around each ancestor center so flat export matches stage paint. */
+function applyAncestorRotations(
+	ctx: CanvasRenderingContext2D,
+	layer: CanvasLayer,
+	byId: Map<string, CanvasLayer>,
+	absMap: Map<string, { x: number; y: number; w: number; h: number }>
+) {
+	const ancestors: CanvasLayer[] = [];
+	let cur = layer.parentId ? byId.get(layer.parentId) : undefined;
+	while (cur) {
+		ancestors.unshift(cur);
+		cur = cur.parentId ? byId.get(cur.parentId) : undefined;
+	}
+	for (const anc of ancestors) {
+		const deg = anc.rotation ?? 0;
+		if (!deg) continue;
+		const a = absMap.get(anc.id) ?? anc.rect;
+		const cx = a.x + a.w / 2;
+		const cy = a.y + a.h / 2;
+		ctx.translate(cx, cy);
+		ctx.rotate((deg * Math.PI) / 180);
+		ctx.translate(-cx, -cy);
+	}
+}
+
 function drawShapePath(ctx: CanvasRenderingContext2D, layer: CanvasLayer) {
 	const { x, y, w, h } = layer.rect;
 	const fill = layer.fill ?? '#3b82f6';
@@ -301,7 +326,12 @@ function drawText(ctx: CanvasRenderingContext2D, layer: CanvasLayer) {
 	}
 }
 
-async function drawLayer(ctx: CanvasRenderingContext2D, layer: CanvasLayer) {
+async function drawLayer(
+	ctx: CanvasRenderingContext2D,
+	layer: CanvasLayer,
+	byId: Map<string, CanvasLayer>,
+	absMap: Map<string, { x: number; y: number; w: number; h: number }>
+) {
 	if (!layer.visible || layer.opacity <= 0) return;
 
 	ctx.save();
@@ -310,6 +340,7 @@ async function drawLayer(ctx: CanvasRenderingContext2D, layer: CanvasLayer) {
 	const { x, y, w, h } = layer.rect;
 	const cx = x + w / 2;
 	const cy = y + h / 2;
+	applyAncestorRotations(ctx, layer, byId, absMap);
 	applyLayerTransform(ctx, layer, cx, cy);
 
 	if (layer.shadowBlur) {
@@ -431,7 +462,7 @@ export async function renderCanvasDocument(
 			}
 			ctx.clip();
 		}
-		await drawLayer(ctx, { ...layer, rect: abs });
+		await drawLayer(ctx, { ...layer, rect: abs }, byId, absMap);
 		ctx.restore();
 	}
 	return canvas;

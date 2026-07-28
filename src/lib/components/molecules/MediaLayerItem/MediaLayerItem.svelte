@@ -17,6 +17,8 @@
 		 * higher root layers when everything shares one absolute stacking context.
 		 */
 		stackIndex?: number;
+		/** Composed CSS transform (own + ancestor rotations) for flat-stage paint. */
+		paintTransform?: string;
 		selected?: boolean;
 		/** Let clicks pass through (layer sits above the selection). */
 		passthrough?: boolean;
@@ -37,6 +39,7 @@
 		displayRect,
 		clipPath,
 		stackIndex,
+		paintTransform,
 		selected = false,
 		passthrough = false,
 		readOnly = false,
@@ -64,10 +67,6 @@
 			: layer.objectFit === 'fill'
 				? 'object-fill'
 				: 'object-cover'
-	);
-
-	const frameTransform = $derived(
-		layer.rotation ? `rotate(${layer.rotation}deg)` : undefined
 	);
 
 	const contentTransform = $derived.by(() => {
@@ -128,7 +127,7 @@
 			handlesVisible={selected && !readOnly}
 			raiseOnSelect={false}
 			stackIndex={stackIndex ?? layer.zIndex}
-			transform={frameTransform}
+			transform={paintTransform}
 			draggable={!layer.locked && !readOnly && !layoutLocked}
 			resizable={!layer.locked && !readOnly && !layoutLocked}
 			bind:rect

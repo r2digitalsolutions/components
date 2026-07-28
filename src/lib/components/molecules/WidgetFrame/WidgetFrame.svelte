@@ -393,7 +393,9 @@
 
 	const rootStyle = $derived.by(() => {
 		if (freeform) {
-			const xf = frameTransform ? `transform:${frameTransform};transform-origin:center center;` : '';
+			const xf = frameTransform
+				? `transform:${frameTransform};transform-origin:0 0;`
+				: '';
 			return `left:${rect.x}px;top:${rect.y}px;width:${rect.w}px;height:${collapsed ? 'auto' : `${rect.h}px`};z-index:${paintZ};${xf}`;
 		}
 		if (localW != null) {

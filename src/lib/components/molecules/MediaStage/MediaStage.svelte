@@ -33,6 +33,7 @@
 		LAYOUT_BOX_KINDS,
 		isEffectivelyVisible,
 		isMarqueePassThroughKind,
+		paintTransformForLayer,
 		scrollBoxOverflow,
 		scrollBarMetrics,
 		slotFromLocalRect,
@@ -1236,6 +1237,12 @@
 										{displayRect}
 										{clipPath}
 										stackIndex={paintIndex}
+										paintTransform={paintTransformForLayer(
+											displayLayers,
+											layer.id,
+											paintAbsMap,
+											layerById
+										)}
 										selected={isSelected}
 										passthrough={!!layer.locked}
 										readOnly={isSynthetic}

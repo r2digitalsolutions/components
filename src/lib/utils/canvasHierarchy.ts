@@ -111,6 +111,53 @@ export function isEffectivelyVisible(
 	return true;
 }
 
+/**
+ * CSS transform for a flat-stage layer so ancestor rotations orbit children
+ * around each ancestor's center (DOM is not nested).
+ * Uses transform-origin top-left (0 0) of the layer box.
+ */
+export function paintTransformForLayer(
+	layers: CanvasLayer[],
+	layerId: string,
+	absMap: Map<string, CanvasLayerRect>,
+	map?: Map<string, CanvasLayer>
+): string | undefined {
+	const byId = map ?? new Map(layers.map((l) => [l.id, l]));
+	const layer = byId.get(layerId);
+	if (!layer) return undefined;
+	const selfAbs = absMap.get(layerId) ?? layer.rect;
+
+	const ancestors: CanvasLayer[] = [];
+	let cur = layer.parentId ? byId.get(layer.parentId) : undefined;
+	while (cur) {
+		ancestors.unshift(cur);
+		cur = cur.parentId ? byId.get(cur.parentId) : undefined;
+	}
+
+	const parts: string[] = [];
+	for (const anc of ancestors) {
+		const deg = anc.rotation ?? 0;
+		if (!deg) continue;
+		const a = absMap.get(anc.id) ?? anc.rect;
+		const ox = a.x + a.w / 2 - selfAbs.x;
+		const oy = a.y + a.h / 2 - selfAbs.y;
+		parts.push(
+			`translate(${ox}px, ${oy}px) rotate(${deg}deg) translate(${-ox}px, ${-oy}px)`
+		);
+	}
+
+	const own = layer.rotation ?? 0;
+	if (own) {
+		const ox = selfAbs.w / 2;
+		const oy = selfAbs.h / 2;
+		parts.push(
+			`translate(${ox}px, ${oy}px) rotate(${own}deg) translate(${-ox}px, ${-oy}px)`
+		);
+	}
+
+	return parts.length ? parts.join(' ') : undefined;
+}
+
 export function isDescendant(
 	layers: CanvasLayer[],
 	maybeChildId: string,
