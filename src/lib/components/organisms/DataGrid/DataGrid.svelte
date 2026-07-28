@@ -256,9 +256,8 @@
 	let contextTarget = $state<CellRef | null>(null);
 	let contextOpen = $state(false);
 	let contextAnchor = $state<ContextMenuAnchor | null>(null);
-	let viewportWidth = $state(
-		typeof window !== 'undefined' ? window.innerWidth : 1280
-	);
+	/** Same on SSR + first client paint to avoid hydration mismatch; real width set in $effect. */
+	let viewportWidth = $state(1280);
 	let filterColumnDraft = $state('');
 	let filterValueDraft = $state('');
 
