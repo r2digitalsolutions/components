@@ -41,6 +41,10 @@
 	let selectedClipId = $state<string | null>(null);
 	let currentTimeMs = $state(0);
 	let playing = $state(false);
+	let playbackRate = $state(1);
+	let muted = $state(false);
+	let volume = $state(1);
+	const SKIP_MS = 5000;
 	let zoom = $state(1);
 	let showSidebar = $state(true);
 	let showInspector = $state(true);
@@ -114,10 +118,14 @@
 		});
 	}
 
+	function seekBy(deltaMs: number) {
+		currentTimeMs = clampMs(currentTimeMs + deltaMs, 0, value.durationMs);
+	}
+
 	function tick(ts: number) {
 		if (!playing) return;
 		if (lastTs) {
-			const delta = ts - lastTs;
+			const delta = (ts - lastTs) * playbackRate;
 			currentTimeMs = clampMs(currentTimeMs + delta, 0, value.durationMs);
 			if (currentTimeMs >= value.durationMs) {
 				playing = false;
@@ -143,6 +151,36 @@
 		if (e.code === 'Space') {
 			e.preventDefault();
 			playing = !playing;
+			return;
+		}
+		if (e.key === 'Escape') {
+			e.preventDefault();
+			selectedClipId = null;
+			return;
+		}
+		if (e.key === 'ArrowLeft') {
+			e.preventDefault();
+			seekBy(e.shiftKey ? -SKIP_MS : -1000);
+			return;
+		}
+		if (e.key === 'ArrowRight') {
+			e.preventDefault();
+			seekBy(e.shiftKey ? SKIP_MS : 1000);
+			return;
+		}
+		if (e.key === 'Home') {
+			e.preventDefault();
+			currentTimeMs = 0;
+			return;
+		}
+		if (e.key === 'End') {
+			e.preventDefault();
+			currentTimeMs = value.durationMs;
+			return;
+		}
+		if (e.key === 'm' || e.key === 'M') {
+			e.preventDefault();
+			muted = !muted;
 			return;
 		}
 		if ((e.key === 'Delete' || e.key === 'Backspace') && selectedClipId) {
@@ -231,12 +269,24 @@
 						{playing}
 						{currentTimeMs}
 						durationMs={value.durationMs}
+						bind:playbackRate
+						bind:muted
+						bind:volume
+						skipMs={SKIP_MS}
 						onplay={() => (playing = true)}
 						onpause={() => (playing = false)}
 						onstop={() => {
 							playing = false;
 							currentTimeMs = 0;
 						}}
+						onseekstart={() => {
+							currentTimeMs = 0;
+						}}
+						onseekend={() => {
+							currentTimeMs = value.durationMs;
+						}}
+						onseekback={() => seekBy(-SKIP_MS)}
+						onseekforward={() => seekBy(SKIP_MS)}
 					/>
 					<div class="min-h-0 flex-1">
 						<MediaTimeline
@@ -247,6 +297,7 @@
 							{selectedClipId}
 							headerVariant="audio"
 							onselectclip={(id) => (selectedClipId = id)}
+							onemptyclick={() => (selectedClipId = null)}
 							onchangeclip={patchClip}
 							onchangetrack={patchTrack}
 							onseek={(ms) => (currentTimeMs = ms)}

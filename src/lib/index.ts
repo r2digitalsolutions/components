@@ -100,6 +100,7 @@ export type { VersionTagTone, VersionTagSize } from './components/atoms/VersionT
 export { default as WaveBars } from './components/atoms/WaveBars/WaveBars.svelte';
 export { default as Playhead } from './components/atoms/Playhead/Playhead.svelte';
 export { default as TimeRuler } from './components/atoms/TimeRuler/TimeRuler.svelte';
+export { default as TimelineGrid } from './components/atoms/TimelineGrid/TimelineGrid.svelte';
 export { default as TrimHandle } from './components/atoms/TrimHandle/TrimHandle.svelte';
 export type { TrimHandleSide } from './components/atoms/TrimHandle/TrimHandle.svelte';
 export { default as MediaKindIcon } from './components/atoms/MediaKindIcon/MediaKindIcon.svelte';
@@ -852,6 +853,12 @@ export {
 	CANVAS_ELEMENT_MIME,
 	type CanvasElementDef
 } from './components/molecules/CanvasElementsPanel/CanvasElementsPanel.svelte';
+export { default as VideoComponentsPanel } from './components/molecules/VideoComponentsPanel/VideoComponentsPanel.svelte';
+export type { VideoComponentDef } from './components/molecules/VideoComponentsPanel/VideoComponentsPanel.svelte';
+export { default as VideoAnimationsPanel } from './components/molecules/VideoAnimationsPanel/VideoAnimationsPanel.svelte';
+export type { VideoAnimationDef } from './components/molecules/VideoAnimationsPanel/VideoAnimationsPanel.svelte';
+export { default as VideoTransitionsPanel } from './components/molecules/VideoTransitionsPanel/VideoTransitionsPanel.svelte';
+export type { VideoTransitionDef } from './components/molecules/VideoTransitionsPanel/VideoTransitionsPanel.svelte';
 export { default as ProgramMonitor } from './components/molecules/ProgramMonitor/ProgramMonitor.svelte';
 export { default as VideoTrackHeader } from './components/molecules/VideoTrackHeader/VideoTrackHeader.svelte';
 export { default as WaveformRegion } from './components/molecules/WaveformRegion/WaveformRegion.svelte';
@@ -1450,8 +1457,20 @@ export {
 	snapMs,
 	clampMs,
 	formatTimecode,
-	ticksForDuration
+	ticksForDuration,
+	snapStepForZoom
 } from './utils/mediaTime.js';
+export type { TimeTick, TimeTickLevel } from './utils/mediaTime.js';
+export type {
+	MediaAsset,
+	MediaAssetKind,
+	MediaClip,
+	MediaClipAlign,
+	MediaClipRect,
+	MediaClipResettableField,
+	MediaTrack,
+	MediaTrackKind
+} from './utils/mediaTracks.js';
 export {
 	uid,
 	createMediaClip,
@@ -1465,14 +1484,29 @@ export {
 	findClipAt,
 	updateClipInTracks,
 	removeClipFromTracks,
-	kindFromFile
-} from './utils/mediaTracks.js';
-export type {
-	MediaAsset,
-	MediaAssetKind,
-	MediaClip,
-	MediaTrack,
-	MediaTrackKind
+	removeClipsFromTracks,
+	splitClipAt,
+	splitClipsAt,
+	duplicateClipInTracks,
+	mergeClipsInTracks,
+	findClipById,
+	nextTrackName,
+	reorderTracks,
+	moveTrack,
+	removeTrack,
+	removeTracks,
+	defaultOverlayRect,
+	resolveClipRect,
+	alignClipRect,
+	alignMediaRect,
+	clipHasSpatialRect,
+	isMediaClipFieldModified,
+	resetMediaClipField,
+	resolvePreviewOpacity,
+	resolveClipOpacity,
+	MEDIA_CLIP_DEFAULTS,
+	kindFromFile,
+	probeMediaSrc
 } from './utils/mediaTracks.js';
 export {
 	emptyCanvasDocument,

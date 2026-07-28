@@ -5,6 +5,7 @@
 	import {
 		createMediaAsset,
 		kindFromFile,
+		probeMediaSrc,
 		type MediaAsset,
 		type MediaAssetKind
 	} from '$lib/utils/mediaTracks.js';
@@ -15,6 +16,11 @@
 		accept?: string;
 		helperText?: string;
 		allowText?: boolean;
+		/**
+		 * Upload dropzone layout. Prefer `vertical` in narrow sidebars.
+		 * @see FileUploader `layout`
+		 */
+		uploadLayout?: 'horizontal' | 'vertical' | 'compact';
 		class?: string;
 		onassetschange?: (assets: MediaAsset[]) => void;
 		onselect?: (id: string) => void;
@@ -27,6 +33,7 @@
 		accept = 'image/*,video/*,audio/*',
 		helperText = 'Images, video or audio',
 		allowText = false,
+		uploadLayout = 'vertical',
 		class: className = '',
 		onassetschange,
 		onselect,
@@ -38,15 +45,22 @@
 		onassetschange?.(next);
 	}
 
-	function handleFiles(files: File[]) {
+	function probeMedia(src: string, kind: MediaAssetKind): Promise<Partial<MediaAsset>> {
+		return probeMediaSrc(src, kind);
+	}
+
+	async function handleFiles(files: File[]) {
 		const created: MediaAsset[] = [];
 		for (const file of files) {
 			const kind = kindFromFile(file);
 			if (kind === 'text') continue;
+			const src = URL.createObjectURL(file);
+			const meta = await probeMedia(src, kind);
 			const asset = createMediaAsset({
 				kind,
 				name: file.name,
-				src: URL.createObjectURL(file)
+				src,
+				...meta
 			});
 			created.push(asset);
 		}
@@ -65,6 +79,7 @@
 		label="Upload"
 		{accept}
 		{helperText}
+		layout={uploadLayout}
 		variant="multiple"
 		view="grid"
 		showViewToggle={false}

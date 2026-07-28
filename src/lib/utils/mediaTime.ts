@@ -1,5 +1,14 @@
 /** Milliseconds ↔ pixels and timecode helpers for media timelines. */
 
+export type TimeTickLevel = 'major' | 'mid' | 'minor';
+
+export interface TimeTick {
+	ms: number;
+	level: TimeTickLevel;
+	/** @deprecated Prefer `level === 'major'` */
+	major: boolean;
+}
+
 export function msToPx(ms: number, pxPerMs: number): number {
 	return ms * pxPerMs;
 }
@@ -48,22 +57,41 @@ export function formatTimecode(ms: number, opts?: { showMs?: boolean; fps?: numb
 	return `${hh}${mm}:${ss}`;
 }
 
+/** Nice major step so major labels sit ~minTickPx apart on screen. */
+function majorStepForPxPerMs(pxPerMs: number, minTickPx = 64): number {
+	const candidates = [100, 250, 500, 1000, 2000, 5000, 10_000, 30_000, 60_000, 120_000, 300_000];
+	for (const c of candidates) {
+		if (msToPx(c, pxPerMs) >= minTickPx) return c;
+	}
+	return candidates[candidates.length - 1];
+}
+
+/**
+ * Major / mid / minor ticks for a duration (same hierarchy idea as MediaStage rulers).
+ * mid = major/2, minor = major/10.
+ */
 export function ticksForDuration(
 	durationMs: number,
 	pxPerMs: number,
-	minTickPx = 60
-): { ms: number; major: boolean }[] {
-	const candidates = [100, 250, 500, 1000, 2000, 5000, 10_000, 30_000, 60_000, 120_000, 300_000];
-	let step = candidates[candidates.length - 1];
-	for (const c of candidates) {
-		if (msToPx(c, pxPerMs) >= minTickPx) {
-			step = c;
-			break;
-		}
-	}
-	const ticks: { ms: number; major: boolean }[] = [];
-	for (let t = 0; t <= durationMs + 0.5; t += step) {
-		ticks.push({ ms: t, major: t % (step * 2) === 0 || t === 0 });
+	minTickPx = 64
+): TimeTick[] {
+	const major = majorStepForPxPerMs(pxPerMs, minTickPx);
+	const mid = major / 2;
+	const minor = major / 10;
+	const ticks: TimeTick[] = [];
+	const eps = minor / 4;
+	for (let t = 0; t <= durationMs + eps; t += minor) {
+		const ms = Math.round(t * 1000) / 1000;
+		if (ms > durationMs) break;
+		const nearMajor = Math.abs(ms % major) < eps || Math.abs((ms % major) - major) < eps;
+		const nearMid = Math.abs(ms % mid) < eps || Math.abs((ms % mid) - mid) < eps;
+		const level: TimeTickLevel = nearMajor ? 'major' : nearMid ? 'mid' : 'minor';
+		ticks.push({ ms, level, major: level === 'major' });
 	}
 	return ticks;
+}
+
+/** Suggested snap interval from current zoom (mid tick step). */
+export function snapStepForZoom(pxPerMs: number, minTickPx = 64): number {
+	return majorStepForPxPerMs(pxPerMs, minTickPx) / 2;
 }

@@ -11,6 +11,7 @@ const meta = {
 		accept: { control: 'text' },
 		variant: { control: 'select', options: ['multiple', 'single', 'avatar'] },
 		view: { control: 'select', options: ['list', 'grid'] },
+		layout: { control: 'select', options: ['horizontal', 'vertical', 'compact'] },
 		showViewToggle: { control: 'boolean' },
 		maxSizeMb: { control: 'number' },
 		disabled: { control: 'boolean' }
@@ -21,6 +22,7 @@ const meta = {
 		accept: '*',
 		variant: 'multiple',
 		view: 'list',
+		layout: 'horizontal',
 		showViewToggle: true,
 		maxSizeMb: 10,
 		disabled: false
@@ -44,10 +46,31 @@ export const GridView: Story = {
 	}
 };
 
+export const VerticalSidebar: Story = {
+	args: {
+		label: 'Upload',
+		variant: 'multiple',
+		layout: 'vertical',
+		accept: 'image/*,video/*,audio/*',
+		helperText: 'Image, video or audio',
+		showViewToggle: false
+	}
+};
+
+export const Compact: Story = {
+	args: {
+		label: 'Add more',
+		variant: 'multiple',
+		layout: 'compact',
+		helperText: 'Drop or browse'
+	}
+};
+
 export const SingleFile: Story = {
 	args: {
 		label: 'Cover image',
 		variant: 'single',
+		layout: 'vertical',
 		accept: 'image/*',
 		helperText: 'PNG or JPG · max 10MB'
 	}

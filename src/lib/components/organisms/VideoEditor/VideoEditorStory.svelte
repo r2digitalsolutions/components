@@ -5,6 +5,7 @@
 	let value = $state(createDemoVideoSequence());
 </script>
 
-<div class="h-[780px] w-full overflow-hidden rounded-xl border border-border">
-	<VideoEditor bind:value />
+<!-- Edge-to-edge in Storybook — same pattern as CanvasEditor -->
+<div class="fixed inset-0 overflow-hidden bg-surface">
+	<VideoEditor bind:value class="h-full" />
 </div>

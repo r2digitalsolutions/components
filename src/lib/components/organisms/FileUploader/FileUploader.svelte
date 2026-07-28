@@ -4,6 +4,8 @@
 	type FileKind = 'image' | 'video' | 'audio' | 'pdf' | 'doc' | 'other';
 	type UploaderVariant = 'multiple' | 'single' | 'avatar';
 	type UploaderView = 'list' | 'grid';
+	/** Dropzone chrome layout (ignored for avatar / filled single preview). */
+	type UploaderLayout = 'horizontal' | 'vertical' | 'compact';
 
 	interface FileItem {
 		file: File;
@@ -21,6 +23,13 @@
 		accept?: string;
 		variant?: UploaderVariant;
 		view?: UploaderView;
+		/**
+		 * Empty dropzone orientation.
+		 * - `horizontal` — icon + text in a row (default)
+		 * - `vertical` — stacked, better for narrow sidebars
+		 * - `compact` — tight horizontal strip
+		 */
+		layout?: UploaderLayout;
 		showViewToggle?: boolean;
 		/** When false, only the dropzone is shown (parent owns the file list). */
 		showFileList?: boolean;
@@ -46,6 +55,7 @@
 		accept = 'image/*',
 		variant = 'multiple',
 		view = $bindable('list'),
+		layout = 'horizontal',
 		showViewToggle = true,
 		showFileList = true,
 		maxSizeMb = 10,
@@ -89,6 +99,13 @@
 				!!externalSrc &&
 				(resolvedAccept.includes('video') || /\.(mp4|webm|mov|m4v)(\?|$)/i.test(externalSrc)))
 	);
+	const singleIsAudio = $derived(
+		primaryFile?.kind === 'audio' ||
+			(!primaryFile &&
+				!!externalSrc &&
+				(resolvedAccept.includes('audio') || /\.(mp3|wav|ogg|m4a|aac|flac)(\?|$)/i.test(externalSrc)))
+	);
+	const dropLayout = $derived(layout === 'compact' ? 'compact' : layout);
 
 	function formatBytes(bytes: number): string {
 		if (bytes === 0) return '0 B';
@@ -289,7 +306,9 @@
 	</div>
 {/snippet}
 
-{#snippet dropzone(compact = false)}
+{#snippet dropzone(forceCompact = false)}
+	{@const compact = forceCompact || dropLayout === 'compact'}
+	{@const vertical = !compact && dropLayout === 'vertical'}
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div
 		role="button"
@@ -314,18 +333,27 @@
 		class={[
 			'relative overflow-hidden border border-dashed transition-colors duration-150 outline-none',
 			'focus-visible:ring-2 focus-visible:ring-brand-500/30 focus-visible:border-brand-500',
-			compact ? 'rounded-xl' : 'rounded-xl',
+			'rounded-xl',
 			isDragging
 				? 'border-brand-500 bg-brand-500/5 dark:bg-brand-950/40'
 				: 'border-border bg-surface-elevated hover:border-border-strong hover:bg-surface-overlay/60',
 			disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
 		]}
 	>
-		<div class={['flex items-center gap-4', compact ? 'px-4 py-3.5' : 'px-4 py-5 sm:px-5']}>
+		<div
+			class={[
+				'flex',
+				vertical
+					? 'flex-col items-center gap-2 px-3 py-5 text-center'
+					: compact
+						? 'flex-row items-center gap-3 px-3 py-2.5'
+						: 'flex-row items-center gap-4 px-4 py-5 sm:px-5'
+			]}
+		>
 			<div
 				class={[
 					'flex shrink-0 items-center justify-center rounded-lg transition-colors duration-150',
-					compact ? 'h-9 w-9' : 'h-11 w-11',
+					vertical ? 'h-10 w-10' : compact ? 'h-8 w-8' : 'h-11 w-11',
 					isDragging
 						? 'bg-brand-600 text-white'
 						: 'bg-brand-100 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300'
@@ -333,7 +361,7 @@
 				aria-hidden="true"
 			>
 				<svg
-					class={compact ? 'h-4 w-4' : 'h-5 w-5'}
+					class={compact ? 'h-3.5 w-3.5' : 'h-5 w-5'}
 					fill="none"
 					viewBox="0 0 24 24"
 					stroke="currentColor"
@@ -347,26 +375,35 @@
 				</svg>
 			</div>
 
-			<div class="min-w-0 flex-1 text-left">
-				<p class={['font-medium text-primary', compact ? 'text-xs' : 'text-sm']}>
+			<div class={['min-w-0', vertical ? 'w-full' : 'flex-1 text-left']}>
+				<p
+					class={[
+						'font-medium text-primary',
+						compact || vertical ? 'text-xs' : 'text-sm',
+						vertical && 'text-center'
+					]}
+				>
 					{#if isDragging}
 						Drop files to upload
 					{:else}
-						Drop files here or
+						Drop files or
 						<span class="text-brand-700 dark:text-brand-300"> browse</span>
 					{/if}
 				</p>
 				{#if helperText}
 					<p
 						id={helperId}
-						class="mt-0.5 text-xs text-secondary leading-relaxed"
+						class={[
+							'mt-0.5 text-[11px] leading-relaxed text-secondary',
+							vertical && 'text-center'
+						]}
 					>
 						{helperText}
 					</p>
 				{/if}
 			</div>
 
-			{#if !disabled && !compact}
+			{#if !disabled && !compact && !vertical}
 				<span
 					class="hidden sm:inline-flex shrink-0 items-center rounded-lg border border-border bg-surface-elevated px-3 py-1.5 text-xs font-medium text-primary pointer-events-none"
 				>
@@ -581,17 +618,20 @@
 			aria-labelledby={label ? labelId : undefined}
 		>
 			<div class="relative aspect-video bg-surface-overlay">
-				{#if singlePreviewUrl}
-					{#if singleIsVideo}
-						<video
-							src={singlePreviewUrl}
-							class="h-full w-full object-cover"
-							muted
-							playsinline
-						></video>
-					{:else}
-						<img src={singlePreviewUrl} alt="" class="h-full w-full object-cover" />
-					{/if}
+				{#if singlePreviewUrl && singleIsVideo}
+					<video
+						src={singlePreviewUrl}
+						class="h-full w-full object-cover"
+						muted
+						playsinline
+					></video>
+				{:else if singlePreviewUrl && singleIsAudio}
+					<div class="flex h-full w-full flex-col items-center justify-center gap-3 px-4">
+						{@render fileBadge('audio', 'h-14 w-14 rounded-xl text-xs')}
+						<audio src={singlePreviewUrl} controls class="w-full max-w-xs"></audio>
+					</div>
+				{:else if singlePreviewUrl}
+					<img src={singlePreviewUrl} alt="" class="h-full w-full object-cover" />
 				{:else}
 					<div class="flex h-full w-full flex-col items-center justify-center gap-2">
 						{@render fileBadge(primaryFile?.kind ?? 'other', 'h-14 w-14 rounded-xl text-xs')}

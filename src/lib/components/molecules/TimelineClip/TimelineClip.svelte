@@ -11,6 +11,7 @@
 		locked?: boolean;
 		class?: string;
 		onclick?: (e: MouseEvent) => void;
+		oncontextmenu?: (e: MouseEvent) => void;
 		onmove?: (startMs: number) => void;
 		ontrimstart?: (startMs: number) => void;
 		ontrimend?: (endMs: number) => void;
@@ -23,6 +24,7 @@
 		locked = false,
 		class: className = '',
 		onclick,
+		oncontextmenu,
 		onmove,
 		ontrimstart,
 		ontrimend
@@ -32,30 +34,31 @@
 	const width = $derived(Math.max(8, msToPx(clip.endMs - clip.startMs, pxPerMs)));
 	const bg = $derived(clip.color ?? '#3b82f6');
 
-	let dragMode = $state<'move' | 'trimStart' | 'trimEnd' | null>(null);
+	let dragMode = $state<'move' | null>(null);
 	let originX = $state(0);
 	let originStart = $state(0);
-	let originEnd = $state(0);
 
 	function beginMove(e: PointerEvent) {
-		if (locked) return;
+		if (locked || e.button !== 0) return;
+		e.stopPropagation();
+		e.preventDefault();
 		(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
 		dragMode = 'move';
 		originX = e.clientX;
 		originStart = clip.startMs;
-		originEnd = clip.endMs;
 	}
 
 	function onPointerMove(e: PointerEvent) {
-		if (!dragMode || locked) return;
+		if (locked) return;
+		if (!(e.currentTarget as HTMLElement).hasPointerCapture(e.pointerId)) return;
+		if (dragMode !== 'move') return;
 		const deltaMs = (e.clientX - originX) / pxPerMs;
-		if (dragMode === 'move') onmove?.(Math.max(0, originStart + deltaMs));
-		if (dragMode === 'trimStart') ontrimstart?.(originStart + deltaMs);
-		if (dragMode === 'trimEnd') ontrimend?.(originEnd + deltaMs);
+		onmove?.(Math.max(0, originStart + deltaMs));
 	}
 
 	function onPointerUp(e: PointerEvent) {
-		(e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
+		const el = e.currentTarget as HTMLElement;
+		if (el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId);
 		dragMode = null;
 	}
 </script>
@@ -67,17 +70,26 @@
 	aria-label={clip.name}
 	aria-pressed={selected}
 	class={[
-		'absolute top-1 bottom-1 overflow-hidden rounded-md border text-left text-xs text-white shadow-sm',
-		selected ? 'ring-2 ring-white/80 ring-offset-1 ring-offset-transparent' : 'border-black/20',
-		locked ? 'cursor-not-allowed opacity-70' : 'cursor-grab active:cursor-grabbing',
+		'absolute top-1 bottom-1 z-1 touch-none overflow-hidden rounded-md border text-left text-xs text-white shadow-sm',
+		selected
+			? 'z-10 border-2 border-white shadow-md ring-2 ring-brand-500 ring-offset-1 ring-offset-surface'
+			: 'border-black/25',
+		locked ? 'cursor-not-allowed' : 'cursor-grab active:cursor-grabbing',
 		className
 	]}
 	style:left={`${left}px`}
 	style:width={`${width}px`}
 	style:background={bg}
+	style:opacity={locked ? Math.min(0.7, clip.opacity ?? 1) : (clip.opacity ?? 1)}
+	style:filter={selected ? 'brightness(1.12)' : undefined}
 	onclick={(e) => {
 		e.stopPropagation();
 		onclick?.(e);
+	}}
+	oncontextmenu={(e) => {
+		e.preventDefault();
+		e.stopPropagation();
+		oncontextmenu?.(e);
 	}}
 	onpointerdown={beginMove}
 	onpointermove={onPointerMove}
@@ -87,7 +99,6 @@
 		side="start"
 		disabled={locked}
 		ondragstart={(e) => {
-			dragMode = 'trimStart';
 			originX = e.clientX;
 			originStart = clip.startMs;
 		}}
@@ -104,13 +115,12 @@
 		side="end"
 		disabled={locked}
 		ondragstart={(e) => {
-			dragMode = 'trimEnd';
 			originX = e.clientX;
-			originEnd = clip.endMs;
+			originStart = clip.endMs;
 		}}
 		ondrag={(e) => {
 			const deltaMs = (e.clientX - originX) / pxPerMs;
-			ontrimend?.(originEnd + deltaMs);
+			ontrimend?.(originStart + deltaMs);
 		}}
 	/>
 </div>

@@ -127,104 +127,114 @@
 </div>
 
 {#snippet mainAndInspector()}
-	{#if showInspector}
-		<SplitPane
-			orientation="horizontal"
-			bind:size={inspectorSize}
-			sizePane="end"
-			unit={sizeUnit}
-			minSize={inspectorMin}
-			maxSize={inspectorMax}
-			endCollapsed={wrapInspector && inspectorCollapsed}
-			revealOnHover={revealResizeOnHover}
-			class="h-full"
-		>
-			{#snippet start()}
-				{@render centerColumn()}
-			{/snippet}
-			{#snippet end()}
-				{#if wrapInspector}
-					<Panel
-						title={inspectorTitle}
-						padding="none"
-						collapsible={collapsiblePanels}
-						bind:collapsed={inspectorCollapsed}
-					>
-						{#if inspector}
+	<div class="h-full min-h-0 min-w-0">
+		{#if showInspector}
+			<SplitPane
+				orientation="horizontal"
+				bind:size={inspectorSize}
+				sizePane="end"
+				unit={sizeUnit}
+				minSize={inspectorMin}
+				maxSize={inspectorMax}
+				endCollapsed={wrapInspector && inspectorCollapsed}
+				revealOnHover={revealResizeOnHover}
+				class="h-full"
+			>
+				{#snippet start()}
+					{@render centerColumn()}
+				{/snippet}
+				{#snippet end()}
+					{#if wrapInspector}
+						<Panel
+							title={inspectorTitle}
+							padding="none"
+							collapsible={collapsiblePanels}
+							bind:collapsed={inspectorCollapsed}
+						>
+							{#if inspector}
+								{@render inspector()}
+							{/if}
+						</Panel>
+					{:else if inspector}
+						<div class="h-full min-h-0 min-w-0">
 							{@render inspector()}
-						{/if}
-					</Panel>
-				{:else if inspector}
-					{@render inspector()}
-				{/if}
-			{/snippet}
-		</SplitPane>
-	{:else}
-		{@render centerColumn()}
-	{/if}
+						</div>
+					{/if}
+				{/snippet}
+			</SplitPane>
+		{:else}
+			{@render centerColumn()}
+		{/if}
+	</div>
 {/snippet}
 
 {#snippet centerColumn()}
-	{#if showBottom}
-		<SplitPane
-			orientation="vertical"
-			bind:size={bottomSize}
-			sizePane="end"
-			unit={sizeUnit}
-			minSize={bottomMin}
-			maxSize={bottomMax}
-			startCollapsed={wrapWorkspace && workspaceCollapsed}
-			endCollapsed={wrapBottom && bottomCollapsed}
-			revealOnHover={revealResizeOnHover}
-			class="h-full"
-		>
-			{#snippet start()}
-				{#if wrapWorkspace}
-					<Panel
-						title={workspaceTitle}
-						padding="none"
-						collapsible={collapsiblePanels}
-						bind:collapsed={workspaceCollapsed}
-					>
-						{#if workspace}
+	<div class="h-full min-h-0 min-w-0">
+		{#if showBottom}
+			<SplitPane
+				orientation="vertical"
+				bind:size={bottomSize}
+				sizePane="end"
+				unit={sizeUnit}
+				minSize={bottomMin}
+				maxSize={bottomMax}
+				startCollapsed={wrapWorkspace && workspaceCollapsed}
+				endCollapsed={wrapBottom && bottomCollapsed}
+				revealOnHover={revealResizeOnHover}
+				class="h-full"
+			>
+				{#snippet start()}
+					{#if wrapWorkspace}
+						<Panel
+							title={workspaceTitle}
+							padding="none"
+							collapsible={collapsiblePanels}
+							bind:collapsed={workspaceCollapsed}
+						>
+							{#if workspace}
+								{@render workspace()}
+							{/if}
+						</Panel>
+					{:else if workspace}
+						<div class="h-full min-h-0 min-w-0">
 							{@render workspace()}
-						{/if}
-					</Panel>
-				{:else if workspace}
+						</div>
+					{/if}
+				{/snippet}
+				{#snippet end()}
+					{#if wrapBottom}
+						<Panel
+							title={bottomTitle}
+							padding="none"
+							collapsible={collapsiblePanels}
+							bind:collapsed={bottomCollapsed}
+						>
+							{#if bottom}
+								{@render bottom()}
+							{/if}
+						</Panel>
+					{:else if bottom}
+						<div class="h-full min-h-0 min-w-0">
+							{@render bottom()}
+						</div>
+					{/if}
+				{/snippet}
+			</SplitPane>
+		{:else if wrapWorkspace}
+			<Panel
+				title={workspaceTitle}
+				padding="none"
+				collapsible={collapsiblePanels}
+				bind:collapsed={workspaceCollapsed}
+			>
+				{#if workspace}
 					{@render workspace()}
 				{/if}
-			{/snippet}
-			{#snippet end()}
-				{#if wrapBottom}
-					<Panel
-						title={bottomTitle}
-						padding="none"
-						collapsible={collapsiblePanels}
-						bind:collapsed={bottomCollapsed}
-					>
-						{#if bottom}
-							{@render bottom()}
-						{/if}
-					</Panel>
-				{:else if bottom}
-					{@render bottom()}
-				{/if}
-			{/snippet}
-		</SplitPane>
-	{:else if wrapWorkspace}
-		<Panel
-			title={workspaceTitle}
-			padding="none"
-			collapsible={collapsiblePanels}
-			bind:collapsed={workspaceCollapsed}
-		>
-			{#if workspace}
+			</Panel>
+		{:else if workspace}
+			<div class="h-full min-h-0 min-w-0">
 				{@render workspace()}
-			{/if}
-		</Panel>
-	{:else if workspace}
-		<div class="h-full min-h-0 min-w-0">
-			{@render workspace()}
-		</div>
-	{/if}
+			</div>
+		{/if}
+	</div>
 {/snippet}

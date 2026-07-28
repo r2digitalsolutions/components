@@ -105,16 +105,33 @@
 			.filter((i) => i !== -1)
 	);
 
+	function clampMenuPosition(x: number, y: number) {
+		if (!menuEl) return;
+		const pad = 8;
+		const vw = window.innerWidth;
+		const vh = window.innerHeight;
+		const mw = menuEl.offsetWidth;
+		const mh = menuEl.offsetHeight;
+		if (mw <= 0 || mh <= 0) {
+			menuX = x;
+			menuY = y;
+			return;
+		}
+		let nextX = x;
+		let nextY = y;
+		// Flip if overflowing right / bottom
+		if (nextX + mw > vw - pad) nextX = x - mw;
+		if (nextY + mh > vh - pad) nextY = y - mh;
+		// Always keep fully inside the viewport
+		menuX = Math.min(Math.max(pad, nextX), Math.max(pad, vw - mw - pad));
+		menuY = Math.min(Math.max(pad, nextY), Math.max(pad, vh - mh - pad));
+	}
+
 	function placeMenu(x: number, y: number) {
 		menuX = x;
 		menuY = y;
 		requestAnimationFrame(() => {
-			if (!menuEl) return;
-			const vw = window.innerWidth;
-			const vh = window.innerHeight;
-			const { offsetWidth: mw, offsetHeight: mh } = menuEl;
-			menuX = x + mw > vw - 8 ? Math.max(8, x - mw) : x;
-			menuY = y + mh > vh - 8 ? Math.max(8, y - mh) : y;
+			clampMenuPosition(x, y);
 		});
 	}
 
@@ -132,11 +149,15 @@
 		open = true;
 		highlighted = -1;
 		query = '';
-		placeMenu(x, y);
+		menuX = x;
+		menuY = y;
 		// Defer past the contextmenu/mouseup that would light-dismiss a popover=auto.
+		// Measure after showPopover — closed popovers have display:none (0×0).
 		requestAnimationFrame(() => {
 			requestAnimationFrame(() => {
-				if (open) showMenu();
+				if (!open) return;
+				showMenu();
+				requestAnimationFrame(() => clampMenuPosition(x, y));
 			});
 		});
 	}
@@ -180,9 +201,11 @@
 
 	/** Manual popover: close on outside pointer. Keep open on scroll —
 	 * the menu is position:fixed, and closing on scroll also kills scrolling
-	 * inside a long/searchable menu. */
+	 * inside a long/searchable menu.
+	 * Right-click (button 2) is ignored so retargeting another item keeps the menu open. */
 	function onDocPointerDown(event: PointerEvent) {
 		if (!open) return;
+		if (event.button === 2) return;
 		const t = event.target;
 		if (t instanceof Node && menuEl?.contains(t)) return;
 		close();
@@ -243,10 +266,14 @@
 		}
 		const x = anchor.x;
 		const y = anchor.y;
-		placeMenu(x, y);
+		highlighted = -1;
+		menuX = x;
+		menuY = y;
 		requestAnimationFrame(() => {
 			requestAnimationFrame(() => {
-				if (open) showMenu();
+				if (!open) return;
+				showMenu();
+				requestAnimationFrame(() => clampMenuPosition(x, y));
 			});
 		});
 	});
