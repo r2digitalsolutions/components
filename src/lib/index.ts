@@ -1401,7 +1401,10 @@ export {
 	listBlogComponents,
 	clearBlogComponentRegistry,
 	NATIVE_BLOCK_TYPES,
-	defaultDataForType
+	defaultDataForType,
+	blogWidthClass,
+	blogAlignClass,
+	blogAspectPadding
 } from './utils/blogDocument.js';
 export type {
 	BlogDocument,
@@ -1409,6 +1412,7 @@ export type {
 	BlogBlockType,
 	BlogBlockData,
 	BlogComponentRegistration,
+	BlogComponentPropField,
 	BlogHeadingData,
 	BlogParagraphData,
 	BlogImageData,
@@ -1417,7 +1421,20 @@ export type {
 	BlogQuoteData,
 	BlogListData,
 	BlogMarkdownData,
-	BlogComponentData
+	BlogDividerData,
+	BlogVideoData,
+	BlogEmbedData,
+	BlogGalleryData,
+	BlogGalleryImage,
+	BlogTableData,
+	BlogCtaData,
+	BlogSpacerData,
+	BlogHtmlData,
+	BlogComponentData,
+	BlogAlign,
+	BlogWidth,
+	BlogCalloutTone,
+	BlogHeadingLevel
 } from './utils/blogDocument.js';
 export {
 	emptyGraphDocument,

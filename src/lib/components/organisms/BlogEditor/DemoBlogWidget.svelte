@@ -4,9 +4,10 @@
 	interface Props {
 		variant?: 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info';
 		label?: string;
+		size?: 'sm' | 'md';
 	}
 
-	let { variant = 'primary', label = 'Registered component' }: Props = $props();
+	let { variant = 'primary', label = 'Registered component', size = 'md' }: Props = $props();
 </script>
 
-<Badge {variant}>{label}</Badge>
+<Badge {variant} {size}>{label}</Badge>
