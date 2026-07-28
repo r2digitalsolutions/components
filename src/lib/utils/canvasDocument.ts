@@ -404,6 +404,125 @@ export function createCanvasLayer(
 	});
 }
 
+/** Scalar fields that can reset to createCanvasLayer defaults (UE-style details). */
+export type CanvasResettableField =
+	| 'opacity'
+	| 'rotation'
+	| 'visible'
+	| 'locked'
+	| 'flipX'
+	| 'flipY'
+	| 'blur'
+	| 'shadowBlur'
+	| 'shadowColor'
+	| 'fill'
+	| 'stroke'
+	| 'strokeWidth'
+	| 'fontSize'
+	| 'fontWeight'
+	| 'fontFamily'
+	| 'fontStyle'
+	| 'textDecoration'
+	| 'letterSpacing'
+	| 'lineHeight'
+	| 'textAlign'
+	| 'color'
+	| 'textBackground'
+	| 'objectFit'
+	| 'borderRadius'
+	| 'gap'
+	| 'columns'
+	| 'clipChildren'
+	| 'text'
+	| 'name';
+
+function canvasValuesEqual(a: unknown, b: unknown): boolean {
+	if (a === b) return true;
+	// Treat unset numeric effects as 0
+	if ((a == null || a === 0) && (b == null || b === 0)) return true;
+	if (a == null && b == null) return true;
+	return false;
+}
+
+/** Default value for a layer field (same as createCanvasLayer would use). */
+export function canvasLayerFieldDefault(
+	kind: CanvasLayerKind,
+	field: CanvasResettableField
+): unknown {
+	const d = LAYER_DEFAULTS[kind];
+	switch (field) {
+		case 'opacity':
+			return 1;
+		case 'rotation':
+			return 0;
+		case 'visible':
+			return true;
+		case 'locked':
+			return false;
+		case 'flipX':
+		case 'flipY':
+			return false;
+		case 'blur':
+		case 'shadowBlur':
+			return undefined;
+		case 'shadowColor':
+			return undefined;
+		case 'fill':
+			return d.fill;
+		case 'stroke':
+			return undefined;
+		case 'strokeWidth':
+			return kind === 'line' || kind === 'arrow' || kind === 'path' ? 4 : undefined;
+		case 'fontSize':
+			return d.fontSize;
+		case 'fontWeight':
+		case 'fontFamily':
+		case 'fontStyle':
+		case 'textDecoration':
+		case 'letterSpacing':
+		case 'lineHeight':
+			return undefined;
+		case 'textAlign':
+			return kind === 'text' || kind === 'sticky' ? 'left' : undefined;
+		case 'color':
+			return d.color ?? (kind === 'text' ? '#0f172a' : undefined);
+		case 'textBackground':
+			return undefined;
+		case 'objectFit':
+			return kind === 'image' || kind === 'video' ? 'cover' : undefined;
+		case 'borderRadius':
+			return d.borderRadius;
+		case 'gap':
+			return d.gap;
+		case 'columns':
+			return kind === 'uniformGrid' ? 2 : undefined;
+		case 'clipChildren':
+			return d.clipChildren ?? false;
+		case 'text':
+			return d.text;
+		case 'name':
+			return d.name;
+		default:
+			return undefined;
+	}
+}
+
+export function isCanvasFieldModified(
+	layer: CanvasLayer,
+	field: CanvasResettableField
+): boolean {
+	const cur = layer[field as keyof CanvasLayer];
+	const def = canvasLayerFieldDefault(layer.kind, field);
+	return !canvasValuesEqual(cur, def);
+}
+
+export function resetCanvasField(
+	layer: CanvasLayer,
+	field: CanvasResettableField
+): Partial<CanvasLayer> {
+	return { [field]: canvasLayerFieldDefault(layer.kind, field) } as Partial<CanvasLayer>;
+}
+
 export function reorderCanvasLayers(layers: CanvasLayer[], orderedIds: string[]): CanvasLayer[] {
 	const map = new Map(layers.map((l) => [l.id, l]));
 	const next: CanvasLayer[] = [];

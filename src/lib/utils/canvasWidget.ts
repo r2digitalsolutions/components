@@ -659,11 +659,13 @@ export function setInstanceOverride(
 ): CanvasDocument {
 	return {
 		...doc,
-		layers: doc.layers.map((l) =>
-			l.id === instanceId
-				? { ...l, overrides: { ...(l.overrides ?? {}), [propId]: value } }
-				: l
-		)
+		layers: doc.layers.map((l) => {
+			if (l.id !== instanceId) return l;
+			const overrides = { ...(l.overrides ?? {}) };
+			if (value === undefined) delete overrides[propId];
+			else overrides[propId] = value;
+			return { ...l, overrides };
+		})
 	};
 }
 

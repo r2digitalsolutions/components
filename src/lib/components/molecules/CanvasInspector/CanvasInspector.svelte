@@ -12,10 +12,13 @@
 	import FileUploader from '$lib/components/organisms/FileUploader/FileUploader.svelte';
 	import {
 		alignLayerRect,
+		isCanvasFieldModified,
+		resetCanvasField,
 		type CanvasAlign,
 		type CanvasDocument,
 		type CanvasExposedProp,
 		type CanvasLayer,
+		type CanvasResettableField,
 		type CanvasWidgetDefinition
 	} from '$lib/utils/canvasDocument.js';
 	import {
@@ -258,6 +261,15 @@
 		onchange?.({ ...layer, ...partial });
 	}
 
+	function fieldModified(field: CanvasResettableField): boolean {
+		return !!layer && isCanvasFieldModified(layer, field);
+	}
+
+	function resetField(field: CanvasResettableField) {
+		if (!layer) return;
+		patch(resetCanvasField(layer, field));
+	}
+
 	function patchRect(partial: Partial<CanvasLayer['rect']>) {
 		if (!layer || !doc) return;
 		const rect = { ...layer.rect, ...partial };
@@ -297,7 +309,11 @@
 		<p class="px-3 py-6 text-center text-xs text-muted">Select a layer to edit</p>
 	{:else}
 		<PropertyGroup title="Layer">
-			<PropertyField label="Name">
+			<PropertyField
+				label="Name"
+				modified={fieldModified('name')}
+				onreset={() => resetField('name')}
+			>
 				<Input
 					size="sm"
 					value={layer.name}
@@ -308,6 +324,8 @@
 				label="Visible"
 				exposed={exposedFlag('visible')}
 				onexpose={(v) => toggleExpose('visible', 'Visible', v)}
+				modified={fieldModified('visible')}
+				onreset={() => resetField('visible')}
 			>
 				<Toggle
 					checked={layer.visible}
@@ -315,13 +333,19 @@
 					size="sm"
 				/>
 			</PropertyField>
-			<PropertyField label="Locked">
+			<PropertyField
+				label="Locked"
+				modified={fieldModified('locked')}
+				onreset={() => resetField('locked')}
+			>
 				<Toggle checked={layer.locked} onchange={(v) => patch({ locked: v })} size="sm" />
 			</PropertyField>
 			<PropertyField
 				label="Opacity"
 				exposed={exposedFlag('opacity')}
 				onexpose={(v) => toggleExpose('opacity', 'Opacity', v)}
+				modified={fieldModified('opacity')}
+				onreset={() => resetField('opacity')}
 			>
 				<Slider
 					size="sm"
@@ -348,7 +372,12 @@
 						</p>
 						{#each group.props as prop (prop.id)}
 							{@const current = exposedValue(prop)}
-							<PropertyField label={prop.label}>
+							{@const hasOverride = layer.overrides != null && prop.id in layer.overrides}
+							<PropertyField
+								label={prop.label}
+								modified={hasOverride}
+								onreset={() => onoverride?.({ propId: prop.id, value: undefined })}
+							>
 								{#if prop.field === 'visible'}
 									<Toggle
 										checked={Boolean(current ?? true)}
@@ -598,7 +627,11 @@
 					</PropertyField>
 				</div>
 			{/if}
-			<PropertyField label="Clip children">
+			<PropertyField
+				label="Clip children"
+				modified={fieldModified('clipChildren')}
+				onreset={() => resetField('clipChildren')}
+			>
 				<Toggle
 					checked={!!layer.clipChildren || layer.kind === 'scrollBox'}
 					onchange={(v) => patch({ clipChildren: v })}
@@ -606,7 +639,11 @@
 				/>
 			</PropertyField>
 			{#if layer.kind === 'hBox' || layer.kind === 'vBox' || layer.kind === 'wrapBox' || layer.kind === 'uniformGrid'}
-				<PropertyField label="Gap">
+				<PropertyField
+					label="Gap"
+					modified={fieldModified('gap')}
+					onreset={() => resetField('gap')}
+				>
 					<Input
 						type="number"
 						size="sm"
@@ -617,7 +654,11 @@
 				</PropertyField>
 			{/if}
 			{#if layer.kind === 'uniformGrid'}
-				<PropertyField label="Columns">
+				<PropertyField
+					label="Columns"
+					modified={fieldModified('columns')}
+					onreset={() => resetField('columns')}
+				>
 					<Input
 						type="number"
 						size="sm"
@@ -733,7 +774,11 @@
 					X/Y relativos al padre (0,0 = esquina superior izquierda del contenido).
 				</p>
 			{/if}
-			<PropertyField label="Rotation">
+			<PropertyField
+				label="Rotation"
+				modified={fieldModified('rotation')}
+				onreset={() => resetField('rotation')}
+			>
 				<Slider
 					size="sm"
 					min={-180}
@@ -749,7 +794,11 @@
 		</PropertyGroup>
 
 		<PropertyGroup title="Effects">
-			<PropertyField label="Shadow blur">
+			<PropertyField
+				label="Shadow blur"
+				modified={fieldModified('shadowBlur')}
+				onreset={() => resetField('shadowBlur')}
+			>
 				<Slider
 					size="sm"
 					min={0}
@@ -762,14 +811,22 @@
 					oninput={(v) => patch({ shadowBlur: v })}
 				/>
 			</PropertyField>
-			<PropertyField label="Shadow color">
+			<PropertyField
+				label="Shadow color"
+				modified={fieldModified('shadowColor')}
+				onreset={() => resetField('shadowColor')}
+			>
 				<ColorPicker
 					value={layer.shadowColor ?? '#000000'}
 					showSwatches={false}
 					onchange={(v) => patch({ shadowColor: v })}
 				/>
 			</PropertyField>
-			<PropertyField label="Blur">
+			<PropertyField
+				label="Blur"
+				modified={fieldModified('blur')}
+				onreset={() => resetField('blur')}
+			>
 				<Slider
 					size="sm"
 					min={0}
@@ -811,7 +868,11 @@
 						oninput={(e) => patch({ src: (e.currentTarget as HTMLInputElement).value || undefined })}
 					/>
 				</PropertyField>
-				<PropertyField label="Fit">
+				<PropertyField
+					label="Fit"
+					modified={fieldModified('objectFit')}
+					onreset={() => resetField('objectFit')}
+				>
 					<Select
 						size="sm"
 						options={fitOptions}
@@ -823,6 +884,8 @@
 					label="Corner radius"
 					exposed={exposedFlag('borderRadius')}
 					onexpose={(v) => toggleExpose('borderRadius', 'Corner radius', v)}
+					modified={fieldModified('borderRadius')}
+					onreset={() => resetField('borderRadius')}
 				>
 					<Slider
 						size="sm"
@@ -845,6 +908,8 @@
 					label="Content"
 					exposed={exposedFlag('text')}
 					onexpose={(v) => toggleExpose('text', 'Content', v)}
+					modified={fieldModified('text')}
+					onreset={() => resetField('text')}
 				>
 					<Textarea
 						rows={3}
@@ -856,6 +921,8 @@
 					label="Size"
 					exposed={exposedFlag('fontSize')}
 					onexpose={(v) => toggleExpose('fontSize', 'Size', v)}
+					modified={fieldModified('fontSize')}
+					onreset={() => resetField('fontSize')}
 				>
 					<Input
 						type="number"
@@ -901,6 +968,8 @@
 					label="Color"
 					exposed={exposedFlag('color')}
 					onexpose={(v) => toggleExpose('color', 'Color', v)}
+					modified={fieldModified('color')}
+					onreset={() => resetField('color')}
 				>
 					<ColorPicker
 						value={layer.color ?? '#0f172a'}
@@ -912,6 +981,8 @@
 						label="Background"
 						exposed={exposedFlag('textBackground')}
 						onexpose={(v) => toggleExpose('textBackground', 'Background', v)}
+						modified={fieldModified('textBackground')}
+						onreset={() => resetField('textBackground')}
 					>
 						<ColorPicker
 							value={layer.textBackground ?? '#ffffff'}
@@ -925,6 +996,8 @@
 						label="Note color"
 						exposed={exposedFlag('fill')}
 						onexpose={(v) => toggleExpose('fill', 'Note color', v)}
+						modified={fieldModified('fill')}
+						onreset={() => resetField('fill')}
 					>
 						<ColorPicker
 							value={layer.fill ?? '#fef08a'}
@@ -960,6 +1033,8 @@
 					label="Fill"
 					exposed={exposedFlag('fill')}
 					onexpose={(v) => toggleExpose('fill', 'Fill', v)}
+					modified={fieldModified('fill')}
+					onreset={() => resetField('fill')}
 				>
 					<ColorPicker
 						value={layer.fill ?? '#3b82f6'}
@@ -971,6 +1046,8 @@
 						label="Corner radius"
 						exposed={exposedFlag('borderRadius')}
 						onexpose={(v) => toggleExpose('borderRadius', 'Corner radius', v)}
+						modified={fieldModified('borderRadius')}
+						onreset={() => resetField('borderRadius')}
 					>
 						<Slider
 							size="sm"
@@ -989,6 +1066,8 @@
 					label="Stroke"
 					exposed={exposedFlag('stroke')}
 					onexpose={(v) => toggleExpose('stroke', 'Stroke', v)}
+					modified={fieldModified('stroke')}
+					onreset={() => resetField('stroke')}
 				>
 					<ColorPicker
 						value={layer.stroke ?? '#000000'}

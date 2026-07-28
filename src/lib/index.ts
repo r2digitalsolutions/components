@@ -1491,6 +1491,9 @@ export {
 	defaultSlotFromRect,
 	rectFromSlot,
 	ensureLayerSlot,
+	canvasLayerFieldDefault,
+	isCanvasFieldModified,
+	resetCanvasField,
 	CANVAS_PRESETS,
 	presetIdForSize
 } from './utils/canvasDocument.js';
@@ -1502,6 +1505,7 @@ export type {
 	CanvasPoint,
 	CanvasObjectFit,
 	CanvasTextAlign,
+	CanvasResettableField,
 	CanvasAlign,
 	CanvasFontStyle,
 	CanvasTextDecoration,
