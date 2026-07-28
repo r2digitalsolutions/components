@@ -178,16 +178,14 @@
 		onclose?.();
 	}
 
-	/** Manual popover: close on outside pointer / scroll. */
+	/** Manual popover: close on outside pointer. Keep open on scroll —
+	 * the menu is position:fixed, and closing on scroll also kills scrolling
+	 * inside a long/searchable menu. */
 	function onDocPointerDown(event: PointerEvent) {
 		if (!open) return;
 		const t = event.target;
 		if (t instanceof Node && menuEl?.contains(t)) return;
 		close();
-	}
-
-	function onDocScroll() {
-		if (open) close();
 	}
 
 	function handleKeydown(event: KeyboardEvent) {
@@ -258,12 +256,10 @@
 		// Bind after current pointer gesture ends so the opening right-click doesn't close us.
 		const timer = window.setTimeout(() => {
 			document.addEventListener('pointerdown', onDocPointerDown, true);
-			document.addEventListener('scroll', onDocScroll, true);
 		}, 0);
 		return () => {
 			window.clearTimeout(timer);
 			document.removeEventListener('pointerdown', onDocPointerDown, true);
-			document.removeEventListener('scroll', onDocScroll, true);
 		};
 	});
 </script>

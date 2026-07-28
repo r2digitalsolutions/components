@@ -1,32 +1,61 @@
 <script lang="ts">
 	import WidgetFrame from '$lib/components/molecules/WidgetFrame/WidgetFrame.svelte';
 	import MediaKindIcon from '$lib/components/atoms/MediaKindIcon/MediaKindIcon.svelte';
-	import type { CanvasLayer } from '$lib/utils/canvasDocument.js';
+	import type { CanvasLayer, CanvasLayerRect } from '$lib/utils/canvasDocument.js';
 	import type { WidgetRect } from '$lib/components/molecules/WidgetCanvas/widgetCanvasContext.js';
+	import { isContainerKind } from '$lib/utils/canvasHierarchy.js';
 
 	interface MediaLayerItemProps {
 		layer: CanvasLayer;
+		/** Absolute (artboard) rect used for positioning. */
+		displayRect?: CanvasLayerRect;
+		/** CSS clip-path from ancestor clipChildren. */
+		clipPath?: string;
+		/**
+		 * Global paint order on the stage. Prefer this over `layer.zIndex`, which is
+		 * only meaningful among siblings and would let nested kids stack above
+		 * higher root layers when everything shares one absolute stacking context.
+		 */
+		stackIndex?: number;
 		selected?: boolean;
 		/** Let clicks pass through (layer sits above the selection). */
 		passthrough?: boolean;
+		/** Synthetic resolved widget child — not directly editable. */
+		readOnly?: boolean;
+		/** Parent is a layout box (hBox/vBox/…) — no free drag/resize. */
+		layoutLocked?: boolean;
 		class?: string;
 		onclick?: (e: MouseEvent) => void;
+		ondblclick?: (e: MouseEvent) => void;
 		onchange?: (rect: WidgetRect) => void;
+		/** True while this frame is being dragged/resized. */
+		oninteract?: (active: boolean) => void;
 	}
 
 	let {
 		layer,
+		displayRect,
+		clipPath,
+		stackIndex,
 		selected = false,
 		passthrough = false,
+		readOnly = false,
+		layoutLocked = false,
 		class: className = '',
 		onclick,
-		onchange
+		ondblclick,
+		onchange,
+		oninteract
 	}: MediaLayerItemProps = $props();
 
-	let rect = $state<WidgetRect>({ ...layer.rect });
+	const pos = $derived(displayRect ?? layer.rect);
+	let rect = $state<WidgetRect>({ x: 0, y: 0, w: 100, h: 100 });
+	let interacting = $state(false);
 
 	$effect(() => {
-		rect = { ...layer.rect };
+		// Don't fight the local drag/resize rect while the user is interacting.
+		if (interacting) return;
+		rect = { x: pos.x, y: pos.y, w: pos.w, h: pos.h };
 	});
 
 	const fitClass = $derived(
@@ -56,6 +85,19 @@
 			? `0 ${Math.round(layer.shadowBlur / 3)}px ${layer.shadowBlur}px ${layer.shadowColor ?? 'rgba(0,0,0,0.35)'}`
 			: undefined
 	);
+
+	const isPanel = $derived(isContainerKind(layer.kind) || layer.kind === 'widget');
+	const clip = $derived(
+		layer.clipChildren ||
+			layer.kind === 'image' ||
+			layer.kind === 'video' ||
+			layer.kind === 'sticky' ||
+			layer.kind === 'border' ||
+			layer.kind === 'canvasPanel' ||
+			layer.kind === 'overlay' ||
+			layer.kind === 'scrollBox' ||
+			layer.kind === 'namedSlot'
+	);
 </script>
 
 {#if layer.visible}
@@ -65,9 +107,14 @@
 		data-layer-item
 		data-layer-frame={layer.id}
 		onclick={(e) => {
-			if (passthrough) return;
+			if (passthrough || readOnly) return;
 			e.stopPropagation();
 			onclick?.(e);
+		}}
+		ondblclick={(e) => {
+			if (passthrough) return;
+			e.stopPropagation();
+			ondblclick?.(e);
 		}}
 		style:opacity={layer.opacity}
 	>
@@ -76,18 +123,25 @@
 			showChrome={false}
 			flush
 			handleStyle="canva"
-			handlesVisible={selected}
+			handlesVisible={selected && !readOnly && !layoutLocked}
 			raiseOnSelect={false}
-			stackIndex={layer.zIndex}
-			draggable={!layer.locked}
-			resizable={!layer.locked}
+			stackIndex={stackIndex ?? layer.zIndex}
+			draggable={!layer.locked && !readOnly && !layoutLocked}
+			resizable={!layer.locked && !readOnly && !layoutLocked}
 			bind:rect
 			minW={layer.kind === 'line' || layer.kind === 'arrow' || layer.kind === 'path' ? 16 : 40}
 			minH={layer.kind === 'line' ? 4 : layer.kind === 'arrow' || layer.kind === 'path' ? 16 : 24}
-			class={['bg-transparent', passthrough && 'pointer-events-none']}
+			class={[
+				'bg-transparent',
+				passthrough || readOnly ? 'pointer-events-none' : ''
+			].filter(Boolean).join(' ')}
 			onchange={(r) => {
 				rect = r;
 				onchange?.(r);
+			}}
+			oninteract={(active) => {
+				interacting = active;
+				oninteract?.(active);
 			}}
 		>
 			<div
@@ -96,9 +150,8 @@
 				style:filter
 				style:box-shadow={boxShadow}
 				style:border-radius={layer.borderRadius ? `${layer.borderRadius}px` : undefined}
-				style:overflow={layer.kind === 'image' || layer.kind === 'video' || layer.kind === 'sticky'
-					? 'hidden'
-					: undefined}
+				style:overflow={layer.kind === 'scrollBox' ? 'auto' : clip ? 'hidden' : undefined}
+				style:clip-path={clipPath}
 			>
 				{#if layer.kind === 'image' && layer.src}
 					<img
@@ -136,14 +189,17 @@
 					>
 						{layer.text ?? (layer.kind === 'sticky' ? 'Note' : 'Text')}
 					</div>
-				{:else if layer.kind === 'rect' || layer.kind === 'roundRect'}
+				{:else if layer.kind === 'rect' || layer.kind === 'roundRect' || layer.kind === 'border'}
 					<div
 						class="h-full w-full"
-						style:background={layer.fill ?? '#3b82f6'}
-						style:border-radius="{layer.borderRadius ?? (layer.kind === 'roundRect' ? 24 : 0)}px"
+						style:background={layer.fill ?? (layer.kind === 'border' ? '#ffffff' : '#3b82f6')}
+						style:border-radius="{layer.borderRadius ??
+							(layer.kind === 'roundRect' || layer.kind === 'border' ? 12 : 0)}px"
 						style:border={layer.stroke
 							? `${layer.strokeWidth ?? 2}px solid ${layer.stroke}`
-							: undefined}
+							: layer.kind === 'border'
+								? '1px solid #e2e8f0'
+								: undefined}
 					></div>
 				{:else if layer.kind === 'ellipse'}
 					<div
@@ -206,7 +262,7 @@
 						/>
 					</svg>
 				{:else if layer.kind === 'line'}
-					{@const vertical = layer.rect.h > layer.rect.w}
+					{@const vertical = pos.h > pos.w}
 					{@const sw = Math.max(2, layer.strokeWidth ?? 4)}
 					<div
 						class={[
@@ -220,10 +276,10 @@
 						style:height={vertical ? undefined : `${sw}px`}
 					></div>
 				{:else if layer.kind === 'arrow'}
-					{@const vertical = layer.rect.h > layer.rect.w}
+					{@const vertical = pos.h > pos.w}
 					{@const sw = Math.max(2, layer.strokeWidth ?? 4)}
-					{@const bw = layer.rect.w}
-					{@const bh = layer.rect.h}
+					{@const bw = pos.w}
+					{@const bh = pos.h}
 					{@const len = vertical ? bh : bw}
 					{@const thick = vertical ? bw : bh}
 					{@const head = Math.min(Math.max(14, thick * 0.9), len * 0.35, 40)}
@@ -261,8 +317,8 @@
 						{/if}
 					</svg>
 				{:else if layer.kind === 'path' && layer.points?.length}
-					{@const bw = Math.max(1, layer.rect.w)}
-					{@const bh = Math.max(1, layer.rect.h)}
+					{@const bw = Math.max(1, pos.w)}
+					{@const bh = Math.max(1, pos.h)}
 					{@const d = layer.points
 						.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x * bw} ${p.y * bh}`)
 						.join(' ')}
@@ -277,6 +333,37 @@
 							stroke-linejoin="round"
 						/>
 					</svg>
+				{:else if isPanel}
+					<div
+						class={[
+							'relative h-full w-full',
+							layer.kind === 'scrollBox' && 'min-h-full'
+						]}
+						style:background={layer.fill && layer.fill !== 'transparent' ? layer.fill : 'transparent'}
+						style:border={layer.kind === 'namedSlot'
+							? '1px dashed color-mix(in oklab, #3b82f6 50%, transparent)'
+							: selected
+								? '1px dashed color-mix(in oklab, #64748b 35%, transparent)'
+								: undefined}
+						style:border-radius={layer.borderRadius ? `${layer.borderRadius}px` : undefined}
+					>
+						{#if layer.kind === 'namedSlot'}
+							<span
+								class="pointer-events-none absolute left-1.5 top-1.5 rounded bg-brand-500/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-brand-600"
+							>
+								{layer.slotName || layer.name || 'Slot'}
+							</span>
+						{/if}
+						{#if layer.kind === 'scrollBox'}
+							<span
+								class="pointer-events-none absolute right-1.5 top-1.5 rounded bg-surface-overlay/90 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-muted"
+							>
+								Scroll
+							</span>
+							<!-- Tall ghost content so overflow:auto is visible in empty boxes -->
+							<div class="pointer-events-none" style:height="{Math.max(pos.h + 80, pos.h * 1.4)}px"></div>
+						{/if}
+					</div>
 				{:else}
 					<div
 						class="flex h-full w-full items-center justify-center gap-2 bg-surface-overlay/80 text-secondary"

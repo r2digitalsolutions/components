@@ -26,6 +26,14 @@
 		type CanvasGuideOrientation,
 		type CanvasLayer
 	} from '$lib/utils/canvasDocument.js';
+	import {
+		computeAbsoluteRects,
+		contentPadding,
+		LAYOUT_BOX_KINDS,
+		slotFromLocalRect,
+		clipPathForLayer
+	} from '$lib/utils/canvasHierarchy.js';
+	import { flattenLayersWithWidgets } from '$lib/utils/canvasWidget.js';
 	import { backgroundAlpha } from '$lib/utils/canvasExport.js';
 	import {
 		CANVAS_ELEMENT_MIME,
@@ -43,6 +51,8 @@
 		cellSize?: number;
 		/** Pen tool: click to place points, dblclick / Enter to finish, click first point to close. */
 		drawMode?: boolean;
+		/** Expand widget instances into resolved children for preview. */
+		expandWidgets?: boolean;
 		class?: string;
 		onselect?: (ids: string[]) => void;
 		onzoom?: (zoom: number) => void;
@@ -53,6 +63,8 @@
 		ondropelement?: (payload: { def: CanvasElementDef; x: number; y: number }) => void;
 		ondrawcomplete?: (payload: { points: { x: number; y: number }[]; closed: boolean }) => void;
 		ondrawcancel?: () => void;
+		/** Double-click a widget instance or container. */
+		onenterlayer?: (id: string) => void;
 	}
 
 	let {
@@ -64,6 +76,7 @@
 		snap = true,
 		cellSize = 8,
 		drawMode = false,
+		expandWidgets = true,
 		class: className = '',
 		onselect,
 		onzoom,
@@ -72,7 +85,8 @@
 		oncontextlayer,
 		ondropelement,
 		ondrawcomplete,
-		ondrawcancel
+		ondrawcancel,
+		onenterlayer
 	}: MediaStageProps = $props();
 
 	let viewportEl = $state<HTMLDivElement | null>(null);
@@ -95,19 +109,51 @@
 	let draftPoints = $state<{ x: number; y: number }[]>([]);
 	let draftCursor = $state<{ x: number; y: number } | null>(null);
 	let activePathPoint = $state<number | null>(null);
+	/** Local layer edits while dragging — commit to document on pointer up. */
+	let draftLayers = $state<CanvasLayer[] | null>(null);
+	let interactCount = $state(0);
 
 	const RULER_TOP = 20;
 	/** Wide enough for upright major labels (e.g. 1000) beside ticks. */
 	const RULER_LEFT = 36;
 	const PAD = 48;
-	const sorted = $derived([...doc.layers].sort((a, b) => a.zIndex - b.zIndex));
+	const workingLayers = $derived(draftLayers ?? doc.layers);
+	const displayLayers = $derived(
+		expandWidgets
+			? flattenLayersWithWidgets(workingLayers, doc.widgets ?? [])
+			: workingLayers
+	);
+	const absMap = $derived(
+		computeAbsoluteRects(displayLayers, { width: doc.width, height: doc.height })
+	);
+	const sorted = $derived.by(() => {
+		const out: typeof displayLayers = [];
+		const walk = (parentId: string | null) => {
+			const kids = displayLayers
+				.filter((l) => (l.parentId ?? null) === parentId)
+				.sort((a, b) => a.zIndex - b.zIndex);
+			for (const k of kids) {
+				out.push(k);
+				walk(k.id);
+			}
+		};
+		walk(null);
+		return out;
+	});
 	const selectedSet = $derived(new Set(selectedIds));
+	const sceneLayerIds = $derived(new Set(workingLayers.map((l) => l.id)));
+
+	function resolveSelectableId(id: string): string {
+		if (sceneLayerIds.has(id)) return id;
+		const host = id.split('::')[0];
+		return sceneLayerIds.has(host) ? host : id;
+	}
 	const guides = $derived(doc.guides ?? []);
 	const guidesLocked = $derived(!!doc.guidesLocked);
 	const artboardTransparent = $derived(backgroundAlpha(doc.background) < 0.999);
 	const selectedPath = $derived(
 		selectedIds.length === 1
-			? (doc.layers.find((l) => l.id === selectedIds[0] && l.kind === 'path') ?? null)
+			? (workingLayers.find((l) => l.id === selectedIds[0] && l.kind === 'path') ?? null)
 			: null
 	);
 
@@ -240,10 +286,76 @@
 		ondocumentchange?.({ ...doc, guides: next, guidesLocked: locked });
 	}
 
+	function absToLocalUpdate(layer: CanvasLayer, absRect: WidgetRect): CanvasLayer {
+		const parentId = layer.parentId ?? null;
+		const parentAbs = parentId ? (absMap.get(parentId) ?? null) : null;
+		const parentLayer = parentId ? workingLayers.find((l) => l.id === parentId) : null;
+		const pad = parentLayer
+			? contentPadding(parentLayer)
+			: { left: 0, top: 0, right: 0, bottom: 0 };
+		const originX = (parentAbs?.x ?? 0) + pad.left;
+		const originY = (parentAbs?.y ?? 0) + pad.top;
+		const contentW = parentAbs
+			? Math.max(0, parentAbs.w - pad.left - pad.right)
+			: doc.width;
+		const contentH = parentAbs
+			? Math.max(0, parentAbs.h - pad.top - pad.bottom)
+			: doc.height;
+		const local = {
+			x: absRect.x - originX,
+			y: absRect.y - originY,
+			w: absRect.w,
+			h: absRect.h
+		};
+		const anchors = layer.slot?.anchors ?? { minX: 0, minY: 0, maxX: 0, maxY: 0 };
+		const slot = {
+			...slotFromLocalRect({ width: contentW, height: contentH }, local, anchors),
+			padding: layer.slot?.padding,
+			sizeRule: layer.slot?.sizeRule,
+			alignment: layer.slot?.alignment,
+			order: layer.slot?.order
+		};
+		return { ...layer, rect: local, slot };
+	}
+
+	function commitDraft() {
+		if (!draftLayers) return;
+		const layers = draftLayers;
+		draftLayers = null;
+		ondocumentchange?.({ ...doc, layers });
+	}
+
+	function handleLayerInteract(active: boolean) {
+		if (active) {
+			interactCount += 1;
+			return;
+		}
+		interactCount = Math.max(0, interactCount - 1);
+		if (interactCount === 0) commitDraft();
+	}
+
+	function cancelLayerDraft() {
+		draftLayers = null;
+		interactCount = 0;
+	}
+
+	function isLayoutLocked(layer: CanvasLayer): boolean {
+		const parentId = layer.parentId ?? null;
+		if (!parentId) return false;
+		const parent = workingLayers.find((l) => l.id === parentId);
+		return !!parent && LAYOUT_BOX_KINDS.has(parent.kind);
+	}
+
 	function handleRect(layer: CanvasLayer, rect: WidgetRect) {
-		const minW = layer.kind === 'line' || layer.kind === 'arrow' ? 24 : 40;
-		const minH = layer.kind === 'line' ? 2 : 24;
-		const next = snapLayerRect(
+		if (!sceneLayerIds.has(layer.id)) return;
+		if (isLayoutLocked(layer)) return;
+		const layers = draftLayers ?? doc.layers;
+		const source = layers.find((l) => l.id === layer.id);
+		if (!source) return;
+
+		const minW = source.kind === 'line' || source.kind === 'arrow' ? 24 : 40;
+		const minH = source.kind === 'line' ? 2 : 24;
+		const nextAbs = snapLayerRect(
 			{ x: rect.x, y: rect.y, w: rect.w, h: rect.h },
 			cellSize,
 			snap,
@@ -253,51 +365,51 @@
 			guideSnapList
 		);
 
-		const dx = next.x - layer.rect.x;
-		const dy = next.y - layer.rect.y;
+		const prevAbs = absMap.get(source.id) ?? source.rect;
+		const dx = nextAbs.x - prevAbs.x;
+		const dy = nextAbs.y - prevAbs.y;
 		const moving =
-			Math.abs(next.w - layer.rect.w) < 0.5 && Math.abs(next.h - layer.rect.h) < 0.5;
+			Math.abs(nextAbs.w - prevAbs.w) < 0.5 && Math.abs(nextAbs.h - prevAbs.h) < 0.5;
 		const groupMove =
 			moving &&
 			selectedIds.length > 1 &&
-			selectedSet.has(layer.id) &&
+			selectedSet.has(source.id) &&
 			(Math.abs(dx) > 0.01 || Math.abs(dy) > 0.01);
 
 		if (groupMove) {
-			ondocumentchange?.({
-				...doc,
-				layers: doc.layers.map((l) => {
-					if (!selectedSet.has(l.id) || l.locked) return l;
-					if (l.id === layer.id) return { ...l, rect: next };
-					const x = Math.min(
-						Math.max(0, l.rect.x + dx),
-						Math.max(0, doc.width - l.rect.w)
-					);
-					const y = Math.min(
-						Math.max(0, l.rect.y + dy),
-						Math.max(0, doc.height - l.rect.h)
-					);
-					return { ...l, rect: { ...l.rect, x, y } };
-				})
+			draftLayers = layers.map((l) => {
+				if (!selectedSet.has(l.id) || l.locked) return l;
+				const a = absMap.get(l.id) ?? l.rect;
+				const moved = {
+					x: a.x + dx,
+					y: a.y + dy,
+					w: a.w,
+					h: a.h
+				};
+				return absToLocalUpdate(l, moved);
 			});
 			return;
 		}
 
-		onlayerchange?.({ ...layer, rect: next });
+		const updated = absToLocalUpdate(source, nextAbs);
+		draftLayers = layers.map((l) => (l.id === updated.id ? updated : l));
+		// If somehow interact end already fired without draft, commit immediately.
+		if (interactCount === 0) commitDraft();
 	}
 
 	function selectLayer(id: string, e: MouseEvent) {
 		e.stopPropagation();
+		const realId = resolveSelectableId(id);
 		if (e.shiftKey || e.metaKey || e.ctrlKey) {
 			const set = new Set(selectedIds);
-			if (set.has(id)) set.delete(id);
-			else set.add(id);
+			if (set.has(realId)) set.delete(realId);
+			else set.add(realId);
 			onselect?.([...set]);
 			return;
 		}
 		// Keep multi-selection when clicking an already-selected item (group drag).
-		if (selectedSet.has(id)) return;
-		onselect?.([id]);
+		if (selectedSet.has(realId)) return;
+		onselect?.([realId]);
 	}
 
 	function clearSelectionIfEmptyClick(e?: MouseEvent) {
@@ -352,14 +464,17 @@
 		const originY = aRect.top - vRect.top + viewportEl.scrollTop;
 		const s = scale;
 		return sorted
-			.filter((l) => l.visible && !l.locked)
-			.map((l) => ({
-				id: l.id,
-				x: originX + l.rect.x * s,
-				y: originY + l.rect.y * s,
-				width: l.rect.w * s,
-				height: l.rect.h * s
-			}));
+			.filter((l) => l.visible && !l.locked && sceneLayerIds.has(resolveSelectableId(l.id)))
+			.map((l) => {
+				const r = absMap.get(l.id) ?? l.rect;
+				return {
+					id: resolveSelectableId(l.id),
+					x: originX + r.x * s,
+					y: originY + r.y * s,
+					width: r.w * s,
+					height: r.h * s
+				};
+			});
 	}
 
 	function clientToDoc(clientX: number, clientY: number) {
@@ -369,6 +484,21 @@
 			x: (clientX - aRect.left) / scale,
 			y: (clientY - aRect.top) / scale
 		};
+	}
+
+	/** Topmost selectable layer at a document point (deepest in paint order). */
+	function pickLayerAtDoc(pt: { x: number; y: number }): string | null {
+		for (let i = sorted.length - 1; i >= 0; i--) {
+			const l = sorted[i];
+			if (!l.visible || l.locked) continue;
+			const selectable = resolveSelectableId(l.id);
+			if (!sceneLayerIds.has(l.id) && !sceneLayerIds.has(selectable)) continue;
+			const r = absMap.get(l.id) ?? l.rect;
+			if (pt.x >= r.x && pt.x <= r.x + r.w && pt.y >= r.y && pt.y <= r.y + r.h) {
+				return selectable;
+			}
+		}
+		return null;
 	}
 
 	function snapDocPoint(pt: { x: number; y: number }) {
@@ -435,18 +565,17 @@
 		e.preventDefault();
 		e.stopPropagation();
 		activePathPoint = index;
+		const meta = selectedPath;
+		const working = pathPointsToDoc(meta);
 		const target = e.currentTarget as HTMLElement;
 		target.setPointerCapture(e.pointerId);
 		const onMove = (ev: PointerEvent) => {
-			if (!selectedPath) return;
-			const docs = pathPointsToDoc(selectedPath);
-			docs[index] = snapDocPoint(clientToDoc(ev.clientX, ev.clientY));
-			onlayerchange?.(rebakePathLayer(selectedPath, docs));
+			working[index] = snapDocPoint(clientToDoc(ev.clientX, ev.clientY));
+			onlayerchange?.(rebakePathLayer(meta, working.map((p) => ({ ...p }))));
 		};
-		const onUp = (ev: PointerEvent) => {
-			activePathPoint = null;
+		const onUp = () => {
 			try {
-				target.releasePointerCapture(ev.pointerId);
+				target.releasePointerCapture(e.pointerId);
 			} catch {
 				/* ignore */
 			}
@@ -481,6 +610,10 @@
 			draftPoints = [];
 			draftCursor = null;
 		}
+	});
+
+	$effect(() => {
+		if (!selectedPath) activePathPoint = null;
 	});
 
 	function clampGuidePos(orientation: CanvasGuideOrientation, pos: number) {
@@ -579,10 +712,11 @@
 		const disposeMarquee = attachMarqueeSelect(el, {
 			getItems: () => layerHitBoxes(),
 			shouldIgnore: (target) => {
+				if (drawMode) return true;
 				if (!(target instanceof Element)) return false;
 				return Boolean(
 					target.closest(
-						'[data-layer-frame], [data-resize-handle], [data-guide], [data-ruler], button, input, textarea'
+						'[data-layer-frame], [data-resize-handle], [data-guide], [data-ruler], [data-path-point], button, input, textarea'
 					)
 				);
 			},
@@ -668,6 +802,35 @@
 		queueMicrotask(syncBoardScreen);
 	});
 </script>
+
+<svelte:window
+	onblur={() => {
+		if (draftLayers) cancelLayerDraft();
+	}}
+	onkeydown={(e) => {
+		const t = e.target as HTMLElement | null;
+		if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+		if (drawMode) {
+			if (e.key === 'Escape') {
+				e.preventDefault();
+				cancelDraft();
+			} else if (e.key === 'Enter') {
+				e.preventDefault();
+				finishDraft(false);
+			}
+			return;
+		}
+		if (e.key === 'Escape' && draftLayers) {
+			e.preventDefault();
+			cancelLayerDraft();
+			return;
+		}
+		if ((e.key === 'Delete' || e.key === 'Backspace') && e.altKey && activePathPoint != null) {
+			e.preventDefault();
+			removeActivePathPoint();
+		}
+	}}
+/>
 
 <div bind:this={stageEl} class={['relative flex h-full min-h-0 w-full flex-col', className]}>
 	<!-- Top ruler — slim, crisp ticks -->
@@ -797,21 +960,39 @@
 				<!-- svelte-ignore a11y_no_static_element_interactions -->
 				<div
 					bind:this={artboardEl}
-					class="relative shrink-0 shadow-[0_8px_40px_rgba(15,23,42,0.18)] ring-1 ring-black/10"
-					style:width={`${boardW}px`}
-					style:height={`${boardH}px`}
 					onclick={(e) => {
 						e.stopPropagation();
+						if (drawMode) {
+							handleDrawClick(e);
+							return;
+						}
 						clearSelectionIfEmptyClick(e);
 					}}
+					ondblclick={(e) => {
+						if (drawMode) {
+							handleDrawDblClick(e);
+							return;
+						}
+						const pt = clientToDoc(e.clientX, e.clientY);
+						const hit = pickLayerAtDoc(pt);
+						if (hit) onenterlayer?.(hit);
+					}}
+					onmousemove={handleDrawMove}
+					class={[
+						'relative shrink-0 overflow-visible shadow-[0_8px_40px_rgba(15,23,42,0.18)] ring-1 ring-black/10',
+						drawMode && 'cursor-crosshair'
+					]}
+					style:width={`${boardW}px`}
+					style:height={`${boardH}px`}
 				>
 					<div
-						class="absolute left-0 top-0 origin-top-left"
+						class="absolute left-0 top-0 origin-top-left overflow-visible"
 						style:width={`${doc.width}px`}
 						style:height={`${doc.height}px`}
 						style:transform={`scale(${scale})`}
 					>
-						<div class="absolute inset-0 overflow-hidden">
+						<!-- Artboard surface (clipped). Layers sit above and may overhang like a compositor. -->
+						<div class="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
 							{#if artboardTransparent}
 								<div
 									class="absolute inset-0"
@@ -819,44 +1000,67 @@
 									style:background-image="linear-gradient(45deg,#cfd5dc 25%,transparent 25%),linear-gradient(-45deg,#cfd5dc 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#cfd5dc 75%),linear-gradient(-45deg,transparent 75%,#cfd5dc 75%)"
 									style:background-size="16px 16px"
 									style:background-position="0 0,0 8px,8px -8px,-8px 0"
-									aria-hidden="true"
 								></div>
 							{/if}
 							<div class="absolute inset-0" style:background-color={doc.background}></div>
-							<div class="absolute inset-0">
-								{#each sorted as layer (layer.id)}
-									{@const lockedPass = !!layer.locked}
-									<!-- svelte-ignore a11y_no_static_element_interactions -->
-									<div
-										data-layer-item
-										data-marquee-id={layer.id}
-										class="contents"
-										oncontextmenu={(e) => {
-											if (lockedPass) return;
+						</div>
+
+						{#if showGrid}
+							<div
+								class="pointer-events-none absolute inset-0 z-100 overflow-hidden"
+								style={gridOverlayStyle}
+								aria-hidden="true"
+							></div>
+						{/if}
+
+						<div class={['absolute inset-0 overflow-visible', drawMode && 'pointer-events-none']}>
+							{#each sorted as layer, paintIndex (layer.id)}
+								{@const realId = resolveSelectableId(layer.id)}
+								{@const isSynthetic = !sceneLayerIds.has(layer.id)}
+								{@const lockedPass = !!layer.locked || isSynthetic}
+								{@const displayRect = absMap.get(layer.id) ?? layer.rect}
+								{@const clipPath = clipPathForLayer(layer.id, displayLayers, absMap)}
+								<!-- svelte-ignore a11y_no_static_element_interactions -->
+								<div
+									data-layer-item
+									data-marquee-id={realId}
+									class="contents"
+									oncontextmenu={(e) => {
+										if (lockedPass && isSynthetic) {
 											e.preventDefault();
 											e.stopPropagation();
-											if (!selectedSet.has(layer.id)) onselect?.([layer.id]);
-											oncontextlayer?.({ id: layer.id, x: e.clientX, y: e.clientY });
+											onselect?.([realId]);
+											oncontextlayer?.({ id: realId, x: e.clientX, y: e.clientY });
+											return;
+										}
+										if (layer.locked) return;
+										e.preventDefault();
+										e.stopPropagation();
+										if (!selectedSet.has(realId)) onselect?.([realId]);
+										oncontextlayer?.({ id: realId, x: e.clientX, y: e.clientY });
+									}}
+								>
+									<MediaLayerItem
+										{layer}
+										{displayRect}
+										{clipPath}
+										stackIndex={paintIndex}
+										selected={selectedSet.has(realId) && !isSynthetic}
+										passthrough={!!layer.locked}
+										readOnly={isSynthetic}
+										layoutLocked={isLayoutLocked(layer)}
+										onclick={(e) => selectLayer(layer.id, e)}
+										ondblclick={(e) => {
+											if (layer.locked) return;
+											const pt = clientToDoc(e.clientX, e.clientY);
+											const hit = pickLayerAtDoc(pt) ?? realId;
+											onenterlayer?.(hit);
 										}}
-									>
-										<MediaLayerItem
-											{layer}
-											selected={selectedSet.has(layer.id)}
-											passthrough={lockedPass}
-											onclick={(e) => selectLayer(layer.id, e)}
-											onchange={(rect) => handleRect(layer, rect)}
-										/>
-									</div>
-								{/each}
-							</div>
-
-							{#if showGrid}
-								<div
-									class="pointer-events-none absolute inset-0 z-100"
-									style={gridOverlayStyle}
-									aria-hidden="true"
-								></div>
-							{/if}
+										onchange={(rect) => handleRect(layer, rect)}
+										oninteract={handleLayerInteract}
+									/>
+								</div>
+							{/each}
 						</div>
 					</div>
 				</div>
@@ -903,6 +1107,85 @@
 					aria-hidden="true"
 				></span>
 			</div>
+		{/each}
+	{/if}
+
+	<!-- Pen draft preview -->
+	{#if drawMode && draftPoints.length}
+		<svg
+			class="pointer-events-none absolute inset-0 z-45 overflow-visible"
+			aria-hidden="true"
+		>
+			{#each draftPoints as p, i (i)}
+				{@const sx = RULER_LEFT + tickX(p.x)}
+				{@const sy = RULER_TOP + tickY(p.y)}
+				{#if i > 0}
+					{@const prev = draftPoints[i - 1]}
+					<line
+						x1={RULER_LEFT + tickX(prev.x)}
+						y1={RULER_TOP + tickY(prev.y)}
+						x2={sx}
+						y2={sy}
+						stroke="#3b82f6"
+						stroke-width="2"
+						stroke-linecap="round"
+					/>
+				{/if}
+				<circle cx={sx} cy={sy} r="4" fill="#fff" stroke="#3b82f6" stroke-width="2" />
+			{/each}
+			{#if draftCursor && draftPoints.length}
+				{@const last = draftPoints[draftPoints.length - 1]}
+				<line
+					x1={RULER_LEFT + tickX(last.x)}
+					y1={RULER_TOP + tickY(last.y)}
+					x2={RULER_LEFT + tickX(draftCursor.x)}
+					y2={RULER_TOP + tickY(draftCursor.y)}
+					stroke="#3b82f6"
+					stroke-width="2"
+					stroke-dasharray="4 4"
+					stroke-linecap="round"
+				/>
+			{/if}
+		</svg>
+		<div
+			class="pointer-events-none absolute bottom-3 left-1/2 z-50 -translate-x-1/2 rounded-md bg-slate-900/90 px-3 py-1.5 text-[11px] text-white shadow"
+		>
+			Click to add · near start to close · double-click / Enter to finish · Esc cancel
+		</div>
+	{/if}
+
+	<!-- Editable path points -->
+	{#if selectedPath && !drawMode && !selectedPath.locked}
+		{@const docs = pathPointsToDoc(selectedPath)}
+		{#each docs as p, i (i)}
+			{@const sx = RULER_LEFT + tickX(p.x)}
+			{@const sy = RULER_TOP + tickY(p.y)}
+			{#if i < docs.length - 1 || selectedPath.closed}
+				{@const next = docs[(i + 1) % docs.length]}
+				{@const mx = RULER_LEFT + tickX((p.x + next.x) / 2)}
+				{@const my = RULER_TOP + tickY((p.y + next.y) / 2)}
+				<!-- svelte-ignore a11y_no_static_element_interactions -->
+				<button
+					type="button"
+					class="absolute z-45 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border border-dashed border-blue-400/80 bg-white/80"
+					style:left={`${mx}px`}
+					style:top={`${my}px`}
+					title="Double-click to add point"
+					ondblclick={(e) => insertPathPoint(i, e)}
+				></button>
+			{/if}
+			<!-- svelte-ignore a11y_no_static_element_interactions -->
+			<div
+				data-path-point={i}
+				class={[
+					'absolute z-46 h-3 w-3 -translate-x-1/2 -translate-y-1/2 cursor-grab rounded-full border-2 border-blue-500 bg-white shadow',
+					activePathPoint === i && 'ring-2 ring-blue-400'
+				]}
+				style:left={`${sx}px`}
+				style:top={`${sy}px`}
+				title="Drag to move · Alt+Delete to remove point"
+				onpointerdown={(e) => beginPathPointDrag(i, e)}
+			></div>
 		{/each}
 	{/if}
 

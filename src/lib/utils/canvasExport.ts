@@ -1,4 +1,6 @@
 import type { CanvasDocument, CanvasLayer } from './canvasDocument.js';
+import { computeAbsoluteRects } from './canvasHierarchy.js';
+import { flattenLayersWithWidgets } from './canvasWidget.js';
 
 export type CanvasExportFormat = 'png' | 'jpeg' | 'json';
 
@@ -186,12 +188,39 @@ function drawShapePath(ctx: CanvasRenderingContext2D, layer: CanvasLayer) {
 			ctx.stroke();
 			return;
 		}
+		case 'group':
+		case 'overlay':
+		case 'canvasPanel':
+		case 'hBox':
+		case 'vBox':
+		case 'sizeBox':
+		case 'scaleBox':
+		case 'wrapBox':
+		case 'uniformGrid':
+		case 'scrollBox':
+		case 'namedSlot':
+		case 'widget': {
+			// Transparent / structural containers — only paint if they have a real fill/stroke.
+			const alpha = backgroundAlpha(layer.fill);
+			if (alpha < 0.001 && !layer.stroke) return;
+			ctx.rect(x, y, w, h);
+			break;
+		}
+		case 'border': {
+			const r = Math.min(layer.borderRadius ?? 12, w / 2, h / 2);
+			if (r > 0 && typeof ctx.roundRect === 'function') ctx.roundRect(x, y, w, h, r);
+			else ctx.rect(x, y, w, h);
+			break;
+		}
 		default:
 			ctx.rect(x, y, w, h);
 	}
 
-	ctx.fillStyle = fill;
-	ctx.fill();
+	const fillAlpha = backgroundAlpha(layer.fill ?? fill);
+	if (fillAlpha >= 0.001) {
+		ctx.fillStyle = layer.fill ?? fill;
+		ctx.fill();
+	}
 	if (layer.stroke) {
 		ctx.strokeStyle = layer.stroke;
 		ctx.lineWidth = layer.strokeWidth ?? 2;
@@ -222,25 +251,53 @@ function drawText(ctx: CanvasRenderingContext2D, layer: CanvasLayer) {
 	const pad = 8;
 	const tx =
 		layer.textAlign === 'center' ? x + w / 2 : layer.textAlign === 'right' ? x + w - pad : x + pad;
-	const ty = layer.kind === 'sticky' ? y + pad + size / 2 : y + h / 2;
 	const text = layer.text ?? (layer.kind === 'sticky' ? 'Note' : 'Text');
+	const lines = text.split('\n');
+	const lineHeight = size * (typeof layer.lineHeight === 'number' ? layer.lineHeight : 1.25);
+	const maxWidth = Math.max(16, w - pad * 2);
 
-	if (layer.textDecoration === 'underline' || layer.textDecoration === 'line-through') {
-		const metrics = ctx.measureText(text);
-		const tw = metrics.width;
-		const left =
-			layer.textAlign === 'center' ? tx - tw / 2 : layer.textAlign === 'right' ? tx - tw : tx;
-		ctx.fillText(text, tx, ty);
-		ctx.beginPath();
-		ctx.strokeStyle = ctx.fillStyle as string;
-		ctx.lineWidth = Math.max(1, size / 16);
-		const lineY =
-			layer.textDecoration === 'line-through' ? ty : ty + size * 0.4;
-		ctx.moveTo(left, lineY);
-		ctx.lineTo(left + tw, lineY);
-		ctx.stroke();
-	} else {
-		ctx.fillText(text, tx, ty);
+	function wrapLine(line: string): string[] {
+		if (!line) return [''];
+		const words = line.split(/(\s+)/);
+		const out: string[] = [];
+		let cur = '';
+		for (const word of words) {
+			const trial = cur + word;
+			if (cur && ctx.measureText(trial).width > maxWidth) {
+				out.push(cur);
+				cur = word.trimStart();
+			} else {
+				cur = trial;
+			}
+		}
+		if (cur) out.push(cur);
+		return out.length ? out : [''];
+	}
+
+	const wrapped = lines.flatMap(wrapLine);
+	const blockH = wrapped.length * lineHeight;
+	let startY =
+		layer.kind === 'sticky'
+			? y + pad + size / 2
+			: y + Math.max(size / 2, (h - blockH) / 2 + size / 2);
+
+	for (const line of wrapped) {
+		ctx.fillText(line, tx, startY);
+		if (layer.textDecoration === 'underline' || layer.textDecoration === 'line-through') {
+			const metrics = ctx.measureText(line);
+			const tw = metrics.width;
+			const left =
+				layer.textAlign === 'center' ? tx - tw / 2 : layer.textAlign === 'right' ? tx - tw : tx;
+			ctx.beginPath();
+			ctx.strokeStyle = ctx.fillStyle as string;
+			ctx.lineWidth = Math.max(1, size / 16);
+			const lineY =
+				layer.textDecoration === 'line-through' ? startY : startY + size * 0.4;
+			ctx.moveTo(left, lineY);
+			ctx.lineTo(left + tw, lineY);
+			ctx.stroke();
+		}
+		startY += lineHeight;
 	}
 }
 
@@ -346,9 +403,34 @@ export async function renderCanvasDocument(
 		ctx.fillRect(0, 0, canvas.width, canvas.height);
 	}
 
-	const layers = [...doc.layers].sort((a, b) => a.zIndex - b.zIndex);
-	for (const layer of layers) {
-		await drawLayer(ctx, layer);
+	const flat = flattenLayersWithWidgets(doc.layers, doc.widgets ?? []);
+	const absMap = computeAbsoluteRects(flat, { width: doc.width, height: doc.height });
+	const paintOrder: CanvasLayer[] = [];
+	const walk = (parentId: string | null) => {
+		const kids = flat
+			.filter((l) => (l.parentId ?? null) === parentId)
+			.sort((a, b) => a.zIndex - b.zIndex);
+		for (const k of kids) {
+			paintOrder.push(k);
+			walk(k.id);
+		}
+	};
+	walk(null);
+
+	for (const layer of paintOrder) {
+		const abs = absMap.get(layer.id) ?? layer.rect;
+		ctx.save();
+		if (layer.clipChildren) {
+			ctx.beginPath();
+			if (layer.borderRadius && typeof ctx.roundRect === 'function') {
+				ctx.roundRect(abs.x, abs.y, abs.w, abs.h, layer.borderRadius);
+			} else {
+				ctx.rect(abs.x, abs.y, abs.w, abs.h);
+			}
+			ctx.clip();
+		}
+		await drawLayer(ctx, { ...layer, rect: abs });
+		ctx.restore();
 	}
 	return canvas;
 }

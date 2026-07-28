@@ -1478,12 +1478,19 @@ export {
 	emptyCanvasDocument,
 	createCanvasLayer,
 	createCanvasGuide,
+	createPathFromDocPoints,
+	rebakePathLayer,
+	pathPointsToDoc,
 	reorderCanvasLayers,
 	updateCanvasLayer,
 	updateCanvasLayers,
 	alignLayerRect,
 	snapLayerRect,
 	snapRectToGuides,
+	migrateCanvasDocument,
+	defaultSlotFromRect,
+	rectFromSlot,
+	ensureLayerSlot,
 	CANVAS_PRESETS,
 	presetIdForSize
 } from './utils/canvasDocument.js';
@@ -1492,14 +1499,70 @@ export type {
 	CanvasLayer,
 	CanvasLayerKind,
 	CanvasLayerRect,
+	CanvasPoint,
 	CanvasObjectFit,
 	CanvasTextAlign,
 	CanvasAlign,
 	CanvasFontStyle,
 	CanvasTextDecoration,
 	CanvasGuide,
-	CanvasGuideOrientation
+	CanvasGuideOrientation,
+	CanvasAnchors,
+	CanvasSlot,
+	CanvasExposedProp,
+	CanvasWidgetDefinition
 } from './utils/canvasDocument.js';
+export {
+	isContainerKind,
+	canHaveChildren,
+	getChildren,
+	getDescendantIds,
+	getSubtreeIds,
+	getAncestors,
+	isDescendant,
+	canReparent,
+	ANCHOR_PRESETS,
+	resolveSlotRect,
+	slotFromLocalRect,
+	computeAbsoluteRects,
+	absoluteRectFor,
+	reparentLayer,
+	wrapSelection,
+	groupLayers,
+	ungroupLayers,
+	deleteSubtree,
+	duplicateSubtree,
+	reorderSiblings,
+	clipPathForLayer
+} from './utils/canvasHierarchy.js';
+export {
+	createWidgetDefinition,
+	createWidgetFromSelection,
+	placeWidgetInstance,
+	resolveWidgetInstance,
+	flattenLayersWithWidgets,
+	breakWidgetInstance,
+	updateWidgetDefinition,
+	deleteWidgetDefinition,
+	renameWidgetDefinition,
+	duplicateWidgetDefinition,
+	syncInstanceSizesToDefinition,
+	setExposedProp,
+	isPropExposed,
+	getExposedProp,
+	setInstanceOverride,
+	getNamedSlotsFromDefinition,
+	listFillableSlotsForInstance
+} from './utils/canvasWidget.js';
+export {
+	createCanvasHistory,
+	pushCanvasHistory,
+	undoCanvasHistory,
+	redoCanvasHistory,
+	serializeCanvasDoc,
+	parseCanvasDoc
+} from './utils/canvasHistory.js';
+export type { CanvasHistoryState } from './utils/canvasHistory.js';
 export {
 	renderCanvasDocument,
 	exportCanvasBlob,

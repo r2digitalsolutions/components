@@ -17,6 +17,15 @@
 	import Diamond from '@lucide/svelte/icons/diamond';
 	import Heart from '@lucide/svelte/icons/heart';
 	import StickyNote from '@lucide/svelte/icons/sticky-note';
+	import LayoutPanelLeft from '@lucide/svelte/icons/layout-panel-left';
+	import Layers from '@lucide/svelte/icons/layers';
+	import Group from '@lucide/svelte/icons/group';
+	import Columns2 from '@lucide/svelte/icons/columns-2';
+	import Rows2 from '@lucide/svelte/icons/rows-2';
+	import Scaling from '@lucide/svelte/icons/scaling';
+	import Box from '@lucide/svelte/icons/box';
+	import Component from '@lucide/svelte/icons/component';
+	import Frame from '@lucide/svelte/icons/frame';
 
 	export type MediaKindIconSize = 'sm' | 'md' | 'lg';
 
@@ -45,7 +54,7 @@
 	<AudioLines class={iconClass} aria-hidden="true" />
 {:else if kind === 'rect'}
 	<Square class={iconClass} aria-hidden="true" />
-{:else if kind === 'roundRect'}
+{:else if kind === 'roundRect' || kind === 'border'}
 	<SquareRoundCorner class={iconClass} aria-hidden="true" />
 {:else if kind === 'ellipse'}
 	<Circle class={iconClass} aria-hidden="true" />
@@ -71,6 +80,43 @@
 	</svg>
 {:else if kind === 'sticky'}
 	<StickyNote class={iconClass} aria-hidden="true" />
+{:else if kind === 'canvasPanel'}
+	<LayoutPanelLeft class={iconClass} aria-hidden="true" />
+{:else if kind === 'overlay'}
+	<Layers class={iconClass} aria-hidden="true" />
+{:else if kind === 'hBox'}
+	<Columns2 class={iconClass} aria-hidden="true" />
+{:else if kind === 'vBox'}
+	<Rows2 class={iconClass} aria-hidden="true" />
+{:else if kind === 'sizeBox'}
+	<Box class={iconClass} aria-hidden="true" />
+{:else if kind === 'scaleBox'}
+	<Scaling class={iconClass} aria-hidden="true" />
+{:else if kind === 'group'}
+	<Group class={iconClass} aria-hidden="true" />
+{:else if kind === 'widget'}
+	<Component class={iconClass} aria-hidden="true" />
+{:else if kind === 'namedSlot'}
+	<Frame class={iconClass} aria-hidden="true" />
+{:else if kind === 'scrollBox'}
+	<svg class={iconClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+		<rect x="4" y="3" width="16" height="18" rx="2" />
+		<path d="M16 8h2M16 12h2M16 16h2" stroke-linecap="round" />
+	</svg>
+{:else if kind === 'wrapBox'}
+	<svg class={iconClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+		<rect x="3" y="4" width="7" height="6" rx="1" />
+		<rect x="12" y="4" width="9" height="6" rx="1" />
+		<rect x="3" y="13" width="9" height="6" rx="1" />
+		<rect x="14" y="13" width="7" height="6" rx="1" />
+	</svg>
+{:else if kind === 'uniformGrid'}
+	<svg class={iconClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+		<rect x="3" y="3" width="7" height="7" rx="1" />
+		<rect x="14" y="3" width="7" height="7" rx="1" />
+		<rect x="3" y="14" width="7" height="7" rx="1" />
+		<rect x="14" y="14" width="7" height="7" rx="1" />
+	</svg>
 {:else}
 	<Type class={iconClass} aria-hidden="true" />
 {/if}

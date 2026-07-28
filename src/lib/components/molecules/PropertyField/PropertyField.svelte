@@ -1,6 +1,9 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import Text from '$lib/components/atoms/Text/Text.svelte';
+	import IconButton from '$lib/components/atoms/IconButton/IconButton.svelte';
+	import Eye from '@lucide/svelte/icons/eye';
+	import EyeOff from '@lucide/svelte/icons/eye-off';
 
 	interface PropertyFieldProps {
 		label: string;
@@ -9,6 +12,9 @@
 		disabled?: boolean;
 		class?: string;
 		children?: Snippet;
+		/** When set, shows eye toggle for exposing props on User Widgets. */
+		exposed?: boolean | null;
+		onexpose?: (exposed: boolean) => void;
 	}
 
 	const {
@@ -16,7 +22,9 @@
 		labelWidth = '40%',
 		disabled = false,
 		class: className = '',
-		children
+		children,
+		exposed = null,
+		onexpose
 	}: PropertyFieldProps = $props();
 </script>
 
@@ -29,8 +37,22 @@
 	]}
 	style:grid-template-columns={`${labelWidth} minmax(0, 1fr)`}
 >
-	<span class="truncate" title={label}>
-		<Text size="xs" tone="secondary" as="span" class="font-medium">
+	<span class="flex min-w-0 items-center gap-0.5 truncate" title={label}>
+		{#if exposed !== null}
+			<IconButton
+				label={exposed ? 'Hide from instances' : 'Expose on instances'}
+				size="xs"
+				class={exposed ? 'text-brand-600' : 'text-muted'}
+				onclick={() => onexpose?.(!exposed)}
+			>
+				{#if exposed}
+					<Eye class="h-3 w-3" />
+				{:else}
+					<EyeOff class="h-3 w-3" />
+				{/if}
+			</IconButton>
+		{/if}
+		<Text size="xs" tone="secondary" as="span" class="truncate font-medium">
 			{label}
 		</Text>
 	</span>

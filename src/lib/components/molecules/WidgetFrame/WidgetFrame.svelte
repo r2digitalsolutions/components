@@ -50,8 +50,8 @@
 		/** Remove body padding so media/text fill the frame. */
 		flush?: boolean;
 		/**
-		 * When set, forces handle visibility (true = always, false = never).
-		 * Default: hover for `default`, always-on for `canva` while resizing.
+		 * Selection chrome for canva: true = selected (border on; handles on hover),
+		 * false = hide handles. Default: handles on hover.
 		 */
 		handlesVisible?: boolean;
 		/**
@@ -84,6 +84,8 @@
 		onreload?: () => void | Promise<void>;
 		oncollapse?: (collapsed: boolean) => void;
 		onchange?: (rect: WidgetRect) => void;
+		/** Fired when freeform drag/resize starts (after move threshold) or ends. */
+		oninteract?: (active: boolean) => void;
 	}
 
 	let {
@@ -122,7 +124,8 @@
 		onremove,
 		onreload,
 		oncollapse,
-		onchange
+		onchange,
+		oninteract
 	}: WidgetFrameProps = $props();
 
 	const canvas = getContext<WidgetCanvasContext | undefined>(WIDGET_CANVAS_CONTEXT);
@@ -130,6 +133,16 @@
 	let mode = $state<'move' | 'resize' | null>(null);
 	let edge = $state<WidgetResizeEdge>('se');
 	let start = $state({ px: 0, py: 0, x: 0, y: 0, w: 0, h: 0 });
+	/** Pointer down awaiting movement threshold before starting freeform drag (preserves dblclick). */
+	let pendingMove = $state<{
+		pointerId: number;
+		px: number;
+		py: number;
+		x: number;
+		y: number;
+		w: number;
+		h: number;
+	} | null>(null);
 	let localBusy = $state(false);
 	let localZ = $state(1);
 	/** Tamaño local cuando resizable sin freeform (EditableChrome, etc.) */
@@ -196,9 +209,8 @@
 		bringToFront();
 		ondragstart?.(e);
 		if (!freeform) return;
-		e.preventDefault();
-		mode = 'move';
-		start = { px: e.clientX, py: e.clientY, ...rect };
+		// Defer actual drag until the pointer moves — keeps double-click working.
+		pendingMove = { pointerId: e.pointerId, px: e.clientX, py: e.clientY, ...rect };
 		(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
 	}
 
@@ -207,11 +219,13 @@
 		e.preventDefault();
 		e.stopPropagation();
 		bringToFront();
+		pendingMove = null;
 		onresizestart?.(e, nextEdge);
 		if (delegateResize || !builtinResize) return;
 
 		mode = 'resize';
 		edge = nextEdge;
+		oninteract?.(true);
 		if (freeform) {
 			start = { px: e.clientX, py: e.clientY, ...rect };
 		} else {
@@ -229,6 +243,24 @@
 	}
 
 	function onPointerMove(e: PointerEvent) {
+		if (pendingMove && !mode) {
+			const dxScreen = e.clientX - pendingMove.px;
+			const dyScreen = e.clientY - pendingMove.py;
+			if (Math.hypot(dxScreen, dyScreen) < 4) return;
+			e.preventDefault();
+			mode = 'move';
+			start = {
+				px: pendingMove.px,
+				py: pendingMove.py,
+				x: pendingMove.x,
+				y: pendingMove.y,
+				w: pendingMove.w,
+				h: pendingMove.h
+			};
+			pendingMove = null;
+			oninteract?.(true);
+		}
+
 		if (!mode || !builtinResize) return;
 		const s = canvas?.scale || 1;
 		const dx = (e.clientX - start.px) / s;
@@ -299,12 +331,22 @@
 	}
 
 	function onPointerUp() {
+		const wasInteracting = mode === 'move' || mode === 'resize' || !!pendingMove;
+		pendingMove = null;
 		if (mode === 'resize' && freeform) {
 			mode = null;
 			emitRect({ ...rect });
+			if (wasInteracting) oninteract?.(false);
+			return;
+		}
+		if (mode === 'move' && freeform) {
+			mode = null;
+			emitRect({ ...rect });
+			oninteract?.(false);
 			return;
 		}
 		mode = null;
+		if (wasInteracting) oninteract?.(false);
 	}
 
 	function toggleCollapse() {
@@ -361,11 +403,11 @@
 	const btnClass =
 		'inline-flex h-7 w-7 items-center justify-center rounded-md text-muted transition-colors hover:bg-surface-overlay hover:text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 disabled:opacity-50';
 
-	/** Handles only intercept pointers while this widget is hovered (or resizing), so neighbors can sit flush */
+	/** Handles only intercept pointers while hovered (or resizing), so neighbors can sit flush */
 	const edgeAccent = $derived.by(() => {
 		if (isCanva) {
 			const visible =
-				handlesVisible === true || mode === 'resize'
+				mode === 'resize'
 					? 'pointer-events-auto opacity-100'
 					: handlesVisible === false
 						? 'pointer-events-none opacity-0'

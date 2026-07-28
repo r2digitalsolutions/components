@@ -25,8 +25,14 @@
 			strokeWidth?: number;
 			textAlign?: 'left' | 'center' | 'right';
 			textBackground?: string;
+			clipChildren?: boolean;
+			gap?: number;
+			slotName?: string;
+			columns?: number;
 			rect?: { w: number; h: number };
 		};
+		/** Special tool action instead of placing a layer. */
+		tool?: 'pen';
 	}
 </script>
 
@@ -346,7 +352,7 @@
 			kind: 'line',
 			group: 'Lines',
 			swatch: '#94a3b8',
-			partial: { name: 'Vertical', fill: '#94a3b8', rect: { w: 4, h: 280 } }
+			partial: { name: 'Vertical', fill: '#94a3b8', strokeWidth: 4, rect: { w: 4, h: 280 } }
 		},
 		{
 			id: 'arrow',
@@ -354,7 +360,7 @@
 			kind: 'arrow',
 			group: 'Lines',
 			swatch: '#0f172a',
-			partial: { fill: '#0f172a', rect: { w: 280, h: 28 } }
+			partial: { fill: '#0f172a', strokeWidth: 4, rect: { w: 280, h: 28 } }
 		},
 		{
 			id: 'arrow-brand',
@@ -371,6 +377,15 @@
 			group: 'Lines',
 			swatch: '#cbd5e1',
 			partial: { name: 'Divider', fill: '#cbd5e1', rect: { w: 480, h: 2 } }
+		},
+		{
+			id: 'pen-path',
+			label: 'Path',
+			kind: 'path',
+			group: 'Lines',
+			swatch: '#0f172a',
+			tool: 'pen',
+			partial: { name: 'Path', stroke: '#0f172a', strokeWidth: 3 }
 		},
 
 		/* —— Frames —— */
@@ -480,6 +495,146 @@
 			}
 		},
 
+		/* —— Panels (UMG) —— */
+		{
+			id: 'canvas-panel',
+			label: 'Canvas',
+			kind: 'canvasPanel',
+			group: 'Panels',
+			swatch: '#e2e8f0',
+			partial: {
+				name: 'Canvas Panel',
+				fill: 'transparent',
+				clipChildren: true,
+				rect: { w: 400, h: 300 }
+			}
+		},
+		{
+			id: 'overlay-panel',
+			label: 'Overlay',
+			kind: 'overlay',
+			group: 'Panels',
+			swatch: '#cbd5e1',
+			partial: {
+				name: 'Overlay',
+				fill: 'transparent',
+				clipChildren: true,
+				rect: { w: 320, h: 240 }
+			}
+		},
+		{
+			id: 'border-panel',
+			label: 'Border',
+			kind: 'border',
+			group: 'Panels',
+			swatch: '#ffffff',
+			partial: {
+				name: 'Border',
+				fill: '#ffffff',
+				borderRadius: 12,
+				clipChildren: true,
+				rect: { w: 320, h: 200 }
+			}
+		},
+		{
+			id: 'hbox-panel',
+			label: 'HBox',
+			kind: 'hBox',
+			group: 'Panels',
+			swatch: '#93c5fd',
+			partial: { name: 'Horizontal Box', fill: 'transparent', gap: 8, rect: { w: 360, h: 80 } }
+		},
+		{
+			id: 'vbox-panel',
+			label: 'VBox',
+			kind: 'vBox',
+			group: 'Panels',
+			swatch: '#86efac',
+			partial: { name: 'Vertical Box', fill: 'transparent', gap: 8, rect: { w: 200, h: 240 } }
+		},
+		{
+			id: 'sizebox-panel',
+			label: 'Size Box',
+			kind: 'sizeBox',
+			group: 'Panels',
+			swatch: '#fcd34d',
+			partial: {
+				name: 'Size Box',
+				fill: 'transparent',
+				clipChildren: true,
+				rect: { w: 200, h: 200 }
+			}
+		},
+		{
+			id: 'scalebox-panel',
+			label: 'Scale Box',
+			kind: 'scaleBox',
+			group: 'Panels',
+			swatch: '#c4b5fd',
+			partial: {
+				name: 'Scale Box',
+				fill: 'transparent',
+				clipChildren: true,
+				rect: { w: 240, h: 240 }
+			}
+		},
+		{
+			id: 'group-panel',
+			label: 'Group',
+			kind: 'group',
+			group: 'Panels',
+			swatch: '#94a3b8',
+			partial: { name: 'Group', fill: 'transparent', rect: { w: 280, h: 200 } }
+		},
+		{
+			id: 'named-slot',
+			label: 'Named Slot',
+			kind: 'namedSlot',
+			group: 'Panels',
+			swatch: '#3b82f6',
+			partial: {
+				name: 'Content',
+				slotName: 'Content',
+				fill: 'rgba(59,130,246,0.08)',
+				rect: { w: 240, h: 140 }
+			}
+		},
+		{
+			id: 'scroll-box',
+			label: 'Scroll Box',
+			kind: 'scrollBox',
+			group: 'Panels',
+			swatch: '#64748b',
+			partial: {
+				name: 'Scroll Box',
+				fill: 'transparent',
+				clipChildren: true,
+				rect: { w: 280, h: 320 }
+			}
+		},
+		{
+			id: 'wrap-box',
+			label: 'Wrap Box',
+			kind: 'wrapBox',
+			group: 'Panels',
+			swatch: '#f472b6',
+			partial: { name: 'Wrap Box', fill: 'transparent', gap: 8, rect: { w: 360, h: 200 } }
+		},
+		{
+			id: 'uniform-grid',
+			label: 'Grid',
+			kind: 'uniformGrid',
+			group: 'Panels',
+			swatch: '#38bdf8',
+			partial: {
+				name: 'Uniform Grid',
+				fill: 'transparent',
+				gap: 8,
+				columns: 2,
+				rect: { w: 320, h: 240 }
+			}
+		},
+
 		/* —— Icons (emoji text) —— */
 		{
 			id: 'icon-star',
@@ -555,7 +710,7 @@
 		}
 	];
 
-	const groupOrder = ['Text', 'Stickies', 'Shapes', 'Lines', 'Frames', 'Icons'];
+	const groupOrder = ['Text', 'Stickies', 'Shapes', 'Lines', 'Frames', 'Panels', 'Icons'];
 
 	const groups = $derived(
 		groupOrder.map((name) => ({
@@ -649,6 +804,20 @@
 									<path
 										d="M12 21s-6.7-4.35-9.33-7.6C.5 10.8 1.1 7.1 3.9 5.5 6.1 4.25 8.55 5 12 8.1c3.45-3.1 5.9-3.85 8.1-2.6 2.8 1.6 3.4 5.3 1.23 7.9C18.7 16.65 12 21 12 21z"
 									/>
+								</svg>
+							{:else if el.tool === 'pen'}
+								<svg class="h-7 w-7" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+									<path
+										d="M4 20 L8 6 L14 14 L20 4"
+										stroke={el.swatch}
+										stroke-width="2"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+									/>
+									<circle cx="4" cy="20" r="1.5" fill={el.swatch} />
+									<circle cx="8" cy="6" r="1.5" fill={el.swatch} />
+									<circle cx="14" cy="14" r="1.5" fill={el.swatch} />
+									<circle cx="20" cy="4" r="1.5" fill={el.swatch} />
 								</svg>
 							{:else if el.kind === 'line'}
 								<span

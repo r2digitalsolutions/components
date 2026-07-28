@@ -4,12 +4,18 @@
 	import { emptyCanvasDocument } from '$lib/utils/canvasDocument.js';
 	import type { MediaAsset } from '$lib/utils/mediaTracks.js';
 
+	import type { CanvasExportFormat } from '$lib/utils/canvasExport.js';
+
 	interface CanvasEditorTemplateProps {
 		value?: CanvasDocument;
 		assets?: MediaAsset[];
 		class?: string;
 		onchange?: (doc: CanvasDocument) => void;
-		onexport?: (payload: { format: 'json'; document: CanvasDocument }) => void;
+		onexport?: (payload: {
+			format: CanvasExportFormat;
+			document: CanvasDocument;
+			blob?: Blob;
+		}) => void;
 	}
 
 	let {

@@ -17,7 +17,20 @@ export type CanvasLayerKind =
 	| 'line'
 	| 'arrow'
 	| 'path'
-	| 'sticky';
+	| 'sticky'
+	| 'canvasPanel'
+	| 'overlay'
+	| 'border'
+	| 'hBox'
+	| 'vBox'
+	| 'sizeBox'
+	| 'scaleBox'
+	| 'group'
+	| 'widget'
+	| 'namedSlot'
+	| 'scrollBox'
+	| 'wrapBox'
+	| 'uniformGrid';
 
 export type CanvasObjectFit = 'cover' | 'contain' | 'fill';
 export type CanvasTextAlign = 'left' | 'center' | 'right';
@@ -44,6 +57,43 @@ export interface CanvasLayerRect {
 	y: number;
 	w: number;
 	h: number;
+}
+
+/** UMG-style anchors (0–1 normalized against parent). */
+export interface CanvasAnchors {
+	minX: number;
+	minY: number;
+	maxX: number;
+	maxY: number;
+}
+
+/** UMG slot: anchors + offsets in px relative to anchored edges. */
+export interface CanvasSlot {
+	anchors: CanvasAnchors;
+	offsets: { left: number; top: number; right: number; bottom: number };
+	padding?: { left: number; top: number; right: number; bottom: number };
+	sizeRule?: 'auto' | 'fill' | 'fixed';
+	alignment?: { x: number; y: number };
+	order?: number;
+}
+
+export interface CanvasExposedProp {
+	id: string;
+	targetLayerId: string;
+	field: string;
+	label: string;
+	/** true = editable on instances (eye open) */
+	exposed: boolean;
+}
+
+export interface CanvasWidgetDefinition {
+	id: string;
+	name: string;
+	width: number;
+	height: number;
+	background?: string;
+	layers: CanvasLayer[];
+	exposed: CanvasExposedProp[];
 }
 
 export interface CanvasLayer {
@@ -78,6 +128,23 @@ export interface CanvasLayer {
 	points?: CanvasPoint[];
 	/** For `path`: close the shape into a filled polygon. */
 	closed?: boolean;
+	/** Parent layer id; null/undefined = artboard root. */
+	parentId?: string | null;
+	/** UMG slot (preferred). When missing, derived from rect + top-left anchors. */
+	slot?: CanvasSlot;
+	clipChildren?: boolean;
+	/** Gap for hBox / vBox / wrapBox / uniformGrid */
+	gap?: number;
+	/** namedSlot: public slot name exposed on the User Widget */
+	slotName?: string;
+	/** Child of a widget instance: which named slot to fill */
+	fillSlot?: string;
+	/** uniformGrid column count */
+	columns?: number;
+	/** kind === 'widget' */
+	definitionId?: string;
+	/** Exposed prop overrides on widget instances */
+	overrides?: Record<string, unknown>;
 	rect: CanvasLayerRect;
 	zIndex: number;
 	opacity: number;
@@ -96,7 +163,7 @@ export interface CanvasGuide {
 }
 
 export interface CanvasDocument {
-	version: 1;
+	version: 1 | 2;
 	width: number;
 	height: number;
 	background: string;
@@ -104,6 +171,54 @@ export interface CanvasDocument {
 	guides?: CanvasGuide[];
 	/** When true, all guides are locked. */
 	guidesLocked?: boolean;
+	/** Local User Widget library (v2). */
+	widgets?: CanvasWidgetDefinition[];
+}
+
+const TOP_LEFT: CanvasAnchors = { minX: 0, minY: 0, maxX: 0, maxY: 0 };
+
+/** Top-left point anchors; offsets encode x/y/w/h without needing parent size. */
+export function defaultSlotFromRect(rect: CanvasLayerRect, anchors: CanvasAnchors = TOP_LEFT): CanvasSlot {
+	const a = { ...anchors };
+	// Only valid without parent size when anchors are a point at origin (top-left).
+	if (a.minX === 0 && a.minY === 0 && a.maxX === 0 && a.maxY === 0) {
+		return {
+			anchors: a,
+			offsets: {
+				left: rect.x,
+				top: rect.y,
+				right: -(rect.x + rect.w),
+				bottom: -(rect.y + rect.h)
+			}
+		};
+	}
+	return {
+		anchors: a,
+		offsets: {
+			left: rect.x,
+			top: rect.y,
+			right: -(rect.x + rect.w),
+			bottom: -(rect.y + rect.h)
+		}
+	};
+}
+
+/** For top-left point anchors, offsets.left/top = x/y and right/bottom = -(x+w)/-(y+h) when parent size unknown.
+ * Prefer slotFromLocalRect from canvasHierarchy when parent size is known. */
+export function rectFromSlot(
+	slot: CanvasSlot,
+	parentSize: { width: number; height: number }
+): CanvasLayerRect {
+	const left = slot.anchors.minX * parentSize.width + slot.offsets.left;
+	const top = slot.anchors.minY * parentSize.height + slot.offsets.top;
+	const right = slot.anchors.maxX * parentSize.width - slot.offsets.right;
+	const bottom = slot.anchors.maxY * parentSize.height - slot.offsets.bottom;
+	return {
+		x: left,
+		y: top,
+		w: Math.max(1, right - left),
+		h: Math.max(1, bottom - top)
+	};
 }
 
 const LAYER_DEFAULTS: Record<
@@ -117,6 +232,8 @@ const LAYER_DEFAULTS: Record<
 		fontSize?: number;
 		borderRadius?: number;
 		color?: string;
+		clipChildren?: boolean;
+		gap?: number;
 	}
 > = {
 	image: { w: 320, h: 240, name: 'Image' },
@@ -144,20 +261,80 @@ const LAYER_DEFAULTS: Record<
 		fontSize: 20,
 		borderRadius: 4,
 		color: '#713f12'
-	}
+	},
+	canvasPanel: { w: 400, h: 300, name: 'Canvas Panel', fill: 'transparent', clipChildren: true },
+	overlay: { w: 320, h: 240, name: 'Overlay', fill: 'transparent', clipChildren: true },
+	border: { w: 320, h: 240, name: 'Border', fill: '#ffffff', borderRadius: 12, clipChildren: true },
+	hBox: { w: 360, h: 80, name: 'Horizontal Box', fill: 'transparent', gap: 8 },
+	vBox: { w: 200, h: 240, name: 'Vertical Box', fill: 'transparent', gap: 8 },
+	sizeBox: { w: 200, h: 200, name: 'Size Box', fill: 'transparent', clipChildren: true },
+	scaleBox: { w: 240, h: 240, name: 'Scale Box', fill: 'transparent', clipChildren: true },
+	group: { w: 280, h: 200, name: 'Group', fill: 'transparent' },
+	widget: { w: 280, h: 160, name: 'Widget' },
+	namedSlot: { w: 200, h: 120, name: 'Named Slot', fill: 'rgba(59,130,246,0.08)' },
+	scrollBox: { w: 280, h: 320, name: 'Scroll Box', fill: 'transparent', clipChildren: true },
+	wrapBox: { w: 360, h: 200, name: 'Wrap Box', fill: 'transparent', gap: 8 },
+	uniformGrid: { w: 320, h: 240, name: 'Uniform Grid', fill: 'transparent', gap: 8 }
 };
 
 export function emptyCanvasDocument(
-	partial?: Partial<Omit<CanvasDocument, 'version' | 'layers'>> & { layers?: CanvasLayer[] }
+	partial?: Partial<Omit<CanvasDocument, 'version' | 'layers'>> & {
+		layers?: CanvasLayer[];
+		widgets?: CanvasWidgetDefinition[];
+	}
 ): CanvasDocument {
 	return {
-		version: 1,
+		version: 2,
 		width: partial?.width ?? 1280,
 		height: partial?.height ?? 720,
 		background: partial?.background ?? '#ffffff',
-		layers: partial?.layers ?? [],
+		layers: (partial?.layers ?? []).map(ensureLayerSlot),
 		guides: partial?.guides ?? [],
-		guidesLocked: partial?.guidesLocked ?? false
+		guidesLocked: partial?.guidesLocked ?? false,
+		widgets: partial?.widgets ?? []
+	};
+}
+
+/** Migrate v1 (flat absolute layers) → v2 (parentId + slot). */
+export function migrateCanvasDocument(doc: CanvasDocument | (Omit<CanvasDocument, 'version'> & { version?: number })): CanvasDocument {
+	const version = doc.version ?? 1;
+	if (version >= 2) {
+		// Hot path: already v2 with slots — keep identity to avoid thrashing drag reactivity.
+		if (
+			doc.version === 2 &&
+			doc.widgets &&
+			doc.layers.every((l) => l.slot && l.parentId !== undefined)
+		) {
+			return doc as CanvasDocument;
+		}
+		return {
+			...doc,
+			version: 2,
+			widgets: doc.widgets ?? [],
+			layers: doc.layers.map(ensureLayerSlot)
+		};
+	}
+	return {
+		...doc,
+		version: 2,
+		widgets: doc.widgets ?? [],
+		layers: doc.layers.map((l) =>
+			ensureLayerSlot({
+				...l,
+				parentId: l.parentId ?? null,
+				slot: l.slot ?? defaultSlotFromRect(l.rect),
+				clipChildren: l.clipChildren
+			})
+		)
+	};
+}
+
+export function ensureLayerSlot(layer: CanvasLayer): CanvasLayer {
+	if (layer.slot && layer.parentId !== undefined) return layer;
+	return {
+		...layer,
+		parentId: layer.parentId ?? null,
+		slot: layer.slot ?? defaultSlotFromRect(layer.rect)
 	};
 }
 
@@ -179,7 +356,8 @@ export function createCanvasLayer(
 	partial?: Partial<Omit<CanvasLayer, 'id' | 'kind'>>
 ): CanvasLayer {
 	const d = LAYER_DEFAULTS[kind];
-	return {
+	const rect = partial?.rect ?? { x: 80, y: 80, w: d.w, h: d.h };
+	return ensureLayerSlot({
 		id: uid('layer'),
 		kind,
 		name: partial?.name ?? d.name,
@@ -187,7 +365,8 @@ export function createCanvasLayer(
 		text: partial?.text ?? d.text,
 		fill: partial?.fill ?? d.fill,
 		stroke: partial?.stroke,
-		strokeWidth: partial?.strokeWidth ?? (kind === 'line' || kind === 'arrow' || kind === 'path' ? 4 : undefined),
+		strokeWidth:
+			partial?.strokeWidth ?? (kind === 'line' || kind === 'arrow' || kind === 'path' ? 4 : undefined),
 		fontSize: partial?.fontSize ?? d.fontSize,
 		fontWeight: partial?.fontWeight,
 		fontFamily: partial?.fontFamily,
@@ -208,12 +387,21 @@ export function createCanvasLayer(
 		blur: partial?.blur,
 		points: partial?.points,
 		closed: partial?.closed ?? false,
-		rect: partial?.rect ?? { x: 80, y: 80, w: d.w, h: d.h },
+		parentId: partial?.parentId ?? null,
+		slot: partial?.slot,
+		clipChildren: partial?.clipChildren ?? d.clipChildren ?? false,
+		gap: partial?.gap ?? d.gap,
+		slotName: partial?.slotName ?? (kind === 'namedSlot' ? partial?.name ?? d.name : undefined),
+		fillSlot: partial?.fillSlot,
+		columns: partial?.columns ?? (kind === 'uniformGrid' ? 2 : undefined),
+		definitionId: partial?.definitionId,
+		overrides: partial?.overrides,
+		rect,
 		zIndex: partial?.zIndex ?? 0,
 		opacity: partial?.opacity ?? 1,
 		visible: partial?.visible ?? true,
 		locked: partial?.locked ?? false
-	};
+	});
 }
 
 export function reorderCanvasLayers(layers: CanvasLayer[], orderedIds: string[]): CanvasLayer[] {
