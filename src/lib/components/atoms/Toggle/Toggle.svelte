@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { createId } from '$lib/utils/id.js';
+
 	interface ToggleProps {
 		checked?: boolean;
 		disabled?: boolean;
@@ -21,7 +23,11 @@
 		onchange
 	}: ToggleProps = $props();
 
-	const inputId = $derived(id ?? `toggle-${Math.random().toString(36).slice(2, 9)}`);
+	let autoId = $state<string | undefined>(undefined);
+	$effect(() => {
+		if (id == null) autoId ??= createId('toggle');
+	});
+	const inputId = $derived(id ?? autoId);
 
 	const trackClasses = {
 		sm: 'h-4 w-7',

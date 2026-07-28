@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { createId } from '$lib/utils/id.js';
+
 	interface TextareaProps {
 		id?: string;
 		name?: string;
@@ -45,8 +47,12 @@
 		onkeydown
 	}: TextareaProps = $props();
 
-	const textareaId = $derived(id ?? `textarea-${Math.random().toString(36).slice(2, 9)}`);
-	const helperId = $derived(`${textareaId}-helper`);
+	let autoId = $state<string | undefined>(undefined);
+	$effect(() => {
+		if (id == null) autoId ??= createId('textarea');
+	});
+	const textareaId = $derived(id ?? autoId);
+	const helperId = $derived(textareaId ? `${textareaId}-helper` : undefined);
 	const characterCount = $derived(value.length);
 
 	const statusRingClasses: Record<string, string> = {

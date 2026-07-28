@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { createId } from '$lib/utils/id.js';
+
 	export type ColorFormat = 'hex' | 'rgb' | 'hsl';
 	type ColorPickerSize = 'sm' | 'md' | 'lg';
 
@@ -83,7 +85,10 @@
 	let dragging: 'sv' | 'hue' | 'alpha' | null = null;
 	let syncing = false;
 
-	const panelId = `color-picker-${Math.random().toString(36).slice(2, 9)}`;
+	let panelId = $state<string | undefined>(undefined);
+	$effect(() => {
+		panelId ??= createId('color-picker');
+	});
 
 	const rgba = $derived(hsvToRgb(hue, sat, val));
 

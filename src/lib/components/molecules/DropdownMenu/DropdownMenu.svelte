@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Component, Snippet } from 'svelte';
 	import { on } from 'svelte/events';
+	import { createId } from '$lib/utils/id.js';
 
 	export interface DropdownItem {
 		id: string;
@@ -52,7 +53,7 @@
 	}
 
 	let {
-		id = `menu-${Math.random().toString(36).slice(2, 9)}`,
+		id: idProp,
 		items = [],
 		label = 'Options',
 		align = 'start',
@@ -73,6 +74,13 @@
 		onopenchange
 	}: DropdownMenuProps = $props();
 
+	let autoId = $state<string | undefined>(undefined);
+	$effect(() => {
+		if (idProp == null) autoId ??= createId('menu');
+	});
+	const id = $derived(idProp ?? autoId);
+	const menuId = $derived(id ? `${id}-list` : undefined);
+
 	let triggerEl = $state<HTMLButtonElement | null>(null);
 	let menuEl = $state<HTMLDivElement | null>(null);
 	let listEl = $state<HTMLDivElement | null>(null);
@@ -81,8 +89,6 @@
 	/** Ancestor item ids from root → current submenu */
 	let path = $state<string[]>([]);
 	let lastSelectedId = $state<string | null>(null);
-
-	const menuId = $derived(`${id}-list`);
 
 	function findPathToItem(list: DropdownItem[], targetId: string, parents: string[] = []): string[] | null {
 		for (const item of list) {

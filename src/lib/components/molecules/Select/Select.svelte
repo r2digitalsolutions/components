@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { on } from 'svelte/events';
+	import { createId } from '$lib/utils/id.js';
 
 	export interface SelectOption {
 		value: string;
@@ -60,9 +61,13 @@
 	/** After keyboard nav, ignore hover until the mouse actually moves */
 	let ignoreHover = $state(false);
 
-	const selectId = $derived(id ?? `select-${Math.random().toString(36).slice(2, 9)}`);
-	const listboxId = $derived(`${selectId}-listbox`);
-	const helperId = $derived(`${selectId}-helper`);
+	let autoId = $state<string | undefined>(undefined);
+	$effect(() => {
+		if (id == null) autoId ??= createId('select');
+	});
+	const selectId = $derived(id ?? autoId);
+	const listboxId = $derived(selectId ? `${selectId}-listbox` : undefined);
+	const helperId = $derived(selectId ? `${selectId}-helper` : undefined);
 
 	function findPathToValue(
 		list: SelectOption[],
@@ -148,7 +153,7 @@
 	);
 
 	const activeOptionId = $derived(
-		highlightedIndex >= 0 ? `${listboxId}-option-${highlightedIndex}` : undefined
+		listboxId && highlightedIndex >= 0 ? `${listboxId}-option-${highlightedIndex}` : undefined
 	);
 
 	const sizeClasses = {
@@ -586,7 +591,7 @@
 						<!-- svelte-ignore a11y_click_events_have_key_events -->
 						<!-- svelte-ignore a11y_no_static_element_interactions -->
 						<div
-							id={`${listboxId}-option-${index}`}
+							id={listboxId ? `${listboxId}-option-${index}` : undefined}
 							role="option"
 							aria-selected={isSelected}
 							aria-disabled={option.disabled || undefined}

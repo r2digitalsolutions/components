@@ -104,6 +104,7 @@
 	import { filterRows, cellText, uniqueColumnValues } from './filterRows.js';
 
 	function portalToBody(node: HTMLElement) {
+		if (typeof document === 'undefined') return {};
 		document.body.appendChild(node);
 		return {
 			destroy() {

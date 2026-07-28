@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { createId } from '$lib/utils/id.js';
+
 	interface CheckboxProps {
 		checked?: boolean;
 		indeterminate?: boolean;
@@ -32,7 +34,12 @@
 		onclick
 	}: CheckboxProps = $props();
 
-	const inputId = $derived(id ?? `checkbox-${Math.random().toString(36).slice(2, 9)}`);
+	/** Assigned after mount so SSR HTML matches the first client paint. */
+	let autoId = $state<string | undefined>(undefined);
+	$effect(() => {
+		if (id == null) autoId ??= createId('checkbox');
+	});
+	const inputId = $derived(id ?? autoId);
 
 	const sizeClasses = {
 		sm: 'h-3.5 w-3.5 rounded',

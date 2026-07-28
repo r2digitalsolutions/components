@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import { createId } from '$lib/utils/id.js';
 
 	type TooltipSide = 'top' | 'bottom' | 'left' | 'right';
 
@@ -27,7 +28,10 @@
 	let tipStyle = $state('');
 	let timer: ReturnType<typeof setTimeout> | undefined;
 
-	const tipId = `tooltip-${Math.random().toString(36).slice(2, 9)}`;
+	let tipId = $state<string | undefined>(undefined);
+	$effect(() => {
+		tipId ??= createId('tooltip');
+	});
 
 	function position() {
 		if (!triggerEl || !tipEl) return;

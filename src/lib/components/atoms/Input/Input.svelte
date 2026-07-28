@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import { createId } from '$lib/utils/id.js';
 
 	type InputStatus = 'default' | 'error' | 'success' | 'warning';
 	type InputSize = 'sm' | 'md' | 'lg';
@@ -60,8 +61,12 @@
 		onkeydown
 	}: InputProps = $props();
 
-	const inputId = $derived(id ?? `input-${Math.random().toString(36).slice(2, 9)}`);
-	const helperId = $derived(`${inputId}-helper`);
+	let autoId = $state<string | undefined>(undefined);
+	$effect(() => {
+		if (id == null) autoId ??= createId('input');
+	});
+	const inputId = $derived(id ?? autoId);
+	const helperId = $derived(inputId ? `${inputId}-helper` : undefined);
 	const hasClear = $derived(clearable && value.length > 0 && !disabled && !readonly);
 
 	const wrapperSizeClasses: Record<InputSize, string> = {
