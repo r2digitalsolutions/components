@@ -673,9 +673,6 @@
 											const asset = assets.find((a) => a.id === id);
 											if (asset) addFromAsset(asset);
 										}}
-										onadd={(asset) => {
-											if (asset.kind !== 'text') addFromAsset(asset);
-										}}
 									/>
 								{/if}
 							</div>

@@ -22,6 +22,8 @@
 		variant?: UploaderVariant;
 		view?: UploaderView;
 		showViewToggle?: boolean;
+		/** When false, only the dropzone is shown (parent owns the file list). */
+		showFileList?: boolean;
 		maxSizeMb?: number;
 		disabled?: boolean;
 		/**
@@ -45,6 +47,7 @@
 		variant = 'multiple',
 		view = $bindable('list'),
 		showViewToggle = true,
+		showFileList = true,
 		maxSizeMb = 10,
 		disabled = false,
 		src = '',
@@ -205,6 +208,10 @@
 		}
 
 		onchange?.(fileList.map((item) => item.file));
+		if (!showFileList && isMultiple) {
+			revokePreviews(fileList);
+			fileList = [];
+		}
 		if (fileInputNode) fileInputNode.value = '';
 	}
 
@@ -634,8 +641,8 @@
 			</div>
 		</div>
 
-	<!-- Default / empty single: dropzone -->
-	{:else}
+	<!-- Dropzone: hide the big one when multiple already has files (compact “add more” below) -->
+	{:else if !(isMultiple && hasFile && showFileList)}
 		{@render dropzone()}
 	{/if}
 
@@ -643,8 +650,8 @@
 		<p id={errorId} class="text-xs text-red-600 dark:text-red-400" role="alert">{errorMessage}</p>
 	{/if}
 
-	<!-- Multiple file cards -->
-	{#if isMultiple && hasFile}
+	<!-- Multiple file cards (optional — MediaAssetBrowser owns its own grid) -->
+	{#if isMultiple && hasFile && showFileList}
 		{#if view === 'grid'}
 			<ul class="grid grid-cols-2 gap-2.5 sm:grid-cols-3" aria-label="Selected files">
 				{#each fileList as item (item.id)}

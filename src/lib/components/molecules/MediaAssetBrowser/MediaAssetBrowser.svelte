@@ -49,7 +49,6 @@
 				src: URL.createObjectURL(file)
 			});
 			created.push(asset);
-			onadd?.(asset);
 		}
 		if (created.length) emit([...assets, ...created]);
 	}
@@ -69,6 +68,7 @@
 		variant="multiple"
 		view="grid"
 		showViewToggle={false}
+		showFileList={false}
 		maxSizeMb={200}
 		onchange={handleFiles}
 	/>

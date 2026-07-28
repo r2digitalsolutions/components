@@ -16,6 +16,7 @@ export type CanvasLayerKind =
 	| 'heart'
 	| 'line'
 	| 'arrow'
+	| 'path'
 	| 'sticky';
 
 export type CanvasObjectFit = 'cover' | 'contain' | 'fill';
@@ -31,6 +32,12 @@ export type CanvasAlign =
 	| 'bottom'
 	| 'center'
 	| 'full';
+
+/** Normalized point inside a layer rect (0–1). */
+export interface CanvasPoint {
+	x: number;
+	y: number;
+}
 
 export interface CanvasLayerRect {
 	x: number;
@@ -67,6 +74,10 @@ export interface CanvasLayer {
 	shadowBlur?: number;
 	shadowColor?: string;
 	blur?: number;
+	/** For `path`: normalized points (0–1) relative to rect. */
+	points?: CanvasPoint[];
+	/** For `path`: close the shape into a filled polygon. */
+	closed?: boolean;
 	rect: CanvasLayerRect;
 	zIndex: number;
 	opacity: number;
@@ -123,6 +134,7 @@ const LAYER_DEFAULTS: Record<
 	heart: { w: 200, h: 180, name: 'Heart', fill: '#ec4899' },
 	line: { w: 280, h: 4, name: 'Line', fill: '#94a3b8' },
 	arrow: { w: 280, h: 24, name: 'Arrow', fill: '#0f172a' },
+	path: { w: 240, h: 180, name: 'Path', fill: '#0f172a' },
 	sticky: {
 		w: 220,
 		h: 220,
@@ -175,7 +187,7 @@ export function createCanvasLayer(
 		text: partial?.text ?? d.text,
 		fill: partial?.fill ?? d.fill,
 		stroke: partial?.stroke,
-		strokeWidth: partial?.strokeWidth ?? (kind === 'line' || kind === 'arrow' ? 4 : undefined),
+		strokeWidth: partial?.strokeWidth ?? (kind === 'line' || kind === 'arrow' || kind === 'path' ? 4 : undefined),
 		fontSize: partial?.fontSize ?? d.fontSize,
 		fontWeight: partial?.fontWeight,
 		fontFamily: partial?.fontFamily,
@@ -194,6 +206,8 @@ export function createCanvasLayer(
 		shadowBlur: partial?.shadowBlur,
 		shadowColor: partial?.shadowColor,
 		blur: partial?.blur,
+		points: partial?.points,
+		closed: partial?.closed ?? false,
 		rect: partial?.rect ?? { x: 80, y: 80, w: d.w, h: d.h },
 		zIndex: partial?.zIndex ?? 0,
 		opacity: partial?.opacity ?? 1,
@@ -359,4 +373,65 @@ export const CANVAS_PRESETS = [
 export function presetIdForSize(width: number, height: number): string {
 	const match = CANVAS_PRESETS.find((p) => p.width === width && p.height === height);
 	return match?.id ?? 'custom';
+}
+
+/** Build a path layer from absolute document points. */
+export function createPathFromDocPoints(
+	docPoints: { x: number; y: number }[],
+	opts?: { closed?: boolean; fill?: string; strokeWidth?: number; name?: string; zIndex?: number }
+): CanvasLayer {
+	const pad = 8;
+	let minX = Infinity;
+	let minY = Infinity;
+	let maxX = -Infinity;
+	let maxY = -Infinity;
+	for (const p of docPoints) {
+		minX = Math.min(minX, p.x);
+		minY = Math.min(minY, p.y);
+		maxX = Math.max(maxX, p.x);
+		maxY = Math.max(maxY, p.y);
+	}
+	const w = Math.max(24, maxX - minX + pad * 2);
+	const h = Math.max(24, maxY - minY + pad * 2);
+	const x = minX - pad;
+	const y = minY - pad;
+	const points: CanvasPoint[] = docPoints.map((p) => ({
+		x: w > 0 ? (p.x - x) / w : 0,
+		y: h > 0 ? (p.y - y) / h : 0
+	}));
+	return createCanvasLayer('path', {
+		name: opts?.name ?? (opts?.closed ? 'Shape' : 'Path'),
+		fill: opts?.fill ?? '#0f172a',
+		strokeWidth: opts?.strokeWidth ?? 3,
+		closed: opts?.closed ?? false,
+		points,
+		zIndex: opts?.zIndex ?? 0,
+		rect: { x, y, w, h }
+	});
+}
+
+/** Recompute rect + normalized points after editing absolute doc points. */
+export function rebakePathLayer(
+	layer: CanvasLayer,
+	docPoints: { x: number; y: number }[]
+): CanvasLayer {
+	const next = createPathFromDocPoints(docPoints, {
+		closed: layer.closed,
+		fill: layer.fill,
+		strokeWidth: layer.strokeWidth,
+		name: layer.name,
+		zIndex: layer.zIndex
+	});
+	return {
+		...layer,
+		points: next.points,
+		rect: next.rect,
+		closed: next.closed
+	};
+}
+
+export function pathPointsToDoc(layer: CanvasLayer): { x: number; y: number }[] {
+	const pts = layer.points ?? [];
+	const { x, y, w, h } = layer.rect;
+	return pts.map((p) => ({ x: x + p.x * w, y: y + p.y * h }));
 }

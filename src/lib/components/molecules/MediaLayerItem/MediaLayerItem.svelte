@@ -82,8 +82,8 @@
 			draggable={!layer.locked}
 			resizable={!layer.locked}
 			bind:rect
-			minW={layer.kind === 'line' || layer.kind === 'arrow' ? 24 : 40}
-			minH={layer.kind === 'line' ? 2 : 24}
+			minW={layer.kind === 'line' || layer.kind === 'arrow' || layer.kind === 'path' ? 16 : 40}
+			minH={layer.kind === 'line' ? 4 : layer.kind === 'arrow' || layer.kind === 'path' ? 16 : 24}
 			class={['bg-transparent', passthrough && 'pointer-events-none']}
 			onchange={(r) => {
 				rect = r;
@@ -206,18 +206,73 @@
 						/>
 					</svg>
 				{:else if layer.kind === 'line'}
+					{@const vertical = layer.rect.h > layer.rect.w}
+					{@const sw = Math.max(2, layer.strokeWidth ?? 4)}
 					<div
-						class="absolute inset-x-0 top-1/2 -translate-y-1/2 rounded-full"
+						class={[
+							'absolute rounded-full',
+							vertical
+								? 'left-1/2 top-0 h-full -translate-x-1/2'
+								: 'left-0 top-1/2 w-full -translate-y-1/2'
+						]}
 						style:background={layer.fill ?? '#94a3b8'}
-						style:height="{Math.max(2, layer.strokeWidth ?? 4)}px"
+						style:width={vertical ? `${sw}px` : undefined}
+						style:height={vertical ? undefined : `${sw}px`}
 					></div>
 				{:else if layer.kind === 'arrow'}
-					<svg class="h-full w-full" viewBox="0 0 100 24" preserveAspectRatio="none">
+					{@const vertical = layer.rect.h > layer.rect.w}
+					{@const sw = Math.max(2, layer.strokeWidth ?? 4)}
+					{@const bw = layer.rect.w}
+					{@const bh = layer.rect.h}
+					{@const len = vertical ? bh : bw}
+					{@const thick = vertical ? bw : bh}
+					{@const head = Math.min(Math.max(14, thick * 0.9), len * 0.35, 40)}
+					<svg class="h-full w-full overflow-visible" viewBox={`0 0 ${bw} ${bh}`} aria-hidden="true">
+						{#if vertical}
+							{@const cx = bw / 2}
+							<line
+								x1={cx}
+								y1={sw}
+								x2={cx}
+								y2={bh - head}
+								stroke={layer.fill ?? '#0f172a'}
+								stroke-width={sw}
+								stroke-linecap="round"
+							/>
+							<polygon
+								points={`${cx},${bh - sw} ${cx - head * 0.45},${bh - head} ${cx + head * 0.45},${bh - head}`}
+								fill={layer.fill ?? '#0f172a'}
+							/>
+						{:else}
+							{@const cy = bh / 2}
+							<line
+								x1={sw}
+								y1={cy}
+								x2={bw - head}
+								y2={cy}
+								stroke={layer.fill ?? '#0f172a'}
+								stroke-width={sw}
+								stroke-linecap="round"
+							/>
+							<polygon
+								points={`${bw - sw},${cy} ${bw - head},${cy - head * 0.45} ${bw - head},${cy + head * 0.45}`}
+								fill={layer.fill ?? '#0f172a'}
+							/>
+						{/if}
+					</svg>
+				{:else if layer.kind === 'path' && layer.points?.length}
+					{@const bw = Math.max(1, layer.rect.w)}
+					{@const bh = Math.max(1, layer.rect.h)}
+					{@const d = layer.points
+						.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x * bw} ${p.y * bh}`)
+						.join(' ')}
+					<svg class="h-full w-full overflow-visible" viewBox={`0 0 ${bw} ${bh}`} aria-hidden="true">
 						<path
-							d="M2 12 H78 M68 4 L92 12 L68 20"
-							fill="none"
-							stroke={layer.fill ?? '#0f172a'}
-							stroke-width={layer.strokeWidth ?? 4}
+							d={layer.closed ? `${d} Z` : d}
+							fill={layer.closed ? (layer.fill ?? '#0f172a') : 'none'}
+							fill-opacity={layer.closed ? 0.15 : 1}
+							stroke={layer.stroke ?? layer.fill ?? '#0f172a'}
+							stroke-width={Math.max(2, layer.strokeWidth ?? 3)}
 							stroke-linecap="round"
 							stroke-linejoin="round"
 						/>

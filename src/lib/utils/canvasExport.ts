@@ -111,32 +111,79 @@ function drawShapePath(ctx: CanvasRenderingContext2D, layer: CanvasLayer) {
 			break;
 		}
 		case 'line': {
-			const mid = y + h / 2;
-			ctx.moveTo(x, mid);
-			ctx.lineTo(x + w, mid);
+			const vertical = h > w;
+			const sw = Math.max(2, layer.strokeWidth ?? 4);
 			ctx.strokeStyle = fill;
-			ctx.lineWidth = Math.max(2, layer.strokeWidth ?? 4);
+			ctx.lineWidth = sw;
 			ctx.lineCap = 'round';
+			if (vertical) {
+				ctx.moveTo(x + w / 2, y);
+				ctx.lineTo(x + w / 2, y + h);
+			} else {
+				ctx.moveTo(x, y + h / 2);
+				ctx.lineTo(x + w, y + h / 2);
+			}
 			ctx.stroke();
 			return;
 		}
 		case 'arrow': {
-			const mid = y + h / 2;
+			const vertical = h > w;
 			const sw = Math.max(2, layer.strokeWidth ?? 4);
+			const len = vertical ? h : w;
+			const thick = vertical ? w : h;
+			const head = Math.min(Math.max(14, thick * 0.9), len * 0.35, 40);
 			ctx.strokeStyle = fill;
 			ctx.fillStyle = fill;
 			ctx.lineWidth = sw;
 			ctx.lineCap = 'round';
 			ctx.lineJoin = 'round';
-			ctx.moveTo(x, mid);
-			ctx.lineTo(x + w * 0.78, mid);
-			ctx.stroke();
+			if (vertical) {
+				const cx = x + w / 2;
+				ctx.moveTo(cx, y + sw);
+				ctx.lineTo(cx, y + h - head);
+				ctx.stroke();
+				ctx.beginPath();
+				ctx.moveTo(cx, y + h - sw);
+				ctx.lineTo(cx - head * 0.45, y + h - head);
+				ctx.lineTo(cx + head * 0.45, y + h - head);
+				ctx.closePath();
+				ctx.fill();
+			} else {
+				const cy = y + h / 2;
+				ctx.moveTo(x + sw, cy);
+				ctx.lineTo(x + w - head, cy);
+				ctx.stroke();
+				ctx.beginPath();
+				ctx.moveTo(x + w - sw, cy);
+				ctx.lineTo(x + w - head, cy - head * 0.45);
+				ctx.lineTo(x + w - head, cy + head * 0.45);
+				ctx.closePath();
+				ctx.fill();
+			}
+			return;
+		}
+		case 'path': {
+			const pts = layer.points ?? [];
+			if (pts.length < 2) return;
 			ctx.beginPath();
-			ctx.moveTo(x + w * 0.68, mid - h * 0.35);
-			ctx.lineTo(x + w * 0.95, mid);
-			ctx.lineTo(x + w * 0.68, mid + h * 0.35);
-			ctx.closePath();
-			ctx.fill();
+			pts.forEach((p, i) => {
+				const px = x + p.x * w;
+				const py = y + p.y * h;
+				if (i === 0) ctx.moveTo(px, py);
+				else ctx.lineTo(px, py);
+			});
+			if (layer.closed) {
+				ctx.closePath();
+				ctx.fillStyle = fill;
+				ctx.globalAlpha = (layer.opacity ?? 1) * 0.15;
+				ctx.fill();
+				ctx.globalAlpha = layer.opacity ?? 1;
+			}
+			ctx.strokeStyle = layer.stroke ?? fill;
+			ctx.lineWidth = Math.max(2, layer.strokeWidth ?? 3);
+			ctx.lineCap = 'round';
+			ctx.lineJoin = 'round';
+			ctx.stroke();
 			return;
 		}
 		default:

@@ -65,6 +65,10 @@
 	<Minus class={iconClass} aria-hidden="true" />
 {:else if kind === 'arrow'}
 	<MoveRight class={iconClass} aria-hidden="true" />
+{:else if kind === 'path'}
+	<svg class={iconClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+		<path stroke-linecap="round" stroke-linejoin="round" d="M4 16l5-8 4 5 3-4 4 7" />
+	</svg>
 {:else if kind === 'sticky'}
 	<StickyNote class={iconClass} aria-hidden="true" />
 {:else}

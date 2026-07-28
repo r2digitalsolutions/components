@@ -17,6 +17,8 @@
 	} from '$lib/utils/marqueeSelect.js';
 	import {
 		createCanvasGuide,
+		pathPointsToDoc,
+		rebakePathLayer,
 		snapLayerRect,
 		snapRectToGuides,
 		type CanvasDocument,
@@ -39,6 +41,8 @@
 		showGuides?: boolean;
 		snap?: boolean;
 		cellSize?: number;
+		/** Pen tool: click to place points, dblclick / Enter to finish, click first point to close. */
+		drawMode?: boolean;
 		class?: string;
 		onselect?: (ids: string[]) => void;
 		onzoom?: (zoom: number) => void;
@@ -47,6 +51,8 @@
 		oncontextlayer?: (payload: { id: string; x: number; y: number }) => void;
 		/** Drop an element from the Elements panel onto the artboard. */
 		ondropelement?: (payload: { def: CanvasElementDef; x: number; y: number }) => void;
+		ondrawcomplete?: (payload: { points: { x: number; y: number }[]; closed: boolean }) => void;
+		ondrawcancel?: () => void;
 	}
 
 	let {
@@ -57,13 +63,16 @@
 		showGuides = true,
 		snap = true,
 		cellSize = 8,
+		drawMode = false,
 		class: className = '',
 		onselect,
 		onzoom,
 		onlayerchange,
 		ondocumentchange,
 		oncontextlayer,
-		ondropelement
+		ondropelement,
+		ondrawcomplete,
+		ondrawcancel
 	}: MediaStageProps = $props();
 
 	let viewportEl = $state<HTMLDivElement | null>(null);
@@ -83,6 +92,9 @@
 		x: number;
 		y: number;
 	} | null>(null);
+	let draftPoints = $state<{ x: number; y: number }[]>([]);
+	let draftCursor = $state<{ x: number; y: number } | null>(null);
+	let activePathPoint = $state<number | null>(null);
 
 	const RULER_TOP = 20;
 	/** Wide enough for upright major labels (e.g. 1000) beside ticks. */
@@ -93,6 +105,11 @@
 	const guides = $derived(doc.guides ?? []);
 	const guidesLocked = $derived(!!doc.guidesLocked);
 	const artboardTransparent = $derived(backgroundAlpha(doc.background) < 0.999);
+	const selectedPath = $derived(
+		selectedIds.length === 1
+			? (doc.layers.find((l) => l.id === selectedIds[0] && l.kind === 'path') ?? null)
+			: null
+	);
 
 	const fitScale = $derived.by(() => {
 		if (vw <= 0 || vh <= 0) return 1;
@@ -353,6 +370,118 @@
 			y: (clientY - aRect.top) / scale
 		};
 	}
+
+	function snapDocPoint(pt: { x: number; y: number }) {
+		if (!snap) return pt;
+		return {
+			x: Math.round(pt.x / cellSize) * cellSize,
+			y: Math.round(pt.y / cellSize) * cellSize
+		};
+	}
+
+	function finishDraft(closed: boolean) {
+		if (draftPoints.length < 2) {
+			draftPoints = [];
+			draftCursor = null;
+			ondrawcancel?.();
+			return;
+		}
+		const points = [...draftPoints];
+		draftPoints = [];
+		draftCursor = null;
+		ondrawcomplete?.({ points, closed });
+	}
+
+	function cancelDraft() {
+		draftPoints = [];
+		draftCursor = null;
+		ondrawcancel?.();
+	}
+
+	function handleDrawClick(e: MouseEvent) {
+		if (!drawMode) return;
+		e.preventDefault();
+		e.stopPropagation();
+		const raw = clientToDoc(e.clientX, e.clientY);
+		const pt = snapDocPoint(raw);
+		if (draftPoints.length >= 3) {
+			const first = draftPoints[0];
+			const dist = Math.hypot(pt.x - first.x, pt.y - first.y);
+			if (dist <= 12 / scale) {
+				finishDraft(true);
+				return;
+			}
+		}
+		draftPoints = [...draftPoints, pt];
+	}
+
+	function handleDrawMove(e: MouseEvent) {
+		if (!drawMode || !draftPoints.length) {
+			draftCursor = null;
+			return;
+		}
+		draftCursor = snapDocPoint(clientToDoc(e.clientX, e.clientY));
+	}
+
+	function handleDrawDblClick(e: MouseEvent) {
+		if (!drawMode) return;
+		e.preventDefault();
+		e.stopPropagation();
+		finishDraft(false);
+	}
+
+	function beginPathPointDrag(index: number, e: PointerEvent) {
+		if (!selectedPath || selectedPath.locked) return;
+		e.preventDefault();
+		e.stopPropagation();
+		activePathPoint = index;
+		const target = e.currentTarget as HTMLElement;
+		target.setPointerCapture(e.pointerId);
+		const onMove = (ev: PointerEvent) => {
+			if (!selectedPath) return;
+			const docs = pathPointsToDoc(selectedPath);
+			docs[index] = snapDocPoint(clientToDoc(ev.clientX, ev.clientY));
+			onlayerchange?.(rebakePathLayer(selectedPath, docs));
+		};
+		const onUp = (ev: PointerEvent) => {
+			activePathPoint = null;
+			try {
+				target.releasePointerCapture(ev.pointerId);
+			} catch {
+				/* ignore */
+			}
+			window.removeEventListener('pointermove', onMove);
+			window.removeEventListener('pointerup', onUp);
+		};
+		window.addEventListener('pointermove', onMove);
+		window.addEventListener('pointerup', onUp);
+	}
+
+	function insertPathPoint(afterIndex: number, e: MouseEvent) {
+		if (!selectedPath || selectedPath.locked) return;
+		e.preventDefault();
+		e.stopPropagation();
+		const docs = pathPointsToDoc(selectedPath);
+		const pt = snapDocPoint(clientToDoc(e.clientX, e.clientY));
+		docs.splice(afterIndex + 1, 0, pt);
+		onlayerchange?.(rebakePathLayer(selectedPath, docs));
+	}
+
+	function removeActivePathPoint() {
+		if (!selectedPath || selectedPath.locked || activePathPoint == null) return;
+		const docs = pathPointsToDoc(selectedPath);
+		if (docs.length <= 2) return;
+		docs.splice(activePathPoint, 1);
+		activePathPoint = null;
+		onlayerchange?.(rebakePathLayer(selectedPath, docs));
+	}
+
+	$effect(() => {
+		if (!drawMode) {
+			draftPoints = [];
+			draftCursor = null;
+		}
+	});
 
 	function clampGuidePos(orientation: CanvasGuideOrientation, pos: number) {
 		const max = orientation === 'vertical' ? doc.width : doc.height;
