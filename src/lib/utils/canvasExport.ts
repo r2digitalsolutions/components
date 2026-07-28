@@ -1,5 +1,5 @@
 import type { CanvasDocument, CanvasLayer } from './canvasDocument.js';
-import { computeAbsoluteRects } from './canvasHierarchy.js';
+import { computeAbsoluteRects, isEffectivelyVisible } from './canvasHierarchy.js';
 import { flattenLayersWithWidgets } from './canvasWidget.js';
 
 export type CanvasExportFormat = 'png' | 'jpeg' | 'json';
@@ -405,6 +405,7 @@ export async function renderCanvasDocument(
 
 	const flat = flattenLayersWithWidgets(doc.layers, doc.widgets ?? []);
 	const absMap = computeAbsoluteRects(flat, { width: doc.width, height: doc.height });
+	const byId = new Map(flat.map((l) => [l.id, l]));
 	const paintOrder: CanvasLayer[] = [];
 	const walk = (parentId: string | null) => {
 		const kids = flat
@@ -418,6 +419,7 @@ export async function renderCanvasDocument(
 	walk(null);
 
 	for (const layer of paintOrder) {
+		if (!isEffectivelyVisible(flat, layer.id, byId)) continue;
 		const abs = absMap.get(layer.id) ?? layer.rect;
 		ctx.save();
 		if (layer.clipChildren) {

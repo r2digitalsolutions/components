@@ -14,6 +14,7 @@
 		alignLayerRect,
 		type CanvasAlign,
 		type CanvasDocument,
+		type CanvasExposedProp,
 		type CanvasLayer,
 		type CanvasWidgetDefinition
 	} from '$lib/utils/canvasDocument.js';
@@ -26,7 +27,12 @@
 		slotFromLocalRect,
 		syncSlotFromRect
 	} from '$lib/utils/canvasHierarchy.js';
-	import { isPropExposed, listFillableSlotsForInstance } from '$lib/utils/canvasWidget.js';
+	import {
+		groupExposedPropsByLayer,
+		isPropExposed,
+		listFillableSlotsForInstance,
+		resolveExposedPropValue
+	} from '$lib/utils/canvasWidget.js';
 	import type { Component } from 'svelte';
 	import FlipHorizontal2 from '@lucide/svelte/icons/flip-horizontal-2';
 	import FlipVertical2 from '@lucide/svelte/icons/flip-vertical-2';
@@ -78,6 +84,12 @@
 			? (doc?.widgets ?? []).find((w) => w.id === layer.definitionId) ?? null
 			: null
 	);
+	const exposedGroups = $derived(instanceDef ? groupExposedPropsByLayer(instanceDef) : []);
+
+	function exposedValue(prop: CanvasExposedProp): unknown {
+		if (!layer || !instanceDef) return undefined;
+		return resolveExposedPropValue(layer, instanceDef, prop);
+	}
 
 	/** Parent content box used for slot ↔ rect sync (local X/Y). */
 	const parentContentSize = $derived.by((): { width: number; height: number } => {
@@ -325,47 +337,59 @@
 		</PropertyGroup>
 
 		{#if instanceDef && layer.kind === 'widget'}
-			<PropertyGroup title="Widget">
-				<p class="px-2 pb-1 text-[11px] text-muted">{instanceDef.name}</p>
-				{#each instanceDef.exposed.filter((e) => e.exposed) as prop (prop.id)}
-					<PropertyField label={prop.label}>
-						{#if prop.field === 'visible'}
-							<Toggle
-								checked={Boolean(layer.overrides?.[prop.id] ?? true)}
-								onchange={(v) => onoverride?.({ propId: prop.id, value: v })}
-								size="sm"
-							/>
-						{:else if prop.field === 'opacity' || prop.field === 'fontSize' || prop.field === 'borderRadius'}
-							<Input
-								type="number"
-								size="sm"
-								value={String(layer.overrides?.[prop.id] ?? '')}
-								oninput={(e) =>
-									onoverride?.({
-										propId: prop.id,
-										value: Number((e.currentTarget as HTMLInputElement).value)
-									})}
-							/>
-						{:else if prop.field === 'fill' || prop.field === 'color' || prop.field === 'stroke'}
-							<ColorPicker
-								value={String(layer.overrides?.[prop.id] ?? '#000000')}
-								showSwatches={false}
-								onchange={(v) => onoverride?.({ propId: prop.id, value: v })}
-							/>
-						{:else}
-							<Input
-								size="sm"
-								value={String(layer.overrides?.[prop.id] ?? '')}
-								oninput={(e) =>
-									onoverride?.({
-										propId: prop.id,
-										value: (e.currentTarget as HTMLInputElement).value
-									})}
-							/>
-						{/if}
-					</PropertyField>
+			<PropertyGroup title="Widget · {instanceDef.name}">
+				{#each exposedGroups as group (group.layerId)}
+					<div class="space-y-0.5 border-b border-border/60 py-1 last:border-b-0">
+						<p
+							class="px-2 pt-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted"
+							title="Blueprint layer"
+						>
+							{group.layerName}
+						</p>
+						{#each group.props as prop (prop.id)}
+							{@const current = exposedValue(prop)}
+							<PropertyField label={prop.label}>
+								{#if prop.field === 'visible'}
+									<Toggle
+										checked={Boolean(current ?? true)}
+										onchange={(v) => onoverride?.({ propId: prop.id, value: v })}
+										size="sm"
+									/>
+								{:else if prop.field === 'opacity' || prop.field === 'fontSize' || prop.field === 'borderRadius' || prop.field === 'strokeWidth'}
+									<Input
+										type="number"
+										size="sm"
+										value={current == null || current === '' ? '' : String(current)}
+										oninput={(e) =>
+											onoverride?.({
+												propId: prop.id,
+												value: Number((e.currentTarget as HTMLInputElement).value)
+											})}
+									/>
+								{:else if prop.field === 'fill' || prop.field === 'color' || prop.field === 'stroke' || prop.field === 'textBackground'}
+									<ColorPicker
+										value={String(current ?? '#000000')}
+										showSwatches={false}
+										onchange={(v) => onoverride?.({ propId: prop.id, value: v })}
+									/>
+								{:else}
+									<Input
+										size="sm"
+										value={String(current ?? '')}
+										oninput={(e) =>
+											onoverride?.({
+												propId: prop.id,
+												value: (e.currentTarget as HTMLInputElement).value
+											})}
+									/>
+								{/if}
+							</PropertyField>
+						{/each}
+					</div>
 				{:else}
-					<p class="px-2 py-2 text-[11px] text-muted">No exposed properties</p>
+					<p class="px-2 py-2 text-[11px] text-muted">
+						No exposed properties — edit the widget and use the eye icon on fields
+					</p>
 				{/each}
 				<div class="flex flex-col gap-1 px-1 py-1">
 					<button

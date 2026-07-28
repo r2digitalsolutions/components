@@ -1519,6 +1519,7 @@ export {
 	getDescendantIds,
 	getSubtreeIds,
 	getAncestors,
+	isEffectivelyVisible,
 	isDescendant,
 	canReparent,
 	ANCHOR_PRESETS,
@@ -1533,7 +1534,10 @@ export {
 	deleteSubtree,
 	duplicateSubtree,
 	reorderSiblings,
-	clipPathForLayer
+	clipPathForLayer,
+	scrollBoxOverflow,
+	scrollBarMetrics,
+	applyScrollBoxOffsets
 } from './utils/canvasHierarchy.js';
 export {
 	createWidgetDefinition,
@@ -1550,6 +1554,9 @@ export {
 	setExposedProp,
 	isPropExposed,
 	getExposedProp,
+	getExposedFieldDefault,
+	resolveExposedPropValue,
+	groupExposedPropsByLayer,
 	setInstanceOverride,
 	getNamedSlotsFromDefinition,
 	listFillableSlotsForInstance

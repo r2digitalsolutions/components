@@ -64,6 +64,8 @@
 		 * follows this and only boosts temporarily while selected/dragging.
 		 */
 		stackIndex?: number;
+		/** CSS transform on the freeform root (e.g. rotate/flip) so chrome rotates too. */
+		transform?: string;
 		collapsible?: boolean;
 		collapsed?: boolean;
 		loading?: boolean;
@@ -106,6 +108,7 @@
 		handlesVisible,
 		raiseOnSelect = true,
 		stackIndex,
+		transform: frameTransform,
 		collapsible = false,
 		collapsed = $bindable(false),
 		loading = false,
@@ -390,7 +393,8 @@
 
 	const rootStyle = $derived.by(() => {
 		if (freeform) {
-			return `left:${rect.x}px;top:${rect.y}px;width:${rect.w}px;height:${collapsed ? 'auto' : `${rect.h}px`};z-index:${paintZ};`;
+			const xf = frameTransform ? `transform:${frameTransform};transform-origin:center center;` : '';
+			return `left:${rect.x}px;top:${rect.y}px;width:${rect.w}px;height:${collapsed ? 'auto' : `${rect.h}px`};z-index:${paintZ};${xf}`;
 		}
 		if (localW != null) {
 			const h =

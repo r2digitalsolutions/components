@@ -27,9 +27,14 @@
 		type CanvasLayer
 	} from '$lib/utils/canvasDocument.js';
 	import {
+		applyScrollBoxOffsets,
 		computeAbsoluteRects,
 		contentPadding,
 		LAYOUT_BOX_KINDS,
+		isEffectivelyVisible,
+		isMarqueePassThroughKind,
+		scrollBoxOverflow,
+		scrollBarMetrics,
 		slotFromLocalRect,
 		clipPathForLayer
 	} from '$lib/utils/canvasHierarchy.js';
@@ -126,6 +131,11 @@
 	const absMap = $derived(
 		computeAbsoluteRects(displayLayers, { width: doc.width, height: doc.height })
 	);
+	/** Ephemeral scroll offsets for scrollBox preview (not persisted). */
+	let scrollOffsets = $state<Map<string, { x: number; y: number }>>(new Map());
+	const paintAbsMap = $derived(
+		applyScrollBoxOffsets(displayLayers, absMap, scrollOffsets)
+	);
 	const sorted = $derived.by(() => {
 		const out: typeof displayLayers = [];
 		const walk = (parentId: string | null) => {
@@ -139,6 +149,14 @@
 		};
 		walk(null);
 		return out;
+	});
+	const layerById = $derived(new Map(displayLayers.map((l) => [l.id, l])));
+	const effectivelyVisible = $derived.by(() => {
+		const set = new Set<string>();
+		for (const l of displayLayers) {
+			if (isEffectivelyVisible(displayLayers, l.id, layerById)) set.add(l.id);
+		}
+		return set;
 	});
 	const selectedSet = $derived(new Set(selectedIds));
 	const sceneLayerIds = $derived(new Set(workingLayers.map((l) => l.id)));
@@ -289,7 +307,7 @@
 	function absToLocalUpdate(layer: CanvasLayer, absRect: WidgetRect): CanvasLayer {
 		const parentId = layer.parentId ?? null;
 		const parentAbs = parentId ? (absMap.get(parentId) ?? null) : null;
-		const parentLayer = parentId ? workingLayers.find((l) => l.id === parentId) : null;
+		const parentLayer = parentId ? (workingLayers.find((l) => l.id === parentId) ?? null) : null;
 		const pad = parentLayer
 			? contentPadding(parentLayer)
 			: { left: 0, top: 0, right: 0, bottom: 0 };
@@ -464,9 +482,17 @@
 		const originY = aRect.top - vRect.top + viewportEl.scrollTop;
 		const s = scale;
 		return sorted
-			.filter((l) => l.visible && !l.locked && sceneLayerIds.has(resolveSelectableId(l.id)))
+			.filter((l) => {
+				if (!effectivelyVisible.has(l.id) || l.locked) return false;
+				const realId = resolveSelectableId(l.id);
+				if (!sceneLayerIds.has(realId)) return false;
+				// Don't always rubber-band-select the full-bleed root panel.
+				const scene = workingLayers.find((x) => x.id === realId);
+				if (scene?.kind === 'canvasPanel') return false;
+				return true;
+			})
 			.map((l) => {
-				const r = absMap.get(l.id) ?? l.rect;
+				const r = paintAbsMap.get(l.id) ?? absMap.get(l.id) ?? l.rect;
 				return {
 					id: resolveSelectableId(l.id),
 					x: originX + r.x * s,
@@ -490,15 +516,128 @@
 	function pickLayerAtDoc(pt: { x: number; y: number }): string | null {
 		for (let i = sorted.length - 1; i >= 0; i--) {
 			const l = sorted[i];
-			if (!l.visible || l.locked) continue;
+			if (!effectivelyVisible.has(l.id) || l.locked) continue;
 			const selectable = resolveSelectableId(l.id);
 			if (!sceneLayerIds.has(l.id) && !sceneLayerIds.has(selectable)) continue;
-			const r = absMap.get(l.id) ?? l.rect;
+			const r = paintAbsMap.get(l.id) ?? l.rect;
 			if (pt.x >= r.x && pt.x <= r.x + r.w && pt.y >= r.y && pt.y <= r.y + r.h) {
 				return selectable;
 			}
 		}
 		return null;
+	}
+
+	function findScrollBoxAtDoc(pt: { x: number; y: number }): string | null {
+		const byId = new Map(displayLayers.map((l) => [l.id, l]));
+		for (let i = sorted.length - 1; i >= 0; i--) {
+			const l = sorted[i];
+			if (!effectivelyVisible.has(l.id)) continue;
+			const r = paintAbsMap.get(l.id) ?? absMap.get(l.id);
+			if (!r) continue;
+			if (pt.x < r.x || pt.x > r.x + r.w || pt.y < r.y || pt.y > r.y + r.h) continue;
+			let cur: typeof l | undefined = l;
+			while (cur) {
+				if (cur.kind === 'scrollBox') return cur.id;
+				cur = cur.parentId ? byId.get(cur.parentId) : undefined;
+			}
+		}
+		return null;
+	}
+
+	function handleScrollWheel(e: WheelEvent) {
+		if (drawMode) return;
+		const pt = clientToDoc(e.clientX, e.clientY);
+		const boxId = findScrollBoxAtDoc(pt);
+		if (!boxId) return;
+		setScrollOffset(boxId, {
+			x: (scrollOffsets.get(boxId)?.x ?? 0) + e.deltaX,
+			y: (scrollOffsets.get(boxId)?.y ?? 0) + e.deltaY
+		}, e);
+	}
+
+	function setScrollOffset(
+		boxId: string,
+		raw: { x: number; y: number },
+		e?: WheelEvent
+	) {
+		const { maxX, maxY } = scrollBoxOverflow(boxId, displayLayers, absMap);
+		if (maxX <= 0 && maxY <= 0) return;
+		const cur = scrollOffsets.get(boxId) ?? { x: 0, y: 0 };
+		const next = {
+			x: Math.min(maxX, Math.max(0, raw.x)),
+			y: Math.min(maxY, Math.max(0, raw.y))
+		};
+		if (next.x === cur.x && next.y === cur.y) return;
+		e?.preventDefault();
+		e?.stopPropagation();
+		const map = new Map(scrollOffsets);
+		map.set(boxId, next);
+		scrollOffsets = map;
+	}
+
+	function beginScrollThumbDrag(
+		boxId: string,
+		axis: 'x' | 'y',
+		chrome: { x: number; y: number; maxX: number; maxY: number },
+		vMetrics: ReturnType<typeof scrollBarMetrics>,
+		hMetrics: ReturnType<typeof scrollBarMetrics>,
+		e: PointerEvent
+	) {
+		e.stopPropagation();
+		e.preventDefault();
+		const thumb = e.currentTarget as HTMLElement;
+		const track = thumb.parentElement;
+		if (!track) return;
+		thumb.setPointerCapture(e.pointerId);
+
+		const move = (ev: PointerEvent) => {
+			const rect = track.getBoundingClientRect();
+			if (axis === 'y' && vMetrics) {
+				const travel = Math.max(0, rect.height - vMetrics.thumb);
+				const y = ev.clientY - rect.top - vMetrics.thumb / 2;
+				const ratio = travel > 0 ? Math.min(1, Math.max(0, y / travel)) : 0;
+				setScrollOffset(boxId, { x: chrome.x, y: ratio * chrome.maxY });
+			} else if (axis === 'x' && hMetrics) {
+				const travel = Math.max(0, rect.width - hMetrics.thumb);
+				const x = ev.clientX - rect.left - hMetrics.thumb / 2;
+				const ratio = travel > 0 ? Math.min(1, Math.max(0, x / travel)) : 0;
+				setScrollOffset(boxId, { x: ratio * chrome.maxX, y: chrome.y });
+			}
+		};
+		const up = (ev: PointerEvent) => {
+			thumb.releasePointerCapture(ev.pointerId);
+			thumb.removeEventListener('pointermove', move);
+			thumb.removeEventListener('pointerup', up);
+			thumb.removeEventListener('pointercancel', up);
+		};
+		thumb.addEventListener('pointermove', move);
+		thumb.addEventListener('pointerup', up);
+		thumb.addEventListener('pointercancel', up);
+	}
+
+	function jumpScrollTrack(
+		boxId: string,
+		axis: 'x' | 'y',
+		chrome: { x: number; y: number; maxX: number; maxY: number },
+		vMetrics: ReturnType<typeof scrollBarMetrics>,
+		hMetrics: ReturnType<typeof scrollBarMetrics>,
+		e: PointerEvent
+	) {
+		if ((e.target as HTMLElement).dataset.scrollThumb) return;
+		e.stopPropagation();
+		const track = e.currentTarget as HTMLElement;
+		const rect = track.getBoundingClientRect();
+		if (axis === 'y' && vMetrics) {
+			const travel = Math.max(0, rect.height - vMetrics.thumb);
+			const y = e.clientY - rect.top - vMetrics.thumb / 2;
+			const ratio = travel > 0 ? Math.min(1, Math.max(0, y / travel)) : 0;
+			setScrollOffset(boxId, { x: chrome.x, y: ratio * chrome.maxY });
+		} else if (axis === 'x' && hMetrics) {
+			const travel = Math.max(0, rect.width - hMetrics.thumb);
+			const x = e.clientX - rect.left - hMetrics.thumb / 2;
+			const ratio = travel > 0 ? Math.min(1, Math.max(0, x / travel)) : 0;
+			setScrollOffset(boxId, { x: ratio * chrome.maxX, y: chrome.y });
+		}
 	}
 
 	function snapDocPoint(pt: { x: number; y: number }) {
@@ -560,18 +699,43 @@
 		finishDraft(false);
 	}
 
+	function pathAbsRect(layer: CanvasLayer) {
+		return paintAbsMap.get(layer.id) ?? absMap.get(layer.id) ?? layer.rect;
+	}
+
+	function pathAbsPoints(layer: CanvasLayer) {
+		return pathPointsToDoc(layer, pathAbsRect(layer));
+	}
+
+	function commitPathDocPoints(layer: CanvasLayer, docPoints: { x: number; y: number }[]) {
+		const baked = rebakePathLayer(layer, docPoints);
+		// rebake yields an absolute rect; convert back to parent-local for the document.
+		const localized = absToLocalUpdate(
+			{ ...layer, points: baked.points, closed: baked.closed },
+			baked.rect
+		);
+		onlayerchange?.({
+			...localized,
+			points: baked.points,
+			closed: baked.closed
+		});
+	}
+
 	function beginPathPointDrag(index: number, e: PointerEvent) {
 		if (!selectedPath || selectedPath.locked) return;
 		e.preventDefault();
 		e.stopPropagation();
 		activePathPoint = index;
 		const meta = selectedPath;
-		const working = pathPointsToDoc(meta);
+		const working = pathAbsPoints(meta);
 		const target = e.currentTarget as HTMLElement;
 		target.setPointerCapture(e.pointerId);
 		const onMove = (ev: PointerEvent) => {
 			working[index] = snapDocPoint(clientToDoc(ev.clientX, ev.clientY));
-			onlayerchange?.(rebakePathLayer(meta, working.map((p) => ({ ...p }))));
+			commitPathDocPoints(
+				meta,
+				working.map((p) => ({ ...p }))
+			);
 		};
 		const onUp = () => {
 			try {
@@ -590,19 +754,19 @@
 		if (!selectedPath || selectedPath.locked) return;
 		e.preventDefault();
 		e.stopPropagation();
-		const docs = pathPointsToDoc(selectedPath);
+		const docs = pathAbsPoints(selectedPath);
 		const pt = snapDocPoint(clientToDoc(e.clientX, e.clientY));
 		docs.splice(afterIndex + 1, 0, pt);
-		onlayerchange?.(rebakePathLayer(selectedPath, docs));
+		commitPathDocPoints(selectedPath, docs);
 	}
 
 	function removeActivePathPoint() {
 		if (!selectedPath || selectedPath.locked || activePathPoint == null) return;
-		const docs = pathPointsToDoc(selectedPath);
+		const docs = pathAbsPoints(selectedPath);
 		if (docs.length <= 2) return;
 		docs.splice(activePathPoint, 1);
 		activePathPoint = null;
-		onlayerchange?.(rebakePathLayer(selectedPath, docs));
+		commitPathDocPoints(selectedPath, docs);
 	}
 
 	$effect(() => {
@@ -714,11 +878,26 @@
 			shouldIgnore: (target) => {
 				if (drawMode) return true;
 				if (!(target instanceof Element)) return false;
-				return Boolean(
+				if (
 					target.closest(
-						'[data-layer-frame], [data-resize-handle], [data-guide], [data-ruler], [data-path-point], button, input, textarea'
+						'[data-resize-handle], [data-guide], [data-ruler], [data-path-point], button, input, textarea'
 					)
-				);
+				) {
+					return true;
+				}
+				const frame = target.closest('[data-layer-frame]');
+				if (!frame) return false;
+				const id = frame.getAttribute('data-layer-frame');
+				if (!id) return true;
+				const realId = resolveSelectableId(id);
+				const scene = workingLayers.find((l) => l.id === realId);
+				// Full-bleed / layout shells: empty drag = marquee. Selected non-root
+				// shells still drag-move. Root canvasPanel always marquees.
+				if (scene && isMarqueePassThroughKind(scene.kind)) {
+					if (scene.kind === 'canvasPanel') return false;
+					return selectedSet.has(realId);
+				}
+				return true;
 			},
 			onRect: (r) => (marquee = r),
 			onDrag: ({ ids, modifier }) => {
@@ -960,6 +1139,7 @@
 				<!-- svelte-ignore a11y_no_static_element_interactions -->
 				<div
 					bind:this={artboardEl}
+					onwheel={handleScrollWheel}
 					onclick={(e) => {
 						e.stopPropagation();
 						if (drawMode) {
@@ -1015,11 +1195,22 @@
 
 						<div class={['absolute inset-0 overflow-visible', drawMode && 'pointer-events-none']}>
 							{#each sorted as layer, paintIndex (layer.id)}
+								{#if effectivelyVisible.has(layer.id)}
 								{@const realId = resolveSelectableId(layer.id)}
 								{@const isSynthetic = !sceneLayerIds.has(layer.id)}
 								{@const lockedPass = !!layer.locked || isSynthetic}
-								{@const displayRect = absMap.get(layer.id) ?? layer.rect}
-								{@const clipPath = clipPathForLayer(layer.id, displayLayers, absMap)}
+								{@const displayRect = paintAbsMap.get(layer.id) ?? layer.rect}
+								{@const clipPath = clipPathForLayer(layer.id, displayLayers, paintAbsMap)}
+								{@const sceneLayer = workingLayers.find((l) => l.id === realId)}
+								{@const marqueeBg =
+									!!sceneLayer && isMarqueePassThroughKind(sceneLayer.kind)}
+								{@const isSelected = selectedSet.has(realId) && !isSynthetic}
+								{@const dragOk =
+									!layer.locked &&
+									!isSynthetic &&
+									!isLayoutLocked(layer) &&
+									(!marqueeBg ||
+										(isSelected && sceneLayer?.kind !== 'canvasPanel'))}
 								<!-- svelte-ignore a11y_no_static_element_interactions -->
 								<div
 									data-layer-item
@@ -1045,10 +1236,10 @@
 										{displayRect}
 										{clipPath}
 										stackIndex={paintIndex}
-										selected={selectedSet.has(realId) && !isSynthetic}
+										selected={isSelected}
 										passthrough={!!layer.locked}
 										readOnly={isSynthetic}
-										layoutLocked={isLayoutLocked(layer)}
+										layoutLocked={isLayoutLocked(layer) || (marqueeBg && !dragOk)}
 										onclick={(e) => selectLayer(layer.id, e)}
 										ondblclick={(e) => {
 											if (layer.locked) return;
@@ -1060,6 +1251,96 @@
 										oninteract={handleLayerInteract}
 									/>
 								</div>
+								{/if}
+							{/each}
+
+							<!-- ScrollBox chrome above nested layer content -->
+							{#each displayLayers.filter((l) => l.kind === 'scrollBox') as box (box.id + ':scroll')}
+								{#if effectivelyVisible.has(box.id)}
+									{@const boxRect = paintAbsMap.get(box.id) ?? box.rect}
+									{@const scrollOver = scrollBoxOverflow(box.id, displayLayers, absMap)}
+									{@const scrollOff = scrollOffsets.get(box.id) ?? { x: 0, y: 0 }}
+									{@const chrome = {
+										x: scrollOff.x,
+										y: scrollOff.y,
+										maxX: scrollOver.maxX,
+										maxY: scrollOver.maxY
+									}}
+									{@const vScroll =
+										chrome.maxY > 0
+											? scrollBarMetrics(boxRect.h, chrome.maxY, chrome.y)
+											: null}
+									{@const hScroll =
+										chrome.maxX > 0
+											? scrollBarMetrics(boxRect.w, chrome.maxX, chrome.x)
+											: null}
+									{#if vScroll || hScroll}
+										<div
+											class="pointer-events-none absolute z-[999990]"
+											style:left="{boxRect.x}px"
+											style:top="{boxRect.y}px"
+											style:width="{boxRect.w}px"
+											style:height="{boxRect.h}px"
+										>
+											{#if vScroll}
+												<!-- svelte-ignore a11y_no_static_element_interactions -->
+												<div
+													class="pointer-events-auto absolute bottom-0 right-0 top-0 w-2.5 rounded-r-md bg-black/[0.04] dark:bg-white/[0.06]"
+													style:margin-bottom={hScroll ? '10px' : '0'}
+													onpointerdown={(e) =>
+														jumpScrollTrack(box.id, 'y', chrome, vScroll, hScroll, e)}
+												>
+													<div
+														data-scroll-thumb="y"
+														class="absolute left-0.5 right-0.5 cursor-grab rounded-full bg-slate-400/75 shadow-sm active:cursor-grabbing dark:bg-slate-500/85"
+														style:top="{vScroll.offset}px"
+														style:height="{vScroll.thumb}px"
+														onpointerdown={(e) =>
+															beginScrollThumbDrag(
+																box.id,
+																'y',
+																chrome,
+																vScroll,
+																hScroll,
+																e
+															)}
+													></div>
+												</div>
+											{/if}
+											{#if hScroll}
+												<!-- svelte-ignore a11y_no_static_element_interactions -->
+												<div
+													class="pointer-events-auto absolute bottom-0 left-0 h-2.5 rounded-b-md bg-black/[0.04] dark:bg-white/[0.06]"
+													style:right={vScroll ? '10px' : '0'}
+													onpointerdown={(e) =>
+														jumpScrollTrack(box.id, 'x', chrome, vScroll, hScroll, e)}
+												>
+													<div
+														data-scroll-thumb="x"
+														class="absolute top-0.5 bottom-0.5 cursor-grab rounded-full bg-slate-400/75 shadow-sm active:cursor-grabbing dark:bg-slate-500/85"
+														style:left="{hScroll.offset}px"
+														style:width="{hScroll.thumb}px"
+														onpointerdown={(e) =>
+															beginScrollThumbDrag(
+																box.id,
+																'x',
+																chrome,
+																vScroll,
+																hScroll,
+																e
+															)}
+													></div>
+												</div>
+											{/if}
+											{#if vScroll && hScroll}
+												<div
+													class="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-br-md bg-black/[0.06] dark:bg-white/[0.08]"
+													aria-hidden="true"
+												></div>
+											{/if}
+										</div>
+									{/if}
+								{/if}
 							{/each}
 						</div>
 					</div>
@@ -1156,7 +1437,7 @@
 
 	<!-- Editable path points -->
 	{#if selectedPath && !drawMode && !selectedPath.locked}
-		{@const docs = pathPointsToDoc(selectedPath)}
+		{@const docs = pathAbsPoints(selectedPath)}
 		{#each docs as p, i (i)}
 			{@const sx = RULER_LEFT + tickX(p.x)}
 			{@const sy = RULER_TOP + tickY(p.y)}

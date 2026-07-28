@@ -35,12 +35,26 @@ export const LAYOUT_BOX_KINDS: ReadonlySet<CanvasLayerKind> = new Set([
 	'scaleBox',
 	'wrapBox',
 	'uniformGrid',
-	'namedSlot',
 	'scrollBox'
+]);
+
+/**
+ * Structural shells whose empty area should start a marquee (not a layer drag),
+ * matching Figma-style select-drag on the canvas / inside frames.
+ */
+export const MARQUEE_PASS_KINDS: ReadonlySet<CanvasLayerKind> = new Set([
+	'canvasPanel',
+	'overlay',
+	'group',
+	...LAYOUT_BOX_KINDS
 ]);
 
 export function isContainerKind(kind: CanvasLayerKind): boolean {
 	return CONTAINER_KINDS.has(kind);
+}
+
+export function isMarqueePassThroughKind(kind: CanvasLayerKind): boolean {
+	return MARQUEE_PASS_KINDS.has(kind);
 }
 
 export function canHaveChildren(layer: CanvasLayer): boolean {
@@ -80,6 +94,21 @@ export function getAncestors(layers: CanvasLayer[], layerId: string): CanvasLaye
 		cur = parent;
 	}
 	return out;
+}
+
+/** True when the layer and every ancestor is visible (flat stage paint must check this). */
+export function isEffectivelyVisible(
+	layers: CanvasLayer[],
+	layerId: string,
+	map?: Map<string, CanvasLayer>
+): boolean {
+	const byId = map ?? new Map(layers.map((l) => [l.id, l]));
+	let cur = byId.get(layerId);
+	while (cur) {
+		if (!cur.visible) return false;
+		cur = cur.parentId ? byId.get(cur.parentId) : undefined;
+	}
+	return true;
 }
 
 export function isDescendant(
@@ -250,14 +279,6 @@ export function computeAbsoluteRects(
 					cursor += h + gap;
 				}
 			}
-		} else if (kind === 'namedSlot') {
-			// Injected slot content fills the named slot host.
-			for (const c of children) {
-				placed.push({
-					layer: c,
-					local: { x: 0, y: 0, w: contentW, h: contentH }
-				});
-			}
 		} else if (kind === 'wrapBox') {
 			const gap = parentLayer?.gap ?? 0;
 			let x = 0;
@@ -324,7 +345,7 @@ export function computeAbsoluteRects(
 				placed.push({ layer: c, local });
 			}
 		} else {
-			// canvasPanel / border / group / overlay / image / shapes / root — freeform slots
+			// canvasPanel / border / group / overlay / namedSlot / image / shapes / root — freeform slots
 			for (const c of children) {
 				const slot = c.slot ?? defaultSlotFromRect(c.rect);
 				const local = resolveSlotRect({ width: contentW, height: contentH }, slot);
@@ -359,6 +380,7 @@ export function absoluteRectFor(
 /**
  * CSS clip-path inset for a child absolute rect clipped by ancestors with clipChildren.
  * Values are relative to the child's own box.
+ * `scrollBox` always clips (UMG-style viewport).
  */
 export function clipPathForLayer(
 	layerId: string,
@@ -373,7 +395,7 @@ export function clipPathForLayer(
 	while (cur?.parentId) {
 		const parent = map.get(cur.parentId);
 		if (!parent) break;
-		if (parent.clipChildren) {
+		if (parent.clipChildren || parent.kind === 'scrollBox') {
 			const pa = absMap.get(parent.id);
 			if (pa) {
 				clip = clip
@@ -396,6 +418,76 @@ export function clipPathForLayer(
 	const bottom = Math.max(0, child.y + child.h - (clip.y + clip.h));
 	if (top === 0 && left === 0 && right === 0 && bottom === 0) return undefined;
 	return `inset(${top}px ${right}px ${bottom}px ${left}px)`;
+}
+
+/** Scrollbar thumb size/position for a scrollBox viewport (preview chrome). */
+export function scrollBarMetrics(
+	viewport: number,
+	maxScroll: number,
+	offset: number
+): { thumb: number; offset: number; track: number } | null {
+	if (maxScroll <= 0 || viewport <= 0) return null;
+	const content = viewport + maxScroll;
+	const thumb = Math.max(18, Math.min(viewport, (viewport / content) * viewport));
+	const travel = Math.max(0, viewport - thumb);
+	const thumbOffset = maxScroll > 0 ? (offset / maxScroll) * travel : 0;
+	return { thumb, offset: thumbOffset, track: viewport };
+}
+
+/** Max scrollable overflow of a scrollBox (content extent beyond the viewport). */
+export function scrollBoxOverflow(
+	scrollBoxId: string,
+	layers: CanvasLayer[],
+	absMap: Map<string, CanvasLayerRect>
+): { maxX: number; maxY: number } {
+	const box = absMap.get(scrollBoxId);
+	if (!box) return { maxX: 0, maxY: 0 };
+	let maxR = box.w;
+	let maxB = box.h;
+	for (const l of layers) {
+		if ((l.parentId ?? null) !== scrollBoxId) continue;
+		const r = absMap.get(l.id);
+		if (!r) continue;
+		maxR = Math.max(maxR, r.x + r.w - box.x);
+		maxB = Math.max(maxB, r.y + r.h - box.y);
+	}
+	return {
+		maxX: Math.max(0, maxR - box.w),
+		maxY: Math.max(0, maxB - box.h)
+	};
+}
+
+/**
+ * Shift descendants of scrollBoxes by ephemeral scroll offsets (preview only).
+ * ScrollBox frames themselves stay put.
+ */
+export function applyScrollBoxOffsets(
+	layers: CanvasLayer[],
+	absMap: Map<string, CanvasLayerRect>,
+	offsets: ReadonlyMap<string, { x: number; y: number }>
+): Map<string, CanvasLayerRect> {
+	if (!offsets.size) return absMap;
+	const byId = new Map(layers.map((l) => [l.id, l]));
+	const out = new Map<string, CanvasLayerRect>();
+	for (const [id, rect] of absMap) {
+		let dx = 0;
+		let dy = 0;
+		let cur = byId.get(id);
+		while (cur?.parentId) {
+			const parent = byId.get(cur.parentId);
+			if (!parent) break;
+			if (parent.kind === 'scrollBox') {
+				const o = offsets.get(parent.id);
+				if (o) {
+					dx -= o.x;
+					dy -= o.y;
+				}
+			}
+			cur = parent;
+		}
+		out.set(id, dx || dy ? { ...rect, x: rect.x + dx, y: rect.y + dy } : rect);
+	}
+	return out;
 }
 
 export function reparentLayer(
@@ -513,7 +605,8 @@ export function wrapSelection(
 		rect: wrapperLocal,
 		slot: slotFromLocalRect({ width: contentW, height: contentH }, wrapperLocal),
 		zIndex,
-		clipChildren: wrapKind === 'border' || wrapKind === 'canvasPanel',
+		clipChildren:
+			wrapKind === 'border' || wrapKind === 'canvasPanel' || wrapKind === 'scrollBox',
 		fill:
 			wrapKind === 'border' || wrapKind === 'roundRect'
 				? '#ffffff'

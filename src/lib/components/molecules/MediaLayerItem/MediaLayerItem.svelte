@@ -66,9 +66,12 @@
 				: 'object-cover'
 	);
 
-	const transform = $derived.by(() => {
+	const frameTransform = $derived(
+		layer.rotation ? `rotate(${layer.rotation}deg)` : undefined
+	);
+
+	const contentTransform = $derived.by(() => {
 		const parts: string[] = [];
-		if (layer.rotation) parts.push(`rotate(${layer.rotation}deg)`);
 		if (layer.flipX) parts.push('scaleX(-1)');
 		if (layer.flipY) parts.push('scaleY(-1)');
 		return parts.length ? parts.join(' ') : undefined;
@@ -116,16 +119,16 @@
 			e.stopPropagation();
 			ondblclick?.(e);
 		}}
-		style:opacity={layer.opacity}
 	>
 		<WidgetFrame
 			freeform
 			showChrome={false}
 			flush
 			handleStyle="canva"
-			handlesVisible={selected && !readOnly && !layoutLocked}
+			handlesVisible={selected && !readOnly}
 			raiseOnSelect={false}
 			stackIndex={stackIndex ?? layer.zIndex}
+			transform={frameTransform}
 			draggable={!layer.locked && !readOnly && !layoutLocked}
 			resizable={!layer.locked && !readOnly && !layoutLocked}
 			bind:rect
@@ -146,11 +149,12 @@
 		>
 			<div
 				class="h-full w-full"
-				style:transform
+				style:opacity={layer.opacity}
+				style:transform={contentTransform}
 				style:filter
 				style:box-shadow={boxShadow}
 				style:border-radius={layer.borderRadius ? `${layer.borderRadius}px` : undefined}
-				style:overflow={layer.kind === 'scrollBox' ? 'auto' : clip ? 'hidden' : undefined}
+				style:overflow={clip ? 'hidden' : undefined}
 				style:clip-path={clipPath}
 			>
 				{#if layer.kind === 'image' && layer.src}
@@ -335,16 +339,17 @@
 					</svg>
 				{:else if isPanel}
 					<div
-						class={[
-							'relative h-full w-full',
-							layer.kind === 'scrollBox' && 'min-h-full'
-						]}
+						class="relative h-full w-full overflow-hidden"
 						style:background={layer.fill && layer.fill !== 'transparent' ? layer.fill : 'transparent'}
 						style:border={layer.kind === 'namedSlot'
 							? '1px dashed color-mix(in oklab, #3b82f6 50%, transparent)'
-							: selected
-								? '1px dashed color-mix(in oklab, #64748b 35%, transparent)'
-								: undefined}
+							: layer.kind === 'scrollBox'
+								? selected
+									? '1px dashed color-mix(in oklab, #64748b 55%, transparent)'
+									: '1px dashed color-mix(in oklab, #64748b 30%, transparent)'
+								: selected
+									? '1px dashed color-mix(in oklab, #64748b 35%, transparent)'
+									: undefined}
 						style:border-radius={layer.borderRadius ? `${layer.borderRadius}px` : undefined}
 					>
 						{#if layer.kind === 'namedSlot'}
@@ -356,12 +361,10 @@
 						{/if}
 						{#if layer.kind === 'scrollBox'}
 							<span
-								class="pointer-events-none absolute right-1.5 top-1.5 rounded bg-surface-overlay/90 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-muted"
+								class="pointer-events-none absolute left-1.5 top-1.5 rounded bg-surface-overlay/90 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-muted"
 							>
 								Scroll
 							</span>
-							<!-- Tall ghost content so overflow:auto is visible in empty boxes -->
-							<div class="pointer-events-none" style:height="{Math.max(pos.h + 80, pos.h * 1.4)}px"></div>
 						{/if}
 					</div>
 				{:else}

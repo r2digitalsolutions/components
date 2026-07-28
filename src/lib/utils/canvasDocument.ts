@@ -618,8 +618,12 @@ export function rebakePathLayer(
 	};
 }
 
-export function pathPointsToDoc(layer: CanvasLayer): { x: number; y: number }[] {
+/** Map normalized path points → document space using an absolute (or local) rect. */
+export function pathPointsToDoc(
+	layer: CanvasLayer,
+	absRect?: Pick<CanvasLayerRect, 'x' | 'y' | 'w' | 'h'>
+): { x: number; y: number }[] {
 	const pts = layer.points ?? [];
-	const { x, y, w, h } = layer.rect;
+	const { x, y, w, h } = absRect ?? layer.rect;
 	return pts.map((p) => ({ x: x + p.x * w, y: y + p.y * h }));
 }

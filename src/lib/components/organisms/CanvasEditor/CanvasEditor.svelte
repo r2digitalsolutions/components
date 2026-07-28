@@ -1145,7 +1145,7 @@
 			{#if showGrid}
 				<Select
 					size="sm"
-					class="w-18"
+					class="w-[4.5rem] shrink-0"
 					options={gridSizeOptions}
 					value={String(cellSize)}
 					onchange={(v) => (cellSize = Number(v))}
@@ -1614,22 +1614,22 @@
 
 		{#if selectedIds.length > 1}
 			<div class="pointer-events-none absolute inset-x-0 bottom-4 z-30 flex justify-center px-4">
-				<div class="pointer-events-auto w-full max-w-xl">
+				<div class="pointer-events-auto">
 					<BulkActionBar
 						count={selectedIds.length}
-						total={value.layers.length}
 						itemLabel="layer"
 						itemLabelPlural="layers"
 						placement="dock"
+						compact
 						showSelectAll={false}
-						maxPrimary={4}
+						maxPrimary={5}
 						actions={[
-							{ id: 'duplicate', label: 'Duplicate', icon: Copy, variant: 'secondary' },
-							{ id: 'front', label: 'Front', icon: BringToFront, variant: 'secondary' },
-							{ id: 'back', label: 'Back', icon: ArrowDownToLine, variant: 'secondary' },
-							{ id: 'detach', label: 'Remove from parent', icon: Ungroup, variant: 'secondary' },
-							{ id: 'lock', label: 'Lock', icon: Lock, variant: 'secondary', overflow: true },
-							{ id: 'hide', label: 'Hide', icon: EyeOff, variant: 'secondary', overflow: true },
+							{ id: 'duplicate', label: 'Duplicate', icon: Copy, variant: 'ghost' },
+							{ id: 'front', label: 'Bring to front', icon: BringToFront, variant: 'ghost' },
+							{ id: 'back', label: 'Send to back', icon: ArrowDownToLine, variant: 'ghost' },
+							{ id: 'detach', label: 'Remove from parent', icon: Ungroup, variant: 'ghost' },
+							{ id: 'lock', label: 'Lock', icon: Lock, variant: 'ghost', overflow: true },
+							{ id: 'hide', label: 'Hide', icon: EyeOff, variant: 'ghost', overflow: true },
 							{
 								id: 'delete',
 								label: 'Delete',
@@ -1652,12 +1652,14 @@
 								onselect={handleWrapMenu}
 							>
 								{#snippet trigger()}
-									<span
-										class="inline-flex items-center gap-1.5 text-xs font-medium text-secondary"
-									>
-										<Group class="h-3.5 w-3.5" />
-										Parent
-									</span>
+									<Tooltip content="Wrap in parent" side="top">
+										<span
+											class="inline-flex h-7 w-7 items-center justify-center rounded-md text-secondary hover:bg-surface-overlay hover:text-primary"
+											aria-label="Wrap in parent"
+										>
+											<Group class="h-3.5 w-3.5" />
+										</span>
+									</Tooltip>
 								{/snippet}
 							</DropdownMenu>
 						{/snippet}

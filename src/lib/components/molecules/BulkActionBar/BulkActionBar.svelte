@@ -2,6 +2,7 @@
 	import type { Component, Snippet } from 'svelte';
 	import Button from '$lib/components/atoms/Button/Button.svelte';
 	import CloseButton from '$lib/components/atoms/CloseButton/CloseButton.svelte';
+	import Tooltip from '$lib/components/atoms/Tooltip/Tooltip.svelte';
 	import DropdownMenu from '$lib/components/molecules/DropdownMenu/DropdownMenu.svelte';
 	import type { DropdownItem } from '$lib/components/molecules/DropdownMenu/DropdownMenu.svelte';
 	import Divider from '$lib/components/atoms/Divider/Divider.svelte';
@@ -45,6 +46,8 @@
 		sticky?: boolean;
 		/** Cap visible primary actions; rest go to More */
 		maxPrimary?: number;
+		/** Tight icon toolbar — badge + icon actions, no selection copy */
+		compact?: boolean;
 		showSelectAll?: boolean;
 		showClear?: boolean;
 		showHint?: boolean;
@@ -77,6 +80,7 @@
 		tone = 'brand',
 		sticky = true,
 		maxPrimary = 3,
+		compact = false,
 		showSelectAll = true,
 		showClear = true,
 		showHint = true,
@@ -95,9 +99,11 @@
 
 	let pendingConfirm = $state<string | null>(null);
 
-	const btnSize = $derived(size);
-	const closeSize = $derived(size === 'xs' ? 'sm' : 'sm');
-	const iconPx = $derived(size === 'xs' ? 'h-3.5 w-3.5' : 'h-3.5 w-3.5');
+	const btnSize = $derived(compact ? 'xs' : size);
+	const closeSize = $derived(btnSize === 'xs' ? 'sm' : 'sm');
+	const iconPx = $derived(btnSize === 'xs' ? 'h-3.5 w-3.5' : 'h-3.5 w-3.5');
+	const showCopy = $derived(!compact);
+	const hintEnabled = $derived(showHint && !compact);
 
 	/** Split by overflow flag, then by maxPrimary */
 	const split = $derived.by(() => {
@@ -129,11 +135,13 @@
 	});
 
 	const allSelected = $derived(total != null && total > 0 && count >= total);
-	const canSelectAll = $derived(showSelectAll && !!onselectall && total != null && count > 0 && !allSelected);
-	const canSelectNone = $derived(!!onselectnone && allSelected);
+	const canSelectAll = $derived(
+		showCopy && showSelectAll && !!onselectall && total != null && count > 0 && !allSelected
+	);
+	const canSelectNone = $derived(showCopy && !!onselectnone && allSelected);
 
 	const resolvedHint = $derived.by(() => {
-		if (!showHint) return '';
+		if (!hintEnabled) return '';
 		if (pendingConfirm) {
 			return `Confirm ${actions.find((a) => a.id === pendingConfirm)?.label ?? 'action'}?`;
 		}
@@ -200,22 +208,28 @@
 	>
 		<div
 			class={[
-				'pointer-events-auto flex w-full flex-col gap-2 border shadow-lg backdrop-blur-md',
+				'pointer-events-auto flex border shadow-lg backdrop-blur-md',
 				'ring-1 ring-black/5 dark:ring-white/10',
-				placement === 'dock' &&
+				compact
+					? 'w-auto max-w-[min(100%,36rem)] flex-row items-center gap-1.5 rounded-full border-border bg-surface-elevated/95 px-2 py-1.5'
+					: 'w-full flex-col gap-2',
+				!compact &&
+					placement === 'dock' &&
 					'max-w-2xl rounded-xl border-border bg-surface-elevated/95 px-3 py-2 sm:flex-row sm:items-center sm:gap-3 sm:px-3.5',
-				placement === 'inline' &&
+				!compact &&
+					placement === 'inline' &&
 					'rounded-none border-x-0 border-b-0 border-border bg-surface-elevated/95 px-3 py-2 sm:flex-row sm:items-center'
 			]}
 		>
-			<div class="flex min-w-0 flex-1 items-center gap-2.5">
+			<div class={['flex min-w-0 items-center gap-2.5', compact ? 'shrink-0' : 'flex-1']}>
 				{#if leading}
 					{@render leading()}
 				{:else}
 					<span
 						class={[
 							'inline-flex shrink-0 items-center justify-center rounded-lg font-bold tabular-nums shadow-sm',
-							size === 'xs' ? 'h-7 min-w-7 px-1.5 text-xs' : 'h-8 min-w-8 px-2 text-xs',
+							btnSize === 'xs' ? 'h-7 min-w-7 px-1.5 text-xs' : 'h-8 min-w-8 px-2 text-xs',
+							compact && 'rounded-full',
 							countBadgeClass
 						]}
 						aria-hidden="true"
@@ -224,46 +238,48 @@
 					</span>
 				{/if}
 
-				<div class="flex min-w-0 flex-1 flex-col leading-tight">
-					<p class="truncate text-xs font-semibold text-primary sm:text-sm">{selectionText}</p>
-					{#if description}
-						<p class="truncate text-[11px] text-muted">{description}</p>
-					{:else if canSelectAll}
-						<button
-							type="button"
-							class="w-fit text-left text-[11px] font-medium text-brand-600 hover:underline dark:text-brand-400"
-							onclick={() => onselectall?.()}
-						>
-							Select all {total}
-						</button>
-					{:else if canSelectNone}
-						<button
-							type="button"
-							class="w-fit text-left text-[11px] font-medium text-secondary hover:underline"
-							onclick={() => onselectnone?.()}
-						>
-							Clear selection
-						</button>
-					{:else if resolvedHint}
-						<p
-							class={[
-								'text-[11px]',
-								pendingConfirm ? 'text-amber-700 dark:text-amber-300' : 'text-muted'
-							]}
-						>
-							{resolvedHint}
-						</p>
-					{/if}
-				</div>
+				{#if showCopy}
+					<div class="flex min-w-0 flex-1 flex-col leading-tight">
+						<p class="truncate text-xs font-semibold text-primary sm:text-sm">{selectionText}</p>
+						{#if description}
+							<p class="truncate text-[11px] text-muted">{description}</p>
+						{:else if canSelectAll}
+							<button
+								type="button"
+								class="w-fit text-left text-[11px] font-medium text-brand-600 hover:underline dark:text-brand-400"
+								onclick={() => onselectall?.()}
+							>
+								Select all {total}
+							</button>
+						{:else if canSelectNone}
+							<button
+								type="button"
+								class="w-fit text-left text-[11px] font-medium text-secondary hover:underline"
+								onclick={() => onselectnone?.()}
+							>
+								Clear selection
+							</button>
+						{:else if resolvedHint}
+							<p
+								class={[
+									'text-[11px]',
+									pendingConfirm ? 'text-amber-700 dark:text-amber-300' : 'text-muted'
+								]}
+							>
+								{resolvedHint}
+							</p>
+						{/if}
+					</div>
+				{/if}
 
 				{#if extra}
-					<div class="hidden items-center gap-1.5 sm:flex">
+					<div class={['items-center gap-1.5', compact ? 'flex' : 'hidden sm:flex']}>
 						{@render extra()}
 					</div>
 				{/if}
 			</div>
 
-			<div class="flex flex-wrap items-center gap-1.5 sm:justify-end">
+			<div class={['flex items-center gap-1', compact ? 'shrink-0' : 'flex-wrap gap-1.5 sm:justify-end']}>
 				{#if pendingConfirm}
 					<Button size={btnSize} variant="ghost" {disabled} onclick={() => (pendingConfirm = null)}>
 						Cancel
@@ -279,22 +295,42 @@
 				{:else}
 					{#each split.primary as action (action.id)}
 						{@const Icon = action.icon}
-						<Button
-							size={btnSize}
-							variant={action.variant ?? 'secondary'}
-							disabled={disabled || action.disabled}
-							loading={action.loading}
-							aria-label={action.iconOnly ? action.label : undefined}
-							title={action.tooltip ?? (action.iconOnly ? action.label : undefined)}
-							onclick={() => run(action.id)}
-						>
-							{#if Icon}
-								<Icon class={iconPx} strokeWidth={2} />
-							{/if}
-							{#if !action.iconOnly}
-								{action.label}
-							{/if}
-						</Button>
+						{@const onlyIcon = compact ? !!Icon : !!action.iconOnly}
+						{@const tip = action.tooltip ?? (onlyIcon ? action.label : '')}
+						{#if tip}
+							<Tooltip content={tip} side="top">
+								<Button
+									size={btnSize}
+									variant={action.variant ?? 'secondary'}
+									disabled={disabled || action.disabled}
+									loading={action.loading}
+									aria-label={onlyIcon ? action.label : undefined}
+									onclick={() => run(action.id)}
+								>
+									{#if Icon}
+										<Icon class={iconPx} strokeWidth={2} />
+									{/if}
+									{#if !onlyIcon}
+										{action.label}
+									{/if}
+								</Button>
+							</Tooltip>
+						{:else}
+							<Button
+								size={btnSize}
+								variant={action.variant ?? 'secondary'}
+								disabled={disabled || action.disabled}
+								loading={action.loading}
+								onclick={() => run(action.id)}
+							>
+								{#if Icon}
+									<Icon class={iconPx} strokeWidth={2} />
+								{/if}
+								{#if !onlyIcon}
+									{action.label}
+								{/if}
+							</Button>
+						{/if}
 					{/each}
 
 					{#if overflowItems.length > 0}
@@ -311,7 +347,7 @@
 								<span
 									class={[
 										'inline-flex items-center justify-center rounded-lg text-secondary hover:bg-surface-overlay hover:text-primary',
-										size === 'xs' ? 'h-7 w-7' : 'h-8 w-8'
+										size === 'xs' || btnSize === 'xs' ? 'h-7 w-7' : 'h-8 w-8'
 									]}
 									aria-hidden="true"
 								>

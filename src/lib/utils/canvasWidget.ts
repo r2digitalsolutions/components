@@ -417,12 +417,47 @@ export function flattenLayersWithWidgets(
 			}
 
 			const sceneKids = layers.filter((l) => (l.parentId ?? null) === layer.id);
+			const hostLocal: CanvasLayer = {
+				...layer,
+				parentId: null,
+				kind: 'group',
+				clipChildren: false,
+				rect: { x: 0, y: 0, w: layer.rect.w, h: layer.rect.h },
+				slot: defaultSlotFromRect({ x: 0, y: 0, w: layer.rect.w, h: layer.rect.h })
+			};
+			const layoutProbe = computeAbsoluteRects([hostLocal, ...nested], {
+				width: layer.rect.w,
+				height: layer.rect.h
+			});
 			const injected = sceneKids.map((kid) => {
 				const target = kid.fillSlot?.trim();
 				const slotId = target ? slotByName.get(target) : undefined;
+				if (!slotId) {
+					return { ...kid, parentId: layer.id };
+				}
+				// Scene stores widget-local rects (parentId = instance). Convert to
+				// slot-local so paint/hit-test match the named slot coordinate space.
+				const slotAbs = layoutProbe.get(slotId) ?? { x: 0, y: 0, w: 0, h: 0 };
+				const local = {
+					x: kid.rect.x - slotAbs.x,
+					y: kid.rect.y - slotAbs.y,
+					w: kid.rect.w,
+					h: kid.rect.h
+				};
 				return {
 					...kid,
-					parentId: slotId ?? layer.id
+					parentId: slotId,
+					rect: local,
+					slot: kid.slot
+						? {
+								...kid.slot,
+								...slotFromLocalRect(
+									{ width: Math.max(1, slotAbs.w), height: Math.max(1, slotAbs.h) },
+									local,
+									kid.slot.anchors
+								)
+							}
+						: defaultSlotFromRect(local)
 				};
 			});
 
@@ -562,6 +597,58 @@ export function getExposedProp(
 	field: string
 ): CanvasExposedProp | undefined {
 	return def?.exposed.find((e) => e.targetLayerId === layerId && e.field === field);
+}
+
+/** Blueprint default for an exposed prop (value on the target layer inside the definition). */
+export function getExposedFieldDefault(
+	def: CanvasWidgetDefinition,
+	prop: CanvasExposedProp
+): unknown {
+	const target = def.layers.find((l) => l.id === prop.targetLayerId);
+	if (!target) return undefined;
+	const value = (target as Record<string, unknown>)[prop.field];
+	if (value !== undefined) return value;
+	if (prop.field === 'visible') return true;
+	if (prop.field === 'opacity') return 1;
+	if (prop.field === 'fontSize') return 32;
+	if (prop.field === 'fill' || prop.field === 'color' || prop.field === 'stroke') return '#000000';
+	return undefined;
+}
+
+/** Instance override if set, otherwise the blueprint default. */
+export function resolveExposedPropValue(
+	instance: CanvasLayer,
+	def: CanvasWidgetDefinition,
+	prop: CanvasExposedProp
+): unknown {
+	if (instance.overrides && Object.prototype.hasOwnProperty.call(instance.overrides, prop.id)) {
+		return instance.overrides[prop.id];
+	}
+	return getExposedFieldDefault(def, prop);
+}
+
+/** Group exposed props by target layer for inspector headers. */
+export function groupExposedPropsByLayer(
+	def: CanvasWidgetDefinition
+): { layerId: string; layerName: string; props: CanvasExposedProp[] }[] {
+	const props = def.exposed.filter((e) => e.exposed);
+	const order: string[] = [];
+	const map = new Map<string, CanvasExposedProp[]>();
+	for (const p of props) {
+		if (!map.has(p.targetLayerId)) {
+			order.push(p.targetLayerId);
+			map.set(p.targetLayerId, []);
+		}
+		map.get(p.targetLayerId)!.push(p);
+	}
+	return order.map((layerId) => {
+		const target = def.layers.find((l) => l.id === layerId);
+		return {
+			layerId,
+			layerName: target?.name?.trim() || target?.kind || 'Layer',
+			props: map.get(layerId)!
+		};
+	});
 }
 
 export function setInstanceOverride(

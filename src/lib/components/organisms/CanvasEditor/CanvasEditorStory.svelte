@@ -150,8 +150,9 @@
 					color: '#1d4ed8',
 					parentId: cardAId,
 					fillSlot: 'Footer',
-					rect: { x: 0, y: 0, w: 280, h: 40 },
-					slot: defaultSlotFromRect({ x: 0, y: 0, w: 280, h: 40 }),
+					// Widget-local (named slot is at 12,168 inside the card)
+					rect: { x: 20, y: 176, w: 280, h: 40 },
+					slot: defaultSlotFromRect({ x: 20, y: 176, w: 280, h: 40 }),
 					zIndex: 0
 				}),
 				createCanvasLayer('widget', {
