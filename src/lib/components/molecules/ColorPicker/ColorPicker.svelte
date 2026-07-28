@@ -1,5 +1,6 @@
 <script lang="ts">
 	export type ColorFormat = 'hex' | 'rgb' | 'hsl';
+	type ColorPickerSize = 'sm' | 'md' | 'lg';
 
 	interface ColorPickerProps {
 		value?: string;
@@ -11,6 +12,7 @@
 		format?: ColorFormat;
 		/** Show preset swatches. */
 		showSwatches?: boolean;
+		size?: ColorPickerSize;
 		disabled?: boolean;
 		open?: boolean;
 		class?: string;
@@ -37,11 +39,36 @@
 		alpha = false,
 		format = 'hex',
 		showSwatches = true,
+		size = 'md',
 		disabled = false,
 		open = $bindable(false),
 		class: className = '',
 		onchange
 	}: ColorPickerProps = $props();
+
+	const triggerSizeClasses: Record<ColorPickerSize, string> = {
+		sm: 'h-8 gap-2 rounded-lg px-2',
+		md: 'h-10 gap-2.5 rounded-xl px-2.5',
+		lg: 'h-12 gap-3 rounded-xl px-3'
+	};
+
+	const swatchSizeClasses: Record<ColorPickerSize, string> = {
+		sm: 'h-5 w-5 rounded-md',
+		md: 'h-7 w-7 rounded-lg',
+		lg: 'h-8 w-8 rounded-lg'
+	};
+
+	const valueSizeClasses: Record<ColorPickerSize, string> = {
+		sm: 'text-sm',
+		md: 'text-sm',
+		lg: 'text-base'
+	};
+
+	const chevronSizeClasses: Record<ColorPickerSize, string> = {
+		sm: 'h-3.5 w-3.5',
+		md: 'h-4 w-4',
+		lg: 'h-4 w-4'
+	};
 
 	let rootEl = $state<HTMLDivElement | null>(null);
 	let svEl = $state<HTMLDivElement | null>(null);
@@ -236,17 +263,31 @@
 		aria-haspopup="dialog"
 		onclick={togglePanel}
 		class={[
-			'flex h-10 w-full items-center gap-2.5 rounded-xl border border-border bg-surface-elevated px-2.5 text-left transition-colors',
+			'flex w-full items-center border border-border bg-surface-elevated text-left transition-colors',
+			triggerSizeClasses[size],
 			'hover:bg-surface-overlay focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/20',
 			open && 'border-brand-500 ring-2 ring-brand-500/20',
 			disabled && 'cursor-not-allowed opacity-60'
 		]}
 	>
-		<span class="cp-checker relative h-7 w-7 shrink-0 overflow-hidden rounded-lg border border-border">
+		<span
+			class={[
+				'cp-checker relative shrink-0 overflow-hidden border border-border',
+				swatchSizeClasses[size]
+			]}
+		>
 			<span class="absolute inset-0" style:background={preview}></span>
 		</span>
-		<span class="min-w-0 flex-1 truncate font-mono text-sm text-primary">{value}</span>
-		<svg class="h-4 w-4 shrink-0 text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+		<span class={['min-w-0 flex-1 truncate font-mono text-primary', valueSizeClasses[size]]}>
+			{value}
+		</span>
+		<svg
+			class={['shrink-0 text-muted', chevronSizeClasses[size]]}
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			stroke-width="2"
+		>
 			<path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
 		</svg>
 	</button>

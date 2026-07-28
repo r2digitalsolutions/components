@@ -871,6 +871,7 @@
 						</PropertyField>
 						<PropertyField label="Background">
 							<ColorPicker
+								size="sm"
 								value={value.background}
 								showSwatches={false}
 								onchange={(v) => patchSequence({ background: v })}
@@ -969,6 +970,7 @@
 							onreset={() => resetClipField('color')}
 						>
 							<ColorPicker
+								size="sm"
 								value={selectedClip.color ?? '#3b82f6'}
 								showSwatches={false}
 								onchange={(v) => patchClip({ ...selectedClip, color: v })}
@@ -1057,6 +1059,7 @@
 								onreset={() => resetClipField('textColor')}
 							>
 								<ColorPicker
+									size="sm"
 									value={selectedClip.textColor ?? '#ffffff'}
 									showSwatches={false}
 									onchange={(v) => patchClip({ ...selectedClip, textColor: v })}
