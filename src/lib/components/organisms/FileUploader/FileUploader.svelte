@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
 
-	type FileKind = 'image' | 'pdf' | 'doc' | 'other';
+	type FileKind = 'image' | 'video' | 'audio' | 'pdf' | 'doc' | 'other';
 	type UploaderVariant = 'multiple' | 'single' | 'avatar';
 	type UploaderView = 'list' | 'grid';
 
@@ -24,8 +24,17 @@
 		showViewToggle?: boolean;
 		maxSizeMb?: number;
 		disabled?: boolean;
+		/**
+		 * External preview URL for `single` / `avatar` when no File is selected yet
+		 * (e.g. existing remote image in an editor inspector).
+		 */
+		src?: string;
+		/** Display name when using `src` without a File */
+		srcName?: string;
 		class?: string;
 		onchange?: (files: File[]) => void;
+		/** Fired when the user clears the current file / src preview */
+		onclear?: () => void;
 	}
 
 	let {
@@ -38,8 +47,11 @@
 		showViewToggle = true,
 		maxSizeMb = 10,
 		disabled = false,
+		src = '',
+		srcName = '',
 		class: className = '',
-		onchange
+		onchange,
+		onclear
 	}: FileUploaderProps = $props();
 
 	let isDragging = $state(false);
@@ -51,6 +63,13 @@
 	const isMultiple = $derived(variant === 'multiple');
 	const hasFile = $derived(fileList.length > 0);
 	const primaryFile = $derived(fileList[0] as FileItem | undefined);
+	const externalSrc = $derived(src?.trim() || '');
+	const showSinglePreview = $derived(
+		variant === 'single' && (!!primaryFile || !!externalSrc)
+	);
+	const singlePreviewUrl = $derived(primaryFile?.previewUrl || externalSrc);
+	const singlePreviewName = $derived(primaryFile?.name || srcName || 'Media');
+	const singlePreviewMeta = $derived(primaryFile?.sizeFormatted || '');
 
 	const labelId = $derived(`${id}-label`);
 	const helperId = $derived(`${id}-helper`);
@@ -59,6 +78,13 @@
 
 	const resolvedAccept = $derived(
 		variant === 'avatar' && (!accept || accept === '*') ? 'image/*' : accept
+	);
+
+	const singleIsVideo = $derived(
+		primaryFile?.kind === 'video' ||
+			(!primaryFile &&
+				!!externalSrc &&
+				(resolvedAccept.includes('video') || /\.(mp4|webm|mov|m4v)(\?|$)/i.test(externalSrc)))
 	);
 
 	function formatBytes(bytes: number): string {
@@ -71,6 +97,8 @@
 
 	function getFileKind(file: File): FileKind {
 		if (file.type.startsWith('image/')) return 'image';
+		if (file.type.startsWith('video/')) return 'video';
+		if (file.type.startsWith('audio/')) return 'audio';
 		if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) return 'pdf';
 		if (
 			file.type.includes('document') ||
@@ -86,6 +114,8 @@
 		if (kind === 'pdf') return 'PDF';
 		if (kind === 'doc') return 'DOC';
 		if (kind === 'image') return 'IMG';
+		if (kind === 'video') return 'VID';
+		if (kind === 'audio') return 'AUD';
 		return 'FILE';
 	}
 
@@ -93,6 +123,8 @@
 		if (kind === 'pdf') return 'bg-red-50 text-red-600 dark:bg-red-950/50 dark:text-red-300';
 		if (kind === 'doc') return 'bg-sky-50 text-sky-700 dark:bg-sky-950/50 dark:text-sky-300';
 		if (kind === 'image') return 'bg-brand-50 text-brand-700 dark:bg-brand-950/50 dark:text-brand-300';
+		if (kind === 'video') return 'bg-violet-50 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300';
+		if (kind === 'audio') return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300';
 		return 'bg-surface-overlay text-secondary';
 	}
 
@@ -141,13 +173,14 @@
 			}
 
 			const kind = getFileKind(file);
+			const needsUrl = kind === 'image' || kind === 'video' || kind === 'audio';
 			nextItems.push({
 				file,
 				id: `${file.name}-${file.size}-${file.lastModified}-${Math.random().toString(36).slice(2, 7)}`,
 				name: file.name,
 				sizeFormatted: formatBytes(file.size),
 				kind,
-				previewUrl: kind === 'image' ? URL.createObjectURL(file) : undefined
+				previewUrl: needsUrl ? URL.createObjectURL(file) : undefined
 			});
 		}
 
@@ -181,6 +214,17 @@
 		fileList = fileList.filter((item) => item.id !== id);
 		errorMessage = '';
 		onchange?.(fileList.map((item) => item.file));
+		if (fileList.length === 0) onclear?.();
+	}
+
+	function clearSingle() {
+		if (primaryFile) {
+			removeFile(primaryFile.id);
+			return;
+		}
+		errorMessage = '';
+		onchange?.([]);
+		onclear?.();
 	}
 
 	function clearAll() {
@@ -516,7 +560,7 @@
 		</div>
 
 	<!-- Single variant: preview card with edit -->
-	{:else if variant === 'single' && primaryFile}
+	{:else if showSinglePreview}
 		<div
 			class={[
 				'overflow-hidden rounded-xl border border-border bg-surface-elevated shadow-sm',
@@ -530,11 +574,20 @@
 			aria-labelledby={label ? labelId : undefined}
 		>
 			<div class="relative aspect-video bg-surface-overlay">
-				{#if primaryFile.previewUrl}
-					<img src={primaryFile.previewUrl} alt="" class="h-full w-full object-cover" />
+				{#if singlePreviewUrl}
+					{#if singleIsVideo}
+						<video
+							src={singlePreviewUrl}
+							class="h-full w-full object-cover"
+							muted
+							playsinline
+						></video>
+					{:else}
+						<img src={singlePreviewUrl} alt="" class="h-full w-full object-cover" />
+					{/if}
 				{:else}
 					<div class="flex h-full w-full flex-col items-center justify-center gap-2">
-						{@render fileBadge(primaryFile.kind, 'h-14 w-14 rounded-xl text-xs')}
+						{@render fileBadge(primaryFile?.kind ?? 'other', 'h-14 w-14 rounded-xl text-xs')}
 					</div>
 				{/if}
 
@@ -556,9 +609,9 @@
 						</button>
 						<button
 							type="button"
-							onclick={() => removeFile(primaryFile.id)}
+							onclick={clearSingle}
 							class="inline-flex items-center justify-center rounded-lg bg-white/95 p-1.5 text-secondary shadow-sm backdrop-blur transition hover:bg-white hover:text-red-600 dark:bg-slate-900/95 dark:hover:bg-slate-900 dark:hover:text-red-400"
-							aria-label={`Remove ${primaryFile.name}`}
+							aria-label={`Remove ${singlePreviewName}`}
 						>
 							<svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 								<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -570,8 +623,10 @@
 
 			<div class="flex items-center justify-between gap-3 border-t border-border px-4 py-3">
 				<div class="min-w-0">
-					<p class="truncate text-sm font-medium text-primary">{primaryFile.name}</p>
-					<p class="text-xs text-secondary">{primaryFile.sizeFormatted}</p>
+					<p class="truncate text-sm font-medium text-primary">{singlePreviewName}</p>
+					{#if singlePreviewMeta}
+						<p class="text-xs text-secondary">{singlePreviewMeta}</p>
+					{/if}
 				</div>
 				{#if helperText}
 					<p id={helperId} class="shrink-0 text-xs text-secondary">{helperText}</p>

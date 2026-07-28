@@ -1,6 +1,7 @@
 <script lang="ts" module>
 	export type { WidgetRect } from '$lib/components/molecules/WidgetCanvas/widgetCanvasContext.js';
 	export type WidgetResizeEdge = 'se' | 'e' | 's' | 'sw' | 'w' | 'ne' | 'n' | 'nw';
+	export type WidgetHandleStyle = 'default' | 'canva';
 </script>
 
 <script lang="ts">
@@ -37,6 +38,32 @@
 		 * recomiendo 'release'.
 		 */
 		snapMode?: 'live' | 'release';
+		/**
+		 * Resize handle look. `canva` = blue border + circular corner/edge handles.
+		 */
+		handleStyle?: WidgetHandleStyle;
+		/**
+		 * When false, no header chrome; freeform drag starts from the body.
+		 * Use with canvas/artboard layers (Canva-like).
+		 */
+		showChrome?: boolean;
+		/** Remove body padding so media/text fill the frame. */
+		flush?: boolean;
+		/**
+		 * When set, forces handle visibility (true = always, false = never).
+		 * Default: hover for `default`, always-on for `canva` while resizing.
+		 */
+		handlesVisible?: boolean;
+		/**
+		 * Raise z-index while selected (`handlesVisible`). Canvas layers should
+		 * set `false` so stacking order stays truthful; drag still raises via `mode`.
+		 */
+		raiseOnSelect?: boolean;
+		/**
+		 * Document stacking order (e.g. layer.zIndex). When set, freeform z-index
+		 * follows this and only boosts temporarily while selected/dragging.
+		 */
+		stackIndex?: number;
 		collapsible?: boolean;
 		collapsed?: boolean;
 		loading?: boolean;
@@ -71,6 +98,12 @@
 		minH = 120,
 		snap,
 		snapMode = 'release',
+		handleStyle = 'default',
+		showChrome = true,
+		flush = false,
+		handlesVisible,
+		raiseOnSelect = true,
+		stackIndex,
 		collapsible = false,
 		collapsed = $bindable(false),
 		loading = false,
@@ -98,13 +131,13 @@
 	let edge = $state<WidgetResizeEdge>('se');
 	let start = $state({ px: 0, py: 0, x: 0, y: 0, w: 0, h: 0 });
 	let localBusy = $state(false);
-	let zIndex = $state(1);
+	let localZ = $state(1);
 	/** Tamaño local cuando resizable sin freeform (EditableChrome, etc.) */
 	let localW = $state<number | null>(null);
 	let localH = $state<number | null>(null);
 	let rootEl = $state<HTMLDivElement | null>(null);
 
-	const showDragHandle = $derived((editable || freeform) && draggable);
+	const showDragHandle = $derived(showChrome && (editable || freeform) && draggable);
 	const showResizeHandle = $derived((editable || freeform) && resizable && !collapsed);
 	const showReload = $derived(!!onreload);
 	const busy = $derived(loading || reloading || localBusy);
@@ -114,17 +147,25 @@
 	const delegateResize = $derived(!freeform && !!onresizestart);
 	const builtinResize = $derived(freeform || (resizable && !delegateResize));
 	const showHeader = $derived(
-		!!title ||
-			showDragHandle ||
-			!!actions ||
-			(editable && !!onremove) ||
-			collapsible ||
-			showReload
+		showChrome &&
+			(!!title ||
+				showDragHandle ||
+				!!actions ||
+				(editable && !!onremove) ||
+				collapsible ||
+				showReload)
+	);
+	const isCanva = $derived(handleStyle === 'canva');
+	const baseStack = $derived(stackIndex ?? localZ);
+	const paintZ = $derived(
+		mode || (raiseOnSelect && handlesVisible) ? 1_000_000 + baseStack : baseStack
 	);
 
 	function bringToFront() {
 		if (!freeform) return;
-		zIndex = Date.now();
+		// Controlled stack: temporary raise comes from `paintZ` via handlesVisible/mode.
+		if (stackIndex != null) return;
+		localZ = Date.now();
 	}
 
 	function finalizeRect(next: WidgetRect): WidgetRect {
@@ -189,8 +230,9 @@
 
 	function onPointerMove(e: PointerEvent) {
 		if (!mode || !builtinResize) return;
-		const dx = e.clientX - start.px;
-		const dy = e.clientY - start.py;
+		const s = canvas?.scale || 1;
+		const dx = (e.clientX - start.px) / s;
+		const dy = (e.clientY - start.py) / s;
 
 		if (mode === 'move') {
 			if (!freeform) return;
@@ -217,6 +259,35 @@
 		h = Math.max(minH, h);
 		if (edge.includes('w')) x = start.x + (start.w - w);
 		if (edge.includes('n')) y = start.y + (start.h - h);
+
+		// Shift: lock aspect ratio to the size at resize start
+		if (e.shiftKey && start.w > 0 && start.h > 0) {
+			const ratio = start.w / start.h;
+			const isCorner = edge === 'ne' || edge === 'nw' || edge === 'se' || edge === 'sw';
+			if (isCorner) {
+				const dw = Math.abs(w - start.w);
+				const dh = Math.abs(h - start.h);
+				if (dw * start.h >= dh * start.w) {
+					h = Math.max(minH, w / ratio);
+					w = h * ratio;
+				} else {
+					w = Math.max(minW, h * ratio);
+					h = w / ratio;
+				}
+				w = Math.max(minW, w);
+				h = Math.max(minH, h);
+				if (edge.includes('w')) x = start.x + (start.w - w);
+				if (edge.includes('n')) y = start.y + (start.h - h);
+			} else if (edge === 'e' || edge === 'w') {
+				h = Math.max(minH, w / ratio);
+				y = start.y + (start.h - h) / 2;
+				if (edge === 'w') x = start.x + (start.w - w);
+			} else if (edge === 'n' || edge === 's') {
+				w = Math.max(minW, h * ratio);
+				x = start.x + (start.w - w) / 2;
+				if (edge === 'n') y = start.y + (start.h - h);
+			}
+		}
 
 		if (freeform) {
 			emitRect({ x, y, w, h });
@@ -251,7 +322,7 @@
 		}
 	}
 
-	const freeformEdges: { edge: WidgetResizeEdge; class: string }[] = [
+	const freeformEdgesDefault: { edge: WidgetResizeEdge; class: string }[] = [
 		{ edge: 'e', class: 'top-2 bottom-2 -right-px w-1.5 cursor-e-resize' },
 		{ edge: 's', class: 'left-2 right-2 -bottom-px h-1.5 cursor-s-resize' },
 		{ edge: 'w', class: 'top-2 bottom-2 -left-px w-1.5 cursor-w-resize' },
@@ -262,9 +333,22 @@
 		{ edge: 'nw', class: '-left-px -top-px h-3 w-3 cursor-nw-resize' }
 	];
 
+	const freeformEdgesCanva: { edge: WidgetResizeEdge; class: string }[] = [
+		{ edge: 'n', class: 'left-1/2 top-0 h-3 w-3 -translate-x-1/2 -translate-y-1/2 cursor-n-resize' },
+		{ edge: 's', class: 'left-1/2 bottom-0 h-3 w-3 -translate-x-1/2 translate-y-1/2 cursor-s-resize' },
+		{ edge: 'e', class: 'top-1/2 right-0 h-3 w-3 translate-x-1/2 -translate-y-1/2 cursor-e-resize' },
+		{ edge: 'w', class: 'top-1/2 left-0 h-3 w-3 -translate-x-1/2 -translate-y-1/2 cursor-w-resize' },
+		{ edge: 'nw', class: 'left-0 top-0 h-3 w-3 -translate-x-1/2 -translate-y-1/2 cursor-nw-resize' },
+		{ edge: 'ne', class: 'right-0 top-0 h-3 w-3 translate-x-1/2 -translate-y-1/2 cursor-ne-resize' },
+		{ edge: 'sw', class: 'bottom-0 left-0 h-3 w-3 -translate-x-1/2 translate-y-1/2 cursor-sw-resize' },
+		{ edge: 'se', class: 'bottom-0 right-0 h-3 w-3 translate-x-1/2 translate-y-1/2 cursor-se-resize' }
+	];
+
+	const freeformEdges = $derived(isCanva ? freeformEdgesCanva : freeformEdgesDefault);
+
 	const rootStyle = $derived.by(() => {
 		if (freeform) {
-			return `left:${rect.x}px;top:${rect.y}px;width:${rect.w}px;height:${collapsed ? 'auto' : `${rect.h}px`};z-index:${mode ? zIndex + 1000 : zIndex};`;
+			return `left:${rect.x}px;top:${rect.y}px;width:${rect.w}px;height:${collapsed ? 'auto' : `${rect.h}px`};z-index:${paintZ};`;
 		}
 		if (localW != null) {
 			const h =
@@ -278,14 +362,31 @@
 		'inline-flex h-7 w-7 items-center justify-center rounded-md text-muted transition-colors hover:bg-surface-overlay hover:text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 disabled:opacity-50';
 
 	/** Handles only intercept pointers while this widget is hovered (or resizing), so neighbors can sit flush */
-	const edgeAccent = $derived(
-		[
+	const edgeAccent = $derived.by(() => {
+		if (isCanva) {
+			const visible =
+				handlesVisible === true || mode === 'resize'
+					? 'pointer-events-auto opacity-100'
+					: handlesVisible === false
+						? 'pointer-events-none opacity-0'
+						: 'pointer-events-none opacity-0 group-hover/widget:pointer-events-auto group-hover/widget:opacity-100';
+			return [
+				'absolute z-20 touch-none rounded-full border-2 border-[#3b82f6] bg-white shadow-sm',
+				'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3b82f6]/40',
+				visible
+			].join(' ');
+		}
+		return [
 			'absolute z-10 touch-none rounded-sm bg-transparent transition-colors',
 			'hover:bg-brand-500/70 focus-visible:bg-brand-500/70 focus-visible:outline-none',
 			mode === 'resize'
 				? 'pointer-events-auto bg-brand-500/40'
 				: 'pointer-events-none group-hover/widget:pointer-events-auto group-hover/widget:bg-brand-500/35'
-		].join(' ')
+		].join(' ');
+	});
+
+	const canvaBorder = $derived(
+		isCanva && (handlesVisible === true || mode === 'resize' || mode === 'move')
 	);
 </script>
 
@@ -293,15 +394,27 @@
 <div
 	bind:this={rootEl}
 	class={[
-		'group/widget flex min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-surface-elevated',
+		'group/widget flex min-h-0 min-w-0 flex-col overflow-visible',
+		!isCanva && 'overflow-hidden rounded-xl border border-border bg-surface-elevated',
+		isCanva && 'bg-transparent',
+		canvaBorder && 'outline outline-2 outline-[#3b82f6]',
 		freeform ? 'absolute shadow-md' : 'relative',
+		isCanva && 'shadow-none',
 		collapsed && 'h-auto self-start',
 		mode === 'move' && 'cursor-grabbing opacity-95',
-		mode === 'resize' && 'ring-1 ring-brand-500/40',
+		mode === 'resize' && !isCanva && 'ring-1 ring-brand-500/40',
+		!showChrome && freeform && draggable && 'cursor-move',
 		className
 	]}
 	style={rootStyle}
-	onpointerdown={bringToFront}
+	onpointerdown={(e) => {
+		bringToFront();
+		if (!showChrome && freeform && draggable && e.button === 0) {
+			const t = e.target as HTMLElement;
+			if (t?.closest('[data-resize-handle]')) return;
+			beginMove(e);
+		}
+	}}
 	onpointermove={onPointerMove}
 	onpointerup={onPointerUp}
 	onpointercancel={onPointerUp}
@@ -401,7 +514,12 @@
 	{/if}
 
 	{#if !collapsed}
-		<div class="relative min-h-0 flex-1 overflow-auto p-3">
+		<div
+			class={[
+				'relative min-h-0 flex-1',
+				flush ? 'overflow-hidden p-0' : 'overflow-auto p-3'
+			]}
+		>
 			{#if busy}
 				{#if loadingMode === 'spinner'}
 					<div
@@ -451,6 +569,7 @@
 		{#each freeformEdges as h (h.edge)}
 			<!-- svelte-ignore a11y_no_static_element_interactions -->
 			<div
+				data-resize-handle
 				class={[edgeAccent, h.class]}
 				role="separator"
 				aria-orientation={h.edge === 'e' || h.edge === 'w' ? 'vertical' : 'horizontal'}
@@ -459,17 +578,19 @@
 			></div>
 		{/each}
 
-		<!-- SE grip (visual only, small) -->
-		<div
-			class={[
-				'pointer-events-none absolute bottom-0.5 right-0.5 z-20 flex h-2.5 w-2.5 items-center justify-center',
-				'text-muted/60 transition-colors group-hover/widget:text-brand-500'
-			]}
-			aria-hidden="true"
-		>
-			<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.75" class="h-2.5 w-2.5">
-				<path stroke-linecap="round" d="M7 11L11 7M4 11L11 4" />
-			</svg>
-		</div>
+		{#if !isCanva}
+			<!-- SE grip (visual only, small) -->
+			<div
+				class={[
+					'pointer-events-none absolute bottom-0.5 right-0.5 z-20 flex h-2.5 w-2.5 items-center justify-center',
+					'text-muted/60 transition-colors group-hover/widget:text-brand-500'
+				]}
+				aria-hidden="true"
+			>
+				<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.75" class="h-2.5 w-2.5">
+					<path stroke-linecap="round" d="M7 11L11 7M4 11L11 4" />
+				</svg>
+			</div>
+		{/if}
 	{/if}
 </div>

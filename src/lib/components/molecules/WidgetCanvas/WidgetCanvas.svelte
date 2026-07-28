@@ -19,8 +19,10 @@
 		width?: number;
 		/** Board height in px (modo scroll + fixed; en auto se redondea a celdas) */
 		height?: number;
-		/** Altura visible del viewport */
+		/** Altura visible del viewport (ignored when `fill` is true) */
 		viewportHeight?: number;
+		/** Fill parent height instead of fixed viewportHeight */
+		fill?: boolean;
 		/** scroll = tablero grande · fit/fullscreen = sin scroll */
 		mode?: 'scroll' | 'fit' | 'fullscreen';
 		showGrid?: boolean;
@@ -38,6 +40,7 @@
 		width = 1600,
 		height = 1000,
 		viewportHeight = 520,
+		fill = false,
 		mode = $bindable<'scroll' | 'fit' | 'fullscreen'>('scroll'),
 		showGrid = $bindable(true),
 		snap = $bindable(true),
@@ -135,7 +138,9 @@
 	setContext(WIDGET_CANVAS_CONTEXT, api);
 
 	const overflowClass = $derived(mode === 'scroll' ? 'overflow-auto' : 'overflow-hidden');
-	const effectiveViewportHeight = $derived(mode === 'fullscreen' ? '100vh' : `${viewportHeight}px`);
+	const effectiveViewportHeight = $derived(
+		fill ? '100%' : mode === 'fullscreen' ? '100vh' : `${viewportHeight}px`
+	);
 
 	const statusLabel = $derived.by(() => {
 		const b = getBounds();
@@ -195,7 +200,7 @@
 	});
 </script>
 
-<div class={['flex w-full flex-col gap-2', className]}>
+<div class={['flex w-full flex-col gap-2', fill && 'h-full min-h-0', className]}>
 	{#if controls}
 		<div
 			class="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-surface-elevated px-3 py-2"
@@ -263,7 +268,11 @@
 	{/if}
 
 	<div
-		class={['w-full rounded-2xl border border-border bg-surface', overflowClass].join(' ')}
+		class={[
+			'w-full border border-border bg-surface',
+			fill ? 'min-h-0 flex-1 rounded-none' : 'rounded-2xl',
+			overflowClass
+		].join(' ')}
 		style={`height:${effectiveViewportHeight};`}
 		bind:this={viewportEl}
 	>

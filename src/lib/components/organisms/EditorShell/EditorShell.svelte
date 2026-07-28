@@ -112,7 +112,9 @@
 						{/if}
 					</Panel>
 				{:else if sidebar}
-					{@render sidebar()}
+					<div class="h-full min-h-0 min-w-0">
+						{@render sidebar()}
+					</div>
 				{/if}
 			{/snippet}
 			{#snippet end()}
@@ -221,6 +223,8 @@
 			{/if}
 		</Panel>
 	{:else if workspace}
-		{@render workspace()}
+		<div class="h-full min-h-0 min-w-0">
+			{@render workspace()}
+		</div>
 	{/if}
 {/snippet}

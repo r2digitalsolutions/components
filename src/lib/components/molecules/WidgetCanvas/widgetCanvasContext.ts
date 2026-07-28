@@ -18,6 +18,8 @@ export interface WidgetCanvasContext {
 	readonly cellSize: number;
 	readonly autoCells: number;
 	readonly cellSizeMode: 'fixed' | 'auto';
+	/** Visual scale of the board (screen px / board px). Default 1. */
+	readonly scale?: number;
 	getBounds: () => WidgetCanvasBounds;
 	snapValue: (value: number) => number;
 	snapRect: (rect: WidgetRect, minW: number, minH: number) => WidgetRect;

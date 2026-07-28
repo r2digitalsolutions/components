@@ -98,6 +98,14 @@ export type { FadeMaskEdge, FadeMaskSize } from './components/atoms/FadeMask/Fad
 export { default as VersionTag } from './components/atoms/VersionTag/VersionTag.svelte';
 export type { VersionTagTone, VersionTagSize } from './components/atoms/VersionTag/VersionTag.svelte';
 export { default as WaveBars } from './components/atoms/WaveBars/WaveBars.svelte';
+export { default as Playhead } from './components/atoms/Playhead/Playhead.svelte';
+export { default as TimeRuler } from './components/atoms/TimeRuler/TimeRuler.svelte';
+export { default as TrimHandle } from './components/atoms/TrimHandle/TrimHandle.svelte';
+export type { TrimHandleSide } from './components/atoms/TrimHandle/TrimHandle.svelte';
+export { default as MediaKindIcon } from './components/atoms/MediaKindIcon/MediaKindIcon.svelte';
+export type { MediaKindIconSize } from './components/atoms/MediaKindIcon/MediaKindIcon.svelte';
+export { default as PanKnob } from './components/atoms/PanKnob/PanKnob.svelte';
+export type { PanKnobSize } from './components/atoms/PanKnob/PanKnob.svelte';
 export { default as LatencyPill } from './components/atoms/LatencyPill/LatencyPill.svelte';
 export type { LatencyPillTone, LatencyPillSize } from './components/atoms/LatencyPill/LatencyPill.svelte';
 export { default as SkeletonAvatar } from './components/atoms/SkeletonAvatar/SkeletonAvatar.svelte';
@@ -810,7 +818,8 @@ export type {
 export { default as WidgetFrame } from './components/molecules/WidgetFrame/WidgetFrame.svelte';
 export type {
 	WidgetResizeEdge,
-	WidgetRect
+	WidgetRect,
+	WidgetHandleStyle
 } from './components/molecules/WidgetFrame/WidgetFrame.svelte';
 export { default as DashboardGridToolbar } from './components/molecules/DashboardGridToolbar/DashboardGridToolbar.svelte';
 export { default as WidgetCanvas } from './components/molecules/WidgetCanvas/WidgetCanvas.svelte';
@@ -827,6 +836,27 @@ export {
 	fitBoardToAutoCells,
 	scrollBoardToAutoCells
 } from './components/molecules/WidgetCanvas/widgetCanvasContext.js';
+export { default as TransportControls } from './components/molecules/TransportControls/TransportControls.svelte';
+export { default as TimelineClip } from './components/molecules/TimelineClip/TimelineClip.svelte';
+export { default as TimelineTrack } from './components/molecules/TimelineTrack/TimelineTrack.svelte';
+export { default as MediaTimeline } from './components/molecules/MediaTimeline/MediaTimeline.svelte';
+export { default as MediaAssetCard } from './components/molecules/MediaAssetCard/MediaAssetCard.svelte';
+export { default as MediaLayerList } from './components/molecules/MediaLayerList/MediaLayerList.svelte';
+export type { MediaLayerListItem } from './components/molecules/MediaLayerList/MediaLayerList.svelte';
+export { default as MediaAssetBrowser } from './components/molecules/MediaAssetBrowser/MediaAssetBrowser.svelte';
+export { default as MediaLayerItem } from './components/molecules/MediaLayerItem/MediaLayerItem.svelte';
+export { default as MediaStage } from './components/molecules/MediaStage/MediaStage.svelte';
+export { default as CanvasInspector } from './components/molecules/CanvasInspector/CanvasInspector.svelte';
+export { default as CanvasElementsPanel } from './components/molecules/CanvasElementsPanel/CanvasElementsPanel.svelte';
+export {
+	CANVAS_ELEMENT_MIME,
+	type CanvasElementDef
+} from './components/molecules/CanvasElementsPanel/CanvasElementsPanel.svelte';
+export { default as ProgramMonitor } from './components/molecules/ProgramMonitor/ProgramMonitor.svelte';
+export { default as VideoTrackHeader } from './components/molecules/VideoTrackHeader/VideoTrackHeader.svelte';
+export { default as WaveformRegion } from './components/molecules/WaveformRegion/WaveformRegion.svelte';
+export { default as TrackHeader } from './components/molecules/TrackHeader/TrackHeader.svelte';
+export { default as MixerChannel } from './components/molecules/MixerChannel/MixerChannel.svelte';
 export { default as WidgetPicker } from './components/molecules/WidgetPicker/WidgetPicker.svelte';
 export type {
 	WidgetCatalogItem,
@@ -943,6 +973,9 @@ export type { CommandItem } from './components/organisms/CommandPalette/CommandP
 export { default as AppShell } from './components/organisms/AppShell/AppShell.svelte';
 export { default as EditorShell } from './components/organisms/EditorShell/EditorShell.svelte';
 export { default as BlueprintEditor } from './components/organisms/BlueprintEditor/BlueprintEditor.svelte';
+export { default as CanvasEditor } from './components/organisms/CanvasEditor/CanvasEditor.svelte';
+export { default as VideoEditor } from './components/organisms/VideoEditor/VideoEditor.svelte';
+export { default as AudioEditor } from './components/organisms/AudioEditor/AudioEditor.svelte';
 export { default as LoginForm } from './components/organisms/LoginForm/LoginForm.svelte';
 export type {
 	LoginFormVariant,
@@ -1257,6 +1290,9 @@ export type {
 	CheckoutShippingOption
 } from './components/templates/CheckoutTemplate/CheckoutTemplate.svelte';
 export { default as DesktopTemplate } from './components/templates/DesktopTemplate/DesktopTemplate.svelte';
+export { default as CanvasEditorTemplate } from './components/templates/CanvasEditorTemplate/CanvasEditorTemplate.svelte';
+export { default as VideoEditorTemplate } from './components/templates/VideoEditorTemplate/VideoEditorTemplate.svelte';
+export { default as AudioEditorTemplate } from './components/templates/AudioEditorTemplate/AudioEditorTemplate.svelte';
 
 // ── Utils ────────────────────────────────────────────────────────────────────
 export { themeStore } from './utils/theme.svelte.js';
@@ -1406,6 +1442,81 @@ export {
 	blogAlignClass,
 	blogAspectPadding
 } from './utils/blogDocument.js';
+
+export {
+	msToPx,
+	pxToMs,
+	pxPerMsFromZoom,
+	snapMs,
+	clampMs,
+	formatTimecode,
+	ticksForDuration
+} from './utils/mediaTime.js';
+export {
+	uid,
+	createMediaClip,
+	createMediaTrack,
+	createMediaAsset,
+	clipDurationMs,
+	moveClip,
+	trimClipStart,
+	trimClipEnd,
+	isClipActiveAt,
+	findClipAt,
+	updateClipInTracks,
+	removeClipFromTracks,
+	kindFromFile
+} from './utils/mediaTracks.js';
+export type {
+	MediaAsset,
+	MediaAssetKind,
+	MediaClip,
+	MediaTrack,
+	MediaTrackKind
+} from './utils/mediaTracks.js';
+export {
+	emptyCanvasDocument,
+	createCanvasLayer,
+	createCanvasGuide,
+	reorderCanvasLayers,
+	updateCanvasLayer,
+	updateCanvasLayers,
+	alignLayerRect,
+	snapLayerRect,
+	snapRectToGuides,
+	CANVAS_PRESETS,
+	presetIdForSize
+} from './utils/canvasDocument.js';
+export type {
+	CanvasDocument,
+	CanvasLayer,
+	CanvasLayerKind,
+	CanvasLayerRect,
+	CanvasObjectFit,
+	CanvasTextAlign,
+	CanvasAlign,
+	CanvasFontStyle,
+	CanvasTextDecoration,
+	CanvasGuide,
+	CanvasGuideOrientation
+} from './utils/canvasDocument.js';
+export {
+	renderCanvasDocument,
+	exportCanvasBlob,
+	downloadBlob,
+	backgroundAlpha
+} from './utils/canvasExport.js';
+export type { CanvasExportFormat } from './utils/canvasExport.js';
+export {
+	emptyVideoSequence,
+	createDemoVideoSequence
+} from './utils/videoSequence.js';
+export type { VideoSequence } from './utils/videoSequence.js';
+export {
+	emptyAudioProject,
+	createDemoAudioProject
+} from './utils/audioProject.js';
+export type { AudioProject, MixerChannelState } from './utils/audioProject.js';
 export type {
 	BlogDocument,
 	BlogBlock,

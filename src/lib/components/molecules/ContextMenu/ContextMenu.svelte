@@ -133,7 +133,7 @@
 		highlighted = -1;
 		query = '';
 		placeMenu(x, y);
-		// Defer so the click/pointerup that follows `contextmenu` does not light-dismiss.
+		// Defer past the contextmenu/mouseup that would light-dismiss a popover=auto.
 		requestAnimationFrame(() => {
 			requestAnimationFrame(() => {
 				if (open) showMenu();
@@ -176,6 +176,18 @@
 		highlighted = -1;
 		query = '';
 		onclose?.();
+	}
+
+	/** Manual popover: close on outside pointer / scroll. */
+	function onDocPointerDown(event: PointerEvent) {
+		if (!open) return;
+		const t = event.target;
+		if (t instanceof Node && menuEl?.contains(t)) return;
+		close();
+	}
+
+	function onDocScroll() {
+		if (open) close();
 	}
 
 	function handleKeydown(event: KeyboardEvent) {
@@ -231,14 +243,28 @@
 			if (!open) hideMenu();
 			return;
 		}
-		query = '';
-		highlighted = -1;
-		placeMenu(anchor.x, anchor.y);
+		const x = anchor.x;
+		const y = anchor.y;
+		placeMenu(x, y);
 		requestAnimationFrame(() => {
 			requestAnimationFrame(() => {
 				if (open) showMenu();
 			});
 		});
+	});
+
+	$effect(() => {
+		if (!open) return;
+		// Bind after current pointer gesture ends so the opening right-click doesn't close us.
+		const timer = window.setTimeout(() => {
+			document.addEventListener('pointerdown', onDocPointerDown, true);
+			document.addEventListener('scroll', onDocScroll, true);
+		}, 0);
+		return () => {
+			window.clearTimeout(timer);
+			document.removeEventListener('pointerdown', onDocPointerDown, true);
+			document.removeEventListener('scroll', onDocScroll, true);
+		};
 	});
 </script>
 
@@ -251,11 +277,11 @@
 	</div>
 {/if}
 
-<!-- Native Popover API — top layer, light dismiss, no manual portal -->
+<!-- Manual popover — context menus must not light-dismiss on the opening mouseup -->
 <div
 	bind:this={menuEl}
 	id={menuId}
-	popover="auto"
+	popover="manual"
 	role="menu"
 	tabindex={-1}
 	aria-label="Context menu"

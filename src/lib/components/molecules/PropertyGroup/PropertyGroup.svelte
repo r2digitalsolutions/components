@@ -44,7 +44,7 @@
 	</button>
 
 	{#if open}
-		<div class="space-y-0.5 px-1 py-1">
+		<div class="space-y-0.5 px-1 py-1 min-w-0 overflow-x-hidden">
 			{#if children}
 				{@render children()}
 			{/if}

@@ -222,7 +222,7 @@
 
 <svelte:document onkeydown={onKey} onpointermove={onPointer} onpointerup={onPointerUp} />
 
-<div class={['relative w-full max-w-xs', className]} bind:this={rootEl}>
+<div class={['relative w-full min-w-0', className]} bind:this={rootEl}>
 	{#if label}
 		<span class="mb-1.5 block text-sm font-medium text-primary">{label}</span>
 	{/if}
