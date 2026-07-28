@@ -33,6 +33,8 @@
 		/** Default placement on the program frame */
 		rectPreset?: VideoComponentRectPreset;
 	}
+
+	export const VIDEO_COMPONENT_MIME = 'application/x-r2-video-component';
 </script>
 
 <script lang="ts">
@@ -393,6 +395,86 @@
 			color: '#111827',
 			previewOpacity: 0.7,
 			rectPreset: 'full'
+		},
+
+		/* —— Shapes / accents —— */
+		{
+			id: 'pill-label',
+			label: 'Pill',
+			group: 'Shapes',
+			glyph: '◯',
+			kind: 'text',
+			text: 'NEW',
+			durationMs: 4000,
+			color: '#22c55e',
+			fontSize: 14,
+			fontWeight: 800,
+			textColor: '#052e16',
+			rectPreset: 'badge'
+		},
+		{
+			id: 'callout',
+			label: 'Callout',
+			group: 'Shapes',
+			glyph: '!',
+			kind: 'text',
+			text: 'Look here',
+			durationMs: 3500,
+			color: '#f97316',
+			fontSize: 20,
+			fontWeight: 700,
+			textColor: '#fff7ed',
+			rectPreset: 'side'
+		},
+		{
+			id: 'sticker-star',
+			label: 'Star',
+			group: 'Shapes',
+			glyph: '★',
+			kind: 'text',
+			text: '★',
+			durationMs: 3000,
+			color: '#eab308',
+			fontSize: 72,
+			fontWeight: 700,
+			textColor: '#fef08a',
+			rectPreset: 'center'
+		},
+		{
+			id: 'emoji-react',
+			label: 'React',
+			group: 'Shapes',
+			glyph: '🔥',
+			kind: 'text',
+			text: '🔥',
+			durationMs: 2500,
+			color: '#ef4444',
+			fontSize: 64,
+			fontWeight: 700,
+			textColor: '#ffffff',
+			rectPreset: 'badge'
+		},
+		{
+			id: 'progress-bar',
+			label: 'Bar',
+			group: 'Shapes',
+			glyph: '▬',
+			kind: 'solid',
+			durationMs: 5000,
+			color: '#3b82f6',
+			previewOpacity: 0.9,
+			rectPreset: 'ticker'
+		},
+		{
+			id: 'vignette',
+			label: 'Vignette',
+			group: 'Shapes',
+			glyph: '◎',
+			kind: 'solid',
+			durationMs: 8000,
+			color: '#000000',
+			previewOpacity: 0.35,
+			rectPreset: 'full'
 		}
 	];
 
@@ -402,9 +484,18 @@
 			items: components.filter((c) => c.group === group)
 		}))
 	);
+
+	function onDragStart(e: DragEvent, item: VideoComponentDef) {
+		e.dataTransfer?.setData(VIDEO_COMPONENT_MIME, JSON.stringify(item));
+		e.dataTransfer?.setData('text/plain', item.label);
+		if (e.dataTransfer) e.dataTransfer.effectAllowed = 'copy';
+	}
 </script>
 
 <div class={['flex flex-col gap-4 p-2', className]}>
+	<p class="px-1 text-[10px] leading-relaxed text-muted">
+		Click to add on a new track, or drag onto the timeline.
+	</p>
 	{#each groups as { group, items } (group)}
 		<section class="flex flex-col gap-2">
 			<h3 class="px-1 text-[10px] font-semibold uppercase tracking-wide text-muted">{group}</h3>
@@ -412,7 +503,9 @@
 				{#each items as item (item.id)}
 					<button
 						type="button"
-						class="flex flex-col items-center gap-1.5 rounded-lg border border-border bg-surface-elevated px-1.5 py-2 text-center transition-colors hover:border-brand-500/50 hover:bg-surface-overlay"
+						draggable="true"
+						ondragstart={(e) => onDragStart(e, item)}
+						class="flex cursor-grab flex-col items-center gap-1.5 rounded-lg border border-border bg-surface-elevated px-1.5 py-2 text-center transition-colors hover:border-brand-500/50 hover:bg-surface-overlay active:cursor-grabbing"
 						onclick={() => onadd?.(item)}
 					>
 						<span

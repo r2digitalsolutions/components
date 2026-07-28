@@ -1,9 +1,18 @@
 <script lang="ts">
 	import EditorShell from '$lib/components/organisms/EditorShell/EditorShell.svelte';
 	import MediaAssetBrowser from '$lib/components/molecules/MediaAssetBrowser/MediaAssetBrowser.svelte';
-	import VideoComponentsPanel from '$lib/components/molecules/VideoComponentsPanel/VideoComponentsPanel.svelte';
-	import VideoAnimationsPanel from '$lib/components/molecules/VideoAnimationsPanel/VideoAnimationsPanel.svelte';
-	import VideoTransitionsPanel from '$lib/components/molecules/VideoTransitionsPanel/VideoTransitionsPanel.svelte';
+	import VideoComponentsPanel, {
+		VIDEO_COMPONENT_MIME,
+		type VideoComponentDef
+	} from '$lib/components/molecules/VideoComponentsPanel/VideoComponentsPanel.svelte';
+	import VideoAnimationsPanel, {
+		VIDEO_ANIMATION_MIME,
+		type VideoAnimationDef
+	} from '$lib/components/molecules/VideoAnimationsPanel/VideoAnimationsPanel.svelte';
+	import VideoTransitionsPanel, {
+		VIDEO_TRANSITION_MIME,
+		type VideoTransitionDef
+	} from '$lib/components/molecules/VideoTransitionsPanel/VideoTransitionsPanel.svelte';
 	import ProgramMonitor from '$lib/components/molecules/ProgramMonitor/ProgramMonitor.svelte';
 	import TransportControls from '$lib/components/molecules/TransportControls/TransportControls.svelte';
 	import MediaTimeline from '$lib/components/molecules/MediaTimeline/MediaTimeline.svelte';
@@ -26,6 +35,7 @@
 		removeClipsFromTracks,
 		splitClipsAt,
 		mergeClipsInTracks,
+		canMergeMediaClips,
 		duplicateClipInTracks,
 		findClipById,
 		nextTrackName,
@@ -34,6 +44,7 @@
 		defaultOverlayRect,
 		alignClipRect,
 		resolveClipRect,
+		moveClipsByDelta,
 		isMediaClipFieldModified,
 		resetMediaClipField,
 		kindFromFile,
@@ -49,9 +60,6 @@
 	} from '$lib/utils/mediaTracks.js';
 	import { emptyVideoSequence, type VideoSequence } from '$lib/utils/videoSequence.js';
 	import { clampMs } from '$lib/utils/mediaTime.js';
-	import type { VideoComponentDef } from '$lib/components/molecules/VideoComponentsPanel/VideoComponentsPanel.svelte';
-	import type { VideoAnimationDef } from '$lib/components/molecules/VideoAnimationsPanel/VideoAnimationsPanel.svelte';
-	import type { VideoTransitionDef } from '$lib/components/molecules/VideoTransitionsPanel/VideoTransitionsPanel.svelte';
 	import Tooltip from '$lib/components/atoms/Tooltip/Tooltip.svelte';
 	import Slider from '$lib/components/atoms/Slider/Slider.svelte';
 	import Download from '@lucide/svelte/icons/download';
@@ -68,8 +76,11 @@
 	import AlignCenterHorizontal from '@lucide/svelte/icons/align-center-horizontal';
 	import AlignEndHorizontal from '@lucide/svelte/icons/align-end-horizontal';
 	import AlignCenter from '@lucide/svelte/icons/align-center';
+	import AlignLeft from '@lucide/svelte/icons/align-left';
+	import AlignRight from '@lucide/svelte/icons/align-right';
 	import Maximize2 from '@lucide/svelte/icons/maximize-2';
 	import type { Component } from 'svelte';
+	import { onDestroy } from 'svelte';
 
 	type IconComp = Component<{ class?: string }>;
 
@@ -96,17 +107,22 @@
 	let zoom = $state(1);
 	let showSidebar = $state(true);
 	let showInspector = $state(true);
-	let sidebarTab = $state<'components' | 'animations' | 'transitions' | 'assets'>('assets');
+	let sidebarTab = $state<'components' | 'animations' | 'transitions' | 'assets'>('components');
 	let ctxOpen = $state(false);
 	let ctxAnchor = $state<{ x: number; y: number } | null>(null);
 	let ctxTrackId = $state<string | null>(null);
 	let raf = 0;
 	let lastTs = 0;
+	let transitionPreviewTimer = 0;
 	const SKIP_MS = 5000;
+
+	onDestroy(() => {
+		window.clearTimeout(transitionPreviewTimer);
+	});
 
 	const primaryClipId = $derived(selectedClipIds[selectedClipIds.length - 1] ?? null);
 	const selectedClip = $derived(primaryClipId ? findClipById(value.tracks, primaryClipId) : null);
-	const canMerge = $derived(selectedClipIds.length >= 2);
+	const canMerge = $derived(canMergeMediaClips(value.tracks, selectedClipIds));
 	const canSplit = $derived(
 		!!selectedClip && (selectedClip.kind === 'video' || selectedClip.kind === 'audio')
 	);
@@ -207,6 +223,12 @@
 		{ id: 'full', label: 'Fill frame', icon: Maximize2 }
 	];
 
+	const textAlignDock: { id: 'left' | 'center' | 'right'; label: string; icon: IconComp }[] = [
+		{ id: 'left', label: 'Align left', icon: AlignLeft },
+		{ id: 'center', label: 'Align center', icon: AlignCenter },
+		{ id: 'right', label: 'Align right', icon: AlignRight }
+	];
+
 	const selectedRect = $derived(
 		selectedClip
 			? resolveClipRect(selectedClip, { width: value.width, height: value.height })
@@ -241,9 +263,16 @@
 			} else {
 				selectedClipIds = [...selectedClipIds, id];
 			}
+		} else if (selectedClipIds.includes(id)) {
+			// Keep multi-selection when dragging / clicking an already-selected clip
+			return;
 		} else {
 			selectedClipIds = [id];
 		}
+	}
+
+	function setSelection(ids: string[]) {
+		selectedClipIds = ids;
 	}
 
 	function openClipMenu(clipId: string, e: MouseEvent) {
@@ -299,14 +328,52 @@
 		selectedClipIds = [clip.id];
 	}
 
-	function addComponent(def: VideoComponentDef) {
-		const track = value.tracks.find((t) => t.kind === 'video') ?? value.tracks[0];
-		if (!track) return;
-		const startMs = currentTimeMs;
+	function addComponent(def: VideoComponentDef, at?: { trackId?: string; startMs?: number }) {
 		const kind: MediaAssetKind =
 			def.kind === 'solid' ? 'image' : def.kind === 'image' ? 'image' : 'text';
+		const startMs = at?.startMs ?? currentTimeMs;
 		const frame = { width: value.width, height: value.height };
 		const rect = defaultOverlayRect(frame, def.rectPreset ?? (kind === 'text' ? 'center' : 'full'));
+
+		if (at?.trackId) {
+			const track = value.tracks.find((t) => t.id === at.trackId);
+			if (!track || track.kind === 'audio') {
+				// Fall through to new track
+			} else {
+				const clip = createMediaClip({
+					trackId: track.id,
+					name: def.label,
+					kind,
+					text: def.kind === 'text' ? def.text : undefined,
+					src: def.src,
+					startMs,
+					endMs: startMs + def.durationMs,
+					color: def.color ?? '#6366f1',
+					textColor: def.textColor,
+					fontSize: def.fontSize,
+					fontWeight: def.fontWeight,
+					fontFamily: def.fontFamily,
+					textAlign: def.textAlign,
+					opacity: 1,
+					previewOpacity: def.previewOpacity ?? def.opacity,
+					rect
+				});
+				setTracks(
+					value.tracks.map((t) =>
+						t.id === track.id ? { ...t, clips: [...t.clips, clip] } : t
+					)
+				);
+				selectedClipIds = [clip.id];
+				return;
+			}
+		}
+
+		const trackKind: MediaTrackKind = 'video';
+		const track = createMediaTrack({
+			name: nextTrackName(value.tracks, trackKind),
+			kind: trackKind,
+			color: def.color ?? '#6366f1'
+		});
 		const clip = createMediaClip({
 			trackId: track.id,
 			name: def.label,
@@ -325,11 +392,11 @@
 			previewOpacity: def.previewOpacity ?? def.opacity,
 			rect
 		});
-		setTracks(
-			value.tracks.map((t) =>
-				t.id === track.id ? { ...t, clips: [...t.clips, clip] } : t
-			)
-		);
+		const audioIdx = value.tracks.findIndex((t) => t.kind === 'audio');
+		const next = [...value.tracks];
+		const insertAt = audioIdx >= 0 ? audioIdx : next.length;
+		next.splice(insertAt, 0, { ...track, clips: [clip] });
+		setTracks(next);
 		selectedClipIds = [clip.id];
 	}
 
@@ -413,7 +480,13 @@
 	}
 
 	function clipFieldModified(field: MediaClipResettableField): boolean {
-		return !!selectedClip && isMediaClipFieldModified(selectedClip, field);
+		return (
+			!!selectedClip &&
+			isMediaClipFieldModified(selectedClip, field, {
+				width: value.width,
+				height: value.height
+			})
+		);
 	}
 
 	function resetClipField(field: MediaClipResettableField) {
@@ -490,33 +563,149 @@
 		});
 	}
 
-	function applyAnimation(def: VideoAnimationDef) {
-		if (!selectedClipIds.length) return;
+	function applyAnimation(def: VideoAnimationDef, clipIds = selectedClipIds) {
+		if (!clipIds.length) return;
 		let tracks = value.tracks;
-		for (const id of selectedClipIds) {
-			tracks = updateClipInTracks(tracks, id, (c) =>
-				def.slot === 'in'
-					? { ...c, animationIn: { type: def.type, durationMs: def.durationMs } }
-					: { ...c, animationOut: { type: def.type, durationMs: def.durationMs } }
-			);
+		for (const id of clipIds) {
+			tracks = updateClipInTracks(tracks, id, (c) => {
+				if (def.slot === 'in') {
+					return { ...c, animationIn: { type: def.type, durationMs: def.durationMs } };
+				}
+				if (def.slot === 'out') {
+					return { ...c, animationOut: { type: def.type, durationMs: def.durationMs } };
+				}
+				// combo
+				return {
+					...c,
+					animationIn: { type: def.type, durationMs: def.durationMs },
+					animationOut: {
+						type: def.outType ?? def.type,
+						durationMs: def.durationMs
+					}
+				};
+			});
 		}
 		setTracks(tracks);
 	}
 
-	function applyTransition(def: VideoTransitionDef) {
-		if (!selectedClipIds.length) return;
+	function applyTransition(def: VideoTransitionDef, clipIds = selectedClipIds) {
+		if (!clipIds.length) return;
 		let tracks = value.tracks;
-		for (const id of selectedClipIds) {
+		for (const id of clipIds) {
 			tracks = updateClipInTracks(tracks, id, (c) => ({
 				...c,
 				transitionOut: { type: def.type, durationMs: def.durationMs }
 			}));
 		}
 		setTracks(tracks);
+		// Preview: play through the transition window so the effect is obvious
+		const primary = findClipById(tracks, clipIds[clipIds.length - 1] ?? '');
+		if (primary?.transitionOut) {
+			const dur = Math.min(
+				primary.transitionOut.durationMs,
+				Math.max(120, primary.endMs - primary.startMs)
+			);
+			const start = clampMs(primary.endMs - dur, 0, value.durationMs);
+			currentTimeMs = start;
+			playing = true;
+			window.clearTimeout(transitionPreviewTimer);
+			transitionPreviewTimer = window.setTimeout(
+				() => {
+					playing = false;
+					currentTimeMs = clampMs(primary.endMs - 1, 0, value.durationMs);
+				},
+				Math.round(dur / Math.max(0.25, playbackRate)) + 120
+			);
+		}
+	}
+
+	function handleClipDrop(clipId: string, e: DragEvent) {
+		const animRaw = e.dataTransfer?.getData(VIDEO_ANIMATION_MIME);
+		if (animRaw) {
+			try {
+				applyAnimation(JSON.parse(animRaw) as VideoAnimationDef, [clipId]);
+				selectedClipIds = [clipId];
+			} catch {
+				/* ignore */
+			}
+			return;
+		}
+		const transRaw = e.dataTransfer?.getData(VIDEO_TRANSITION_MIME);
+		if (transRaw) {
+			try {
+				applyTransition(JSON.parse(transRaw) as VideoTransitionDef, [clipId]);
+				selectedClipIds = [clipId];
+			} catch {
+				/* ignore */
+			}
+			return;
+		}
+		const compRaw = e.dataTransfer?.getData(VIDEO_COMPONENT_MIME);
+		if (compRaw) {
+			try {
+				const def = JSON.parse(compRaw) as VideoComponentDef;
+				const clip = findClipById(value.tracks, clipId);
+				addComponent(def, { trackId: clip?.trackId, startMs: clip?.endMs ?? currentTimeMs });
+			} catch {
+				/* ignore */
+			}
+		}
+	}
+
+	function handleTrackDrop(trackId: string, e: DragEvent, timeMs: number) {
+		const animRaw = e.dataTransfer?.getData(VIDEO_ANIMATION_MIME);
+		if (animRaw) {
+			const track = value.tracks.find((t) => t.id === trackId);
+			const hit = track?.clips.find((c) => timeMs >= c.startMs && timeMs < c.endMs);
+			if (hit) {
+				try {
+					applyAnimation(JSON.parse(animRaw) as VideoAnimationDef, [hit.id]);
+					selectedClipIds = [hit.id];
+				} catch {
+					/* ignore */
+				}
+			}
+			return;
+		}
+		const transRaw = e.dataTransfer?.getData(VIDEO_TRANSITION_MIME);
+		if (transRaw) {
+			const track = value.tracks.find((t) => t.id === trackId);
+			const hit = track?.clips.find((c) => timeMs >= c.startMs && timeMs < c.endMs);
+			if (hit) {
+				try {
+					applyTransition(JSON.parse(transRaw) as VideoTransitionDef, [hit.id]);
+					selectedClipIds = [hit.id];
+				} catch {
+					/* ignore */
+				}
+			}
+			return;
+		}
+		const compRaw = e.dataTransfer?.getData(VIDEO_COMPONENT_MIME);
+		if (!compRaw) return;
+		try {
+			const def = JSON.parse(compRaw) as VideoComponentDef;
+			addComponent(def, { trackId, startMs: timeMs });
+		} catch {
+			/* ignore */
+		}
 	}
 
 	function patchClip(clip: MediaClip) {
 		setTracks(updateClipInTracks(value.tracks, clip.id, () => clip));
+	}
+
+	function patchClips(clips: MediaClip[]) {
+		if (!clips.length) return;
+		let tracks = value.tracks;
+		for (const clip of clips) {
+			tracks = updateClipInTracks(tracks, clip.id, () => clip);
+		}
+		setTracks(tracks);
+	}
+
+	function moveSelectedClips(clipIds: string[], deltaMs: number) {
+		setTracks(moveClipsByDelta(value.tracks, clipIds, deltaMs));
 	}
 
 	function patchTrack(track: MediaTrack) {
@@ -825,6 +1014,8 @@
 							editable={!playing}
 							onselectclip={selectClip}
 							onchangeclip={patchClip}
+							onchangeclips={patchClips}
+							onselectionchange={setSelection}
 							onemptyclick={clearSelection}
 							class="mx-auto max-h-full"
 						/>
@@ -1001,42 +1192,52 @@
 									{/each}
 								</div>
 							</div>
-							<div class="grid grid-cols-2 gap-2">
-								<PropertyField
-									label="X"
-									modified={clipFieldModified('rect')}
-									onreset={() => resetClipField('rect')}
-								>
-									<NumberInput
-										size="sm"
-										value={Math.round(selectedRect.x)}
-										onchange={(v) => patchSelectedRect({ x: v })}
-									/>
-								</PropertyField>
-								<PropertyField label="Y">
-									<NumberInput
-										size="sm"
-										value={Math.round(selectedRect.y)}
-										onchange={(v) => patchSelectedRect({ y: v })}
-									/>
-								</PropertyField>
-								<PropertyField label="W">
-									<NumberInput
-										size="sm"
-										min={1}
-										value={Math.round(selectedRect.w)}
-										onchange={(v) => patchSelectedRect({ w: v })}
-									/>
-								</PropertyField>
-								<PropertyField label="H">
-									<NumberInput
-										size="sm"
-										min={1}
-										value={Math.round(selectedRect.h)}
-										onchange={(v) => patchSelectedRect({ h: v })}
-									/>
-								</PropertyField>
-							</div>
+							<PropertyField
+								label="X"
+								modified={clipFieldModified('rect.x')}
+								onreset={() => resetClipField('rect.x')}
+							>
+								<NumberInput
+									size="sm"
+									value={Math.round(selectedRect.x)}
+									onchange={(v) => patchSelectedRect({ x: v })}
+								/>
+							</PropertyField>
+							<PropertyField
+								label="Y"
+								modified={clipFieldModified('rect.y')}
+								onreset={() => resetClipField('rect.y')}
+							>
+								<NumberInput
+									size="sm"
+									value={Math.round(selectedRect.y)}
+									onchange={(v) => patchSelectedRect({ y: v })}
+								/>
+							</PropertyField>
+							<PropertyField
+								label="W"
+								modified={clipFieldModified('rect.w')}
+								onreset={() => resetClipField('rect.w')}
+							>
+								<NumberInput
+									size="sm"
+									min={1}
+									value={Math.round(selectedRect.w)}
+									onchange={(v) => patchSelectedRect({ w: v })}
+								/>
+							</PropertyField>
+							<PropertyField
+								label="H"
+								modified={clipFieldModified('rect.h')}
+								onreset={() => resetClipField('rect.h')}
+							>
+								<NumberInput
+									size="sm"
+									min={1}
+									value={Math.round(selectedRect.h)}
+									onchange={(v) => patchSelectedRect({ h: v })}
+								/>
+							</PropertyField>
 						</PropertyGroup>
 					{/if}
 
@@ -1102,18 +1303,28 @@
 								modified={clipFieldModified('textAlign')}
 								onreset={() => resetClipField('textAlign')}
 							>
-								<Input
-									size="sm"
-									value={selectedClip.textAlign ?? 'center'}
-									oninput={(e) =>
-										patchClip({
-											...selectedClip,
-											textAlign: (e.currentTarget as HTMLInputElement).value as
-												| 'left'
-												| 'center'
-												| 'right'
-										})}
-								/>
+								<div
+									class="flex w-full items-center justify-between gap-0 rounded-xl border border-border bg-surface-elevated p-0.5 shadow-sm"
+									role="toolbar"
+									aria-label="Text align"
+								>
+									{#each textAlignDock as action (action.id)}
+										{@const Icon = action.icon}
+										{@const active = (selectedClip.textAlign ?? 'center') === action.id}
+										<Tooltip content={action.label} side="top" class="min-w-0 flex-1">
+											<IconButton
+												label={action.label}
+												size="xs"
+												variant={active ? 'secondary' : 'ghost'}
+												class="w-full"
+												onclick={() =>
+													patchClip({ ...selectedClip, textAlign: action.id })}
+											>
+												<Icon class="h-3.5 w-3.5" />
+											</IconButton>
+										</Tooltip>
+									{/each}
+								</div>
 							</PropertyField>
 						</PropertyGroup>
 					{/if}
@@ -1260,25 +1471,117 @@
 						<PropertyGroup title="Effects">
 							{#if selectedClip.animationIn}
 								<PropertyField label="Anim in">
-									<span class="text-xs text-secondary">
-										{selectedClip.animationIn.type} · {secValue(selectedClip.animationIn.durationMs)}s
-									</span>
+									<div class="flex min-w-0 items-center gap-1">
+										<span class="min-w-0 flex-1 truncate text-xs capitalize text-secondary">
+											{selectedClip.animationIn.type}
+										</span>
+										<IconButton
+											label="Remove animation in"
+											size="xs"
+											onclick={() => {
+												const { animationIn: _a, ...rest } = selectedClip;
+												patchClip(rest);
+											}}
+										>
+											<Trash2 class="h-3 w-3" />
+										</IconButton>
+									</div>
+								</PropertyField>
+								<PropertyField label="In duration (s)">
+									<NumberInput
+										size="sm"
+										step={0.05}
+										min={0.05}
+										value={msToSec(selectedClip.animationIn.durationMs)}
+										onchange={(v) =>
+											patchClip({
+												...selectedClip,
+												animationIn: {
+													...selectedClip.animationIn!,
+													durationMs: Math.max(50, secToMs(v))
+												}
+											})}
+									/>
 								</PropertyField>
 							{/if}
 							{#if selectedClip.animationOut}
 								<PropertyField label="Anim out">
-									<span class="text-xs text-secondary">
-										{selectedClip.animationOut.type} · {secValue(selectedClip.animationOut.durationMs)}s
-									</span>
+									<div class="flex min-w-0 items-center gap-1">
+										<span class="min-w-0 flex-1 truncate text-xs capitalize text-secondary">
+											{selectedClip.animationOut.type}
+										</span>
+										<IconButton
+											label="Remove animation out"
+											size="xs"
+											onclick={() => {
+												const { animationOut: _a, ...rest } = selectedClip;
+												patchClip(rest);
+											}}
+										>
+											<Trash2 class="h-3 w-3" />
+										</IconButton>
+									</div>
+								</PropertyField>
+								<PropertyField label="Out duration (s)">
+									<NumberInput
+										size="sm"
+										step={0.05}
+										min={0.05}
+										value={msToSec(selectedClip.animationOut.durationMs)}
+										onchange={(v) =>
+											patchClip({
+												...selectedClip,
+												animationOut: {
+													...selectedClip.animationOut!,
+													durationMs: Math.max(50, secToMs(v))
+												}
+											})}
+									/>
 								</PropertyField>
 							{/if}
 							{#if selectedClip.transitionOut}
 								<PropertyField label="Transition">
-									<span class="text-xs text-secondary">
-										{selectedClip.transitionOut.type} · {secValue(selectedClip.transitionOut.durationMs)}s
-									</span>
+									<div class="flex min-w-0 items-center gap-1">
+										<span class="min-w-0 flex-1 truncate text-xs capitalize text-secondary">
+											{selectedClip.transitionOut.type}
+										</span>
+										<IconButton
+											label="Remove transition"
+											size="xs"
+											onclick={() => {
+												const { transitionOut: _t, ...rest } = selectedClip;
+												patchClip(rest);
+											}}
+										>
+											<Trash2 class="h-3 w-3" />
+										</IconButton>
+									</div>
+								</PropertyField>
+								<PropertyField label="Trans duration (s)">
+									<NumberInput
+										size="sm"
+										step={0.05}
+										min={0.05}
+										value={msToSec(selectedClip.transitionOut.durationMs)}
+										onchange={(v) =>
+											patchClip({
+												...selectedClip,
+												transitionOut: {
+													...selectedClip.transitionOut!,
+													durationMs: Math.max(50, secToMs(v))
+												}
+											})}
+									/>
 								</PropertyField>
 							{/if}
+						</PropertyGroup>
+					{:else}
+						<PropertyGroup title="Effects">
+							<p class="px-2 py-2 text-[10px] leading-relaxed text-muted">
+								Select Animations / Transitions in the library, then click or drag onto this clip.
+								CapCut-style: one <span class="text-secondary">In</span> + one
+								<span class="text-secondary"> Out</span> + optional transition at the end.
+							</p>
 						</PropertyGroup>
 					{/if}
 
@@ -1337,6 +1640,10 @@
 							oncontextmenuclip={openClipMenu}
 							oncontextmenutrack={openTrackMenu}
 							onchangeclip={patchClip}
+							onmoveclips={moveSelectedClips}
+							ondropclip={handleClipDrop}
+							ondroptrack={handleTrackDrop}
+							onselectionchange={setSelection}
 							onchangetrack={patchTrack}
 							onaddtrack={addTrack}
 							onremovetrack={deleteTrack}
