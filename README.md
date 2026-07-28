@@ -75,6 +75,16 @@ Mismo flujo que usan muchas libs con `bumpp` / `release-it` (tag → CI → npm 
 pnpm add @r2digisolutions/components
 ```
 
+Los componentes usan clases de Tailwind 4. En la app consumidora basta con importar el CSS del design system (incluye `@theme`, variables y el `@source` del paquete):
+
+```css
+/* app.css / layout.css del consumidor */
+@import 'tailwindcss';
+@import '@r2digisolutions/components/styles.css';
+```
+
+Ese import registra tokens (`border-border`, `bg-surface`, …) y hace que Tailwind escanee los `.svelte` del paquete. Sin él, las utilidades pueden faltar o `--border` no estar definido.
+
 ## Licencia
 
 MIT
