@@ -180,13 +180,11 @@
 
 	/** Dock sticks to the viewport bottom; portal avoids parent transform/overflow traps. */
 	function portalDock(node: HTMLElement) {
-		if (!(placement === 'dock' && sticky)) return {};
-		document.body.appendChild(node);
-		return {
-			destroy() {
-				node.remove();
-			}
-		};
+		$effect(() => {
+			if (!(placement === 'dock' && sticky)) return;
+			document.body.appendChild(node);
+			return () => node.remove();
+		});
 	}
 
 	const dockFixed = $derived(placement === 'dock' && sticky);
@@ -196,7 +194,7 @@
 
 {#if count > 0}
 	<div
-		use:portalDock
+		{@attach portalDock}
 		class={[
 			placement === 'dock' && 'pointer-events-none z-30 flex justify-center',
 			dockFixed && 'fixed inset-x-0 bottom-3 z-50 px-3',

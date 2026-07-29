@@ -2,8 +2,13 @@
 	export interface DataTableColumn<Row = Record<string, unknown>> {
 		id: string;
 		header: string;
-		/** Dot-path key on the row, or custom render via `cell` snippet map in parent. */
-		accessor?: keyof Row | string;
+		/**
+		 * How to read the cell value:
+		 * - `keyof Row` / string (supports dot-path: `'profile.displayName'`)
+		 * - function: `(row) => row.profile.displayName` (preferred for nested/typed access)
+		 * Custom render via `cell` snippet still overrides display.
+		 */
+		accessor?: keyof Row | string | ((row: Row) => unknown);
 		align?: 'left' | 'center' | 'right';
 		sortable?: boolean;
 		width?: string;
@@ -13,13 +18,15 @@
 
 <script lang="ts" generics="T extends Record<string, unknown> = Record<string, unknown>">
 	import type { Snippet } from 'svelte';
+	import { resolveAccessor, resolveRowKey } from '$lib/utils/columnAccessor.js';
+	import type { RowKey } from '$lib/utils/columnAccessor.js';
 
 	type SortDir = 'asc' | 'desc' | null;
 
 	interface DataTableProps {
 		columns?: DataTableColumn<T>[];
 		rows?: T[];
-		rowKey?: keyof T | ((row: T, index: number) => string);
+		rowKey?: RowKey<T>;
 		sortable?: boolean;
 		striped?: boolean;
 		hoverable?: boolean;
@@ -53,20 +60,11 @@
 	let sortDir = $state<SortDir>(null);
 
 	function getKey(row: T, index: number): string {
-		if (typeof rowKey === 'function') return rowKey(row, index);
-		if (rowKey && row[rowKey] != null) return String(row[rowKey]);
-		if ('id' in row && row.id != null) return String(row.id);
-		return String(index);
+		return resolveRowKey(row, rowKey, index);
 	}
 
 	function getValue(row: T, column: DataTableColumn<T>): unknown {
-		const key = (column.accessor ?? column.id) as string;
-		return key.split('.').reduce<unknown>((acc, part) => {
-			if (acc && typeof acc === 'object' && part in (acc as object)) {
-				return (acc as Record<string, unknown>)[part];
-			}
-			return undefined;
-		}, row);
+		return resolveAccessor(row, column.accessor, column.id);
 	}
 
 	function formatCell(value: unknown): string {

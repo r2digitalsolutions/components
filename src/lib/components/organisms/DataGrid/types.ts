@@ -1,8 +1,12 @@
 export interface DataGridColumn<Row = Record<string, unknown>> {
 	id: string;
 	header: string;
-	/** Dot-path key on the row, or custom render via `cell` snippet. */
-	accessor?: keyof Row | string;
+	/**
+	 * How to read the cell value:
+	 * - `keyof Row` / string (supports dot-path: `'profile.displayName'`)
+	 * - function: `(row) => row.profile.displayName` (preferred for nested/typed access)
+	 */
+	accessor?: keyof Row | string | ((row: Row) => unknown);
 	align?: 'left' | 'center' | 'right';
 	sortable?: boolean;
 	width?: string;

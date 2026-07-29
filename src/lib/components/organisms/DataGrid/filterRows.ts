@@ -1,17 +1,8 @@
 import type { DataGridColumn, DataGridFilter } from './types.js';
-
-function getByPath(row: Record<string, unknown>, path: string): unknown {
-	return path.split('.').reduce<unknown>((acc, part) => {
-		if (acc && typeof acc === 'object' && part in (acc as object)) {
-			return (acc as Record<string, unknown>)[part];
-		}
-		return undefined;
-	}, row);
-}
+import { resolveAccessor } from '$lib/utils/columnAccessor.js';
 
 export function cellText(row: Record<string, unknown>, column: DataGridColumn): string {
-	const key = String(column.accessor ?? column.id);
-	const value = getByPath(row, key);
+	const value = resolveAccessor(row, column.accessor, column.id);
 	if (value == null) return '';
 	if (typeof value === 'boolean') return value ? 'Yes' : 'No';
 	return String(value);

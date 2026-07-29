@@ -102,21 +102,24 @@
 	import { MARK_COLORS, markTint, markSwatch } from './marks.js';
 	import { isColumnVisibleAtWidth } from './breakpoints.js';
 	import { filterRows, cellText, uniqueColumnValues } from './filterRows.js';
+	import { resolveAccessor, accessorPatchKey, resolveRowKey } from '$lib/utils/columnAccessor.js';
+	import type { RowKey } from '$lib/utils/columnAccessor.js';
 
+	/**
+	 * Portal via attachment + $effect so the node moves after mount/hydration
+	 * (same pattern as Checkbox `{@attach setIndeterminate}`).
+	 */
 	function portalToBody(node: HTMLElement) {
-		if (typeof document === 'undefined') return {};
-		document.body.appendChild(node);
-		return {
-			destroy() {
-				node.remove();
-			}
-		};
+		$effect(() => {
+			document.body.appendChild(node);
+			return () => node.remove();
+		});
 	}
 
 	interface DataGridProps {
 		columns?: DataGridColumn<T>[];
 		rows?: T[];
-		rowKey?: keyof T | ((row: T, index: number) => string);
+		rowKey?: RowKey<T>;
 		selection?: GridSelection;
 		notes?: CellNote[];
 		marks?: GridMark[];
@@ -389,20 +392,11 @@
 	);
 
 	function getKey(row: T, index: number): string {
-		if (typeof rowKey === 'function') return rowKey(row, index);
-		if (rowKey && row[rowKey] != null) return String(row[rowKey]);
-		if ('id' in row && row.id != null) return String(row.id);
-		return String(index);
+		return resolveRowKey(row, rowKey, index);
 	}
 
 	function getValue(row: T, column: DataGridColumn<T>): unknown {
-		const key = (column.accessor ?? column.id) as string;
-		return key.split('.').reduce<unknown>((acc, part) => {
-			if (acc && typeof acc === 'object' && part in (acc as object)) {
-				return (acc as Record<string, unknown>)[part];
-			}
-			return undefined;
-		}, row);
+		return resolveAccessor(row, column.accessor, column.id);
 	}
 
 	function formatCell(value: unknown): string {
@@ -749,7 +743,7 @@
 		if (!editing || !activeEditor) return;
 		const { rowId, columnId } = editing;
 		const col = columns.find((c) => c.id === columnId);
-		const accessor = (col?.accessor ?? columnId) as string;
+		const accessor = accessorPatchKey(col?.accessor, columnId);
 		const draft = activeEditor.type === 'boolean' ? editBool : editValue;
 		const nextValue = coerceEditValue(activeEditor, draft);
 		editing = null;
@@ -2081,7 +2075,7 @@
 		{#if noteTargets || markPickerOpen || (showDock && dockCount > 0)}
 			<!-- Fixed to the viewport (portaled) so parent relative/overflow don't shift the dock. -->
 			<div
-				use:portalToBody
+				{@attach portalToBody}
 				class="pointer-events-none fixed inset-x-0 bottom-3 z-[60] flex justify-center px-3"
 			>
 				<div class="relative w-full max-w-2xl">
@@ -2218,7 +2212,7 @@
 		{@const ay = contextAnchor.y}
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div
-			use:portalToBody
+			{@attach portalToBody}
 			role="menu"
 			tabindex={-1}
 			aria-label="Context menu"

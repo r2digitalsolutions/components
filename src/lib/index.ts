@@ -1305,6 +1305,8 @@ export { default as AudioEditorTemplate } from './components/templates/AudioEdit
 export { themeStore } from './utils/theme.svelte.js';
 export type { Theme } from './utils/theme.svelte.js';
 export { createId } from './utils/id.js';
+export { resolveAccessor, accessorPatchKey, resolveRowKey } from './utils/columnAccessor.js';
+export type { ColumnAccessor, RowKey } from './utils/columnAccessor.js';
 export { pageVisibility } from './utils/pageVisibility.svelte.js';
 export type { VisibilityState } from './utils/pageVisibility.svelte.js';
 export { network } from './utils/network.svelte.js';
