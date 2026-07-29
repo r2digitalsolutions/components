@@ -1865,13 +1865,13 @@
 											onselect={(id) => onRowMenuAction(id, rid)}
 										>
 											{#snippet trigger()}
-												<button
-													type="button"
+												<!-- Content only: DropdownMenu already renders the outer <button> -->
+												<span
 													class="inline-flex h-7 w-7 items-center justify-center rounded-lg text-secondary hover:bg-surface-overlay hover:text-primary"
-													aria-label={`Actions for row ${rid}`}
+													aria-hidden="true"
 												>
 													<MoreHorizontal class="h-4 w-4" strokeWidth={2} />
-												</button>
+												</span>
 											{/snippet}
 										</DropdownMenu>
 									</td>

@@ -417,6 +417,7 @@
 			disabled && 'cursor-not-allowed opacity-50',
 			trigger && 'border-0 bg-transparent p-0 hover:bg-transparent'
 		]}
+		aria-label={trigger ? label : undefined}
 		aria-haspopup="menu"
 		aria-expanded={open}
 		aria-controls={menuId}
