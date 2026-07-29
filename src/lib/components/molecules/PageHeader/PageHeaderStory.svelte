@@ -19,7 +19,7 @@
 	let activeTab = $state('General');
 </script>
 
-<div class="w-full max-w-3xl rounded-2xl border border-border bg-surface-elevated p-6">
+		<div class="w-full max-w-3xl rounded-2xl border border-border bg-surface-elevated p-6">
 
 	<!-- Default: breadcrumbs + meta + actions -->
 	{#if variant === 'default'}
@@ -168,24 +168,22 @@
 
 	<!-- Sticky (scrollable preview) -->
 	{:else if variant === 'sticky'}
-		<div class="relative h-64 overflow-y-auto rounded-xl border border-border">
-			<PageHeader
-				title={props.title ?? 'Dashboard'}
-				description="This header sticks to the top as you scroll."
-				sticky
-				size={props.size}
-			>
-				{#snippet actions()}
-					<Button size="sm">Action</Button>
-				{/snippet}
-			</PageHeader>
-			<div class="space-y-3 p-6 pt-4">
-				{#each Array.from({ length: 12 }) as _, i}
-					<div class="h-8 rounded-lg bg-surface-overlay text-xs flex items-center px-3 text-muted">
-						Content row {i + 1}
-					</div>
-				{/each}
-			</div>
+		<PageHeader
+			title={props.title ?? 'Dashboard'}
+			description="This header sticks to the top as you scroll."
+			sticky
+			size={props.size}
+		>
+			{#snippet actions()}
+				<Button size="sm">Action</Button>
+			{/snippet}
+		</PageHeader>
+		<div class="space-y-3 p-6 pt-4 min-h-screen">
+			{#each Array.from({ length: 24 }) as _, i}
+				<div class="h-8 rounded-lg bg-surface-overlay text-xs flex items-center px-3 text-muted">
+					Content row {i + 1}
+				</div>
+			{/each}
 		</div>
 	{/if}
 </div>
