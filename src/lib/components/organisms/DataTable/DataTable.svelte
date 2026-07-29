@@ -60,11 +60,19 @@
 	let sortDir = $state<SortDir>(null);
 
 	function getKey(row: T, index: number): string {
-		return resolveRowKey(row, rowKey, index);
+		try {
+			return resolveRowKey(row, rowKey, index);
+		} catch {
+			return String(index);
+		}
 	}
 
 	function getValue(row: T, column: DataTableColumn<T>): unknown {
-		return resolveAccessor(row, column.accessor, column.id);
+		try {
+			return resolveAccessor(row, column.accessor, column.id);
+		} catch {
+			return undefined;
+		}
 	}
 
 	function formatCell(value: unknown): string {

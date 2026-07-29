@@ -2,10 +2,14 @@ import type { DataGridColumn, DataGridFilter } from './types.js';
 import { resolveAccessor } from '$lib/utils/columnAccessor.js';
 
 export function cellText(row: Record<string, unknown>, column: DataGridColumn): string {
-	const value = resolveAccessor(row, column.accessor, column.id);
-	if (value == null) return '';
-	if (typeof value === 'boolean') return value ? 'Yes' : 'No';
-	return String(value);
+	try {
+		const value = resolveAccessor(row, column.accessor, column.id);
+		if (value == null) return '';
+		if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+		return String(value);
+	} catch {
+		return '';
+	}
 }
 
 /** Client-side search + equality/contains filters. */

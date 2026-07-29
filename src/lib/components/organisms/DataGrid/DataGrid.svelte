@@ -260,14 +260,19 @@
 	let contextTarget = $state<CellRef | null>(null);
 	let contextOpen = $state(false);
 	let contextAnchor = $state<ContextMenuAnchor | null>(null);
-	/** Same on SSR + first client paint to avoid hydration mismatch; real width set in $effect. */
-	let viewportWidth = $state(1280);
+	/**
+	 * SSR + first client paint: do not apply `hideBelow` yet (show full table).
+	 * After mount, measure window and refine columns — no hydration mismatch.
+	 */
+	let viewportMeasured = $state(false);
+	let viewportWidth = $state(Number.POSITIVE_INFINITY);
 	let filterColumnDraft = $state('');
 	let filterValueDraft = $state('');
 
 	$effect(() => {
 		const onResize = () => {
 			viewportWidth = window.innerWidth;
+			viewportMeasured = true;
 		};
 		window.addEventListener('resize', onResize);
 		onResize();
@@ -275,12 +280,14 @@
 	});
 
 	const autoHiddenColumns = $derived(
-		columns.filter(
-			(c) =>
-				!c.hidden &&
-				c.hideBelow &&
-				!isColumnVisibleAtWidth(c.hideBelow, viewportWidth)
-		)
+		viewportMeasured
+			? columns.filter(
+					(c) =>
+						!c.hidden &&
+						c.hideBelow &&
+						!isColumnVisibleAtWidth(c.hideBelow, viewportWidth)
+				)
+			: []
 	);
 
 	/** Expand controls only when there is content to reveal. */
@@ -297,7 +304,13 @@
 	const visibleColumns = $derived(
 		columns.filter((c) => {
 			if (c.hidden) return false;
-			if (c.hideBelow && !isColumnVisibleAtWidth(c.hideBelow, viewportWidth)) return false;
+			if (
+				viewportMeasured &&
+				c.hideBelow &&
+				!isColumnVisibleAtWidth(c.hideBelow, viewportWidth)
+			) {
+				return false;
+			}
 			return true;
 		})
 	);
@@ -392,11 +405,20 @@
 	);
 
 	function getKey(row: T, index: number): string {
-		return resolveRowKey(row, rowKey, index);
+		try {
+			return resolveRowKey(row, rowKey, index);
+		} catch {
+			// Bad accessor/rowKey must not take down SSR (e.g. null profile).
+			return String(index);
+		}
 	}
 
 	function getValue(row: T, column: DataGridColumn<T>): unknown {
-		return resolveAccessor(row, column.accessor, column.id);
+		try {
+			return resolveAccessor(row, column.accessor, column.id);
+		} catch {
+			return undefined;
+		}
 	}
 
 	function formatCell(value: unknown): string {
