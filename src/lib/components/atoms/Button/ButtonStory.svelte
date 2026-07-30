@@ -7,6 +7,7 @@
 		loading?: boolean;
 		disabled?: boolean;
 		fullWidth?: boolean;
+		href?: string;
 		label?: string;
 	}>();
 </script>
@@ -18,6 +19,7 @@
 		loading={props.loading ?? false}
 		disabled={props.disabled ?? false}
 		fullWidth={props.fullWidth ?? false}
+		href={props.href}
 	>
 		{props.label ?? 'Button'}
 	</Button>

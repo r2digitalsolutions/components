@@ -28,6 +28,10 @@ const meta = {
 			control: 'boolean',
 			description: 'Makes the button take full container width'
 		},
+		href: {
+			control: 'text',
+			description: 'If set, renders as an anchor instead of a button'
+		},
 		label: {
 			control: 'text',
 			description: 'Button text content'
@@ -84,4 +88,8 @@ export const Large: Story = {
 
 export const FullWidth: Story = {
 	args: { fullWidth: true, label: 'Full Width' }
+};
+
+export const AsLink: Story = {
+	args: { href: '#', label: 'Go to page' }
 };
