@@ -1,17 +1,20 @@
 <script lang="ts">
 	import Combobox, { type ComboboxOption } from './Combobox.svelte';
 	import ComboboxItem from '$lib/components/molecules/ComboboxItem/ComboboxItem.svelte';
+	import ComboboxMenuItem from '$lib/components/molecules/ComboboxMenuItem/ComboboxMenuItem.svelte';
 
 	let {
 		creatable = false,
 		label = 'Framework',
 		disabled = false,
-		compound = false
+		compound = false,
+		menuItems = false
 	}: {
 		creatable?: boolean;
 		label?: string;
 		disabled?: boolean;
 		compound?: boolean;
+		menuItems?: boolean;
 	} = $props();
 
 	const options: ComboboxOption[] = [
@@ -29,7 +32,13 @@
 </script>
 
 <div class="w-80 gap-3 flex flex-col">
-	{#if compound}
+	{#if menuItems}
+		<Combobox {label} {disabled} bind:value bind:query bind:open placeholder="Search frameworks…">
+			{#each options as option (option.value)}
+				<ComboboxMenuItem value={option.value} label={option.label} disabled={option.disabled} />
+			{/each}
+		</Combobox>
+	{:else if compound}
 		<Combobox {label} {disabled} bind:value bind:query bind:open placeholder="Search frameworks…">
 			{#each options as option (option.value)}
 				<ComboboxItem value={option.value} label={option.label} disabled={option.disabled}>

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import Check from '@lucide/svelte/icons/check';
-	import { getComboboxContext } from '$lib/components/molecules/Combobox/combobox-context.js';
+	import { createComboboxItemController } from '$lib/components/molecules/Combobox/combobox-item.svelte.js';
 
 	interface ComboboxItemProps {
 		value: string;
@@ -49,54 +49,39 @@
 		onhighlight
 	}: ComboboxItemProps = $props();
 
-	const ctx = getComboboxContext();
-
-	const matchesQuery = $derived.by(() => {
-		if (!register || !ctx) return true;
-		const q = ctx.getQuery().trim().toLowerCase();
-		if (!q) return true;
-		const blob = [label, value, ...keywords].join(' ').toLowerCase();
-		return blob.includes(q);
-	});
-
-	const isSelected = $derived(selected ?? (ctx ? ctx.getValue() === value : false));
-	const isHighlighted = $derived(highlighted ?? (ctx ? ctx.getHighlighted() === value : false));
-	const active = $derived(!disabled && (isHighlighted || isSelected));
-
-	$effect(() => {
-		if (!register || !ctx || disabled || !matchesQuery) return;
-		return ctx.register(value, disabled, label);
-	});
-
-	function activate() {
-		if (disabled) return;
-		if (onclick) {
-			onclick();
-			return;
-		}
-		ctx?.select(value);
-	}
+	const item = createComboboxItemController(() => ({
+		value,
+		label,
+		disabled,
+		keywords,
+		selected,
+		highlighted,
+		register,
+		onclick
+	}));
 </script>
 
-{#if matchesQuery}
+{#if item.matchesQuery}
 	<button
 		type="button"
 		role="option"
 		data-value={value}
 		{disabled}
-		aria-selected={isSelected}
+		aria-selected={item.isSelected}
 		aria-disabled={disabled}
 		onpointerenter={() => {
-			if (disabled) return;
 			onhighlight?.();
-			ctx?.highlight(value);
+			item.highlight();
 		}}
-		onclick={activate}
+		onclick={item.activate}
 		class={[
 			'gap-2 rounded-lg px-2.5 py-2 text-sm flex w-full items-center text-left transition-colors',
 			'focus-visible:ring-brand-500/30 focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset',
 			disabled && 'cursor-not-allowed opacity-40',
-			!disabled && (active ? 'bg-brand-500 text-white' : 'text-primary hover:bg-surface-overlay'),
+			!disabled &&
+				(item.isHighlighted || item.isSelected
+					? 'bg-brand-500 text-white'
+					: 'text-primary hover:bg-surface-overlay'),
 			className
 		]}
 	>
@@ -114,7 +99,7 @@
 
 		{#if trailing}
 			<span class="flex shrink-0 items-center">{@render trailing()}</span>
-		{:else if isSelected}
+		{:else if item.isSelected}
 			<Check class="h-4 w-4 shrink-0" strokeWidth={2.5} />
 		{/if}
 	</button>

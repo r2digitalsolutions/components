@@ -8,13 +8,15 @@ const meta = {
 	argTypes: {
 		creatable: { control: 'boolean' },
 		disabled: { control: 'boolean' },
-		compound: { control: 'boolean' }
+		compound: { control: 'boolean' },
+		menuItems: { control: 'boolean' }
 	},
 	args: {
 		creatable: false,
 		label: 'Framework',
 		disabled: false,
-		compound: false
+		compound: false,
+		menuItems: false
 	}
 } satisfies Meta<typeof ComboboxStory>;
 
@@ -25,3 +27,4 @@ export const Default: Story = {};
 export const Creatable: Story = { args: { creatable: true } };
 export const Disabled: Story = { args: { disabled: true } };
 export const WithComboboxItem: Story = { args: { compound: true } };
+export const WithComboboxMenuItem: Story = { args: { menuItems: true } };

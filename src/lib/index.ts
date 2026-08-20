@@ -269,6 +269,7 @@ export type {
 	ComboboxItemState
 } from './components/molecules/Combobox/Combobox.svelte';
 export { default as ComboboxItem } from './components/molecules/ComboboxItem/ComboboxItem.svelte';
+export { default as ComboboxMenuItem } from './components/molecules/ComboboxMenuItem/ComboboxMenuItem.svelte';
 export {
 	COMBOBOX_CONTEXT,
 	COMBOBOX_CREATE_KEY,
