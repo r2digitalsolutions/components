@@ -7,12 +7,14 @@ const meta = {
 	tags: ['autodocs'],
 	argTypes: {
 		creatable: { control: 'boolean' },
-		disabled: { control: 'boolean' }
+		disabled: { control: 'boolean' },
+		compound: { control: 'boolean' }
 	},
 	args: {
 		creatable: false,
 		label: 'Framework',
-		disabled: false
+		disabled: false,
+		compound: false
 	}
 } satisfies Meta<typeof ComboboxStory>;
 
@@ -22,3 +24,4 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
 export const Creatable: Story = { args: { creatable: true } };
 export const Disabled: Story = { args: { disabled: true } };
+export const WithComboboxItem: Story = { args: { compound: true } };

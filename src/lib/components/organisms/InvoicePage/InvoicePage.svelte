@@ -52,7 +52,7 @@
 		paidAt,
 		status = 'sent',
 		from = {
-			name: 'R2 Digi Solutions',
+			name: 'Evoteg',
 			email: 'billing@r2digi.com',
 			addressLines: ['Calle Mayor 12', '28013 Madrid, Spain'],
 			taxId: 'ES B12345678'

@@ -3,9 +3,15 @@
 	import {
 		getFormContext,
 		resolveFormFieldState,
+		resolveRemoteInputProps,
+		parseRemoteFieldName,
 		applyFormDataSync
 	} from '$lib/utils/formContext.js';
 
+	/**
+	 * Kit remote: pass `.as('password').name` as `name`, not the full `.as()` spread
+	 * (Kit’s `value` get/set fights local binding).
+	 */
 	interface FormPasswordInputProps {
 		id?: string;
 		name?: string;
@@ -18,11 +24,14 @@
 		disabled?: boolean;
 		required?: boolean;
 		size?: 'sm' | 'md' | 'lg';
-		/** Sync with `form.data[name]` when inside `<Form>`. */
 		bindData?: boolean;
+		inputName?: string;
 		class?: string;
 		oninput?: (e: Event) => void;
 		onchange?: (e: Event) => void;
+		defaultValue?: unknown;
+		type?: string;
+		'aria-invalid'?: boolean | 'true' | 'false';
 	}
 
 	let {
@@ -38,20 +47,40 @@
 		required = false,
 		size = 'md',
 		bindData = false,
+		inputName,
 		class: className = '',
 		oninput,
-		onchange
+		onchange,
+		defaultValue: _kitDefaultValue = undefined,
+		type: _kitType = undefined,
+		'aria-invalid': _ariaInvalid = undefined
 	}: FormPasswordInputProps = $props();
 
 	const form = getFormContext();
+	const parsed = $derived(parseRemoteFieldName(name, form?.remoteFormId));
+	const logicalName = $derived(parsed.logicalName);
+
 	const resolved = $derived(
-		resolveFormFieldState({ name, errorMessage, helperText, status, disabled, form })
+		resolveFormFieldState({
+			name: logicalName,
+			errorMessage,
+			helperText,
+			status,
+			disabled,
+			form
+		})
 	);
 
+	const htmlName = $derived.by(() => {
+		if (inputName) return inputName;
+		if (parsed.isEncoded) return parsed.htmlName;
+		return resolveRemoteInputProps(form?.remoteFormId, name, 'password').name;
+	});
+
 	$effect(() => {
-		if (!bindData || !name || !form) return;
+		if (!bindData || !logicalName || !form) return;
 		applyFormDataSync({
-			fromCtx: form.data[name],
+			fromCtx: form.data[logicalName],
 			getLocal: () => value,
 			setLocal: (v) => {
 				value = v;
@@ -61,9 +90,9 @@
 	});
 
 	function handleInput(e: Event) {
-		if (bindData && name && form) {
-			form.setData(name, (e.currentTarget as HTMLInputElement).value);
-			form.clearError(name);
+		if (bindData && logicalName && form) {
+			form.setData(logicalName, (e.currentTarget as HTMLInputElement).value);
+			form.clearError(logicalName);
 		}
 		oninput?.(e);
 	}
@@ -72,7 +101,7 @@
 <div class={['w-full', className]}>
 	<PasswordInput
 		{id}
-		{name}
+		name={htmlName}
 		{label}
 		{placeholder}
 		disabled={resolved.disabled}

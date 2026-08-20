@@ -3,11 +3,12 @@
 	generics="TData extends FormDataValues = FormDataValues, TInput extends RemoteFormInput | void = RemoteFormInput, TOutput = unknown"
 >
 	import type { Snippet } from 'svelte';
-	import { setContext } from 'svelte';
+	import { setContext, untrack } from 'svelte';
 	import type { RemoteFormInput } from '@sveltejs/kit';
 	import Alert from '$lib/components/molecules/Alert/Alert.svelte';
 	import {
 		FORM_CONTEXT_KEY,
+		getRemoteFormId,
 		isRemoteForm,
 		remoteIssuesToErrors,
 		type FormContext,
@@ -79,6 +80,9 @@
 	const isRemote = $derived(remote != null);
 	const remotePending = $derived(Boolean(kitForm?.pending));
 	const busy = $derived(loading || remotePending || disabled);
+	// Prefer page-provided `inputName` on fields; optional inferred id is set once below.
+	let remoteFormId = $state<string | null>(null);
+	let didInitRemoteFormId = false;
 
 	const errorEntries = $derived(Object.entries(errors).filter(([, msg]) => Boolean(msg)));
 	const hasErrors = $derived(errorEntries.length > 0);
@@ -135,6 +139,12 @@
 		get result() {
 			return (result ?? kitForm?.result) as TOutput | undefined;
 		},
+		get remote() {
+			return kitForm as FormContext<TData, TOutput>['remote'];
+		},
+		get remoteFormId() {
+			return remoteFormId;
+		},
 		setError,
 		clearError,
 		clearErrors,
@@ -143,19 +153,31 @@
 		getData
 	} satisfies FormContext<TData, TOutput>);
 
-	$effect(() => {
-		if (!kitForm || !syncRemoteIssues) return;
-		errors = remoteIssuesToErrors(kitForm.fields.allIssues());
-	});
+	if (kitForm && !didInitRemoteFormId) {
+		didInitRemoteFormId = true;
+		remoteFormId = untrack(() => getRemoteFormId(kitForm.action));
+	}
 
-	$effect(() => {
-		if (!kitForm) return;
-		if (kitForm.result !== undefined) result = kitForm.result;
-	});
+	function syncRemoteIssuesNow() {
+		if (!kitForm || !syncRemoteIssues) return;
+		const next = remoteIssuesToErrors(kitForm.fields.allIssues());
+		errors = next;
+		if (Object.keys(next).length > 0) submitted = true;
+	}
 
 	function handleSubmit(e: SubmitEvent) {
 		if (isRemote) {
 			submitted = true;
+			queueMicrotask(() => {
+				const check = () => {
+					if (kitForm && kitForm.pending > 0) {
+						requestAnimationFrame(check);
+						return;
+					}
+					syncRemoteIssuesNow();
+				};
+				check();
+			});
 			return;
 		}
 		e.preventDefault();
@@ -189,7 +211,11 @@
 			<ul class="mt-1 list-disc space-y-0.5 pl-4 text-sm">
 				{#each errorEntries as [field, message] (field)}
 					<li>
-						<span class="font-medium capitalize">{field}</span>: {message}
+						{#if field === '_form'}
+							{message}
+						{:else}
+							<span class="font-medium capitalize">{field}</span>: {message}
+						{/if}
 					</li>
 				{/each}
 			</ul>

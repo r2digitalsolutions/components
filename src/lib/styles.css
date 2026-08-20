@@ -234,4 +234,10 @@
   .text-primary { color: var(--text-primary); }
   .text-secondary { color: var(--text-secondary); }
   .text-muted { color: var(--text-muted); }
+
+  /* SVG chart labels — Tailwind fill-* needs these (text-* alone does not paint <text>) */
+  .fill-primary { fill: var(--text-primary); }
+  .fill-secondary { fill: var(--text-secondary); }
+  .fill-muted { fill: var(--text-muted); }
+  .stroke-border { stroke: var(--border); }
 }

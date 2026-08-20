@@ -17,6 +17,10 @@
 		label?: string;
 		coverHelperText?: string;
 		avatarHelperText?: string;
+		/** Existing remote cover URL (shown when no local File is selected). */
+		coverSrc?: string;
+		/** Existing remote avatar URL (shown when no local File is selected). */
+		avatarSrc?: string;
 		accept?: string;
 		maxCoverMb?: number;
 		maxAvatarMb?: number;
@@ -30,6 +34,8 @@
 		label = 'Profile media',
 		coverHelperText = 'Cover · PNG or JPG · max 10MB',
 		avatarHelperText = 'Avatar · square image recommended',
+		coverSrc = '',
+		avatarSrc = '',
 		accept = 'image/*',
 		maxCoverMb = 10,
 		maxAvatarMb = 5,
@@ -51,6 +57,12 @@
 	const errorId = $derived(`${id}-error`);
 	const coverInputId = $derived(`${id}-cover`);
 	const avatarInputId = $derived(`${id}-avatar`);
+
+	const coverDisplayUrl = $derived(cover?.previewUrl || coverSrc || '');
+	const avatarDisplayUrl = $derived(avatar?.previewUrl || avatarSrc || '');
+	const hasCoverMedia = $derived(Boolean(coverDisplayUrl));
+	const hasAvatarMedia = $derived(Boolean(avatarDisplayUrl));
+	const hasLocalMedia = $derived(Boolean(cover || avatar));
 
 	function revoke(media: ProfileMedia | null) {
 		if (media?.previewUrl) URL.revokeObjectURL(media.previewUrl);
@@ -171,7 +183,7 @@
 	/>
 
 	<div
-		class="relative overflow-hidden rounded-xl border border-border bg-surface-elevated shadow-sm"
+		class="relative rounded-xl border border-border bg-surface-elevated shadow-sm"
 		aria-labelledby={label ? labelId : undefined}
 		aria-describedby={[coverHelperText || avatarHelperText ? helperId : '', errorMessage ? errorId : '']
 			.filter(Boolean)
@@ -182,7 +194,11 @@
 		<div
 			role="button"
 			tabindex={disabled ? -1 : 0}
-			aria-label={cover ? `Change cover photo, ${cover.name}` : 'Upload cover photo'}
+			aria-label={hasCoverMedia
+				? cover
+					? `Change cover photo, ${cover.name}`
+					: 'Change cover photo'
+				: 'Upload cover photo'}
 			aria-disabled={disabled || undefined}
 			ondragenter={(e) => {
 				e.preventDefault();
@@ -200,14 +216,14 @@
 			}}
 			onclick={() => !disabled && coverInput?.click()}
 			class={[
-				'group relative aspect-3/1 min-h-36 w-full overflow-hidden outline-none transition-colors',
+				'group relative aspect-3/1 min-h-36 w-full overflow-hidden rounded-t-xl outline-none transition-colors',
 				'focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500/40',
 				coverDragging ? 'bg-brand-500/10' : 'bg-surface-overlay',
 				disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
 			]}
 		>
-			{#if cover}
-				<img src={cover.previewUrl} alt="" class="h-full w-full object-cover" />
+			{#if hasCoverMedia}
+				<img src={coverDisplayUrl} alt="" class="h-full w-full object-cover" />
 				{#if !disabled}
 					<div
 						class="absolute inset-0 flex items-start justify-end bg-linear-to-b from-black/35 via-transparent to-transparent p-3 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
@@ -267,7 +283,11 @@
 				<div
 					role="button"
 					tabindex={disabled ? -1 : 0}
-					aria-label={avatar ? `Change profile photo, ${avatar.name}` : 'Upload profile photo'}
+					aria-label={hasAvatarMedia
+						? avatar
+							? `Change profile photo, ${avatar.name}`
+							: 'Change profile photo'
+						: 'Upload profile photo'}
 					aria-disabled={disabled || undefined}
 					ondragenter={(e) => {
 						e.preventDefault();
@@ -298,14 +318,14 @@
 						if (!disabled) avatarInput?.click();
 					}}
 					class={[
-						'group relative h-20 w-20 shrink-0 overflow-hidden rounded-full border-4 border-surface-elevated bg-surface-overlay shadow-md outline-none transition sm:h-24 sm:w-24',
+						'group relative z-10 h-20 w-20 shrink-0 overflow-hidden rounded-full border-4 border-surface-elevated bg-surface-overlay shadow-md outline-none transition sm:h-24 sm:w-24',
 						'focus-visible:ring-2 focus-visible:ring-brand-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated',
 						avatarDragging ? 'ring-2 ring-brand-500' : '',
 						disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
 					]}
 				>
-					{#if avatar}
-						<img src={avatar.previewUrl} alt="" class="h-full w-full object-cover" />
+					{#if hasAvatarMedia}
+						<img src={avatarDisplayUrl} alt="" class="h-full w-full object-cover" />
 						{#if !disabled}
 							<div
 								class="absolute inset-0 flex items-center justify-center bg-black/45 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
@@ -339,7 +359,7 @@
 				</div>
 
 				<div class="min-w-0 flex-1 pb-1">
-					{#if avatar || cover}
+					{#if hasLocalMedia}
 						<div class="flex flex-wrap items-center gap-2">
 							{#if cover && !disabled}
 								<button

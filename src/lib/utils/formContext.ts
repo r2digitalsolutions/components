@@ -55,12 +55,123 @@ export interface FormContext<
 	disabled: boolean;
 	/** Last result from a remote form / submit handler, if any */
 	result: TResult | undefined;
+	/**
+	 * Full Kit `RemoteForm` when `<Form remote={...}>` received one
+	 * (not an `.enhance(...)` return). Used by fields to call `.as()`.
+	 */
+	remote: RemoteForm<any, any> | null;
+	/** Stable Kit form id (`1p9kxmo/login_user`) for encoding input names */
+	remoteFormId: string | null;
 	setError: (name: string, message: string) => void;
 	clearError: (name: string) => void;
 	clearErrors: () => void;
 	setData: <K extends keyof TData & string>(name: K, value: TData[K]) => void;
 	getError: (name: string) => string | undefined;
 	getData: <K extends keyof TData & string>(name: K) => TData[K] | undefined;
+}
+
+/**
+ * Props safe to spread onto library `<Input>` / `<PasswordInput>` for Kit remote forms.
+ * Omits Kit `value` getters/setters so they do not fight `bind:value`.
+ */
+export type ResolvedRemoteInputProps = {
+	name?: string;
+};
+
+/**
+ * Extract Kit remote form id from `remote.action` (`?/remote=<id>`).
+ * Pass `untrack(() => remote.action)` from callers inside effects/derived.
+ */
+export function getRemoteFormId(action: string | undefined | null): string | null {
+	if (!action) return null;
+	const match = action.match(/\/remote=([^&]+)/);
+	return match ? decodeURIComponent(match[1]) : null;
+}
+
+/**
+ * Resolve HTML input props for a field inside a Kit remote form.
+ * Prefer a precomputed `formId` string so fields never touch Kit proxies.
+ */
+export function resolveRemoteInputProps(
+	formId: string | null | undefined,
+	logicalName: string | undefined,
+	type: string = 'text'
+): ResolvedRemoteInputProps {
+	if (!logicalName) return {};
+	if (!formId) return { name: logicalName };
+
+	let prefix = '';
+	if (type === 'number' || type === 'range') prefix = 'n:';
+	else if (type === 'checkbox' || type === 'boolean') prefix = 'b:';
+	return { name: `${prefix}${logicalName}/${formId}` };
+}
+
+export type ParsedRemoteFieldName = {
+	/** Field path for errors / `form.data` (`email`, `items[0].name`) */
+	logicalName: string | undefined;
+	/** Exact HTML `name` to put on the input (Kit-encoded or plain) */
+	htmlName: string | undefined;
+	/** True when `name` already includes `/formId` (from Kit `.as()`) */
+	isEncoded: boolean;
+};
+
+/**
+ * Split a Kit-encoded HTML `name` (`email/1p9kxmo/login_user`, `n:age/...`)
+ * into logical + html parts. Plain names pass through unchanged.
+ *
+ * When `formId` is known, uses Kit’s suffix rule (`/${formId}`).
+ * Otherwise treats the first `/` after an optional `n:`/`b:` prefix as the form-id boundary
+ * (logical paths use `.` / `[n]`, never `/`).
+ */
+export function parseRemoteFieldName(
+	name: string | undefined,
+	formId?: string | null
+): ParsedRemoteFieldName {
+	if (!name) {
+		return { logicalName: undefined, htmlName: undefined, isEncoded: false };
+	}
+
+	const htmlName = name;
+
+	if (formId && name.endsWith(`/${formId}`)) {
+		let logical = name.slice(0, -(formId.length + 1));
+		if (logical.startsWith('n:') || logical.startsWith('b:')) logical = logical.slice(2);
+		if (logical.endsWith('[]')) logical = logical.slice(0, -2);
+		return { logicalName: logical, htmlName, isEncoded: true };
+	}
+
+	// Heuristic without formId: Kit-encoded names contain `/`
+	if (name.includes('/')) {
+		let rest = name;
+		if (rest.startsWith('n:') || rest.startsWith('b:')) rest = rest.slice(2);
+		const slash = rest.indexOf('/');
+		if (slash !== -1) {
+			let logical = rest.slice(0, slash);
+			if (logical.endsWith('[]')) logical = logical.slice(0, -2);
+			return { logicalName: logical, htmlName, isEncoded: true };
+		}
+	}
+
+	return { logicalName: name, htmlName: name, isEncoded: false };
+}
+
+/**
+ * Safe props to spread onto `FormField` / `FormPasswordInput` from Kit `.as(...)`.
+ * Keeps `name` (+ `type`) and drops Kit `value` / `defaultValue` accessors that
+ * fight library `$bindable` and can cause `effect_update_depth_exceeded`.
+ *
+ * @example
+ * ```svelte
+ * <FormField {...remoteAsProps(login_user.fields.email.as('email'))} label="Email" />
+ * ```
+ */
+export function remoteAsProps(asProps: {
+	name: string;
+	type?: string;
+}): { name: string; type?: string } {
+	return asProps.type != null
+		? { name: asProps.name, type: asProps.type }
+		: { name: asProps.name };
 }
 
 /**
@@ -106,7 +217,8 @@ export function isRemoteForm<
 	Input extends RemoteFormInput | void = RemoteFormInput,
 	Output = unknown
 >(remote: FormRemote<Input, Output> | null | undefined): remote is RemoteForm<Input, Output> {
-	return !!remote && 'fields' in remote && typeof (remote as RemoteForm<Input, Output>).fields === 'object';
+	// Avoid reading `.fields` (client getter allocates a proxy and can loop in `$derived`).
+	return !!remote && 'fields' in remote;
 }
 
 /**

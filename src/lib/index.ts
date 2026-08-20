@@ -52,7 +52,11 @@ export type { FieldHintTone } from './components/atoms/FieldHint/FieldHint.svelt
 export { default as LabeledProgress } from './components/atoms/LabeledProgress/LabeledProgress.svelte';
 export { default as Code } from './components/atoms/Code/Code.svelte';
 export { default as Surface } from './components/atoms/Surface/Surface.svelte';
-export type { SurfaceVariant, SurfacePadding, SurfaceRadius } from './components/atoms/Surface/Surface.svelte';
+export type {
+	SurfaceVariant,
+	SurfacePadding,
+	SurfaceRadius
+} from './components/atoms/Surface/Surface.svelte';
 export { default as Heading } from './components/atoms/Heading/Heading.svelte';
 export type { HeadingLevel, HeadingSize } from './components/atoms/Heading/Heading.svelte';
 export { default as Text } from './components/atoms/Text/Text.svelte';
@@ -86,17 +90,29 @@ export type { PulseTone } from './components/atoms/PulseDot/PulseDot.svelte';
 export { default as SectionTitle } from './components/atoms/SectionTitle/SectionTitle.svelte';
 export { default as CornerBadge } from './components/atoms/CornerBadge/CornerBadge.svelte';
 export { default as DragHandle } from './components/atoms/DragHandle/DragHandle.svelte';
-export type { DragHandleSize, DragHandleOrientation } from './components/atoms/DragHandle/DragHandle.svelte';
+export type {
+	DragHandleSize,
+	DragHandleOrientation
+} from './components/atoms/DragHandle/DragHandle.svelte';
 export { default as SnapIndicator } from './components/atoms/SnapIndicator/SnapIndicator.svelte';
-export type { SnapIndicatorSize, SnapIndicatorVariant } from './components/atoms/SnapIndicator/SnapIndicator.svelte';
+export type {
+	SnapIndicatorSize,
+	SnapIndicatorVariant
+} from './components/atoms/SnapIndicator/SnapIndicator.svelte';
 export { default as HighlightMark } from './components/atoms/HighlightMark/HighlightMark.svelte';
 export type { HighlightMarkTone } from './components/atoms/HighlightMark/HighlightMark.svelte';
 export { default as TrendArrow } from './components/atoms/TrendArrow/TrendArrow.svelte';
-export type { TrendDirection, TrendArrowSize } from './components/atoms/TrendArrow/TrendArrow.svelte';
+export type {
+	TrendDirection,
+	TrendArrowSize
+} from './components/atoms/TrendArrow/TrendArrow.svelte';
 export { default as FadeMask } from './components/atoms/FadeMask/FadeMask.svelte';
 export type { FadeMaskEdge, FadeMaskSize } from './components/atoms/FadeMask/FadeMask.svelte';
 export { default as VersionTag } from './components/atoms/VersionTag/VersionTag.svelte';
-export type { VersionTagTone, VersionTagSize } from './components/atoms/VersionTag/VersionTag.svelte';
+export type {
+	VersionTagTone,
+	VersionTagSize
+} from './components/atoms/VersionTag/VersionTag.svelte';
 export { default as WaveBars } from './components/atoms/WaveBars/WaveBars.svelte';
 export { default as Playhead } from './components/atoms/Playhead/Playhead.svelte';
 export { default as TimeRuler } from './components/atoms/TimeRuler/TimeRuler.svelte';
@@ -108,9 +124,15 @@ export type { MediaKindIconSize } from './components/atoms/MediaKindIcon/MediaKi
 export { default as PanKnob } from './components/atoms/PanKnob/PanKnob.svelte';
 export type { PanKnobSize } from './components/atoms/PanKnob/PanKnob.svelte';
 export { default as LatencyPill } from './components/atoms/LatencyPill/LatencyPill.svelte';
-export type { LatencyPillTone, LatencyPillSize } from './components/atoms/LatencyPill/LatencyPill.svelte';
+export type {
+	LatencyPillTone,
+	LatencyPillSize
+} from './components/atoms/LatencyPill/LatencyPill.svelte';
 export { default as SkeletonAvatar } from './components/atoms/SkeletonAvatar/SkeletonAvatar.svelte';
-export type { SkeletonAvatarSize, SkeletonAvatarShape } from './components/atoms/SkeletonAvatar/SkeletonAvatar.svelte';
+export type {
+	SkeletonAvatarSize,
+	SkeletonAvatarShape
+} from './components/atoms/SkeletonAvatar/SkeletonAvatar.svelte';
 export { default as HitArea } from './components/atoms/HitArea/HitArea.svelte';
 export type { HitAreaElement } from './components/atoms/HitArea/HitArea.svelte';
 export { default as Prose } from './components/atoms/Prose/Prose.svelte';
@@ -216,10 +238,7 @@ export { default as CopyButton } from './components/molecules/CopyButton/CopyBut
 export { default as SegmentedControl } from './components/molecules/SegmentedControl/SegmentedControl.svelte';
 export type { SegmentItem } from './components/molecules/SegmentedControl/SegmentedControl.svelte';
 export { default as Popover } from './components/molecules/Popover/Popover.svelte';
-export type {
-	PopoverPlacement,
-	PopoverAlign
-} from './components/molecules/Popover/Popover.svelte';
+export type { PopoverPlacement, PopoverAlign } from './components/molecules/Popover/Popover.svelte';
 export { default as HoverCard } from './components/molecules/HoverCard/HoverCard.svelte';
 export { default as Timeline } from './components/molecules/Timeline/Timeline.svelte';
 export type { TimelineItem } from './components/molecules/Timeline/Timeline.svelte';
@@ -245,7 +264,18 @@ export type { TimeFormat } from './components/molecules/TimePicker/TimePicker.sv
 export { default as DateTimePicker } from './components/molecules/DateTimePicker/DateTimePicker.svelte';
 export { default as DateRangePicker } from './components/molecules/DateRangePicker/DateRangePicker.svelte';
 export { default as Combobox } from './components/molecules/Combobox/Combobox.svelte';
-export type { ComboboxOption } from './components/molecules/Combobox/Combobox.svelte';
+export type {
+	ComboboxOption,
+	ComboboxItemState
+} from './components/molecules/Combobox/Combobox.svelte';
+export { default as ComboboxItem } from './components/molecules/ComboboxItem/ComboboxItem.svelte';
+export {
+	COMBOBOX_CONTEXT,
+	COMBOBOX_CREATE_KEY,
+	getComboboxContext,
+	setComboboxContext
+} from './components/molecules/Combobox/combobox-context.js';
+export type { ComboboxContext } from './components/molecules/Combobox/combobox-context.js';
 export { default as MultiSelect } from './components/molecules/MultiSelect/MultiSelect.svelte';
 export type { MultiSelectOption } from './components/molecules/MultiSelect/MultiSelect.svelte';
 export { default as ConfirmDialog } from './components/molecules/ConfirmDialog/ConfirmDialog.svelte';
@@ -270,7 +300,10 @@ export type { PanelPadding } from './components/molecules/Panel/Panel.svelte';
 export { default as PropertyField } from './components/molecules/PropertyField/PropertyField.svelte';
 export { default as PropertyGroup } from './components/molecules/PropertyGroup/PropertyGroup.svelte';
 export { default as NavigationMenu } from './components/molecules/NavigationMenu/NavigationMenu.svelte';
-export type { NavMenuItem, NavMenuChild } from './components/molecules/NavigationMenu/NavigationMenu.svelte';
+export type {
+	NavMenuItem,
+	NavMenuChild
+} from './components/molecules/NavigationMenu/NavigationMenu.svelte';
 export { default as ChatBubble } from './components/molecules/ChatBubble/ChatBubble.svelte';
 export { default as MessageList } from './components/molecules/MessageList/MessageList.svelte';
 export type { Message } from './components/molecules/MessageList/MessageList.svelte';
@@ -368,6 +401,10 @@ export {
 	isRemoteForm,
 	fieldPath,
 	resolveFormFieldState,
+	resolveRemoteInputProps,
+	parseRemoteFieldName,
+	remoteAsProps,
+	getRemoteFormId,
 	applyFormDataSync,
 	sameStringArray
 } from './utils/formContext.js';
@@ -377,6 +414,8 @@ export type {
 	FormDataValues,
 	FormFieldStatus,
 	FormRemote,
+	ResolvedRemoteInputProps,
+	ParsedRemoteFieldName,
 	/** @deprecated Use `FormRemote` */
 	RemoteFormSpread,
 	RemoteForm,
@@ -384,11 +423,7 @@ export type {
 	RemoteFormIssue
 } from './utils/formContext.js';
 
-export {
-	validateForm,
-	isFormDirty,
-	firstFormError
-} from './utils/formValidate.js';
+export { validateForm, isFormDirty, firstFormError } from './utils/formValidate.js';
 export type {
 	BuiltinRule,
 	CustomRule,
@@ -398,18 +433,8 @@ export type {
 	ValidateOptions
 } from './utils/formValidate.js';
 
-export {
-	UI_DICTIONARIES,
-	resolveLocaleTag,
-	getDictionary,
-	formatMessage
-} from './utils/i18n.js';
-export type {
-	LocaleCode,
-	UiMessages,
-	MessageKey,
-	MessageParams
-} from './utils/i18n.js';
+export { UI_DICTIONARIES, resolveLocaleTag, getDictionary, formatMessage } from './utils/i18n.js';
+export type { LocaleCode, UiMessages, MessageKey, MessageParams } from './utils/i18n.js';
 
 export { i18n } from './utils/i18n.svelte.js';
 
@@ -456,7 +481,10 @@ export { default as DiffViewer } from './components/molecules/DiffViewer/DiffVie
 export type { DiffMode } from './components/molecules/DiffViewer/DiffViewer.svelte';
 export { default as SignaturePad } from './components/molecules/SignaturePad/SignaturePad.svelte';
 export { default as ImageCropper } from './components/molecules/ImageCropper/ImageCropper.svelte';
-export type { CropAspect, CropFormat } from './components/molecules/ImageCropper/ImageCropper.svelte';
+export type {
+	CropAspect,
+	CropFormat
+} from './components/molecules/ImageCropper/ImageCropper.svelte';
 export { default as AudioPlayer } from './components/molecules/AudioPlayer/AudioPlayer.svelte';
 export { default as VideoPlayer } from './components/molecules/VideoPlayer/VideoPlayer.svelte';
 export { default as VolumeControl } from './components/molecules/VolumeControl/VolumeControl.svelte';
@@ -549,11 +577,7 @@ export { default as ChipSelect } from './components/molecules/ChipSelect/ChipSel
 export type { ChipSelectOption } from './components/molecules/ChipSelect/ChipSelect.svelte';
 export { default as InfoTile } from './components/molecules/InfoTile/InfoTile.svelte';
 export { default as Tile } from './components/molecules/Tile/Tile.svelte';
-export type {
-	TileAccent,
-	TileVariant,
-	TileSize
-} from './components/molecules/Tile/Tile.svelte';
+export type { TileAccent, TileVariant, TileSize } from './components/molecules/Tile/Tile.svelte';
 export { default as Quote } from './components/molecules/Quote/Quote.svelte';
 export { default as KeyValue } from './components/molecules/KeyValue/KeyValue.svelte';
 export { default as DangerZone } from './components/molecules/DangerZone/DangerZone.svelte';
@@ -711,10 +735,7 @@ export { default as SortSelect } from './components/molecules/SortSelect/SortSel
 export type { SortOption } from './components/molecules/SortSelect/SortSelect.svelte';
 export { DEFAULT_SORT_OPTIONS } from './components/molecules/SortSelect/SortSelect.svelte';
 export { default as AdvancedFilters } from './components/molecules/AdvancedFilters/AdvancedFilters.svelte';
-export type {
-	FilterFieldDef,
-	FilterFieldType
-} from './utils/advancedFilters.js';
+export type { FilterFieldDef, FilterFieldType } from './utils/advancedFilters.js';
 export { default as QueryBuilder } from './components/molecules/QueryBuilder/QueryBuilder.svelte';
 export { default as FilterList } from './components/molecules/FilterList/FilterList.svelte';
 export { default as QueryBar } from './components/molecules/QueryBar/QueryBar.svelte';
@@ -764,7 +785,10 @@ export { default as ColumnVisibilityMenu } from './components/molecules/ColumnVi
 export type { ColumnVisibilityItem } from './components/molecules/ColumnVisibilityMenu/ColumnVisibilityMenu.svelte';
 export { default as ExpressionEditor } from './components/molecules/ExpressionEditor/ExpressionEditor.svelte';
 export { default as Terminal } from './components/molecules/Terminal/Terminal.svelte';
-export type { TerminalLine, TerminalLineKind } from './components/molecules/Terminal/Terminal.svelte';
+export type {
+	TerminalLine,
+	TerminalLineKind
+} from './components/molecules/Terminal/Terminal.svelte';
 export { default as SecretField } from './components/molecules/SecretField/SecretField.svelte';
 export { default as TraceWaterfall } from './components/molecules/TraceWaterfall/TraceWaterfall.svelte';
 export type { TraceSpan } from './components/molecules/TraceWaterfall/TraceWaterfall.svelte';
@@ -974,7 +998,10 @@ export type { SidebarItem, SidebarGroup } from './components/organisms/Sidebar/S
 export { default as Navbar } from './components/organisms/Navbar/Navbar.svelte';
 export type { NavbarLink } from './components/organisms/Navbar/Navbar.svelte';
 export { default as BottomNav } from './components/organisms/BottomNav/BottomNav.svelte';
-export type { BottomNavItem, BottomNavIcon } from './components/organisms/BottomNav/BottomNav.svelte';
+export type {
+	BottomNavItem,
+	BottomNavIcon
+} from './components/organisms/BottomNav/BottomNav.svelte';
 export { default as CommandPalette } from './components/organisms/CommandPalette/CommandPalette.svelte';
 export type { CommandItem } from './components/organisms/CommandPalette/CommandPalette.svelte';
 export { default as AppShell } from './components/organisms/AppShell/AppShell.svelte';
@@ -1329,7 +1356,12 @@ export {
 	rescaleLayout,
 	resizeItemByEdge
 } from './utils/layoutGrid.js';
-export type { GridItem, LayoutGridOptions, GridDensity, GridResizeEdge } from './utils/layoutGrid.js';
+export type {
+	GridItem,
+	LayoutGridOptions,
+	GridDensity,
+	GridResizeEdge
+} from './utils/layoutGrid.js';
 export {
 	attachMarqueeSelect,
 	collectMarqueeItems,
@@ -1348,13 +1380,14 @@ export type {
 	MarqueeRect as MarqueeRectBox
 } from './utils/marqueeSelect.js';
 export { encodeQR, qrToSvgPath, punchLogoHole } from './utils/qr.js';
-export { renderMarkdown, renderInline, escapeHtml, splitTableRow, slugifyHeading } from './utils/markdown.js';
 export {
-	diffLines,
-	diffWords,
-	diffStats,
-	toSplitRows
-} from './utils/diff.js';
+	renderMarkdown,
+	renderInline,
+	escapeHtml,
+	splitTableRow,
+	slugifyHeading
+} from './utils/markdown.js';
+export { diffLines, diffWords, diffStats, toSplitRows } from './utils/diff.js';
 export type { DiffOp, DiffOpType, DiffPart, DiffStats, SplitRow } from './utils/diff.js';
 export {
 	mapPoints,
@@ -1627,15 +1660,9 @@ export {
 	backgroundAlpha
 } from './utils/canvasExport.js';
 export type { CanvasExportFormat } from './utils/canvasExport.js';
-export {
-	emptyVideoSequence,
-	createDemoVideoSequence
-} from './utils/videoSequence.js';
+export { emptyVideoSequence, createDemoVideoSequence } from './utils/videoSequence.js';
 export type { VideoSequence } from './utils/videoSequence.js';
-export {
-	emptyAudioProject,
-	createDemoAudioProject
-} from './utils/audioProject.js';
+export { emptyAudioProject, createDemoAudioProject } from './utils/audioProject.js';
 export type { AudioProject, MixerChannelState } from './utils/audioProject.js';
 export type {
 	BlogDocument,

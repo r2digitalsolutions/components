@@ -82,7 +82,7 @@
 	let value = $state<BlogDocument>({
 		...emptyBlogDocument('Shipping our component library'),
 		description: 'A richer block model with media, layout, and registered components.',
-		author: 'R2 Digisolutions',
+		author: 'Evoteg',
 		publishedAt: '2026-07-28',
 		tags: ['design-system', 'svelte', 'blog'],
 		coverImage: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&q=80',

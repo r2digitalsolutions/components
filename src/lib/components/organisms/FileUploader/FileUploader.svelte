@@ -525,14 +525,18 @@
 					'focus-visible:ring-2 focus-visible:ring-brand-500/30 focus-visible:border-brand-500',
 					isDragging
 						? 'border-brand-500 bg-brand-500/10'
-						: hasFile
+						: hasFile || externalSrc
 							? 'border-transparent'
 							: 'border-border bg-surface-elevated hover:border-border-strong',
 					disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
 				]}
 			>
-				{#if primaryFile?.previewUrl}
-					<img src={primaryFile.previewUrl} alt="" class="h-full w-full object-cover" />
+				{#if primaryFile?.previewUrl || externalSrc}
+					<img
+						src={primaryFile?.previewUrl || externalSrc}
+						alt=""
+						class="h-full w-full object-cover"
+					/>
 					{#if !disabled}
 						<div
 							class="absolute inset-0 flex items-center justify-center bg-black/45 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"

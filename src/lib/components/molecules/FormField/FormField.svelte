@@ -4,6 +4,8 @@
 	import {
 		getFormContext,
 		resolveFormFieldState,
+		resolveRemoteInputProps,
+		parseRemoteFieldName,
 		applyFormDataSync,
 		type FormFieldStatus
 	} from '$lib/utils/formContext.js';
@@ -22,7 +24,18 @@
 
 	/**
 	 * Form-bound text input (email, tel, url, search, …).
-	 * There is no separate `FormTextInput` — use this component.
+	 *
+	 * Kit remote: pass the encoded `name` (and `type`) from `.as()`, **not** the full
+	 * spread — Kit’s `value` get/set fights `$bindable` and can loop.
+	 *
+	 * @example
+	 * ```svelte
+	 * <FormField
+	 *   name={login_user.fields.email.as('email').name}
+	 *   type="email"
+	 *   label="Email"
+	 * />
+	 * ```
 	 */
 	interface FormFieldProps {
 		id?: string;
@@ -41,19 +54,23 @@
 		size?: 'sm' | 'md' | 'lg';
 		/**
 		 * When true and inside `<Form>`, keep `value` in sync with `form.data[name]`.
-		 * Requires `name`.
+		 * Uses the logical field name (strips Kit `/formId` when present).
 		 */
 		bindData?: boolean;
+		/**
+		 * Override HTML `name` if logical `name` is separate.
+		 * Prefer passing Kit `.as(...).name` as `name` instead.
+		 */
+		inputName?: string;
 		leadIcon?: Snippet;
 		trailIcon?: Snippet;
-		/**
-		 * Custom control instead of the default `<Input>`.
-		 * Receives resolved status / disabled / helpers from form context.
-		 */
 		control?: Snippet<[FormFieldControlProps]>;
 		class?: string;
 		oninput?: (e: Event) => void;
 		onchange?: (e: Event) => void;
+		/** Absorbed if a Kit `.as()` object is spread by mistake. */
+		defaultValue?: unknown;
+		'aria-invalid'?: boolean | 'true' | 'false';
 	}
 
 	let {
@@ -72,23 +89,43 @@
 		clearable = false,
 		size = 'md',
 		bindData = false,
+		inputName,
 		leadIcon,
 		trailIcon,
 		control,
 		class: className = '',
 		oninput,
-		onchange
+		onchange,
+		defaultValue: _kitDefaultValue = undefined,
+		'aria-invalid': _ariaInvalid = undefined
 	}: FormFieldProps = $props();
 
 	const form = getFormContext();
+	const parsed = $derived(parseRemoteFieldName(name, form?.remoteFormId));
+	const logicalName = $derived(parsed.logicalName);
+
 	const resolved = $derived(
-		resolveFormFieldState({ name, errorMessage, helperText, status, disabled, form })
+		resolveFormFieldState({
+			name: logicalName,
+			errorMessage,
+			helperText,
+			status,
+			disabled,
+			form
+		})
 	);
 
+	/** HTML `name`: override → encoded as-is → else encode with remoteFormId. */
+	const htmlName = $derived.by(() => {
+		if (inputName) return inputName;
+		if (parsed.isEncoded) return parsed.htmlName;
+		return resolveRemoteInputProps(form?.remoteFormId, name, type).name;
+	});
+
 	$effect(() => {
-		if (!bindData || !name || !form) return;
+		if (!bindData || !logicalName || !form) return;
 		applyFormDataSync({
-			fromCtx: form.data[name],
+			fromCtx: form.data[logicalName],
 			getLocal: () => value,
 			setLocal: (v) => {
 				value = v;
@@ -99,20 +136,20 @@
 
 	function setValue(next: string) {
 		value = next;
-		if (bindData && name && form) {
-			form.setData(name, next);
-			form.clearError(name);
+		if (bindData && logicalName && form) {
+			form.setData(logicalName, next);
+			form.clearError(logicalName);
 		}
 	}
 
 	function clearFieldError() {
-		if (name && form) form.clearError(name);
+		if (logicalName && form) form.clearError(logicalName);
 	}
 
 	function handleInput(e: Event) {
-		if (bindData && name && form) {
-			form.setData(name, (e.currentTarget as HTMLInputElement).value);
-			form.clearError(name);
+		if (bindData && logicalName && form) {
+			form.setData(logicalName, (e.currentTarget as HTMLInputElement).value);
+			form.clearError(logicalName);
 		}
 		oninput?.(e);
 	}
@@ -122,7 +159,7 @@
 	{#if control}
 		{@render control({
 			id,
-			name,
+			name: logicalName,
 			value,
 			status: resolved.status,
 			helperText: resolved.helperText,
@@ -134,7 +171,7 @@
 	{:else}
 		<Input
 			{id}
-			{name}
+			name={htmlName}
 			{label}
 			{placeholder}
 			{type}
