@@ -33,7 +33,12 @@ function isPalette(value: string | null): value is ThemePalette {
 function getStoredPalette(): ThemePalette {
 	if (typeof localStorage === 'undefined') return DEFAULT_PALETTE;
 	const stored = localStorage.getItem(PALETTE_KEY);
-	return isPalette(stored) ? stored : DEFAULT_PALETTE;
+	if (isPalette(stored)) return stored;
+	if (typeof document !== 'undefined') {
+		const attr = document.documentElement.getAttribute('data-theme');
+		if (isPalette(attr)) return attr;
+	}
+	return DEFAULT_PALETTE;
 }
 
 function applyMode(theme: Theme) {
