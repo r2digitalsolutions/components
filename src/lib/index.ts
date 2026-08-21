@@ -289,6 +289,8 @@ export { default as Carousel } from './components/molecules/Carousel/Carousel.sv
 export type { CarouselItem } from './components/molecules/Carousel/Carousel.svelte';
 export { default as TreeView } from './components/molecules/TreeView/TreeView.svelte';
 export type { TreeNode } from './components/molecules/TreeView/TreeView.svelte';
+export { default as TreePanel } from './components/molecules/TreePanel/TreePanel.svelte';
+export type { TreePanelNode } from './components/molecules/TreePanel/TreePanel.svelte';
 export { default as TreeSelect } from './components/molecules/TreeSelect/TreeSelect.svelte';
 export { default as Cascader } from './components/molecules/Cascader/Cascader.svelte';
 export type { CascaderOption } from './components/molecules/Cascader/Cascader.svelte';
@@ -1334,7 +1336,7 @@ export { default as AudioEditorTemplate } from './components/templates/AudioEdit
 
 // ── Utils ────────────────────────────────────────────────────────────────────
 export { themeStore } from './utils/theme.svelte.js';
-export type { Theme } from './utils/theme.svelte.js';
+export type { Theme, ThemePalette } from './utils/theme.svelte.js';
 export { createId } from './utils/id.js';
 export { resolveAccessor, accessorPatchKey, resolveRowKey } from './utils/columnAccessor.js';
 export type { ColumnAccessor, RowKey } from './utils/columnAccessor.js';

@@ -139,8 +139,7 @@
 			const q = searchQuery.toLowerCase();
 			return leafOptions.filter(
 				(o) =>
-					o.label.toLowerCase().includes(q) ||
-					(o.breadcrumb?.toLowerCase().includes(q) ?? false)
+					o.label.toLowerCase().includes(q) || (o.breadcrumb?.toLowerCase().includes(q) ?? false)
 			);
 		}
 		return currentLevel.options;
@@ -480,7 +479,7 @@
 			popovertargetaction="toggle"
 			onkeydown={handleTriggerKeydown}
 			class={[
-				'gap-2 bg-surface-elevated rounded-lg flex w-full items-center justify-between border text-left transition-colors duration-150 outline-none select-none',
+				'gap-2 rounded-lg flex w-full items-center justify-between border bg-transparent text-left transition-colors duration-150 outline-none select-none',
 				sizeClasses[size],
 				statusRingClasses[status],
 				isOpen && 'border-brand-500 ring-brand-500/20 ring-2',
@@ -562,7 +561,7 @@
 				<button
 					type="button"
 					onclick={goBack}
-					class="gap-2 text-primary hover:bg-surface-overlay mx-1.5 mt-1.5 flex shrink-0 items-center rounded-lg px-2.5 py-2 text-left text-sm font-medium transition-colors"
+					class="gap-2 text-primary hover:bg-surface-overlay mx-1.5 mt-1.5 rounded-lg px-2.5 py-2 text-sm font-medium flex shrink-0 items-center text-left transition-colors"
 				>
 					<svg
 						class="text-secondary h-4 w-4 shrink-0"

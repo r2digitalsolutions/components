@@ -85,6 +85,53 @@ Los componentes usan clases de Tailwind 4. En la app consumidora basta con impor
 
 Ese import registra tokens (`border-border`, `bg-surface`, …) y hace que Tailwind escanee los `.svelte` del paquete. Sin él, las utilidades pueden faltar o `--border` no estar definido.
 
+## Tema: modo + paleta
+
+Hay dos ejes independientes en `<html>`:
+
+| Atributo       | Valores                       | Qué cambia        |
+| -------------- | ----------------------------- | ----------------- |
+| `class="dark"` | presente / ausente            | Claro / oscuro    |
+| `data-theme`   | `slate` (defecto) · `neutral` | Familia de grises |
+
+- **slate** — gris frío (hue 265, el look actual).
+- **neutral** — croma 0, sin castaño azul. Misma familia que Tailwind `neutral` (`#171717`, `#fafafa`).
+
+Para evitar FOUC, fíjalo en `app.html` antes de pintar:
+
+```html
+<html lang="es" data-theme="neutral">
+	<head>
+		<script>
+			(function () {
+				var palette = localStorage.getItem('r2-theme-palette') || 'neutral';
+				document.documentElement.setAttribute('data-theme', palette);
+				if (
+					localStorage.theme === 'dark' ||
+					localStorage.getItem('r2-theme') === 'dark' ||
+					(!('theme' in localStorage) &&
+						!localStorage.getItem('r2-theme') &&
+						window.matchMedia('(prefers-color-scheme: dark)').matches)
+				) {
+					document.documentElement.classList.add('dark');
+				}
+			})();
+		</script>
+	</head>
+</html>
+```
+
+En runtime (Svelte 5):
+
+```ts
+import { themeStore } from '@r2digisolutions/components';
+
+themeStore.set('dark');
+themeStore.setPalette('neutral');
+// Solo esta página, sin persistir:
+themeStore.setPalette('slate', { persist: false });
+```
+
 ## Licencia
 
 MIT

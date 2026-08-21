@@ -111,12 +111,9 @@
 	}
 </script>
 
-<div class={['flex flex-col gap-1.5 w-full', className]}>
+<div class={['gap-1.5 flex w-full flex-col', className]}>
 	{#if label}
-		<label
-			for={inputId}
-			class="text-sm font-medium text-primary"
-		>
+		<label for={inputId} class="text-sm font-medium text-primary">
 			{label}
 			{#if required}
 				<span class="text-red-500 ml-0.5" aria-hidden="true">*</span>
@@ -126,51 +123,53 @@
 
 	<div
 		class={[
-			'flex items-center gap-2 w-full bg-surface-elevated border rounded-lg transition-all duration-200',
+			'gap-2 rounded-lg flex w-full items-center border bg-transparent transition-all duration-200',
 			paddingSizeClasses[size],
 			wrapperSizeClasses[size],
 			statusRingClasses[status],
-			disabled && 'opacity-50 cursor-not-allowed bg-surface'
+			disabled ? 'bg-surface cursor-not-allowed opacity-50' : 'cursor-text'
 		]}
 	>
-		{#if leadIcon}
-			<span class={['shrink-0 text-muted', statusIconClasses[status]]}>
-				{@render leadIcon()}
-			</span>
-		{/if}
+		<label class="min-h-0 min-w-0 gap-2 flex flex-1 cursor-text items-center self-stretch">
+			{#if leadIcon}
+				<span class={['text-muted pointer-events-none shrink-0', statusIconClasses[status]]}>
+					{@render leadIcon()}
+				</span>
+			{/if}
 
-		<input
-			id={inputId}
-			{name}
-			{type}
-			{placeholder}
-			{disabled}
-			{readonly}
-			{required}
-			{autofocus}
-			{min}
-			{max}
-			{step}
-			bind:value
-			aria-describedby={helperText ? helperId : undefined}
-			aria-invalid={status === 'error'}
-			class={[
-				'min-w-0 flex-1 bg-transparent text-primary outline-none placeholder:text-muted disabled:cursor-not-allowed',
-				type === 'search' &&
-					'[&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-decoration]:appearance-none'
-			]}
-			{oninput}
-			{onchange}
-			{onfocus}
-			{onblur}
-			{onkeydown}
-		/>
+			<input
+				id={inputId}
+				{name}
+				{type}
+				{placeholder}
+				{disabled}
+				{readonly}
+				{required}
+				{autofocus}
+				{min}
+				{max}
+				{step}
+				bind:value
+				aria-describedby={helperText ? helperId : undefined}
+				aria-invalid={status === 'error'}
+				class={[
+					'min-w-0 text-primary placeholder:text-muted h-full flex-1 self-stretch bg-transparent outline-none disabled:cursor-not-allowed',
+					type === 'search' &&
+						'[&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-decoration]:appearance-none'
+				]}
+				{oninput}
+				{onchange}
+				{onfocus}
+				{onblur}
+				{onkeydown}
+			/>
+		</label>
 
 		{#if hasClear}
 			<button
 				type="button"
 				onclick={clearValue}
-				class="shrink-0 text-muted hover:text-primary transition-colors duration-150 rounded"
+				class="text-muted hover:text-primary rounded shrink-0 transition-colors duration-150"
 				aria-label="Clear input"
 			>
 				<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -178,16 +177,34 @@
 				</svg>
 			</button>
 		{:else if trailIcon}
-			<span class={['shrink-0 text-muted', statusIconClasses[status]]}>
+			<span class={['text-muted shrink-0', statusIconClasses[status]]}>
 				{@render trailIcon()}
 			</span>
 		{:else if status === 'error'}
-			<svg class="h-4 w-4 shrink-0 text-red-500" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-				<path fill-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm-1 5a1 1 0 112 0v4a1 1 0 11-2 0V7zm1 8a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" clip-rule="evenodd" />
+			<svg
+				class="h-4 w-4 text-red-500 shrink-0"
+				viewBox="0 0 24 24"
+				fill="currentColor"
+				aria-hidden="true"
+			>
+				<path
+					fill-rule="evenodd"
+					d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm-1 5a1 1 0 112 0v4a1 1 0 11-2 0V7zm1 8a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"
+					clip-rule="evenodd"
+				/>
 			</svg>
 		{:else if status === 'success'}
-			<svg class="h-4 w-4 shrink-0 text-green-500" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-				<path fill-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.707 7.293a1 1 0 00-1.414 0L10 14.586l-1.293-1.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l6-6a1 1 0 000-1.414z" clip-rule="evenodd" />
+			<svg
+				class="h-4 w-4 text-green-500 shrink-0"
+				viewBox="0 0 24 24"
+				fill="currentColor"
+				aria-hidden="true"
+			>
+				<path
+					fill-rule="evenodd"
+					d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.707 7.293a1 1 0 00-1.414 0L10 14.586l-1.293-1.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l6-6a1 1 0 000-1.414z"
+					clip-rule="evenodd"
+				/>
 			</svg>
 		{/if}
 	</div>

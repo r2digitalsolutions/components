@@ -20,7 +20,7 @@ const preview: Preview = {
 	globalTypes: {
 		theme: {
 			name: 'Theme',
-			description: 'Global theme for components',
+			description: 'Light / dark mode',
 			defaultValue: 'light',
 			toolbar: {
 				icon: 'circlehollow',
@@ -30,13 +30,28 @@ const preview: Preview = {
 				],
 				showName: true
 			}
+		},
+		palette: {
+			name: 'Palette',
+			description: 'Gray family: slate (cool) or neutral (chroma 0)',
+			defaultValue: 'slate',
+			toolbar: {
+				icon: 'contrast',
+				items: [
+					{ value: 'slate', title: 'Slate' },
+					{ value: 'neutral', title: 'Neutral' }
+				],
+				showName: true
+			}
 		}
 	},
 	decorators: [
 		(storyFn, context) => {
 			const theme = context.globals.theme || 'light';
+			const palette = context.globals.palette || 'slate';
 			if (typeof document !== 'undefined') {
 				document.documentElement.classList.toggle('dark', theme === 'dark');
+				document.documentElement.setAttribute('data-theme', palette);
 			}
 			return storyFn();
 		}
@@ -73,8 +88,7 @@ const preview: Preview = {
 					}
 				) => {
 					const sourceCfg = ctx.parameters?.docs?.source;
-					const name =
-						sourceCfg?.componentName ?? inferComponentName(ctx.title ?? '', ctx.id);
+					const name = sourceCfg?.componentName ?? inferComponentName(ctx.title ?? '', ctx.id);
 
 					if (sourceCfg?.code && sourceCfg.transformArgs !== true) {
 						return sourceCfg.code;

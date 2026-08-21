@@ -37,7 +37,7 @@
 		end?: Snippet;
 		/** Replaces default error + retry */
 		errorSnippet?: Snippet;
-		onloadmore?: () => void;
+		onloadmore?: () => void | Promise<void>;
 		onretry?: () => void;
 	}
 
@@ -67,33 +67,27 @@
 	let locked = $state(false);
 
 	const canAutoLoad = $derived(
-		(mode === 'auto' || mode === 'both') &&
-			!disabled &&
-			!loading &&
-			!error &&
-			hasMore &&
-			!locked
+		(mode === 'auto' || mode === 'both') && !disabled && !loading && !error && hasMore && !locked
 	);
 
 	const showManual = $derived(
-		(mode === 'manual' || mode === 'both') && hasMore && !disabled && !error
+		(mode === 'manual' || mode === 'both') && hasMore && !disabled && !error && !loading && !locked
 	);
 
-	function requestMore() {
+	async function requestMore() {
 		if (disabled || loading || !hasMore || locked || error) return;
 		locked = true;
-		onloadmore?.();
+		try {
+			await onloadmore?.();
+		} finally {
+			locked = false;
+		}
 	}
 
 	function retry() {
 		if (loading) return;
-		onretry?.() ?? onloadmore?.();
+		void (onretry?.() ?? requestMore());
 	}
-
-	// Unlock when parent finishes loading (or errors / ends).
-	$effect(() => {
-		if (!loading) locked = false;
-	});
 
 	$effect(() => {
 		if (!sentinel || !canAutoLoad) return;
@@ -101,7 +95,7 @@
 		const el = sentinel;
 		const obs = new IntersectionObserver(
 			(entries) => {
-				if (entries.some((e) => e.isIntersecting)) requestMore();
+				if (entries.some((e) => e.isIntersecting)) void requestMore();
 			},
 			{
 				root: scrollRoot ?? null,
@@ -114,10 +108,7 @@
 	});
 </script>
 
-<div
-	class={['w-full', className]}
-	aria-busy={loading}
->
+<div class={['w-full', className]} aria-busy={loading}>
 	{#if sentinelPos === 'start'}
 		{@render footer()}
 	{/if}
@@ -134,14 +125,14 @@
 {#snippet footer()}
 	<div
 		bind:this={sentinel}
-		class="flex flex-col items-center justify-center gap-2 py-4"
+		class="gap-2 py-4 flex flex-col items-center justify-center"
 		aria-live="polite"
 	>
 		{#if error}
 			{#if errorSnippet}
 				{@render errorSnippet()}
 			{:else}
-				<div class="flex flex-col items-center gap-2 px-3 text-center">
+				<div class="gap-2 px-3 flex flex-col items-center text-center">
 					<p class="text-xs text-red-600 dark:text-red-400">{error}</p>
 					<Button size="sm" variant="secondary" onclick={retry} disabled={loading}>
 						{retryLabel}
@@ -152,7 +143,7 @@
 			{#if loader}
 				{@render loader()}
 			{:else}
-				<div class="flex items-center gap-2 text-muted">
+				<div class="gap-2 text-muted flex items-center">
 					<Spinner size="sm" />
 					<span class="text-xs">Loading…</span>
 				</div>
@@ -167,7 +158,7 @@
 			<Button
 				size="sm"
 				variant={mode === 'manual' ? 'secondary' : 'ghost'}
-				onclick={requestMore}
+				onclick={() => void requestMore()}
 				disabled={loading}
 			>
 				{loadMoreLabel}
