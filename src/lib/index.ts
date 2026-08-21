@@ -237,6 +237,9 @@ export { default as PasswordInput } from './components/molecules/PasswordInput/P
 export { default as CopyButton } from './components/molecules/CopyButton/CopyButton.svelte';
 export { default as SegmentedControl } from './components/molecules/SegmentedControl/SegmentedControl.svelte';
 export type { SegmentItem } from './components/molecules/SegmentedControl/SegmentedControl.svelte';
+export { default as Dock } from './components/molecules/Dock/Dock.svelte';
+export type { DockSize } from './components/molecules/Dock/Dock.svelte';
+export { default as DockItem } from './components/molecules/Dock/DockItem.svelte';
 export { default as Popover } from './components/molecules/Popover/Popover.svelte';
 export type { PopoverPlacement, PopoverAlign } from './components/molecules/Popover/Popover.svelte';
 export { default as HoverCard } from './components/molecules/HoverCard/HoverCard.svelte';
