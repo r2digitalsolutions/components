@@ -1,6 +1,6 @@
 {
 	"name": "@r2digisolutions/components",
-	"version": "0.7.1",
+	"version": "0.7.0",
 	"private": false,
 	"description": "R2DigiSolutions Svelte 5 component library — Atomic Design, Tailwind 4, Light/Dark mode",
 	"license": "MIT",
@@ -82,7 +82,7 @@
 		"@types/node": "^26.2.0",
 		"@vitest/browser-playwright": "^4.1.11",
 		"bumpp": "~12.2.1",
-		"eslint": "^10.9.0",
+		"eslint": "^10.8.1",
 		"eslint-config-prettier": "^10.1.8",
 		"eslint-plugin-svelte": "^3.23.0",
 		"globals": "^17.11.0",
@@ -112,5 +112,14 @@
 	],
 	"dependencies": {
 		"@xyflow/svelte": "^1.6.3"
+	},
+	"pnpm": {
+		"packageExtensions": {
+			"bumpp": {
+				"engines": {
+					"node": ">=20.19.0"
+				}
+			}
+		}
 	}
 }
