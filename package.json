@@ -112,14 +112,5 @@
 	],
 	"dependencies": {
 		"@xyflow/svelte": "^1.6.3"
-	},
-	"pnpm": {
-		"packageExtensions": {
-			"bumpp": {
-				"engines": {
-					"node": ">=20.19.0"
-				}
-			}
-		}
 	}
 }
