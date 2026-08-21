@@ -1,6 +1,6 @@
 {
 	"name": "@r2digisolutions/components",
-	"version": "0.6.7",
+	"version": "0.6.8",
 	"private": false,
 	"description": "R2DigiSolutions Svelte 5 component library — Atomic Design, Tailwind 4, Light/Dark mode",
 	"license": "MIT",
@@ -69,7 +69,7 @@
 		"@lucide/svelte": "^1.33.0",
 		"@playwright/test": "^1.62.1",
 		"@storybook/addon-a11y": "^10.5.10",
-		"@storybook/addon-essentials": "^8.6.18",
+		"@storybook/addon-docs": "^10.5.10",
 		"@storybook/addon-svelte-csf": "^5.1.2",
 		"@storybook/addon-themes": "^10.5.10",
 		"@storybook/svelte": "^10.5.10",
