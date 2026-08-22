@@ -471,6 +471,17 @@
 	const canvaBorder = $derived(
 		isCanva && (handlesVisible === true || mode === 'resize' || mode === 'move')
 	);
+
+	/** `h-full` from parents must not win when collapsed — otherwise the card shell fills the grid cell empty. */
+	const frameClassName = $derived.by(() => {
+		if (!collapsed) return className;
+		const base = className
+			? String(className)
+					.split(/\s+/)
+					.filter((token) => token && token !== 'h-full' && token !== 'min-h-0')
+			: [];
+		return [...base, 'h-auto', 'max-h-fit', 'self-start', 'shrink-0'].join(' ');
+	});
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -484,11 +495,10 @@
 		canvaBorder && 'outline outline-2 outline-[#3b82f6]',
 		freeform ? 'shadow-md absolute' : 'relative',
 		isCanva && 'shadow-none',
-		collapsed && 'h-auto self-start',
 		mode === 'move' && 'cursor-grabbing opacity-95',
 		mode === 'resize' && !isCanva && 'ring-brand-500/40 ring-1',
 		!showChrome && freeform && draggable && 'cursor-move',
-		className
+		frameClassName
 	]}
 	style={rootStyle}
 	onpointerdown={(e) => {

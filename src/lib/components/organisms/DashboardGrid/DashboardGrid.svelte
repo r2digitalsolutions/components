@@ -546,7 +546,7 @@
 				<div
 					data-grid-id={item.id}
 					class={[
-						'min-h-0 min-w-0 relative z-[1]',
+						'min-h-0 min-w-0 relative z-[1] flex flex-col',
 						editable && draggable && !item.static && 'cursor-grab',
 						(draggingId === item.id || resizingId === item.id) && 'z-20',
 						draggingId === item.id && dragMoved && 'pointer-events-none opacity-30',
