@@ -478,9 +478,12 @@
 		const base = className
 			? String(className)
 					.split(/\s+/)
-					.filter((token) => token && token !== 'h-full' && token !== 'min-h-0')
+					.filter(
+						(token) =>
+							token && token !== 'h-full' && token !== 'min-h-0' && token !== 'flex-1'
+					)
 			: [];
-		return [...base, 'h-auto', 'max-h-fit', 'self-start', 'shrink-0'].join(' ');
+		return [...base, 'h-auto', 'max-h-fit', 'w-full', 'shrink-0'].join(' ');
 	});
 </script>
 

@@ -602,7 +602,7 @@
 						loading={meta.loading}
 						empty={meta.empty}
 						onreload={meta.onReload}
-						class="h-full"
+						class="h-full w-full"
 						ondragstart={(e) => onDragStart(item.id, e)}
 						onresizestart={(e, edge) => onResizeStart(item.id, e, edge)}
 					>
