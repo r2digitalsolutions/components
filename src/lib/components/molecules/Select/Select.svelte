@@ -5,6 +5,8 @@
 	export interface SelectOption {
 		value: string;
 		label: string;
+		/** Secondary line under the label (e.g. email). Also included in search. */
+		hint?: string;
 		disabled?: boolean;
 		children?: SelectOption[];
 	}
@@ -139,7 +141,9 @@
 			const q = searchQuery.toLowerCase();
 			return leafOptions.filter(
 				(o) =>
-					o.label.toLowerCase().includes(q) || (o.breadcrumb?.toLowerCase().includes(q) ?? false)
+					o.label.toLowerCase().includes(q) ||
+					(o.hint?.toLowerCase().includes(q) ?? false) ||
+					(o.breadcrumb?.toLowerCase().includes(q) ?? false)
 			);
 		}
 		return currentLevel.options;
@@ -587,6 +591,8 @@
 						{@const isHighlighted = highlightedIndex === index}
 						{@const hasChildren = Boolean(option.children?.length) && !isSearching}
 						{@const breadcrumb = 'breadcrumb' in option ? option.breadcrumb : undefined}
+						{@const hint = option.hint?.trim() || undefined}
+						{@const secondary = hint ?? breadcrumb}
 						<!-- svelte-ignore a11y_click_events_have_key_events -->
 						<!-- svelte-ignore a11y_no_static_element_interactions -->
 						<div
@@ -641,7 +647,7 @@
 								<span class={['block truncate', isSelected && 'font-medium']}>
 									{option.label}
 								</span>
-								{#if breadcrumb}
+								{#if secondary}
 									<span
 										class={[
 											'mt-0.5 block truncate text-[11px]',
@@ -650,7 +656,7 @@
 												: 'text-secondary'
 										]}
 									>
-										{breadcrumb}
+										{secondary}
 									</span>
 								{/if}
 							</span>

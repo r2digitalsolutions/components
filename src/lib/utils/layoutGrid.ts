@@ -50,35 +50,39 @@ export function findCollisions(layout: GridItem[], item: GridItem): GridItem[] {
 	return layout.filter((other) => other.id !== item.id && rectsOverlap(item, other));
 }
 
-/** Push colliding items down (simple collision resolution). */
+/** Push colliding items down (simple collision resolution). The moved item keeps its target slot. */
 export function resolveCollisions(
 	layout: GridItem[],
 	moved: GridItem,
 	cols: number = DEFAULT_COLS
 ): GridItem[] {
-	const next = layout.map((it) => (it.id === moved.id ? clampItem(moved, cols) : { ...it }));
-	const idx = next.findIndex((it) => it.id === moved.id);
-	if (idx < 0) return next;
+	const target = clampItem(moved, cols);
+	const others = layout
+		.filter((it) => it.id !== target.id)
+		.map((it) => clampItem(it, cols))
+		.sort((a, b) => a.y - b.y || a.x - b.x);
 
-	const sorted = [...next].sort((a, b) => a.y - b.y || a.x - b.x);
-	const result: GridItem[] = [];
+	const placed: GridItem[] = [];
 
-	for (const item of sorted) {
-		let current = clampItem(item, cols);
-		if (current.static) {
-			result.push(current);
-			continue;
-		}
+	const pushUntilClear = (item: GridItem): GridItem => {
+		if (item.static) return item;
+		let current = item;
 		let safety = 0;
-		while (result.some((other) => rectsOverlap(current, other)) && safety < 200) {
-			const blocker = result.find((other) => rectsOverlap(current, other))!;
+		while (placed.some((other) => rectsOverlap(current, other)) && safety < 200) {
+			const blocker = placed.find((other) => rectsOverlap(current, other))!;
 			current = { ...current, y: blocker.y + blocker.h };
 			safety++;
 		}
-		result.push(current);
+		return current;
+	};
+
+	placed.push(target.static ? target : pushUntilClear(target));
+
+	for (const item of others) {
+		placed.push(item.static ? item : pushUntilClear(item));
 	}
 
-	return result;
+	return placed;
 }
 
 /** Compact items upward to remove vertical gaps. */

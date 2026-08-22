@@ -49,11 +49,12 @@
 		showChrome?: boolean;
 		/** Remove body padding so media/text fill the frame. */
 		flush?: boolean;
-		/**
-		 * Selection chrome for canva: true = selected (border on; handles on hover),
+		/** Selection chrome for canva: true = selected (border on; handles on hover),
 		 * false = hide handles. Default: handles on hover.
 		 */
 		handlesVisible?: boolean;
+		/** Limit which resize edges are shown (grid mode). Default: all edges. */
+		resizeEdges?: WidgetResizeEdge[];
 		/**
 		 * Raise z-index while selected (`handlesVisible`). Canvas layers should
 		 * set `false` so stacking order stays truthful; drag still raises via `mode`.
@@ -106,6 +107,7 @@
 		showChrome = true,
 		flush = false,
 		handlesVisible,
+		resizeEdges,
 		raiseOnSelect = true,
 		stackIndex,
 		transform: frameTransform,
@@ -151,7 +153,14 @@
 	/** Tamaño local cuando resizable sin freeform (EditableChrome, etc.) */
 	let localW = $state<number | null>(null);
 	let localH = $state<number | null>(null);
-	let rootEl = $state<HTMLDivElement | null>(null);
+	let rootEl: HTMLDivElement | null = null;
+
+	function attachRoot(node: HTMLElement) {
+		rootEl = node as HTMLDivElement;
+		return () => {
+			if (rootEl === node) rootEl = null;
+		};
+	}
 
 	const showDragHandle = $derived(showChrome && (editable || freeform) && draggable);
 	const showResizeHandle = $derived((editable || freeform) && resizable && !collapsed);
@@ -379,28 +388,54 @@
 	];
 
 	const freeformEdgesCanva: { edge: WidgetResizeEdge; class: string }[] = [
-		{ edge: 'n', class: 'left-1/2 top-0 h-3 w-3 -translate-x-1/2 -translate-y-1/2 cursor-n-resize' },
-		{ edge: 's', class: 'left-1/2 bottom-0 h-3 w-3 -translate-x-1/2 translate-y-1/2 cursor-s-resize' },
-		{ edge: 'e', class: 'top-1/2 right-0 h-3 w-3 translate-x-1/2 -translate-y-1/2 cursor-e-resize' },
-		{ edge: 'w', class: 'top-1/2 left-0 h-3 w-3 -translate-x-1/2 -translate-y-1/2 cursor-w-resize' },
-		{ edge: 'nw', class: 'left-0 top-0 h-3 w-3 -translate-x-1/2 -translate-y-1/2 cursor-nw-resize' },
-		{ edge: 'ne', class: 'right-0 top-0 h-3 w-3 translate-x-1/2 -translate-y-1/2 cursor-ne-resize' },
-		{ edge: 'sw', class: 'bottom-0 left-0 h-3 w-3 -translate-x-1/2 translate-y-1/2 cursor-sw-resize' },
-		{ edge: 'se', class: 'bottom-0 right-0 h-3 w-3 translate-x-1/2 translate-y-1/2 cursor-se-resize' }
+		{
+			edge: 'n',
+			class: 'left-1/2 top-0 h-3 w-3 -translate-x-1/2 -translate-y-1/2 cursor-n-resize'
+		},
+		{
+			edge: 's',
+			class: 'left-1/2 bottom-0 h-3 w-3 -translate-x-1/2 translate-y-1/2 cursor-s-resize'
+		},
+		{
+			edge: 'e',
+			class: 'top-1/2 right-0 h-3 w-3 translate-x-1/2 -translate-y-1/2 cursor-e-resize'
+		},
+		{
+			edge: 'w',
+			class: 'top-1/2 left-0 h-3 w-3 -translate-x-1/2 -translate-y-1/2 cursor-w-resize'
+		},
+		{
+			edge: 'nw',
+			class: 'left-0 top-0 h-3 w-3 -translate-x-1/2 -translate-y-1/2 cursor-nw-resize'
+		},
+		{
+			edge: 'ne',
+			class: 'right-0 top-0 h-3 w-3 translate-x-1/2 -translate-y-1/2 cursor-ne-resize'
+		},
+		{
+			edge: 'sw',
+			class: 'bottom-0 left-0 h-3 w-3 -translate-x-1/2 translate-y-1/2 cursor-sw-resize'
+		},
+		{
+			edge: 'se',
+			class: 'bottom-0 right-0 h-3 w-3 translate-x-1/2 translate-y-1/2 cursor-se-resize'
+		}
 	];
 
 	const freeformEdges = $derived(isCanva ? freeformEdgesCanva : freeformEdgesDefault);
+	const visibleResizeEdges = $derived.by(() => {
+		const allowed = resizeEdges ?? freeformEdges.map((h) => h.edge);
+		const set = new Set(allowed);
+		return freeformEdges.filter((h) => set.has(h.edge));
+	});
 
 	const rootStyle = $derived.by(() => {
 		if (freeform) {
-			const xf = frameTransform
-				? `transform:${frameTransform};transform-origin:0 0;`
-				: '';
+			const xf = frameTransform ? `transform:${frameTransform};transform-origin:0 0;` : '';
 			return `left:${rect.x}px;top:${rect.y}px;width:${rect.w}px;height:${collapsed ? 'auto' : `${rect.h}px`};z-index:${paintZ};${xf}`;
 		}
 		if (localW != null) {
-			const h =
-				collapsed || localH == null ? 'auto' : `${localH}px`;
+			const h = collapsed || localH == null ? 'auto' : `${localH}px`;
 			return `width:${localW}px;height:${h};`;
 		}
 		return undefined;
@@ -427,7 +462,7 @@
 		return [
 			'absolute z-10 touch-none rounded-sm bg-transparent transition-colors',
 			'hover:bg-brand-500/70 focus-visible:bg-brand-500/70 focus-visible:outline-none',
-			mode === 'resize'
+			mode === 'resize' || handlesVisible === true
 				? 'pointer-events-auto bg-brand-500/40'
 				: 'pointer-events-none group-hover/widget:pointer-events-auto group-hover/widget:bg-brand-500/35'
 		].join(' ');
@@ -440,17 +475,18 @@
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
-	bind:this={rootEl}
+	{@attach attachRoot}
 	class={[
-		'group/widget flex min-h-0 min-w-0 flex-col overflow-visible',
-		!isCanva && 'overflow-hidden rounded-xl border border-border bg-surface-elevated',
+		'group/widget min-h-0 min-w-0 flex flex-col overflow-visible',
+		!isCanva && showChrome && 'rounded-xl border-border bg-surface-elevated overflow-hidden border',
+		!isCanva && !showChrome && 'bg-transparent',
 		isCanva && 'bg-transparent',
 		canvaBorder && 'outline outline-2 outline-[#3b82f6]',
-		freeform ? 'absolute shadow-md' : 'relative',
+		freeform ? 'shadow-md absolute' : 'relative',
 		isCanva && 'shadow-none',
 		collapsed && 'h-auto self-start',
 		mode === 'move' && 'cursor-grabbing opacity-95',
-		mode === 'resize' && !isCanva && 'ring-1 ring-brand-500/40',
+		mode === 'resize' && !isCanva && 'ring-brand-500/40 ring-1',
 		!showChrome && freeform && draggable && 'cursor-move',
 		className
 	]}
@@ -470,16 +506,14 @@
 	{#if showHeader}
 		<div
 			class={[
-				'flex shrink-0 items-center gap-2 border-b border-border px-3 py-2.5',
+				'gap-2 border-border px-3 py-2.5 flex shrink-0 items-center border-b',
 				showDragHandle && 'touch-none',
 				collapsed && 'border-b-0'
 			]}
 			onpointerdown={(e) => {
-				// En freeform, permite arrastrar desde el header completo.
-				// Excluimos botones para no interferir con reload/collapse/remove.
-				if (!freeform || !showDragHandle) return;
+				if (!showDragHandle) return;
 				const target = e.target as HTMLElement;
-				if (target?.closest('button')) return;
+				if (target?.closest('button, a, [data-resize-handle]')) return;
 				beginMove(e);
 			}}
 		>
@@ -492,23 +526,20 @@
 						beginMove(e);
 					}}
 				>
-					<DragHandle
-						size={freeform ? 'md' : 'sm'}
-						label={`Drag ${title ?? 'widget'}`}
-					/>
+					<DragHandle size={freeform ? 'md' : 'sm'} label={`Drag ${title ?? 'widget'}`} />
 				</div>
 			{/if}
 
 			<div class="min-w-0 flex-1">
 				{#if title}
-					<h3 class="truncate text-sm font-semibold leading-none text-primary">{title}</h3>
+					<h3 class="text-sm font-semibold text-primary truncate leading-none">{title}</h3>
 				{/if}
 				{#if description}
-					<p class="mt-0.5 truncate text-[11px] leading-none text-muted">{description}</p>
+					<p class="mt-0.5 text-muted truncate text-[11px] leading-none">{description}</p>
 				{/if}
 			</div>
 
-			<div class="flex shrink-0 items-center gap-0.5">
+			<div class="gap-0.5 flex shrink-0 items-center">
 				{#if actions}
 					{@render actions()}
 				{/if}
@@ -521,10 +552,7 @@
 						disabled={busy}
 						onclick={() => handleReload()}
 					>
-						<RefreshCw
-							class={['h-3.5 w-3.5', busy && 'animate-spin']}
-							aria-hidden="true"
-						/>
+						<RefreshCw class={['h-3.5 w-3.5', busy && 'animate-spin']} aria-hidden="true" />
 					</button>
 				{/if}
 
@@ -552,7 +580,11 @@
 						type="button"
 						class={[btnClass, 'hover:bg-red-500/10 hover:text-red-600']}
 						aria-label={`Remove ${title ?? 'widget'}`}
-						onclick={() => onremove?.()}
+						onpointerdown={(e) => e.stopPropagation()}
+						onclick={(e) => {
+							e.stopPropagation();
+							onremove?.();
+						}}
 					>
 						<X class="h-3.5 w-3.5" aria-hidden="true" />
 					</button>
@@ -562,16 +594,11 @@
 	{/if}
 
 	{#if !collapsed}
-		<div
-			class={[
-				'relative min-h-0 flex-1',
-				flush ? 'overflow-hidden p-0' : 'overflow-auto p-3'
-			]}
-		>
+		<div class={['min-h-0 relative flex-1', flush ? 'p-0 overflow-hidden' : 'p-3 overflow-auto']}>
 			{#if busy}
 				{#if loadingMode === 'spinner'}
 					<div
-						class="flex min-h-32 flex-col items-center justify-center gap-2"
+						class="min-h-32 gap-2 flex flex-col items-center justify-center"
 						aria-busy="true"
 						aria-live="polite"
 					>
@@ -588,10 +615,10 @@
 				{/if}
 			{:else if empty}
 				<div
-					class="flex h-full min-h-32 flex-col items-center justify-center rounded-lg border border-dashed border-border bg-surface/50 px-4 py-6 text-center"
+					class="min-h-32 rounded-lg border-border bg-surface/50 px-4 py-6 flex h-full flex-col items-center justify-center border border-dashed text-center"
 				>
 					<div
-						class="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-950/50 dark:text-brand-400"
+						class="mb-3 h-10 w-10 rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-950/50 dark:text-brand-400 flex items-center justify-center"
 					>
 						<svg
 							viewBox="0 0 24 24"
@@ -614,8 +641,7 @@
 	{/if}
 
 	{#if showResizeHandle}
-		{#each freeformEdges as h (h.edge)}
-			<!-- svelte-ignore a11y_no_static_element_interactions -->
+		{#each visibleResizeEdges as h (h.edge)}
 			<div
 				data-resize-handle
 				class={[edgeAccent, h.class]}
@@ -630,12 +656,18 @@
 			<!-- SE grip (visual only, small) -->
 			<div
 				class={[
-					'pointer-events-none absolute bottom-0.5 right-0.5 z-20 flex h-2.5 w-2.5 items-center justify-center',
-					'text-muted/60 transition-colors group-hover/widget:text-brand-500'
+					'bottom-0.5 right-0.5 h-2.5 w-2.5 pointer-events-none absolute z-20 flex items-center justify-center',
+					'text-muted/60 group-hover/widget:text-brand-500 transition-colors'
 				]}
 				aria-hidden="true"
 			>
-				<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.75" class="h-2.5 w-2.5">
+				<svg
+					viewBox="0 0 12 12"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="1.75"
+					class="h-2.5 w-2.5"
+				>
 					<path stroke-linecap="round" d="M7 11L11 7M4 11L11 4" />
 				</svg>
 			</div>
