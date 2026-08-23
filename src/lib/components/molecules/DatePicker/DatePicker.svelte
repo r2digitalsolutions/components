@@ -91,7 +91,8 @@
 
 	let triggerEl = $state<HTMLElement | null>(null);
 	let panelEl = $state<HTMLDivElement | null>(null);
-	let panelStyle = $state('margin:0;inset:auto;');
+	/** Hide the native popover until top/left are applied (UA default is 0,0). */
+	let placed = $state(false);
 	let activeField = $state<'start' | 'end' | 'value'>('value');
 	let panelId = $state('');
 
@@ -128,9 +129,15 @@
 		return { side, align: align ?? (months === 2 ? 'center' : 'start') };
 	}
 
-	function positionPanel() {
-		if (!triggerEl || !panelEl) return;
-		if (!panelEl.matches(':popover-open')) return;
+	function estimatePanelSize() {
+		const monthW = months === 2 ? 288 : 320;
+		const panelW = months === 2 ? monthW * 2 + 24 : monthW + 16;
+		return { panelW, panelH: 360 };
+	}
+
+	function positionPanel(opts: { measure?: boolean; show?: boolean } = {}) {
+		if (!triggerEl) return;
+		if (opts.show) placed = true;
 
 		const trigger = triggerEl.getBoundingClientRect();
 		if (trigger.width < 2 && trigger.height < 2) return;
@@ -142,9 +149,16 @@
 		const viewTop = vv?.offsetTop ?? 0;
 		const gap = 8;
 		const pad = 8;
-
-		const panelW = Math.min(panelEl.offsetWidth || 320, viewW - pad * 2);
-		const panelH = Math.min(panelEl.offsetHeight || 360, 420);
+		const estimated = estimatePanelSize();
+		const canMeasure = opts.measure !== false && !!panelEl?.matches(':popover-open');
+		const panelW = Math.min(
+			canMeasure && panelEl?.offsetWidth ? panelEl.offsetWidth : estimated.panelW,
+			viewW - pad * 2
+		);
+		const panelH = Math.min(
+			canMeasure && panelEl?.offsetHeight ? panelEl.offsetHeight : estimated.panelH,
+			420
+		);
 
 		const fixed = parsePlacement(placement);
 		let side: 'top' | 'bottom' = fixed?.side ?? 'bottom';
@@ -167,15 +181,19 @@
 		left = Math.min(Math.max(viewLeft + pad, left), viewLeft + viewW - panelW - pad);
 		top = Math.min(Math.max(viewTop + pad, top), viewTop + viewH - panelH - pad);
 
-		panelStyle = [
-			'margin:0',
-			'inset:auto',
-			`top:${Math.round(top)}px`,
-			`left:${Math.round(left)}px`,
-			'right:auto',
-			'bottom:auto',
-			'width:max-content'
-		].join(';');
+		// Imperative styles in `beforetoggle`: a Svelte `style={}` binding
+		// flushes too late and the UA popover paints at 0,0 first.
+		if (panelEl) {
+			const s = panelEl.style;
+			s.setProperty('margin', '0');
+			s.setProperty('inset', 'auto');
+			s.setProperty('top', `${Math.round(top)}px`);
+			s.setProperty('left', `${Math.round(left)}px`);
+			s.setProperty('right', 'auto');
+			s.setProperty('bottom', 'auto');
+			s.setProperty('width', 'max-content');
+			s.setProperty('visibility', placed ? 'visible' : 'hidden');
+		}
 	}
 
 	function schedulePosition() {
@@ -183,7 +201,7 @@
 			positionPanel();
 			requestAnimationFrame(() => {
 				positionPanel();
-				requestAnimationFrame(positionPanel);
+				requestAnimationFrame(() => positionPanel({ show: true }));
 			});
 		});
 	}
@@ -205,8 +223,16 @@
 	}
 
 	function handleBeforeToggle(event: ToggleEvent) {
-		if (event.newState === 'open' && disabled) {
-			event.preventDefault();
+		if (event.newState === 'open') {
+			if (disabled) {
+				event.preventDefault();
+				return;
+			}
+			placed = false;
+			// Set top/left before the first paint — UA popover defaults to 0,0.
+			positionPanel({ measure: false });
+		} else {
+			placed = false;
 		}
 	}
 
@@ -214,6 +240,7 @@
 		const next = event.newState === 'open';
 		open = next;
 		if (next) schedulePosition();
+		else placed = false;
 	}
 
 	$effect(() => {
@@ -427,7 +454,7 @@
 		aria-label="Choose date"
 		onbeforetoggle={handleBeforeToggle}
 		ontoggle={handleToggle}
-		style={panelStyle}
+		data-placed={placed ? true : undefined}
 		class={[
 			'datepicker-popover m-0 w-max rounded-2xl border border-border bg-surface-elevated p-2 shadow-xl outline-none',
 			months === 2 ? 'max-w-[min(42rem,calc(100vw-1rem))]' : 'max-w-[20rem]'
@@ -494,6 +521,11 @@
 
 	.datepicker-popover:popover-open {
 		display: block;
+	}
+
+	.datepicker-popover:popover-open:not([data-placed]) {
+		visibility: hidden;
+		pointer-events: none;
 	}
 
 	.datepicker-popover:not(:popover-open) {
