@@ -95,6 +95,9 @@
 	let placed = $state(false);
 	let activeField = $state<'start' | 'end' | 'value'>('value');
 	let panelId = $state('');
+	/** In-progress range while the popover is open. Parent props stay put until both days exist. */
+	let draftStart = $state('');
+	let draftEnd = $state('');
 
 	$effect(() => {
 		panelId ||= createId('datepicker');
@@ -111,6 +114,9 @@
 		});
 	}
 
+	const shownStart = $derived(open && mode === 'range' ? draftStart : start);
+	const shownEnd = $derived(open && mode === 'range' ? draftEnd : end);
+
 	const fieldLabel = $derived.by(() => {
 		if (mode === 'single') return value ? formatIso(value) : placeholder;
 		if (mode === 'multiple') {
@@ -118,8 +124,8 @@
 			if (values.length === 1) return formatIso(values[0]);
 			return `${values.length} dates`;
 		}
-		if (start && end) return `${formatIso(start)} → ${formatIso(end)}`;
-		if (start) return `${formatIso(start)} → …`;
+		if (shownStart && shownEnd) return `${formatIso(shownStart)} → ${formatIso(shownEnd)}`;
+		if (shownStart) return `${formatIso(shownStart)} → …`;
 		return placeholder;
 	});
 
@@ -228,6 +234,7 @@
 				event.preventDefault();
 				return;
 			}
+			beginRangeDraft();
 			placed = false;
 			// Set top/left before the first paint — UA popover defaults to 0,0.
 			positionPanel({ measure: false });
@@ -236,8 +243,18 @@
 		}
 	}
 
+	function beginRangeDraft() {
+		draftStart = start;
+		draftEnd = end;
+		// Opening "Hasta" with a complete range: keep start, wait for a new end.
+		if (mode === 'range' && activeField === 'end' && start && end) {
+			draftEnd = '';
+		}
+	}
+
 	function handleToggle(event: ToggleEvent) {
 		const next = event.newState === 'open';
+		if (next) beginRangeDraft();
 		open = next;
 		if (next) schedulePosition();
 		else placed = false;
@@ -268,16 +285,22 @@
 		start: string;
 		end: string;
 	}) {
+		if (mode === 'range') {
+			// Keep the in-progress day local. Parent (URL/filters) only gets a complete range.
+			if (detail.start && detail.end) {
+				start = detail.start;
+				end = detail.end;
+				onchange?.(detail);
+				if (closeOnSelect) setOpen(false);
+			}
+			return;
+		}
+
 		onchange?.(detail);
 
 		if (!closeOnSelect) return;
 
 		if (mode === 'single' && detail.value) {
-			setOpen(false);
-			return;
-		}
-
-		if (mode === 'range' && detail.start && detail.end) {
 			setOpen(false);
 		}
 	}
@@ -340,8 +363,8 @@
 				]}
 			>
 				<span class="text-[11px] font-medium tracking-wide text-muted uppercase">{startLabel}</span>
-				<span class={['truncate text-sm', start ? 'text-primary' : 'text-muted']}>
-					{start ? formatIso(start) : startPlaceholder}
+				<span class={['truncate text-sm', shownStart ? 'text-primary' : 'text-muted']}>
+					{shownStart ? formatIso(shownStart) : startPlaceholder}
 				</span>
 			</button>
 			<div class="w-px self-stretch bg-border" aria-hidden="true"></div>
@@ -363,8 +386,8 @@
 				]}
 			>
 				<span class="text-[11px] font-medium tracking-wide text-muted uppercase">{endLabel}</span>
-				<span class={['truncate text-sm', end ? 'text-primary' : 'text-muted']}>
-					{end ? formatIso(end) : endPlaceholder}
+				<span class={['truncate text-sm', shownEnd ? 'text-primary' : 'text-muted']}>
+					{shownEnd ? formatIso(shownEnd) : endPlaceholder}
 				</span>
 			</button>
 			{#if hasValue && !disabled}
@@ -460,7 +483,7 @@
 			months === 2 ? 'max-w-[min(42rem,calc(100vw-1rem))]' : 'max-w-[20rem]'
 		]}
 	>
-		{#key `${open}:${start}:${value}`}
+		{#key open}
 			{#if mode === 'single'}
 				<Calendar
 					mode="single"
@@ -493,8 +516,8 @@
 				<Calendar
 					mode="range"
 					{months}
-					bind:start
-					bind:end
+					bind:start={draftStart}
+					bind:end={draftEnd}
 					{min}
 					{max}
 					{disabledDates}
