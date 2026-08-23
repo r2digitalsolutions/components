@@ -23,6 +23,7 @@
 		variant?: 'field' | 'split';
 		closeOnSelect?: boolean;
 		placement?: DatePickerPlacement;
+		locale?: string;
 		class?: string;
 		onchange?: (detail: { start: string; end: string }) => void;
 	}
@@ -47,6 +48,7 @@
 		variant = 'split',
 		closeOnSelect = true,
 		placement = 'auto',
+		locale,
 		class: className = '',
 		onchange
 	}: DateRangePickerProps = $props();
@@ -73,6 +75,7 @@
 	{variant}
 	{closeOnSelect}
 	{placement}
+	{locale}
 	class={className}
 	onchange={(detail) => onchange?.({ start: detail.start, end: detail.end })}
 />

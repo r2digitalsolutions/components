@@ -3,6 +3,8 @@
 		type CalendarDot,
 		type CalendarMode
 	} from '../Calendar/Calendar.svelte';
+	import { i18n } from '$lib/utils/i18n.svelte.js';
+	import { resolveLocaleTag } from '$lib/utils/i18n.js';
 
 	export type DatePickerPlacement =
 		| 'auto'
@@ -43,6 +45,8 @@
 		 * alignment from available viewport space.
 		 */
 		placement?: DatePickerPlacement;
+		/** BCP 47 locale for displayed dates. Defaults to the components i18n locale. */
+		locale?: string;
 		class?: string;
 		onchange?: (detail: {
 			mode: CalendarMode;
@@ -76,9 +80,12 @@
 		variant = 'field',
 		closeOnSelect = true,
 		placement = 'auto',
+		locale,
 		class: className = '',
 		onchange
 	}: DatePickerProps = $props();
+
+	const dateLocale = $derived(locale || resolveLocaleTag(i18n.locale));
 
 	let rootEl = $state<HTMLDivElement | null>(null);
 	let panelEl = $state<HTMLDivElement | null>(null);
@@ -92,9 +99,9 @@
 		if (!iso) return '';
 		const [y, m, d] = iso.split('-').map(Number);
 		const date = new Date(y, m - 1, d);
-		return date.toLocaleDateString('en', {
-			month: 'short',
+		return date.toLocaleDateString(dateLocale, {
 			day: 'numeric',
+			month: 'short',
 			year: 'numeric'
 		});
 	}
@@ -277,7 +284,11 @@
 <div
 	class={[
 		'relative',
-		months === 2 ? 'w-full max-w-xl' : 'w-full min-w-[18rem] max-w-[20rem]',
+		variant === 'split'
+			? 'w-full'
+			: months === 2
+				? 'w-full max-w-xl'
+				: 'w-full min-w-[18rem] max-w-[20rem]',
 		className
 	]}
 	bind:this={rootEl}
@@ -330,7 +341,7 @@
 					type="button"
 					onclick={clear}
 					class="px-3 text-muted hover:text-primary"
-					aria-label="Clear dates"
+					aria-label={i18n.t('clearAll')}
 				>
 					<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 						<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -409,6 +420,7 @@
 					{enabledDates}
 					{dots}
 					framed={false}
+					locale={dateLocale}
 					onchange={handleChange}
 				/>
 			{:else if mode === 'multiple'}
@@ -422,6 +434,7 @@
 					{enabledDates}
 					{dots}
 					framed={false}
+					locale={dateLocale}
 					onchange={handleChange}
 				/>
 			{:else}
@@ -436,6 +449,7 @@
 					{enabledDates}
 					{dots}
 					framed={false}
+					locale={dateLocale}
 					onchange={handleChange}
 				/>
 			{/if}

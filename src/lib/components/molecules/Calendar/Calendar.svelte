@@ -29,6 +29,8 @@
 		dots?: CalendarDot[];
 		/** Show border/shadow chrome. */
 		framed?: boolean;
+		/** BCP 47 locale for weekday and month names. */
+		locale?: string;
 		class?: string;
 		onchange?: (detail: {
 			mode: CalendarMode;
@@ -52,6 +54,7 @@
 		enabledDates,
 		dots = [],
 		framed = true,
+		locale = 'en',
 		class: className = '',
 		onchange
 	}: CalendarProps = $props();
@@ -64,9 +67,15 @@
 	/** Which month column owns the month/year picker when months=2. */
 	let pickerOffset = $state(0);
 
-	const weekDays = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
-	const monthNames = Array.from({ length: 12 }, (_, i) =>
-		new Date(2000, i, 1).toLocaleString('en', { month: 'short' })
+	const weekDays = $derived(
+		Array.from({ length: 7 }, (_, i) =>
+			new Date(2024, 0, 1 + i).toLocaleDateString(locale, { weekday: 'short' })
+		)
+	);
+	const monthNames = $derived(
+		Array.from({ length: 12 }, (_, i) =>
+			new Date(2000, i, 1).toLocaleString(locale, { month: 'short' })
+		)
 	);
 
 	const viewYear = $derived(view.getFullYear());
