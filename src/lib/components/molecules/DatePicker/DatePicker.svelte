@@ -1,10 +1,12 @@
 <script lang="ts">
+	import { on } from 'svelte/events';
 	import Calendar, {
 		type CalendarDot,
 		type CalendarMode
 	} from '../Calendar/Calendar.svelte';
 	import { i18n } from '$lib/utils/i18n.svelte.js';
 	import { resolveLocaleTag } from '$lib/utils/i18n.js';
+	import { createId } from '$lib/utils/id.js';
 
 	export type DatePickerPlacement =
 		| 'auto'
@@ -87,12 +89,14 @@
 
 	const dateLocale = $derived(locale || resolveLocaleTag(i18n.locale));
 
-	let rootEl = $state<HTMLDivElement | null>(null);
+	let triggerEl = $state<HTMLElement | null>(null);
 	let panelEl = $state<HTMLDivElement | null>(null);
+	let panelStyle = $state('margin:0;inset:auto;');
 	let activeField = $state<'start' | 'end' | 'value'>('value');
-	let resolved = $state<{ side: 'top' | 'bottom'; align: 'start' | 'center' | 'end' | 'stretch' }>({
-		side: 'bottom',
-		align: months === 1 ? 'stretch' : 'center'
+	let panelId = $state('');
+
+	$effect(() => {
+		panelId ||= createId('datepicker');
 	});
 
 	function formatIso(iso: string) {
@@ -121,100 +125,114 @@
 	function parsePlacement(p: DatePickerPlacement) {
 		if (p === 'auto') return null;
 		const [side, align] = p.split('-') as ['top' | 'bottom', 'start' | 'center' | 'end' | undefined];
-		return {
-			side,
-			align: (align ?? (months === 1 ? 'stretch' : 'center')) as
-				| 'start'
-				| 'center'
-				| 'end'
-				| 'stretch'
-		};
+		return { side, align: align ?? (months === 2 ? 'center' : 'start') };
 	}
 
-	function updatePlacement() {
-		if (!rootEl || !panelEl) return;
+	function positionPanel() {
+		if (!triggerEl || !panelEl) return;
+		if (!panelEl.matches(':popover-open')) return;
+
+		const trigger = triggerEl.getBoundingClientRect();
+		if (trigger.width < 2 && trigger.height < 2) return;
+
+		const vv = window.visualViewport;
+		const viewW = vv?.width ?? window.innerWidth;
+		const viewH = vv?.height ?? window.innerHeight;
+		const viewLeft = vv?.offsetLeft ?? 0;
+		const viewTop = vv?.offsetTop ?? 0;
+		const gap = 8;
+		const pad = 8;
+
+		const panelW = Math.min(panelEl.offsetWidth || 320, viewW - pad * 2);
+		const panelH = Math.min(panelEl.offsetHeight || 360, 420);
 
 		const fixed = parsePlacement(placement);
-		if (fixed) {
-			resolved = {
-				side: fixed.side,
-				align: months === 1 && fixed.align === 'center' ? 'stretch' : fixed.align
-			};
-			return;
+		let side: 'top' | 'bottom' = fixed?.side ?? 'bottom';
+		if (!fixed) {
+			const spaceBelow = viewTop + viewH - trigger.bottom - gap - pad;
+			const spaceAbove = trigger.top - viewTop - gap - pad;
+			if (spaceBelow < panelH && spaceAbove > spaceBelow) side = 'top';
 		}
 
-		const trigger = rootEl.getBoundingClientRect();
-		const panel = panelEl.getBoundingClientRect();
-		const gap = 8;
-		const vw = window.innerWidth;
-		const vh = window.innerHeight;
+		const align = fixed?.align ?? (months === 2 ? 'center' : 'start');
 
-		const spaceBelow = vh - trigger.bottom - gap;
-		const spaceAbove = trigger.top - gap;
-		const side: 'top' | 'bottom' =
-			spaceBelow < panel.height && spaceAbove > spaceBelow ? 'top' : 'bottom';
+		let top = side === 'bottom' ? trigger.bottom + gap : trigger.top - panelH - gap;
+		let left =
+			align === 'end'
+				? trigger.right - panelW
+				: align === 'center'
+					? trigger.left + trigger.width / 2 - panelW / 2
+					: trigger.left;
 
-		let align: 'start' | 'center' | 'end' | 'stretch' = months === 1 ? 'stretch' : 'center';
+		left = Math.min(Math.max(viewLeft + pad, left), viewLeft + viewW - panelW - pad);
+		top = Math.min(Math.max(viewTop + pad, top), viewTop + viewH - panelH - pad);
 
-		if (months === 2 || align !== 'stretch') {
-			const centerLeft = trigger.left + trigger.width / 2 - panel.width / 2;
-			const startLeft = trigger.left;
-			const endLeft = trigger.right - panel.width;
-
-			const fits = (left: number) => left >= gap && left + panel.width <= vw - gap;
-
-			if (fits(centerLeft)) align = 'center';
-			else if (fits(startLeft)) align = 'start';
-			else if (fits(endLeft)) align = 'end';
-			else {
-				// pick least overflow
-				const overflows = [
-					{ align: 'center' as const, overflow: Math.max(0, -centerLeft) + Math.max(0, centerLeft + panel.width - vw) },
-					{ align: 'start' as const, overflow: Math.max(0, -startLeft) + Math.max(0, startLeft + panel.width - vw) },
-					{ align: 'end' as const, overflow: Math.max(0, -endLeft) + Math.max(0, endLeft + panel.width - vw) }
-				];
-				overflows.sort((a, b) => a.overflow - b.overflow);
-				align = overflows[0].align;
-			}
-		}
-
-		resolved = { side, align };
+		panelStyle = [
+			'margin:0',
+			'inset:auto',
+			`top:${Math.round(top)}px`,
+			`left:${Math.round(left)}px`,
+			'right:auto',
+			'bottom:auto',
+			'width:max-content'
+		].join(';');
 	}
 
-	$effect(() => {
-		if (!open) return;
-		const id = requestAnimationFrame(() => updatePlacement());
-		const onWin = () => updatePlacement();
-		window.addEventListener('resize', onWin);
-		window.addEventListener('scroll', onWin, true);
-		return () => {
-			cancelAnimationFrame(id);
-			window.removeEventListener('resize', onWin);
-			window.removeEventListener('scroll', onWin, true);
-		};
-	});
+	function schedulePosition() {
+		queueMicrotask(() => {
+			positionPanel();
+			requestAnimationFrame(() => {
+				positionPanel();
+				requestAnimationFrame(positionPanel);
+			});
+		});
+	}
+
+	function syncNative() {
+		if (!panelEl) return;
+		const isOpen = panelEl.matches(':popover-open');
+		try {
+			if (open && !isOpen) panelEl.showPopover();
+			else if (!open && isOpen) panelEl.hidePopover();
+		} catch {
+			/* ignore */
+		}
+	}
 
 	function setOpen(next: boolean) {
-		if (disabled) return;
+		if (disabled && next) return;
 		open = next;
 	}
 
-	function openField(field: 'start' | 'end' | 'value') {
-		if (disabled) return;
-		activeField = field;
-		open = true;
+	function handleBeforeToggle(event: ToggleEvent) {
+		if (event.newState === 'open' && disabled) {
+			event.preventDefault();
+		}
 	}
 
-	function onDocPointerDown(e: PointerEvent) {
-		if (!open || !rootEl) return;
-		const path = typeof e.composedPath === 'function' ? e.composedPath() : [];
-		if (path.includes(rootEl) || rootEl.contains(e.target as Node)) return;
-		setOpen(false);
+	function handleToggle(event: ToggleEvent) {
+		const next = event.newState === 'open';
+		open = next;
+		if (next) schedulePosition();
 	}
 
-	function onKey(e: KeyboardEvent) {
-		if (e.key === 'Escape' && open) setOpen(false);
-	}
+	$effect(() => {
+		open;
+		queueMicrotask(() => {
+			syncNative();
+			if (open) positionPanel();
+		});
+	});
+
+	$effect(() => {
+		if (!open) return;
+		const offResize = on(window, 'resize', () => positionPanel());
+		const offScroll = on(window, 'scroll', () => positionPanel(), { capture: true });
+		return () => {
+			offResize();
+			offScroll();
+		};
+	});
 
 	function handleChange(detail: {
 		mode: CalendarMode;
@@ -248,42 +266,14 @@
 	}
 
 	const hasValue = $derived(
-		mode === 'single'
-			? !!value
-			: mode === 'multiple'
-				? values.length > 0
-				: !!(start || end)
+		mode === 'single' ? !!value : mode === 'multiple' ? values.length > 0 : !!(start || end)
 	);
 
-	const panelClass = $derived.by(() => {
-		const { side, align } = resolved;
-		const vertical =
-			side === 'bottom' ? 'top-full mt-2' : 'bottom-full mb-2';
-
-		const horizontal =
-			align === 'stretch'
-				? 'left-0 right-0'
-				: align === 'center'
-					? 'left-1/2 -translate-x-1/2'
-					: align === 'end'
-						? 'right-0'
-						: 'left-0';
-
-		return [
-			'absolute z-50 rounded-2xl border border-border bg-surface-elevated p-2 shadow-xl',
-			vertical,
-			horizontal,
-			months === 2 && align !== 'stretch' ? 'w-max max-w-[min(100vw-1rem,42rem)]' : '',
-			months === 1 || align === 'stretch' ? 'w-auto' : ''
-		];
-	});
+	const triggerAction = $derived(variant === 'split' ? 'show' : 'toggle');
 </script>
-
-<svelte:document onpointerdown={onDocPointerDown} onkeydown={onKey} />
 
 <div
 	class={[
-		'relative',
 		variant === 'split'
 			? 'w-full'
 			: months === 2
@@ -291,7 +281,6 @@
 				: 'w-full min-w-[18rem] max-w-[20rem]',
 		className
 	]}
-	bind:this={rootEl}
 >
 	{#if label && variant === 'field'}
 		<span class="mb-1.5 block text-sm font-medium text-primary">{label}</span>
@@ -299,6 +288,7 @@
 
 	{#if variant === 'split' && mode === 'range'}
 		<div
+			bind:this={triggerEl}
 			class={[
 				'flex overflow-hidden rounded-xl border border-border bg-surface-elevated',
 				open && 'border-brand-500 ring-2 ring-brand-500/20',
@@ -308,14 +298,21 @@
 			<button
 				type="button"
 				{disabled}
-				onclick={() => openField('start')}
+				popovertarget={panelId}
+				popovertargetaction={triggerAction}
+				onclick={() => {
+					activeField = 'start';
+				}}
+				aria-expanded={open}
+				aria-haspopup="dialog"
+				aria-controls={panelId}
 				class={[
 					'flex min-w-0 flex-1 flex-col gap-0.5 px-3.5 py-2.5 text-left transition-colors',
 					'hover:bg-surface-overlay focus-visible:outline-none',
 					activeField === 'start' && open && 'bg-surface-overlay'
 				]}
 			>
-				<span class="text-[11px] font-medium uppercase tracking-wide text-muted">{startLabel}</span>
+				<span class="text-[11px] font-medium tracking-wide text-muted uppercase">{startLabel}</span>
 				<span class={['truncate text-sm', start ? 'text-primary' : 'text-muted']}>
 					{start ? formatIso(start) : startPlaceholder}
 				</span>
@@ -324,14 +321,21 @@
 			<button
 				type="button"
 				{disabled}
-				onclick={() => openField('end')}
+				popovertarget={panelId}
+				popovertargetaction={triggerAction}
+				onclick={() => {
+					activeField = 'end';
+				}}
+				aria-expanded={open}
+				aria-haspopup="dialog"
+				aria-controls={panelId}
 				class={[
 					'flex min-w-0 flex-1 flex-col gap-0.5 px-3.5 py-2.5 text-left transition-colors',
 					'hover:bg-surface-overlay focus-visible:outline-none',
 					activeField === 'end' && open && 'bg-surface-overlay'
 				]}
 			>
-				<span class="text-[11px] font-medium uppercase tracking-wide text-muted">{endLabel}</span>
+				<span class="text-[11px] font-medium tracking-wide text-muted uppercase">{endLabel}</span>
 				<span class={['truncate text-sm', end ? 'text-primary' : 'text-muted']}>
 					{end ? formatIso(end) : endPlaceholder}
 				</span>
@@ -351,6 +355,7 @@
 		</div>
 	{:else}
 		<div
+			bind:this={triggerEl}
 			class={[
 				'flex h-10 w-full items-center overflow-hidden rounded-xl border border-border bg-surface-elevated transition-colors',
 				open && 'border-brand-500 ring-2 ring-brand-500/20',
@@ -360,8 +365,14 @@
 			<button
 				type="button"
 				{disabled}
-				onclick={() => (open ? setOpen(false) : openField('value'))}
+				popovertarget={panelId}
+				popovertargetaction="toggle"
+				onclick={() => {
+					activeField = 'value';
+				}}
 				aria-expanded={open}
+				aria-haspopup="dialog"
+				aria-controls={panelId}
 				class={[
 					'flex h-full min-w-0 flex-1 items-center gap-2 px-3.5 text-left text-sm',
 					'hover:bg-surface-overlay focus-visible:outline-none',
@@ -393,7 +404,13 @@
 					class="h-full px-3 text-muted hover:bg-surface-overlay hover:text-primary"
 					aria-label="Clear"
 				>
-					<svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<svg
+						class="h-3.5 w-3.5"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+					>
 						<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
 					</svg>
 				</button>
@@ -401,58 +418,83 @@
 		</div>
 	{/if}
 
-	{#if open}
-		<div
-			bind:this={panelEl}
-			role="dialog"
-			aria-label="Choose date"
-			class={panelClass}
-			onpointerdown={(e) => e.stopPropagation()}
-		>
-			{#if mode === 'single'}
-				<Calendar
-					mode="single"
-					{months}
-					bind:value
-					{min}
-					{max}
-					{disabledDates}
-					{enabledDates}
-					{dots}
-					framed={false}
-					locale={dateLocale}
-					onchange={handleChange}
-				/>
-			{:else if mode === 'multiple'}
-				<Calendar
-					mode="multiple"
-					{months}
-					bind:values
-					{min}
-					{max}
-					{disabledDates}
-					{enabledDates}
-					{dots}
-					framed={false}
-					locale={dateLocale}
-					onchange={handleChange}
-				/>
-			{:else}
-				<Calendar
-					mode="range"
-					{months}
-					bind:start
-					bind:end
-					{min}
-					{max}
-					{disabledDates}
-					{enabledDates}
-					{dots}
-					framed={false}
-					locale={dateLocale}
-					onchange={handleChange}
-				/>
-			{/if}
-		</div>
-	{/if}
+	<!-- Native popover (top layer + light dismiss). Not <dialog>: date picker is non-modal. -->
+	<div
+		bind:this={panelEl}
+		id={panelId}
+		popover="auto"
+		role="dialog"
+		aria-label="Choose date"
+		onbeforetoggle={handleBeforeToggle}
+		ontoggle={handleToggle}
+		style={panelStyle}
+		class={[
+			'datepicker-popover m-0 w-max rounded-2xl border border-border bg-surface-elevated p-2 shadow-xl outline-none',
+			months === 2 ? 'max-w-[min(42rem,calc(100vw-1rem))]' : 'max-w-[20rem]'
+		]}
+	>
+		{#if mode === 'single'}
+			<Calendar
+				mode="single"
+				{months}
+				bind:value
+				{min}
+				{max}
+				{disabledDates}
+				{enabledDates}
+				{dots}
+				framed={false}
+				locale={dateLocale}
+				onchange={handleChange}
+			/>
+		{:else if mode === 'multiple'}
+			<Calendar
+				mode="multiple"
+				{months}
+				bind:values
+				{min}
+				{max}
+				{disabledDates}
+				{enabledDates}
+				{dots}
+				framed={false}
+				locale={dateLocale}
+				onchange={handleChange}
+			/>
+		{:else}
+			<Calendar
+				mode="range"
+				{months}
+				bind:start
+				bind:end
+				{min}
+				{max}
+				{disabledDates}
+				{enabledDates}
+				{dots}
+				framed={false}
+				locale={dateLocale}
+				onchange={handleChange}
+			/>
+		{/if}
+	</div>
 </div>
+
+<style>
+	/* UA popover is inset:0 + margin:auto (viewport-centered and stretched). */
+	.datepicker-popover {
+		position: fixed;
+		inset: unset;
+		margin: 0;
+		width: max-content;
+		height: max-content;
+	}
+
+	.datepicker-popover:popover-open {
+		display: block;
+	}
+
+	.datepicker-popover:not(:popover-open) {
+		display: none;
+	}
+</style>

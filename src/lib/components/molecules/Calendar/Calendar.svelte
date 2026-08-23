@@ -262,7 +262,7 @@
 		const isToday = iso === todayIso;
 
 		return [
-			'relative flex aspect-square min-h-9 items-center justify-center rounded-lg text-sm transition-colors',
+			'relative flex size-9 items-center justify-center rounded-lg text-sm transition-colors',
 			'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30',
 			disabled && 'cursor-not-allowed opacity-30',
 			!disabled && !selected && !mid && 'text-primary hover:bg-surface-overlay',
@@ -303,7 +303,7 @@
 		'max-w-full bg-surface-elevated',
 		framed && 'rounded-2xl border border-border p-3 shadow-sm',
 		!framed && 'p-0.5',
-		dual && panel === 'days' ? 'w-fit' : framed ? 'w-80' : 'w-full',
+		dual && panel === 'days' ? 'w-fit' : 'w-80',
 		className
 	]}
 >
@@ -369,7 +369,7 @@
 					<div class="grid grid-cols-7 gap-1.5">
 						{#each grid.cells as cell, i (cell.date || `e-${grid.offset}-${i}`)}
 							{#if !cell.inMonth}
-								<span class="aspect-square min-h-9"></span>
+								<span class="size-9"></span>
 							{:else}
 								{@const color = dotMap.get(cell.date)}
 								<button
