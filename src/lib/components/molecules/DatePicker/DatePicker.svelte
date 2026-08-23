@@ -433,50 +433,52 @@
 			months === 2 ? 'max-w-[min(42rem,calc(100vw-1rem))]' : 'max-w-[20rem]'
 		]}
 	>
-		{#if mode === 'single'}
-			<Calendar
-				mode="single"
-				{months}
-				bind:value
-				{min}
-				{max}
-				{disabledDates}
-				{enabledDates}
-				{dots}
-				framed={false}
-				locale={dateLocale}
-				onchange={handleChange}
-			/>
-		{:else if mode === 'multiple'}
-			<Calendar
-				mode="multiple"
-				{months}
-				bind:values
-				{min}
-				{max}
-				{disabledDates}
-				{enabledDates}
-				{dots}
-				framed={false}
-				locale={dateLocale}
-				onchange={handleChange}
-			/>
-		{:else}
-			<Calendar
-				mode="range"
-				{months}
-				bind:start
-				bind:end
-				{min}
-				{max}
-				{disabledDates}
-				{enabledDates}
-				{dots}
-				framed={false}
-				locale={dateLocale}
-				onchange={handleChange}
-			/>
-		{/if}
+		{#key `${open}:${start}:${value}`}
+			{#if mode === 'single'}
+				<Calendar
+					mode="single"
+					{months}
+					bind:value
+					{min}
+					{max}
+					{disabledDates}
+					{enabledDates}
+					{dots}
+					framed={false}
+					locale={dateLocale}
+					onchange={handleChange}
+				/>
+			{:else if mode === 'multiple'}
+				<Calendar
+					mode="multiple"
+					{months}
+					bind:values
+					{min}
+					{max}
+					{disabledDates}
+					{enabledDates}
+					{dots}
+					framed={false}
+					locale={dateLocale}
+					onchange={handleChange}
+				/>
+			{:else}
+				<Calendar
+					mode="range"
+					{months}
+					bind:start
+					bind:end
+					{min}
+					{max}
+					{disabledDates}
+					{enabledDates}
+					{dots}
+					framed={false}
+					locale={dateLocale}
+					onchange={handleChange}
+				/>
+			{/if}
+		{/key}
 	</div>
 </div>
 

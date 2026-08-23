@@ -62,7 +62,22 @@
 	const today = new Date();
 	const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
-	let view = $state(new Date(today.getFullYear(), today.getMonth(), 1));
+	function monthFromIso(iso: string | undefined) {
+		if (!iso) return null;
+		const [y, m] = iso.split('-').map(Number);
+		if (!Number.isFinite(y) || !Number.isFinite(m)) return null;
+		return new Date(y, m - 1, 1);
+	}
+
+	function selectionIso() {
+		if (mode === 'range') return start;
+		if (mode === 'multiple') return values[0];
+		return value;
+	}
+
+	let view = $state(
+		monthFromIso(selectionIso()) ?? new Date(today.getFullYear(), today.getMonth(), 1)
+	);
 	let panel = $state<Panel>('days');
 	/** Which month column owns the month/year picker when months=2. */
 	let pickerOffset = $state(0);
