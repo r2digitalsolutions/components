@@ -1,6 +1,4 @@
 <script lang="ts">
-	import { createId } from '$lib/utils/id.js';
-
 	interface ToggleProps {
 		checked?: boolean;
 		disabled?: boolean;
@@ -23,12 +21,6 @@
 		onchange
 	}: ToggleProps = $props();
 
-	let autoId = $state<string | undefined>(undefined);
-	$effect(() => {
-		if (id == null) autoId ??= createId('toggle');
-	});
-	const inputId = $derived(id ?? autoId);
-
 	const trackClasses = {
 		sm: 'h-4 w-7',
 		md: 'h-5 w-9',
@@ -47,32 +39,35 @@
 		lg: 'translate-x-5'
 	};
 
-	function handleChange(e: Event) {
-		const target = e.target as HTMLInputElement;
-		checked = target.checked;
+	function toggle() {
+		if (disabled) return;
+		checked = !checked;
 		onchange?.(checked);
+	}
+
+	function handleKeydown(event: KeyboardEvent) {
+		if (event.key !== 'Enter') return;
+		event.preventDefault();
+		toggle();
 	}
 </script>
 
-<label
+<button
+	type="button"
+	id={id}
+	role="switch"
+	aria-checked={checked}
+	aria-label={label}
+	{disabled}
 	class={[
-		'inline-flex items-center gap-2.5 cursor-pointer select-none',
+		'inline-flex items-center gap-2.5 select-none',
 		labelPosition === 'left' && 'flex-row-reverse',
-		disabled && 'opacity-50 cursor-not-allowed',
+		disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
 		className
 	]}
-	for={inputId}
+	onclick={toggle}
+	onkeydown={handleKeydown}
 >
-	<input
-		id={inputId}
-		type="checkbox"
-		class="sr-only"
-		checked={checked}
-		{disabled}
-		onchange={handleChange}
-	/>
-
-	<!-- Track -->
 	<span
 		class={[
 			'relative inline-flex items-center shrink-0 rounded-full transition-colors duration-200 ease-in-out',
@@ -96,4 +91,4 @@
 	{#if label}
 		<span class="text-sm font-medium text-primary">{label}</span>
 	{/if}
-</label>
+</button>
