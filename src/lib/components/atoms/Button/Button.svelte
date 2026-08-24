@@ -46,7 +46,7 @@
 		ghost:
 			'text-secondary hover:text-primary hover:bg-surface-overlay focus-visible:ring-brand-500 active:scale-[0.98]',
 		outline:
-			'border-2 border-brand-500 text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-950 focus-visible:ring-brand-500 active:scale-[0.98]',
+			'border border-border text-primary hover:bg-surface-overlay hover:border-border-strong focus-visible:ring-brand-500 active:scale-[0.98]',
 		destructive:
 			'bg-red-500 text-white hover:bg-red-600 active:bg-red-700 focus-visible:ring-red-500 shadow-sm hover:shadow-md active:scale-[0.98]'
 	};
