@@ -34,10 +34,6 @@
 
 	let text = $state(String(value));
 
-	$effect(() => {
-		text = String(value);
-	});
-
 	const canDec = $derived(!disabled && (min === undefined || value > min));
 	const canInc = $derived(!disabled && (max === undefined || value < max));
 
@@ -52,15 +48,38 @@
 		return next;
 	}
 
+	/** Avoid float noise like `30.31000000000005` when stepping by 0.01. */
+	function decimalsForStep(s: number): number {
+		const str = String(s);
+		const dot = str.indexOf('.');
+		return dot === -1 ? 0 : str.length - dot - 1;
+	}
+
+	function roundToStep(n: number): number {
+		const decimals = decimalsForStep(step);
+		if (decimals <= 0) return Math.round(n);
+		const factor = 10 ** decimals;
+		return Math.round((n + Number.EPSILON) * factor) / factor;
+	}
+
+	function formatValue(n: number): string {
+		const decimals = decimalsForStep(step);
+		return decimals > 0 ? n.toFixed(decimals) : String(n);
+	}
+
+	$effect(() => {
+		text = formatValue(value);
+	});
+
 	function commit(raw: string) {
 		const parsed = Number(raw);
 		if (Number.isNaN(parsed)) {
-			text = String(value);
+			text = formatValue(value);
 			return;
 		}
-		const next = clamp(parsed);
+		const next = clamp(roundToStep(parsed));
 		value = next;
-		text = String(next);
+		text = formatValue(next);
 		onchange?.(next);
 	}
 
@@ -68,9 +87,9 @@
 		if (disabled) return;
 		if (dir < 0 && !canDec) return;
 		if (dir > 0 && !canInc) return;
-		const next = clamp(value + dir * step);
+		const next = clamp(roundToStep(value + dir * step));
 		value = next;
-		text = String(next);
+		text = formatValue(next);
 		onchange?.(next);
 	}
 </script>
