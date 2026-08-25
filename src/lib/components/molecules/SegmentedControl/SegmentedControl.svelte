@@ -58,8 +58,8 @@
 				sizeClasses[size],
 				fullWidth && 'flex-1',
 				active === item.id
-					? 'bg-surface-elevated text-primary shadow-sm'
-					: 'text-secondary hover:text-primary',
+					? 'bg-brand-500 text-white shadow-sm'
+					: 'text-secondary hover:bg-surface-elevated/70 hover:text-primary',
 				item.disabled && 'cursor-not-allowed opacity-40'
 			]}
 		>
