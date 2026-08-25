@@ -90,7 +90,11 @@
 	let path = $state<string[]>([]);
 	let lastSelectedId = $state<string | null>(null);
 
-	function findPathToItem(list: DropdownItem[], targetId: string, parents: string[] = []): string[] | null {
+	function findPathToItem(
+		list: DropdownItem[],
+		targetId: string,
+		parents: string[] = []
+	): string[] | null {
 		for (const item of list) {
 			if (item.id === targetId) return parents;
 			if (item.children?.length) {
@@ -101,7 +105,10 @@
 		return null;
 	}
 
-	function levelFromPath(root: DropdownItem[], pathIds: string[]): { title: string; items: DropdownItem[] } {
+	function levelFromPath(
+		root: DropdownItem[],
+		pathIds: string[]
+	): { title: string; items: DropdownItem[] } {
 		let current = root;
 		let title = label;
 		for (const id of pathIds) {
@@ -147,7 +154,8 @@
 		path = nextPath;
 		const level = levelFromPath(items, nextPath);
 		const idx = level.items.findIndex((item) => item.id === lastSelectedId);
-		highlighted = idx >= 0 ? idx : (level.items.findIndex((i) => !i.separator && !i.disabled) ?? -1);
+		highlighted =
+			idx >= 0 ? idx : (level.items.findIndex((i) => !i.separator && !i.disabled) ?? -1);
 	}
 
 	/** Measure natural height without expanding the positioned popover (avoids jump). */
@@ -239,6 +247,24 @@
 	function closeMenu() {
 		if (menuEl?.matches(':popover-open')) menuEl.hidePopover();
 	}
+
+	$effect(() => {
+		const btn = triggerEl;
+		if (!btn) return;
+		const onClick = (event: MouseEvent) => {
+			event.stopPropagation();
+			if (disabled) return;
+			const el = menuEl;
+			if (!el) return;
+			const isOpen = el.matches(':popover-open');
+			setTimeout(() => {
+				if (isOpen) closeMenu();
+				else openMenu();
+			}, 0);
+		};
+		btn.addEventListener('click', onClick);
+		return () => btn.removeEventListener('click', onClick);
+	});
 
 	function handleBeforeToggle(event: ToggleEvent) {
 		if (event.newState === 'open') {
@@ -404,18 +430,16 @@
 <div class={['relative inline-flex', className]}>
 	<button
 		bind:this={triggerEl}
-		id={id}
+		{id}
 		type="button"
 		{disabled}
-		popovertarget={menuId}
-		popovertargetaction="toggle"
 		onkeydown={onTriggerKeydown}
 		class={[
-			'inline-flex items-center gap-2 rounded-lg border border-border bg-surface-elevated font-medium text-primary transition-colors',
-			'hover:bg-surface-overlay focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30',
+			'gap-2 rounded-lg border-border bg-surface-elevated font-medium text-primary inline-flex items-center border transition-colors',
+			'hover:bg-surface-overlay focus-visible:ring-brand-500/30 focus-visible:ring-2 focus-visible:outline-none',
 			size === 'sm' ? 'min-h-8 px-2.5 text-xs' : 'min-h-9 px-3 text-sm',
 			disabled && 'cursor-not-allowed opacity-50',
-			trigger && 'border-0 bg-transparent p-0 hover:bg-transparent'
+			trigger && 'p-0 border-0 bg-transparent hover:bg-transparent'
 		]}
 		aria-label={trigger ? label : undefined}
 		aria-haspopup="menu"
@@ -452,20 +476,20 @@
 		ontoggle={handleToggle}
 		onbeforetoggle={handleBeforeToggle}
 		onkeydown={onMenuKeydown}
-		class="dropdown-menu m-0 inset-auto flex flex-col overflow-hidden rounded-xl border border-border bg-surface-elevated p-1.5 shadow-xl outline-none"
+		class="dropdown-menu m-0 rounded-xl border-border bg-surface-elevated p-1.5 shadow-xl inset-auto flex-col overflow-hidden border text-left outline-none"
 	>
 		{#if canGoBack}
 			<button
 				type="button"
 				onclick={goBack}
 				class={[
-					'mb-0.5 flex w-full items-center gap-2 rounded-lg text-left font-medium text-primary transition-colors',
-					'hover:bg-surface-overlay focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30',
+					'mb-0.5 gap-2 rounded-lg font-medium text-primary flex w-full items-center text-left transition-colors',
+					'hover:bg-surface-overlay focus-visible:ring-brand-500/30 focus-visible:ring-2 focus-visible:outline-none',
 					sizePad
 				]}
 			>
 				<svg
-					class="shrink-0 text-secondary"
+					class="text-secondary shrink-0"
 					width={iconSize}
 					height={iconSize}
 					viewBox="0 0 24 24"
@@ -478,13 +502,13 @@
 				</svg>
 				<span class="truncate">{current.title}</span>
 			</button>
-			<div class="mb-1 h-px bg-border" role="separator"></div>
+			<div class="mb-1 bg-border h-px" role="separator"></div>
 		{/if}
 
 		<div bind:this={listEl} class="dropdown-menu-list min-h-0 flex-1">
 			{#each current.items as item, index (item.id)}
 				{#if item.separator}
-					<div class="my-1 h-px bg-border" role="separator"></div>
+					<div class="my-1 bg-border h-px" role="separator"></div>
 				{:else}
 					{@const Icon = item.icon}
 					{@const hasChildren = Boolean(item.children?.length)}
@@ -501,7 +525,7 @@
 							if (!item.disabled) highlighted = index;
 						}}
 						class={[
-							'flex w-full cursor-pointer gap-2 rounded-lg transition-colors',
+							'gap-2 rounded-lg flex w-full cursor-pointer text-left transition-colors',
 							item.description ? 'items-start' : 'items-center',
 							sizePad,
 							item.disabled && 'cursor-not-allowed opacity-40',
@@ -512,7 +536,7 @@
 						{#if item.checked !== undefined}
 							<span
 								class={[
-									'flex h-4 w-4 shrink-0 items-center justify-center',
+									'h-4 w-4 flex shrink-0 items-center justify-center',
 									item.description && 'mt-0.5'
 								]}
 								aria-hidden="true"
@@ -533,7 +557,7 @@
 						{:else if showIconColumn}
 							<span
 								class={[
-									'flex h-4 w-4 shrink-0 items-center justify-center',
+									'h-4 w-4 flex shrink-0 items-center justify-center',
 									item.description && 'mt-0.5'
 								]}
 								aria-hidden="true"
@@ -544,24 +568,26 @@
 							</span>
 						{/if}
 
-						<span class="min-w-0 flex-1 leading-tight">
-							<span class="block truncate font-medium leading-tight">{item.label}</span>
+						<span class="min-w-0 leading-tight flex-1">
+							<span class="font-medium leading-tight block truncate">{item.label}</span>
 							{#if item.description}
-								<span class="block truncate text-[11px] font-normal leading-snug text-secondary">
+								<span class="font-normal leading-snug text-secondary block truncate text-[11px]">
 									{item.description}
 								</span>
 							{/if}
 						</span>
 
 						{#if item.shortcut && !hasChildren}
-							<kbd class="ml-2 shrink-0 rounded border border-border bg-surface-overlay px-1.5 py-0.5 text-[10px] font-mono text-secondary">
+							<kbd
+								class="ml-2 rounded border-border bg-surface-overlay px-1.5 py-0.5 font-mono text-secondary shrink-0 border text-[10px]"
+							>
 								{item.shortcut}
 							</kbd>
 						{/if}
 
 						{#if hasChildren}
 							<svg
-								class={['ml-1 shrink-0 text-secondary', item.description && 'mt-0.5']}
+								class={['ml-1 text-secondary shrink-0', item.description && 'mt-0.5']}
 								width={iconSize}
 								height={iconSize}
 								viewBox="0 0 24 24"
@@ -593,9 +619,5 @@
 
 	.dropdown-menu:popover-open {
 		display: flex;
-	}
-
-	.dropdown-menu:not(:popover-open) {
-		display: none;
 	}
 </style>

@@ -118,6 +118,13 @@
 		if (sortDir) onsort?.(column.id, sortDir);
 	}
 
+	function isInteractiveTarget(target: EventTarget | null): boolean {
+		return (
+			target instanceof Element &&
+			Boolean(target.closest('a, button, input, select, textarea, label, [role="menuitem"]'))
+		);
+	}
+
 	const alignClass = {
 		left: 'text-left',
 		center: 'text-center',
@@ -125,12 +132,14 @@
 	} as const;
 </script>
 
-<div class={['w-full overflow-x-auto rounded-xl border border-border bg-surface-elevated', className]}>
-	<table class="w-full border-collapse text-sm">
+<div
+	class={['rounded-xl border-border bg-surface-elevated w-full overflow-x-auto border', className]}
+>
+	<table class="text-sm w-full border-collapse">
 		<thead
 			class={[
-				'border-b border-border bg-surface-overlay/80 text-xs font-semibold tracking-wide text-secondary uppercase',
-				stickyHeader && 'sticky top-0 z-10'
+				'border-border bg-surface-overlay/80 text-xs font-semibold tracking-wide text-secondary border-b uppercase',
+				stickyHeader && 'top-0 sticky z-10'
 			]}
 		>
 			<tr>
@@ -141,22 +150,20 @@
 							'px-3 font-semibold',
 							compact ? 'py-2' : 'py-2.5',
 							alignClass[column.align ?? 'left'],
-							canSort(column) && 'cursor-pointer select-none hover:text-primary',
+							canSort(column) && 'hover:text-primary cursor-pointer select-none',
 							column.class
 						]}
 						style={column.width ? `width:${column.width}` : undefined}
-						aria-sort={
-							sortId === column.id
-								? sortDir === 'asc'
-									? 'ascending'
-									: 'descending'
-								: canSort(column)
-									? 'none'
-									: undefined
-						}
+						aria-sort={sortId === column.id
+							? sortDir === 'asc'
+								? 'ascending'
+								: 'descending'
+							: canSort(column)
+								? 'none'
+								: undefined}
 						onclick={() => canSort(column) && toggleSort(column)}
 					>
-						<span class="inline-flex items-center gap-1">
+						<span class="gap-1 inline-flex items-center">
 							{column.header}
 							{#if canSort(column)}
 								<span class="text-muted" aria-hidden="true">
@@ -174,7 +181,7 @@
 			{#if sortedRows.length === 0}
 				<tr>
 					<td
-						class="px-3 py-8 text-center text-sm text-muted"
+						class="px-3 py-8 text-sm text-muted text-center"
 						colspan={Math.max(columns.length, 1)}
 					>
 						{empty}
@@ -184,12 +191,15 @@
 				{#each sortedRows as row, index (getKey(row, index))}
 					<tr
 						class={[
-							'border-b border-border last:border-b-0',
+							'border-border border-b last:border-b-0',
 							striped && index % 2 === 1 && 'bg-surface-overlay/40',
 							hoverable && 'hover:bg-surface-overlay/70',
 							onrowclick && 'cursor-pointer'
 						]}
-						onclick={() => onrowclick?.(row)}
+						onclick={(e) => {
+							if (isInteractiveTarget(e.target)) return;
+							onrowclick?.(row);
+						}}
 					>
 						{#each columns as column (column.id)}
 							<td

@@ -232,7 +232,7 @@
 
 			<div class="min-w-0">
 				{#if children}
-					<div class={['grid', gapClass, columns === 2 && 'sm:grid-cols-2']}>
+					<div class={['grid grid-cols-1', gapClass, columns === 2 && 'sm:grid-cols-2']}>
 						{@render children()}
 					</div>
 				{/if}
