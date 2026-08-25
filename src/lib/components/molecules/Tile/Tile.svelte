@@ -105,13 +105,15 @@
 			'group relative flex w-full min-w-0 items-center gap-2.5 text-left transition-colors',
 			padY[size],
 			padX,
+			// selected must replace surface-elevated — same utility family, otherwise dark tint never wins
 			variant === 'card' &&
-				'overflow-hidden rounded-xl border border-border bg-surface-elevated',
+				(selected
+					? 'overflow-hidden rounded-xl border border-brand-400/50 bg-brand-50 ring-1 ring-brand-500/20 dark:border-brand-400/45 dark:bg-brand-500/15 dark:ring-brand-400/25'
+					: 'overflow-hidden rounded-xl border border-border bg-surface-elevated'),
 			variant === 'plain' && 'rounded-lg',
 			selected &&
-				(variant === 'card'
-					? 'border-brand-500/40 bg-brand-50/50 ring-1 ring-brand-500/15 dark:bg-brand-950/25'
-					: 'bg-brand-50 dark:bg-brand-950/40'),
+				variant !== 'card' &&
+				'bg-brand-50 dark:bg-brand-500/15',
 			clickable &&
 				!disabled &&
 				'cursor-pointer hover:bg-surface-overlay/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30',
@@ -122,6 +124,7 @@
 			variant === 'card' &&
 				clickable &&
 				!disabled &&
+				!selected &&
 				'hover:border-border-strong',
 			disabled && 'cursor-not-allowed opacity-50',
 			className
