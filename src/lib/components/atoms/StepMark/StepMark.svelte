@@ -26,8 +26,7 @@
 			'inline-flex shrink-0 items-center justify-center rounded-full font-semibold tabular-nums transition-colors',
 			dims,
 			state === 'complete' && 'bg-brand-500 text-white',
-			state === 'current' &&
-				'bg-brand-500/15 text-brand-700 ring-2 ring-brand-500/40 dark:text-brand-300',
+			state === 'current' && 'bg-brand-500 text-white',
 			state === 'upcoming' && 'bg-surface-overlay text-muted ring-1 ring-border'
 		]}
 		aria-current={state === 'current' ? 'step' : undefined}

@@ -103,7 +103,7 @@
 			variant === 'dots' ? circleSize.dot : circleSize.box,
 			'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30 focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
 			state === 'complete' && 'border-brand-500 bg-brand-500 text-white',
-			state === 'current' && 'border-brand-500 bg-surface-elevated text-brand-600',
+			state === 'current' && 'border-brand-500 bg-brand-500 text-white',
 			state === 'error' && 'border-red-500 bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400',
 			state === 'upcoming' && 'border-border bg-surface-elevated text-muted'
 		];

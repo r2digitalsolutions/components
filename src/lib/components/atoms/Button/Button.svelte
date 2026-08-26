@@ -40,7 +40,7 @@
 
 	const variantClasses: Record<ButtonVariant, string> = {
 		primary:
-			'bg-brand-500 text-white hover:bg-brand-600 active:bg-brand-700 focus-visible:ring-brand-500 shadow-sm hover:shadow-md active:scale-[0.98]',
+			'bg-brand-600 text-white hover:bg-brand-700 active:bg-brand-800 focus-visible:ring-brand-500 shadow-sm hover:shadow-md active:scale-[0.98]',
 		secondary:
 			'bg-surface-elevated text-primary border border-border hover:bg-surface-overlay hover:border-border-strong focus-visible:ring-brand-500 shadow-sm active:scale-[0.98]',
 		ghost:

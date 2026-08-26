@@ -18,6 +18,8 @@
 		fullWidth?: boolean;
 		align?: 'start' | 'end' | 'between';
 		showCancel?: boolean;
+		/** Hide the primary submit control (e.g. file-upload step that auto-advances). */
+		showSubmit?: boolean;
 		/**
 		 * plain = bare row
 		 * bar = bordered footer chrome inside a card
@@ -44,6 +46,7 @@
 		fullWidth = true,
 		align = 'end',
 		showCancel = true,
+		showSubmit = true,
 		variant = 'bar',
 		size = 'md',
 		hint = '',
@@ -69,12 +72,11 @@
 
 <div
 	class={[
-		'flex w-full flex-col gap-3 sm:flex-row sm:items-center',
+		'gap-3 sm:flex-row sm:items-center flex w-full flex-col',
 		alignClasses[align],
-		variant === 'bar' &&
-			'rounded-b-2xl border-t border-border bg-surface/50 px-4 py-3 sm:px-5',
+		variant === 'bar' && 'rounded-b-2xl border-border bg-surface/50 px-4 py-3 sm:px-5 border-t',
 		variant === 'sticky' &&
-			'shrink-0 border-t border-border bg-surface-elevated/95 px-4 py-3 shadow-[0_-8px_24px_rgb(0,0,0,0.06)] backdrop-blur-md dark:shadow-black/30 sm:px-5',
+			'border-border bg-surface-elevated/95 px-4 py-3 backdrop-blur-md dark:shadow-black/30 sm:px-5 shrink-0 border-t shadow-[0_-8px_24px_rgb(0,0,0,0.06)]',
 		variant === 'plain' && 'gap-2',
 		className
 	]}
@@ -82,7 +84,7 @@
 	aria-label="Form actions"
 >
 	{#if hint || extra || dangerLabel}
-		<div class="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+		<div class="min-w-0 gap-2 flex flex-1 flex-wrap items-center">
 			{#if dangerLabel}
 				<Button
 					type="button"
@@ -103,13 +105,13 @@
 			{/if}
 		</div>
 	{:else if align === 'between'}
-		<div class="hidden flex-1 sm:block" aria-hidden="true"></div>
+		<div class="sm:block hidden flex-1" aria-hidden="true"></div>
 	{/if}
 
 	<div
 		class={[
-			'flex items-center gap-2',
-			fullWidth && 'w-full flex-col-reverse sm:w-auto sm:flex-row'
+			'gap-2 flex items-center',
+			fullWidth && 'sm:w-auto sm:flex-row w-full flex-col-reverse'
 		]}
 	>
 		{#if showCancel}
@@ -118,21 +120,23 @@
 				variant="secondary"
 				{size}
 				disabled={busy}
-				class={fullWidth ? 'w-full sm:w-auto' : ''}
+				class={fullWidth ? 'sm:w-auto w-full' : ''}
 				onclick={() => oncancel?.()}
 			>
 				{resolvedCancelLabel}
 			</Button>
 		{/if}
-		<Button
-			type="submit"
-			{size}
-			loading={resolvedLoading}
-			disabled={busy || submitDisabled}
-			class={fullWidth ? 'w-full sm:w-auto' : ''}
-			onclick={() => onsubmit?.()}
-		>
-			{resolvedSubmitLabel}
-		</Button>
+		{#if showSubmit}
+			<Button
+				type="submit"
+				{size}
+				loading={resolvedLoading}
+				disabled={busy || submitDisabled}
+				class={fullWidth ? 'sm:w-auto w-full' : ''}
+				onclick={() => onsubmit?.()}
+			>
+				{resolvedSubmitLabel}
+			</Button>
+		{/if}
 	</div>
 </div>
