@@ -144,7 +144,8 @@
 			s.setProperty('left', `${Math.round(left)}px`);
 			s.setProperty('right', 'auto');
 			s.setProperty('bottom', 'auto');
-			s.setProperty('width', `${Math.round(panelW)}px`);
+			s.setProperty('width', 'max-content');
+			s.setProperty('min-width', `${Math.round(Math.min(panelW, trigger.width))}px`);
 			s.setProperty('visibility', placed ? 'visible' : 'hidden');
 		}
 	}
@@ -246,13 +247,18 @@
 		return `${h12} ${period}`;
 	}
 
+	function scrollSelected(listEl: HTMLDivElement | null) {
+		const selected = listEl?.querySelector('[aria-selected="true"]') as HTMLElement | null;
+		if (!listEl || !selected) return;
+		// Don't use scrollIntoView — it also scrolls the dialog/modal ancestors.
+		listEl.scrollTop = selected.offsetTop - listEl.clientHeight / 2 + selected.clientHeight / 2;
+	}
+
 	$effect(() => {
 		if (!open) return;
 		requestAnimationFrame(() => {
-			const hEl = hourListEl?.querySelector('[aria-selected="true"]') as HTMLElement | null;
-			const mEl = minuteListEl?.querySelector('[aria-selected="true"]') as HTMLElement | null;
-			hEl?.scrollIntoView({ block: 'center' });
-			mEl?.scrollIntoView({ block: 'center' });
+			scrollSelected(hourListEl);
+			scrollSelected(minuteListEl);
 		});
 	});
 </script>
