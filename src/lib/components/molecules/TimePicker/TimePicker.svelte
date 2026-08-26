@@ -112,7 +112,7 @@
 		const viewTop = vv?.offsetTop ?? 0;
 		const gap = 8;
 		const pad = 8;
-		const estimated = { panelW: Math.max(trigger.width, 192), panelH: 280 };
+		const estimated = { panelW: 208, panelH: 280 };
 		const canMeasure = opts.measure !== false && !!panelEl?.matches(':popover-open');
 		const panelW = Math.min(
 			canMeasure && panelEl?.offsetWidth ? panelEl.offsetWidth : estimated.panelW,
@@ -139,13 +139,12 @@
 		if (panelEl) {
 			const s = panelEl.style;
 			s.setProperty('margin', '0');
-			s.setProperty('inset', 'auto');
+			s.removeProperty('inset');
 			s.setProperty('top', `${Math.round(top)}px`);
 			s.setProperty('left', `${Math.round(left)}px`);
 			s.setProperty('right', 'auto');
 			s.setProperty('bottom', 'auto');
-			s.setProperty('width', 'max-content');
-			s.setProperty('min-width', `${Math.round(Math.min(panelW, trigger.width))}px`);
+			s.setProperty('width', '13rem');
 			s.setProperty('visibility', placed ? 'visible' : 'hidden');
 		}
 	}
@@ -263,16 +262,16 @@
 	});
 </script>
 
-<div class={['w-full min-w-[12rem] max-w-[16rem]', className]}>
+<div class={['w-full max-w-[16rem] min-w-[12rem]', className]}>
 	{#if label}
-		<span class="mb-1.5 block text-sm font-medium text-primary">{label}</span>
+		<span class="mb-1.5 text-sm font-medium text-primary block">{label}</span>
 	{/if}
 
 	<div
 		bind:this={triggerEl}
 		class={[
-			'flex h-10 w-full items-center overflow-hidden rounded-xl border border-border bg-surface-elevated transition-colors',
-			open && 'border-brand-500 ring-2 ring-brand-500/20',
+			'h-10 rounded-xl border-border bg-surface-elevated flex w-full items-center overflow-hidden border transition-colors',
+			open && 'border-brand-500 ring-brand-500/20 ring-2',
 			disabled && 'opacity-60'
 		]}
 	>
@@ -285,13 +284,13 @@
 			aria-haspopup="dialog"
 			aria-controls={panelId}
 			class={[
-				'flex h-full min-w-0 flex-1 items-center gap-2 px-3.5 text-left text-sm',
+				'min-w-0 gap-2 px-3.5 text-sm flex h-full flex-1 items-center text-left',
 				'hover:bg-surface-overlay focus-visible:outline-none',
 				disabled && 'cursor-not-allowed'
 			]}
 		>
 			<svg
-				class="h-4 w-4 shrink-0 text-muted"
+				class="h-4 w-4 text-muted shrink-0"
 				viewBox="0 0 24 24"
 				fill="none"
 				stroke="currentColor"
@@ -312,10 +311,16 @@
 			<button
 				type="button"
 				onclick={clear}
-				class="h-full px-3 text-muted hover:bg-surface-overlay hover:text-primary"
+				class="px-3 text-muted hover:bg-surface-overlay hover:text-primary h-full"
 				aria-label="Clear"
 			>
-				<svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+				<svg
+					class="h-3.5 w-3.5"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+				>
 					<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
 				</svg>
 			</button>
@@ -332,18 +337,18 @@
 		onbeforetoggle={handleBeforeToggle}
 		ontoggle={handleToggle}
 		data-placed={placed ? true : undefined}
-		class="timepicker-popover m-0 overflow-hidden rounded-2xl border border-border bg-surface-elevated shadow-xl outline-none"
+		class="timepicker-popover m-0 w-52 rounded-2xl border-border bg-surface-elevated shadow-xl overflow-hidden border outline-none"
 	>
-		<div class="grid grid-cols-2 divide-x divide-border">
+		<div class="divide-border grid grid-cols-2 divide-x">
 			<div class="flex flex-col">
 				<span
-					class="border-b border-border px-3 py-2 text-center text-[11px] font-medium tracking-wide text-muted uppercase"
+					class="border-border px-3 py-2 font-medium tracking-wide text-muted border-b text-center text-[11px] uppercase"
 				>
 					Hour
 				</span>
 				<div
 					bind:this={hourListEl}
-					class="max-h-52 overflow-y-auto p-1.5"
+					class="max-h-52 p-1.5 overflow-y-auto"
 					role="listbox"
 					aria-label="Hours"
 				>
@@ -356,8 +361,8 @@
 							aria-selected={selectedH === h}
 							onclick={() => pickHour(h)}
 							class={[
-								'w-full rounded-lg px-2 py-1.5 text-sm transition-colors',
-								'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30',
+								'rounded-lg px-2 py-1.5 text-sm w-full transition-colors',
+								'focus-visible:ring-brand-500/30 focus-visible:ring-2 focus-visible:outline-none',
 								disabledHour && 'cursor-not-allowed opacity-30',
 								selectedH === h
 									? 'bg-brand-500 font-semibold text-white'
@@ -371,13 +376,13 @@
 			</div>
 			<div class="flex flex-col">
 				<span
-					class="border-b border-border px-3 py-2 text-center text-[11px] font-medium tracking-wide text-muted uppercase"
+					class="border-border px-3 py-2 font-medium tracking-wide text-muted border-b text-center text-[11px] uppercase"
 				>
 					Min
 				</span>
 				<div
 					bind:this={minuteListEl}
-					class="max-h-52 overflow-y-auto p-1.5"
+					class="max-h-52 p-1.5 overflow-y-auto"
 					role="listbox"
 					aria-label="Minutes"
 				>
@@ -390,8 +395,8 @@
 							aria-selected={selectedM === m}
 							onclick={() => pickMinute(m)}
 							class={[
-								'w-full rounded-lg px-2 py-1.5 text-sm transition-colors',
-								'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30',
+								'rounded-lg px-2 py-1.5 text-sm w-full transition-colors',
+								'focus-visible:ring-brand-500/30 focus-visible:ring-2 focus-visible:outline-none',
 								disabledMin && 'cursor-not-allowed opacity-30',
 								selectedM === m
 									? 'bg-brand-500 font-semibold text-white'
@@ -412,8 +417,12 @@
 	.timepicker-popover {
 		position: fixed;
 		inset: unset;
+		top: auto;
+		right: auto;
+		bottom: auto;
+		left: auto;
 		margin: 0;
-		width: max-content;
+		width: 13rem;
 		height: max-content;
 	}
 
