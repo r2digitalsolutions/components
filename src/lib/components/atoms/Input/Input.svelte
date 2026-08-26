@@ -11,7 +11,7 @@
 		label?: string;
 		placeholder?: string;
 		value?: string;
-		type?: 'text' | 'email' | 'password' | 'number' | 'search' | 'tel' | 'url' | 'date';
+		type?: 'text' | 'email' | 'password' | 'number' | 'search' | 'tel' | 'url' | 'date' | 'time';
 		status?: InputStatus;
 		helperText?: string;
 		disabled?: boolean;

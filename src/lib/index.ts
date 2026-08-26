@@ -1163,7 +1163,8 @@ export type {
 	CalendarView,
 	CalendarTone,
 	CalendarSource,
-	CalendarAppEvent
+	CalendarAppEvent,
+	CalendarAppLabels
 } from './components/organisms/CalendarApp/CalendarApp.svelte';
 export { default as PermissionsMatrix } from './components/organisms/PermissionsMatrix/PermissionsMatrix.svelte';
 export type {

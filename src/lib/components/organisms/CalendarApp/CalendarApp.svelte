@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onDestroy } from 'svelte';
+	import { onDestroy, type Snippet } from 'svelte';
 	import Button from '$lib/components/atoms/Button/Button.svelte';
 	import IconButton from '$lib/components/atoms/IconButton/IconButton.svelte';
 	import Badge from '$lib/components/atoms/Badge/Badge.svelte';
@@ -7,6 +7,7 @@
 	import SegmentedControl from '$lib/components/molecules/SegmentedControl/SegmentedControl.svelte';
 	import SearchInput from '$lib/components/molecules/SearchInput/SearchInput.svelte';
 	import Text from '$lib/components/atoms/Text/Text.svelte';
+	import Stack from '$lib/components/atoms/Stack/Stack.svelte';
 	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	import Plus from '@lucide/svelte/icons/plus';
@@ -40,6 +41,25 @@
 		description?: string;
 	}
 
+	export interface CalendarAppLabels {
+		create?: string;
+		myCalendars?: string;
+		today?: string;
+		search?: string;
+		month?: string;
+		week?: string;
+		day?: string;
+		agenda?: string;
+		allDay?: string;
+		eventsVisible?: string;
+		noEvents?: string;
+		dayEvents?: string;
+		close?: string;
+		previous?: string;
+		next?: string;
+		back?: string;
+	}
+
 	interface CalendarAppProps {
 		events?: CalendarAppEvent[];
 		calendars?: CalendarSource[];
@@ -51,6 +71,12 @@
 		showSidebar?: boolean;
 		showSearch?: boolean;
 		showCreate?: boolean;
+		/** Right detail panel (day agenda / event detail) on lg+ */
+		showDetailPanel?: boolean;
+		/** i18n-friendly UI strings; English defaults when omitted */
+		labels?: CalendarAppLabels;
+		/** Locale for toLocaleDateString (default `'en'`) */
+		locale?: string;
 		weekStartsOn?: 0 | 1;
 		/** Allow resizing timed events in week / day views */
 		resizable?: boolean;
@@ -61,6 +87,8 @@
 		/** Minimum event duration when resizing (minutes) */
 		resizeMinMinutes?: number;
 		class?: string;
+		/** Host actions (Edit / Delete / Open) under event detail */
+		eventActions?: Snippet<[CalendarAppEvent]>;
 		onviewchange?: (view: CalendarView) => void;
 		ondatechange?: (date: Date) => void;
 		oneventclick?: (event: CalendarAppEvent) => void;
@@ -77,6 +105,25 @@
 		) => void;
 	}
 
+	const DEFAULT_LABELS: Required<CalendarAppLabels> = {
+		create: 'Create',
+		myCalendars: 'My calendars',
+		today: 'Today',
+		search: 'Search events…',
+		month: 'Month',
+		week: 'Week',
+		day: 'Day',
+		agenda: 'Agenda',
+		allDay: 'All day',
+		eventsVisible: '{n} events visible',
+		noEvents: 'No events',
+		dayEvents: 'Day events',
+		close: 'Close',
+		previous: 'Previous',
+		next: 'Next',
+		back: 'Back'
+	};
+
 	let {
 		events = $bindable([] as CalendarAppEvent[]),
 		calendars = $bindable([
@@ -91,12 +138,16 @@
 		showSidebar = true,
 		showSearch = true,
 		showCreate = true,
+		showDetailPanel = true,
+		labels = undefined,
+		locale = 'en',
 		weekStartsOn = 1,
 		resizable = true,
 		draggableEvents = true,
 		resizeSnapMinutes = 15,
 		resizeMinMinutes = 15,
 		class: className = '',
+		eventActions,
 		onviewchange,
 		ondatechange,
 		oneventclick,
@@ -106,6 +157,8 @@
 		onresize,
 		onmove
 	}: CalendarAppProps = $props();
+
+	const ui = $derived({ ...DEFAULT_LABELS, ...labels });
 
 	const weekdayLabels = $derived(
 		weekStartsOn === 1
@@ -194,12 +247,12 @@
 	}
 
 	const monthTitle = $derived(
-		date.toLocaleDateString('en', { month: 'long', year: 'numeric' })
+		date.toLocaleDateString(locale, { month: 'long', year: 'numeric' })
 	);
 
 	const headerTitle = $derived.by(() => {
 		if (view === 'day') {
-			return date.toLocaleDateString('en', {
+			return date.toLocaleDateString(locale, {
 				weekday: 'long',
 				month: 'long',
 				day: 'numeric',
@@ -211,13 +264,25 @@
 			const end = addDays(start, 6);
 			const sameMonth = start.getMonth() === end.getMonth();
 			if (sameMonth) {
-				return `${start.toLocaleDateString('en', { month: 'long' })} ${start.getDate()}–${end.getDate()}, ${end.getFullYear()}`;
+				return `${start.toLocaleDateString(locale, { month: 'long' })} ${start.getDate()}–${end.getDate()}, ${end.getFullYear()}`;
 			}
-			return `${start.toLocaleDateString('en', { month: 'short', day: 'numeric' })} – ${end.toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+			return `${start.toLocaleDateString(locale, { month: 'short', day: 'numeric' })} – ${end.toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' })}`;
 		}
-		if (view === 'agenda') return 'Agenda';
+		if (view === 'agenda') return ui.agenda;
 		return monthTitle;
 	});
+
+	const focusDayHeading = $derived(
+		date.toLocaleDateString(locale, {
+			weekday: 'long',
+			month: 'long',
+			day: 'numeric'
+		})
+	);
+
+	const focusDayEvents = $derived(eventsOn(focusKey));
+
+	const eventsVisibleLabel = $derived(ui.eventsVisible.replace('{n}', String(filteredEvents.length)));
 
 	const monthCells = $derived.by(() => {
 		const y = date.getFullYear();
@@ -255,7 +320,7 @@
 		return keys
 			.map((key) => ({
 				key,
-				label: parseIso(key).toLocaleDateString('en', {
+				label: parseIso(key).toLocaleDateString(locale, {
 					weekday: 'long',
 					month: 'short',
 					day: 'numeric'
@@ -265,9 +330,7 @@
 			.filter((g) => g.events.length > 0);
 	});
 
-	const selectedEvent = $derived(
-		filteredEvents.find((e) => e.id === selectedEventId) ?? null
-	);
+	let selectedEvent = $state<CalendarAppEvent | null>(null);
 
 	function setView(v: CalendarView) {
 		view = v;
@@ -294,17 +357,34 @@
 	}
 
 	function selectEvent(e: CalendarAppEvent) {
+		selectedEvent = {
+			id: e.id,
+			title: e.title,
+			date: e.date,
+			endDate: e.endDate,
+			startTime: e.startTime,
+			endTime: e.endTime,
+			allDay: e.allDay,
+			calendarId: e.calendarId,
+			color: e.color,
+			location: e.location,
+			description: e.description
+		};
 		selectedEventId = e.id;
 		oneventclick?.(e);
 	}
 
+	function clearSelectedEvent() {
+		selectedEvent = null;
+		selectedEventId = null;
+	}
 	function toggleCal(id: string, visible: boolean) {
 		calendars = calendars.map((c) => (c.id === id ? { ...c, visible } : c));
 		oncalendartoggle?.(id, visible);
 	}
 
 	function timeLabel(e: CalendarAppEvent) {
-		if (e.allDay || (!e.startTime && !e.endTime)) return 'All day';
+		if (e.allDay || (!e.startTime && !e.endTime)) return ui.allDay;
 		if (e.startTime && e.endTime) return `${e.startTime}–${e.endTime}`;
 		return e.startTime ?? '';
 	}
@@ -560,12 +640,14 @@
 	}
 
 	function attachDragListeners() {
+		if (typeof document === 'undefined') return;
 		document.addEventListener('pointermove', onDocDragMove, true);
 		document.addEventListener('pointerup', onDocDragUp, true);
 		document.addEventListener('pointercancel', onDocDragCancel, true);
 	}
 
 	function detachDragListeners() {
+		if (typeof document === 'undefined') return;
 		document.removeEventListener('pointermove', onDocDragMove, true);
 		document.removeEventListener('pointerup', onDocDragUp, true);
 		document.removeEventListener('pointercancel', onDocDragCancel, true);
@@ -664,66 +746,86 @@
 
 <div
 	class={[
-		'flex min-h-[36rem] overflow-hidden rounded-2xl border border-border bg-surface shadow-sm',
+		'flex h-full min-h-0 overflow-hidden rounded-2xl border border-border bg-surface shadow-sm',
 		className
 	]}
 >
 	{#if showSidebar}
-		<aside class="hidden w-56 shrink-0 flex-col border-r border-border bg-surface-elevated p-3 md:flex">
-			{#if showCreate}
-				<Button
-					size="sm"
-					class="mb-4 w-full"
-					onclick={() => oncreate?.(focusKey)}
+		<aside
+			class="hidden w-56 shrink-0 flex-col overflow-hidden border-r border-border bg-surface-elevated md:flex"
+		>
+			<div class="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3">
+				{#if showCreate}
+					<Button
+						size="sm"
+						class="mb-4 w-full"
+						onclick={() => oncreate?.(focusKey)}
+					>
+						<Plus class="h-4 w-4" strokeWidth={2} />
+						{ui.create}
+					</Button>
+				{/if}
+
+				<Text
+					as="p"
+					size="xs"
+					tone="muted"
+					class="mb-2 px-1 font-semibold tracking-wider uppercase"
 				>
-					<Plus class="h-4 w-4" strokeWidth={2} />
-					Create
-				</Button>
-			{/if}
+					{ui.myCalendars}
+				</Text>
+				<ul class="space-y-0.5">
+					{#each calendars as cal (cal.id)}
+						<li>
+							<div
+								class="flex cursor-pointer items-center gap-2.5 rounded-lg px-1.5 py-1.5 hover:bg-surface-overlay"
+								role="button"
+								tabindex="0"
+								onclick={() => toggleCal(cal.id, cal.visible === false)}
+								onkeydown={(e) => {
+									if (e.key === 'Enter' || e.key === ' ') {
+										e.preventDefault();
+										toggleCal(cal.id, cal.visible === false);
+									}
+								}}
+							>
+								<Checkbox
+									size="md"
+									checked={cal.visible !== false}
+									aria-label={cal.label}
+									onchange={(v) => toggleCal(cal.id, v)}
+									onclick={(e) => e.stopPropagation()}
+								/>
+								<span
+									class={['h-2.5 w-2.5 shrink-0 rounded-full', toneClass[cal.color ?? 'brand']]}
+									aria-hidden="true"
+								></span>
+								<Text as="span" size="sm" tone="primary" class="min-w-0 flex-1 truncate font-medium">
+									{cal.label}
+								</Text>
+							</div>
+						</li>
+					{/each}
+				</ul>
+			</div>
 
-			<p class="mb-2 px-1 text-[10px] font-semibold tracking-wider text-muted uppercase">
-				My calendars
-			</p>
-			<ul class="space-y-1">
-				{#each calendars as cal (cal.id)}
-					<li>
-						<label
-							class="flex cursor-pointer items-center gap-2 rounded-lg px-1.5 py-1.5 hover:bg-surface-overlay"
-						>
-							<Checkbox
-								size="sm"
-								checked={cal.visible !== false}
-								onchange={(v) => toggleCal(cal.id, v)}
-							/>
-							<span
-								class={['h-2.5 w-2.5 rounded-full', toneClass[cal.color ?? 'brand']]}
-								aria-hidden="true"
-							></span>
-							<span class="truncate text-xs font-medium text-primary">{cal.label}</span>
-						</label>
-					</li>
-				{/each}
-			</ul>
-
-			<div class="mt-auto border-t border-border pt-3">
-				<p class="px-1 text-[10px] text-muted">
-					{filteredEvents.length} event{filteredEvents.length === 1 ? '' : 's'} visible
-				</p>
+			<div class="shrink-0 border-t border-border px-3 py-3">
+				<Text size="sm" tone="muted">{eventsVisibleLabel}</Text>
 			</div>
 		</aside>
 	{/if}
 
-	<div class="flex min-w-0 flex-1 flex-col">
+	<div class="flex min-h-0 min-w-0 flex-1 flex-col">
 		<!-- Header -->
 		<header
-			class="flex flex-wrap items-center gap-2 border-b border-border bg-surface-elevated px-3 py-2.5 sm:gap-3 sm:px-4"
+			class="flex shrink-0 flex-wrap items-center gap-2 border-b border-border bg-surface-elevated px-3 py-2.5 sm:gap-3 sm:px-4"
 		>
 			<div class="flex items-center gap-1">
-				<Button size="xs" variant="secondary" onclick={goToday}>Today</Button>
-				<IconButton label="Previous" size="sm" variant="ghost" onclick={() => shift(-1)}>
+				<Button size="xs" variant="secondary" onclick={goToday}>{ui.today}</Button>
+				<IconButton label={ui.previous} size="sm" variant="ghost" onclick={() => shift(-1)}>
 					<ChevronLeft class="h-4 w-4" />
 				</IconButton>
-				<IconButton label="Next" size="sm" variant="ghost" onclick={() => shift(1)}>
+				<IconButton label={ui.next} size="sm" variant="ghost" onclick={() => shift(1)}>
 					<ChevronRight class="h-4 w-4" />
 				</IconButton>
 			</div>
@@ -734,7 +836,7 @@
 
 			{#if showSearch}
 				<div class="order-last w-full sm:order-none sm:w-44 lg:w-56">
-					<SearchInput bind:value={query} size="sm" placeholder="Search events…" />
+					<SearchInput bind:value={query} size="sm" placeholder={ui.search} />
 				</div>
 			{/if}
 
@@ -742,10 +844,10 @@
 				size="sm"
 				bind:value={view}
 				items={[
-					{ id: 'month', label: 'Month' },
-					{ id: 'week', label: 'Week' },
-					{ id: 'day', label: 'Day' },
-					{ id: 'agenda', label: 'Agenda' }
+					{ id: 'month', label: ui.month },
+					{ id: 'week', label: ui.week },
+					{ id: 'day', label: ui.day },
+					{ id: 'agenda', label: ui.agenda }
 				]}
 				onchange={(v) => onviewchange?.(v as CalendarView)}
 			/>
@@ -753,12 +855,20 @@
 
 		<div class="flex min-h-0 flex-1">
 			<!-- Main views -->
-			<div class="min-w-0 flex-1 overflow-auto p-2 sm:p-3">
+			<div
+				class={[
+					'min-h-0 min-w-0 flex-1 p-2 sm:p-3',
+					view === 'month' ? 'overflow-hidden' : 'overflow-auto'
+				]}
+			>
 				{#if view === 'month'}
-					<div class="grid grid-cols-7 gap-px overflow-hidden rounded-xl border border-border bg-border">
+					<div
+						class="grid h-full min-h-0 grid-cols-7 gap-px overflow-hidden rounded-xl border border-border bg-border"
+						style={`grid-template-rows: auto repeat(${Math.ceil(monthCells.length / 7)}, minmax(0, 1fr));`}
+					>
 						{#each weekdayLabels as wd}
 							<div
-								class="bg-surface-overlay/80 px-1 py-1.5 text-center text-[10px] font-semibold tracking-wide text-muted uppercase"
+								class="bg-surface-overlay/80 px-1 py-1.5 text-center text-xs font-semibold tracking-wide text-muted uppercase"
 							>
 								{wd}
 							</div>
@@ -767,7 +877,7 @@
 							{@const dayEvents = eventsOn(cell.key)}
 							<div
 								class={[
-									'flex min-h-[5.5rem] flex-col gap-0.5 bg-surface p-1 sm:min-h-[6.5rem]',
+									'flex min-h-0 flex-col gap-0.5 overflow-hidden bg-surface p-1',
 									!cell.inMonth && 'bg-surface-overlay/30 text-muted',
 									cell.key === todayKey && 'ring-1 ring-inset ring-brand-500/40'
 								]}
@@ -780,6 +890,7 @@
 										cell.key === focusKey && cell.key !== todayKey && 'bg-surface-overlay'
 									]}
 									onclick={() => {
+										clearSelectedEvent();
 										setDate(parseIso(cell.key));
 										ondayclick?.(cell.key);
 									}}
@@ -837,7 +948,7 @@
 									}}
 								>
 									<p class="text-[10px] font-semibold tracking-wide text-muted uppercase">
-										{(col.date ?? parseIso(col.key)).toLocaleDateString('en', { weekday: 'short' })}
+										{(col.date ?? parseIso(col.key)).toLocaleDateString(locale, { weekday: 'short' })}
 									</p>
 									<p
 										class={[
@@ -991,7 +1102,7 @@
 					<!-- Agenda -->
 					{#if agendaGroups.length === 0}
 						<div class="flex h-48 items-center justify-center rounded-xl border border-dashed border-border">
-							<Text size="sm" tone="muted">No upcoming events</Text>
+							<Text size="sm" tone="muted">{ui.noEvents}</Text>
 						</div>
 					{:else}
 						<ul class="space-y-4">
@@ -1005,7 +1116,7 @@
 									>
 										{group.label}
 										{#if group.key === todayKey}
-											<Badge size="sm" variant="primary" class="ml-1">Today</Badge>
+											<Badge size="sm" variant="primary" class="ml-1">{ui.today}</Badge>
 										{/if}
 									</p>
 									<ul class="space-y-1.5">
@@ -1046,65 +1157,137 @@
 				{/if}
 			</div>
 
-			<!-- Detail drawer -->
-			{#if selectedEvent}
+			<!-- Detail panel: day agenda (default) or selected event -->
+			{#if showDetailPanel}
 				<aside
-					class="hidden w-64 shrink-0 flex-col border-l border-border bg-surface-elevated p-4 lg:flex"
+					class="hidden min-h-0 w-80 shrink-0 flex-col overflow-hidden border-l border-border bg-surface-elevated lg:flex"
 				>
-					<div class="mb-3 flex items-start justify-between gap-2">
-						<span
-							class={['mt-1 h-2.5 w-2.5 rounded-full', toneClass[eventTone(selectedEvent)]]}
-						></span>
-						<div class="min-w-0 flex-1">
-							<h3 class="text-sm font-semibold text-primary">{selectedEvent.title}</h3>
-							<p class="mt-1 text-xs text-muted">
-								{parseIso(selectedEvent.date).toLocaleDateString('en', {
-									weekday: 'short',
-									month: 'short',
-									day: 'numeric'
-								})}
-								{#if selectedEvent.endDate && selectedEvent.endDate !== selectedEvent.date}
-									– {parseIso(selectedEvent.endDate).toLocaleDateString('en', {
-										month: 'short',
-										day: 'numeric'
-									})}
-								{/if}
-							</p>
-						</div>
-						<IconButton
-							label="Close"
-							size="sm"
-							variant="ghost"
-							onclick={() => (selectedEventId = null)}
-						>
-							<X class="h-4 w-4" />
-						</IconButton>
-					</div>
+					{#if selectedEvent}
+						{@const tone = eventTone(selectedEvent)}
+						{@const cal = selectedEvent.calendarId
+							? calendars.find((c) => c.id === selectedEvent.calendarId)
+							: undefined}
+						<div class="flex min-h-0 flex-1 flex-col">
+							<div class="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4">
+								<div class="mb-3 flex items-center gap-1">
+									<IconButton
+										label={ui.back}
+										size="sm"
+										variant="ghost"
+										onclick={clearSelectedEvent}
+									>
+										<ChevronLeft class="h-4 w-4" />
+									</IconButton>
+									<Text as="span" size="xs" tone="muted" class="font-medium">
+										{ui.back}
+									</Text>
+									<div class="flex-1"></div>
+									<IconButton
+										label={ui.close}
+										size="sm"
+										variant="ghost"
+										onclick={clearSelectedEvent}
+									>
+										<X class="h-4 w-4" />
+									</IconButton>
+								</div>
 
-					<div class="space-y-3 text-xs text-secondary">
-						<p class="inline-flex items-center gap-1.5">
-							<Clock class="h-3.5 w-3.5 text-muted" />
-							{timeLabel(selectedEvent)}
-						</p>
-						{#if selectedEvent.location}
-							<p class="inline-flex items-center gap-1.5">
-								<MapPin class="h-3.5 w-3.5 text-muted" />
-								{selectedEvent.location}
-							</p>
-						{/if}
-						{#if selectedEvent.calendarId}
-							{@const cal = calendars.find((c) => c.id === selectedEvent.calendarId)}
-							{#if cal}
-								<p class="inline-flex items-center gap-1.5">
-									<span class={['h-2 w-2 rounded-full', toneClass[cal.color ?? 'brand']]}></span>
-									{cal.label}
-								</p>
+								<div class={['mb-4 rounded-xl px-3.5 py-3', toneSoft[tone]]}>
+									<h3 class="text-base font-semibold text-primary">{selectedEvent.title}</h3>
+									<p class="mt-1 text-xs opacity-80">
+										{parseIso(selectedEvent.date).toLocaleDateString(locale, {
+											weekday: 'short',
+											month: 'short',
+											day: 'numeric'
+										})}
+										{#if selectedEvent.endDate && selectedEvent.endDate !== selectedEvent.date}
+											– {parseIso(selectedEvent.endDate).toLocaleDateString(locale, {
+												month: 'short',
+												day: 'numeric'
+											})}
+										{/if}
+									</p>
+								</div>
+
+								<Stack gap="sm">
+									<div class="flex items-center gap-2 text-sm text-secondary">
+										<Clock class="h-4 w-4 shrink-0 text-muted" />
+										<span>{timeLabel(selectedEvent)}</span>
+									</div>
+									{#if selectedEvent.location}
+										<div class="flex items-center gap-2 text-sm text-secondary">
+											<MapPin class="h-4 w-4 shrink-0 text-muted" />
+											<span class="min-w-0 truncate">{selectedEvent.location}</span>
+										</div>
+									{/if}
+									{#if cal}
+										<div class="flex items-center gap-2">
+											<span
+												class={['h-2.5 w-2.5 shrink-0 rounded-full', toneClass[cal.color ?? 'brand']]}
+												aria-hidden="true"
+											></span>
+											<Badge size="sm" variant="secondary">{cal.label}</Badge>
+										</div>
+									{/if}
+									{#if selectedEvent.description}
+										<Text as="p" size="sm" tone="secondary" class="leading-relaxed">
+											{selectedEvent.description}
+										</Text>
+									{/if}
+								</Stack>
+							</div>
+
+							{#if eventActions}
+								<div class="shrink-0 border-t border-border bg-surface-elevated p-4">
+									{@render eventActions(selectedEvent)}
+								</div>
 							{/if}
-						{/if}
-						{#if selectedEvent.description}
-							<p class="leading-relaxed text-secondary">{selectedEvent.description}</p>
-						{/if}
-					</div>
+						</div>
+					{:else}
+						<div class="flex min-h-0 flex-1 flex-col p-4">
+							<div class="mb-3 flex shrink-0 items-start justify-between gap-2">
+								<div class="min-w-0 flex-1">
+									<p class="text-xs font-semibold tracking-wider text-muted uppercase">
+										{ui.dayEvents}
+									</p>
+									<h3 class="mt-0.5 text-sm font-semibold text-primary">{focusDayHeading}</h3>
+								</div>
+								{#if showCreate}
+									<Button size="xs" variant="secondary" onclick={() => oncreate?.(focusKey)}>
+										<Plus class="h-3.5 w-3.5" strokeWidth={2} />
+										{ui.create}
+									</Button>
+								{/if}
+							</div>
+
+							{#if focusDayEvents.length === 0}
+								<div class="flex min-h-0 flex-1 items-center justify-center px-3 py-8">
+									<Text size="sm" tone="muted">{ui.noEvents}</Text>
+								</div>
+							{:else}
+								<ul class="min-h-0 flex-1 space-y-1.5 overflow-auto overscroll-contain">
+									{#each focusDayEvents as ev (ev.id)}
+										<li>
+											<button
+												type="button"
+												class={[
+													'flex w-full flex-col gap-0.5 rounded-lg px-2.5 py-2 text-left transition hover:opacity-90',
+													toneSoft[eventTone(ev)]
+												]}
+												onclick={() => selectEvent(ev)}
+											>
+												<span class="text-xs tabular-nums opacity-80">{timeLabel(ev)}</span>
+												<span class="text-sm font-semibold">{ev.title}</span>
+												{#if ev.location}
+													<span class="truncate text-xs opacity-70">{ev.location}</span>
+												{/if}
+											</button>
+										</li>
+									{/each}
+								</ul>
+							{/if}
+						</div>
+					{/if}
 				</aside>
 			{/if}
 		</div>
