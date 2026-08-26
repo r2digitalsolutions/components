@@ -28,8 +28,21 @@ export type { LocaleCode, MessageKey, MessageParams, UiMessages };
 
 const STORAGE_KEY = 'r2-locale';
 
+function canUseLocalStorage(): boolean {
+	try {
+		return (
+			typeof localStorage !== 'undefined' &&
+			typeof localStorage.getItem === 'function' &&
+			typeof localStorage.setItem === 'function'
+		);
+	} catch {
+		// Node / locked-down environments may throw on access
+		return false;
+	}
+}
+
 function getStoredLocale(): LocaleCode {
-	if (typeof localStorage === 'undefined') return 'en';
+	if (!canUseLocalStorage()) return 'en';
 	return (localStorage.getItem(STORAGE_KEY) as LocaleCode) ?? 'en';
 }
 
@@ -72,7 +85,7 @@ class I18nStore {
 	/** Change active locale (`es`, `en-US`, …). */
 	set(locale: LocaleCode) {
 		this.#locale = locale;
-		if (typeof localStorage !== 'undefined') {
+		if (canUseLocalStorage()) {
 			localStorage.setItem(STORAGE_KEY, locale);
 		}
 		applyDocumentLang(locale);

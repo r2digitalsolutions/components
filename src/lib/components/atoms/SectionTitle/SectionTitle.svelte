@@ -24,8 +24,13 @@
 	}: SectionTitleProps = $props();
 </script>
 
-<div class={['flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between', className]}>
-	<div class="min-w-0 space-y-1">
+<div
+	class={[
+		'flex w-full flex-col gap-3 sm:flex-row sm:items-start sm:justify-between',
+		className
+	]}
+>
+	<div class="min-w-0 flex-1 space-y-1">
 		{#if eyebrow}
 			<p class="text-xs font-semibold uppercase tracking-wider text-brand-600 dark:text-brand-400">
 				{eyebrow}
@@ -37,7 +42,7 @@
 		{/if}
 	</div>
 	{#if actions}
-		<div class="flex shrink-0 items-center gap-2">
+		<div class="flex shrink-0 items-center justify-end gap-2 self-end sm:ml-auto sm:self-start">
 			{@render actions()}
 		</div>
 	{/if}

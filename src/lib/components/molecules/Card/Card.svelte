@@ -67,7 +67,7 @@
 	{#if header}
 		<div
 			class={[
-				'border-b border-border',
+				'w-full border-b border-border',
 				chrome && 'bg-surface/40',
 				paddingClasses[padding]
 			]}
@@ -77,7 +77,12 @@
 	{/if}
 
 	{#if children}
-		<div class={['min-w-0 flex-1', padding !== 'none' ? paddingClasses[padding] : '']}>
+		<div
+			class={[
+				'flex min-w-0 flex-1 flex-col',
+				padding !== 'none' ? paddingClasses[padding] : ''
+			]}
+		>
 			{@render children()}
 		</div>
 	{/if}

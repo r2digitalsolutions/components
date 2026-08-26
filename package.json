@@ -111,6 +111,6 @@
 		"atomic-design"
 	],
 	"dependencies": {
-		"@xyflow/svelte": "^1.6.3"
+		"@xyflow/svelte": "^1.6.5"
 	}
 }

@@ -20,7 +20,7 @@
 
 <nav class={['w-full', className]} aria-label="Breadcrumb">
 	<ol class="flex flex-wrap items-center gap-1.5 text-sm">
-		{#each items as item, index (item.id)}
+		{#each items as item, index (item.id ?? `breadcrumb-${index}`)}
 			<li class="inline-flex items-center gap-1.5">
 				{#if index > 0}
 					<svg class="h-3.5 w-3.5 text-secondary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
