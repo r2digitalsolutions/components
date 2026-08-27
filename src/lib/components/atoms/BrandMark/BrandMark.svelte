@@ -4,9 +4,11 @@
 	export type BrandMarkSize = 'sm' | 'md' | 'lg' | 'xl';
 
 	interface BrandMarkProps {
-		/** 1–2 letter mark, or provide children for a custom glyph */
+		/** 1–2 letter mark, or provide children / logoSrc for a custom glyph */
 		mark?: string;
 		name?: string;
+		/** Official logo image URL (SVG/PNG). Replaces initials / children. */
+		logoSrc?: string;
 		size?: BrandMarkSize;
 		showName?: boolean;
 		class?: string;
@@ -16,6 +18,7 @@
 	const {
 		mark,
 		name = 'Brand',
+		logoSrc,
 		size = 'md',
 		showName = false,
 		class: className = '',
@@ -49,12 +52,15 @@
 <span class={['inline-flex items-center gap-2.5', className]}>
 	<span
 		class={[
-			'inline-flex shrink-0 items-center justify-center bg-brand-500 font-bold tracking-tight text-white shadow-sm',
+			'inline-flex shrink-0 items-center justify-center shadow-sm',
+			logoSrc ? 'overflow-hidden bg-white' : 'bg-brand-500 font-bold tracking-tight text-white',
 			box[size]
 		]}
 		aria-hidden={showName || !!name}
 	>
-		{#if children}
+		{#if logoSrc}
+			<img src={logoSrc} alt="" class="h-[78%] w-[78%] object-contain" />
+		{:else if children}
 			{@render children()}
 		{:else}
 			{initials}

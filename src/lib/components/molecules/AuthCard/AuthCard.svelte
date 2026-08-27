@@ -8,6 +8,8 @@
 		description?: string;
 		brand?: string;
 		mark?: string;
+		/** Official brand logo URL (SVG/PNG) for BrandMark */
+		logoSrc?: string;
 		class?: string;
 		footer?: Snippet;
 		children?: Snippet;
@@ -18,6 +20,7 @@
 		description,
 		brand = 'R2 Digi',
 		mark,
+		logoSrc,
 		class: className = '',
 		footer,
 		children
@@ -31,7 +34,7 @@
 	class={`mx-auto w-full max-w-md border border-border shadow-sm ${className}`}
 >
 	<div class="mb-6 flex flex-col items-center gap-3 text-center">
-		<BrandMark name={brand} {mark} size="lg" showName />
+		<BrandMark name={brand} {mark} {logoSrc} size="lg" showName />
 		<div>
 			<h1 class="text-xl font-semibold tracking-tight text-primary">{title}</h1>
 			{#if description}

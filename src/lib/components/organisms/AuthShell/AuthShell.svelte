@@ -7,6 +7,8 @@
 
 	interface AuthShellProps {
 		brand?: string;
+		/** Official brand logo URL (SVG/PNG) for BrandMark */
+		logoSrc?: string;
 		tagline?: string;
 		footer?: string;
 		headline?: string;
@@ -26,6 +28,7 @@
 
 	const {
 		brand = 'R2DigiSolutions',
+		logoSrc,
 		tagline = 'Build faster with a cohesive design system.',
 		footer = '© R2DigiSolutions. All rights reserved.',
 		headline = 'Sign in to continue',
@@ -52,8 +55,10 @@
 	{:else}
 		<div
 			class={[
-				'relative flex h-full min-h-0 flex-col justify-between overflow-hidden bg-gradient-to-br from-brand-600 via-brand-700 to-brand-950 text-white',
-				compact ? 'gap-4 px-5 py-5' : 'gap-6 p-8 sm:p-10'
+				'flex flex-col justify-between overflow-hidden bg-gradient-to-br from-brand-600 via-brand-700 to-brand-950 text-white',
+				compact
+					? 'relative gap-4 px-5 py-5'
+					: 'absolute inset-0 gap-6 p-8 sm:p-10'
 			]}
 		>
 			<div
@@ -67,7 +72,7 @@
 
 			<div class={['relative z-10', compact ? 'space-y-3' : 'space-y-6']}>
 				<div class="flex items-center gap-2.5">
-					<BrandMark name={brand} size={compact ? 'sm' : 'md'} />
+					<BrandMark name={brand} {logoSrc} size={compact ? 'sm' : 'md'} />
 					<span class={['font-semibold tracking-tight text-white', compact ? 'text-sm' : 'text-base']}>
 						{brand}
 					</span>
@@ -90,7 +95,7 @@
 				</div>
 				{#if !compact && highlights.length}
 					<ul class="hidden space-y-2.5 pt-1 text-sm text-white/75 sm:block">
-						{#each highlights as item}
+						{#each highlights as item (item)}
 							<li class="flex items-start gap-2">
 								<span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-white/80"></span>
 								{item}
@@ -110,28 +115,33 @@
 <div
 	class={[
 		'flex w-full flex-col overflow-hidden bg-surface',
+		// h-dvh (not height:100%): % collapses when html/body have no explicit height
 		fillParent && 'h-full min-h-0',
-		!fillParent && fullHeight && 'h-full min-h-dvh',
+		!fillParent && fullHeight && 'h-dvh min-h-dvh',
 		!fillParent && !fullHeight && 'min-h-[32rem]',
 		className
 	]}
-	style:height={fillParent ? '100%' : fullHeight ? '100%' : undefined}
-	style:min-height={fillParent ? '100%' : fullHeight ? '100dvh' : '32rem'}
+	style:height={fillParent ? '100%' : undefined}
+	style:min-height={fillParent ? '100%' : !fullHeight ? '32rem' : undefined}
 >
 	<div
 		class={[
 			'flex h-full min-h-0 w-full flex-1 flex-col',
-			showAside && 'lg:flex-row',
+			showAside && 'lg:flex-row lg:items-stretch',
 			asideSide === 'right' && 'lg:flex-row-reverse'
 		]}
 	>
 		{#if showAside}
-			<aside class="relative hidden h-full min-h-0 w-full overflow-hidden lg:block lg:w-1/2">
+			<aside
+				class="relative hidden min-h-0 w-full overflow-hidden lg:block lg:h-auto lg:w-1/2 lg:self-stretch"
+			>
 				{@render marketingPanel(false)}
 			</aside>
 		{/if}
 
-		<section class="relative flex h-full min-h-0 w-full flex-1 flex-col bg-surface">
+		<section
+			class="relative flex min-h-0 w-full flex-1 flex-col bg-surface lg:h-auto lg:self-stretch"
+		>
 			<div
 				class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-brand-500/5 via-transparent to-transparent"
 				aria-hidden="true"
@@ -144,7 +154,7 @@
 					</div>
 				{:else}
 					<div class="shrink-0 px-5 pt-6 text-center lg:hidden">
-						<BrandMark name={brand} showName size="md" class="justify-center" />
+						<BrandMark name={brand} {logoSrc} showName size="md" class="justify-center" />
 						<p class="mt-2 text-sm text-muted">{tagline}</p>
 					</div>
 				{/if}
