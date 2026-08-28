@@ -139,9 +139,7 @@
 			</aside>
 		{/if}
 
-		<section
-			class="relative flex min-h-0 w-full flex-1 flex-col bg-surface lg:h-auto lg:self-stretch"
-		>
+		<section class="relative flex h-full min-h-0 w-full flex-1 flex-col bg-surface">
 			<div
 				class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-brand-500/5 via-transparent to-transparent"
 				aria-hidden="true"
@@ -161,7 +159,7 @@
 
 				<!-- Form column: true center in remaining space -->
 				<div
-					class="flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto px-5 py-8 sm:px-8 sm:py-10"
+					class="flex h-full min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto px-5 py-8 sm:px-8 sm:py-10"
 				>
 					<div class="mx-auto w-full max-w-md shrink-0">
 						{#if children}
