@@ -51,6 +51,21 @@
 		);
 	}
 
+	function bindTrigger() {
+		const el = getTriggerEl();
+		if (!el || el === rootEl) return;
+		el.setAttribute('aria-haspopup', 'dialog');
+		el.setAttribute('aria-controls', panelId);
+		el.setAttribute('aria-expanded', open ? 'true' : 'false');
+		if (strategy !== 'fixed') {
+			el.removeAttribute('popovertarget');
+			el.removeAttribute('popovertargetaction');
+			return;
+		}
+		el.setAttribute('popovertarget', panelId);
+		el.setAttribute('popovertargetaction', 'toggle');
+	}
+
 	function positionPanel() {
 		if (!panelEl || strategy !== 'fixed') return;
 		if (!panelEl.matches(':popover-open')) return;
@@ -151,6 +166,8 @@
 	$effect(() => {
 		open;
 		strategy;
+		rootEl;
+		bindTrigger();
 		queueMicrotask(() => {
 			syncNative();
 			if (open) {
@@ -158,6 +175,15 @@
 				requestAnimationFrame(positionPanel);
 			}
 		});
+	});
+
+	$effect(() => {
+		if (strategy === 'fixed') return;
+		const el = getTriggerEl();
+		if (!el) return;
+		const onClick = () => setOpen(!open);
+		el.addEventListener('click', onClick);
+		return () => el.removeEventListener('click', onClick);
 	});
 
 	$effect(() => {

@@ -12,7 +12,7 @@
 <div class="flex min-h-40 items-center justify-center">
 	<Popover bind:open placement={props.placement ?? 'bottom'}>
 		{#snippet trigger()}
-			<Button size="sm" variant="secondary" onclick={() => (open = !open)}>
+			<Button size="sm" variant="secondary" data-popover-trigger>
 				Open popover
 			</Button>
 		{/snippet}

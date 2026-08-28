@@ -1079,7 +1079,6 @@
 									aria-haspopup="dialog"
 									onclick={() => {
 										startOpen = false;
-										clockOpen = !clockOpen;
 									}}
 								>
 									<span class="text-xs font-semibold tabular-nums text-primary">{clock}</span>
