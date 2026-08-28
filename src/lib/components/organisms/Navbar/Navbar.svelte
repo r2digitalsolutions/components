@@ -68,42 +68,37 @@
 
 <header
 	class={[
-		'relative z-40 w-full bg-surface-elevated',
-		bordered && 'border-b border-border',
-		sticky && 'sticky top-0',
+		'bg-surface-elevated relative z-40 w-full',
+		bordered && 'border-border border-b',
+		sticky && 'top-0 sticky',
 		blur && 'bg-surface-elevated/85 backdrop-blur-md',
 		className
 	]}
 >
 	<div
-		class={[
-			'mx-auto flex w-full items-center gap-3 px-4 sm:gap-4 sm:px-6',
-			height,
-			maxWidthClass
-		]}
+		class={['gap-3 px-4 sm:gap-4 sm:px-6 mx-auto flex w-full items-center', height, maxWidthClass]}
 	>
+		{#if leading}
+			<div class="flex shrink-0 items-center">{@render leading()}</div>
+		{/if}
 		{#if showBrand}
-			<div class="flex shrink-0 items-center gap-2">
-				{#if leading}
-					{@render leading()}
-				{:else}
-					<span
-						class={[
-							'flex items-center justify-center rounded-lg bg-brand-500 font-bold text-white',
-							size === 'lg' ? 'h-8 w-8 text-xs' : 'h-7 w-7 text-[11px]'
-						]}
-						aria-hidden="true"
-					>
-						{brand.slice(0, 1).toUpperCase()}
-					</span>
-				{/if}
+			<div class="gap-2 flex shrink-0 items-center">
+				<span
+					class={[
+						'rounded-lg bg-brand-500 font-bold text-white flex items-center justify-center',
+						size === 'lg' ? 'h-8 w-8 text-xs' : 'h-7 w-7 text-[11px]'
+					]}
+					aria-hidden="true"
+				>
+					{brand.slice(0, 1).toUpperCase()}
+				</span>
 				<span class={['font-semibold tracking-tight text-primary', brandSize]}>{brand}</span>
 			</div>
 		{/if}
 
 		<nav
 			class={[
-				'hidden h-full min-w-0 items-stretch gap-0.5 md:flex',
+				'min-w-0 gap-0.5 md:flex hidden h-full items-stretch',
 				centerLinks ? 'flex-1 justify-center' : 'flex-1',
 				!showBrand && !centerLinks && 'flex-1'
 			]}
@@ -116,14 +111,14 @@
 					disabled={link.disabled}
 					onclick={() => select(link.id, link.disabled)}
 					class={[
-						'relative flex items-center gap-1.5 px-3 font-medium transition-colors',
-						'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500/30',
+						'gap-1.5 px-3 font-medium relative flex items-center transition-colors',
+						'focus-visible:ring-brand-500/30 focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset',
 						linkSize,
 						variant === 'underline' && 'border-b-2',
 						variant === 'underline' &&
 							(active
 								? 'border-brand-500 text-primary'
-								: 'border-transparent text-secondary hover:text-primary'),
+								: 'text-secondary hover:text-primary border-transparent'),
 						variant === 'pills' && 'my-2 rounded-lg',
 						variant === 'pills' &&
 							(active
@@ -137,7 +132,7 @@
 					{link.label}
 					{#if link.badge !== undefined && link.badge !== ''}
 						<span
-							class="rounded-full bg-brand-50 px-1.5 py-0.5 text-[10px] font-semibold text-brand-700 dark:bg-brand-950/50 dark:text-brand-300"
+							class="bg-brand-50 px-1.5 py-0.5 font-semibold text-brand-700 dark:bg-brand-950/50 dark:text-brand-300 rounded-full text-[10px]"
 						>
 							{link.badge}
 						</span>
@@ -147,7 +142,7 @@
 		</nav>
 
 		<nav
-			class="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto md:hidden"
+			class="min-w-0 gap-0.5 md:hidden flex flex-1 items-center overflow-x-auto"
 			aria-label="Primary"
 		>
 			{#each links as link (link.id)}
@@ -156,8 +151,8 @@
 					disabled={link.disabled}
 					onclick={() => select(link.id, link.disabled)}
 					class={[
-						'shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors',
-						'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30',
+						'px-3 py-1 text-xs font-medium shrink-0 rounded-full transition-colors',
+						'focus-visible:ring-brand-500/30 focus-visible:ring-2 focus-visible:outline-none',
 						value === link.id
 							? 'bg-brand-50 text-brand-700 dark:bg-brand-950/50 dark:text-brand-300'
 							: 'text-secondary hover:bg-surface-overlay',
@@ -170,7 +165,7 @@
 		</nav>
 
 		{#if actions}
-			<div class="ml-auto flex shrink-0 items-center gap-2">
+			<div class="gap-2 ml-auto flex shrink-0 items-center">
 				{@render actions()}
 			</div>
 		{/if}

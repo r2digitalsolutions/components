@@ -1000,7 +1000,13 @@ export type {
 	ToastAction
 } from './components/organisms/Toast/toast.svelte.js';
 export { default as Sidebar } from './components/organisms/Sidebar/Sidebar.svelte';
-export type { SidebarItem, SidebarGroup } from './components/organisms/Sidebar/Sidebar.svelte';
+export type {
+	SidebarItem,
+	SidebarGroup,
+	SidebarIcon
+} from './components/organisms/Sidebar/Sidebar.svelte';
+export { default as NavRail } from './components/organisms/NavRail/NavRail.svelte';
+export type { NavRailItem, NavRailIcon } from './components/organisms/NavRail/NavRail.svelte';
 export { default as Navbar } from './components/organisms/Navbar/Navbar.svelte';
 export type { NavbarLink } from './components/organisms/Navbar/Navbar.svelte';
 export { default as BottomNav } from './components/organisms/BottomNav/BottomNav.svelte';
@@ -1011,6 +1017,12 @@ export type {
 export { default as CommandPalette } from './components/organisms/CommandPalette/CommandPalette.svelte';
 export type { CommandItem } from './components/organisms/CommandPalette/CommandPalette.svelte';
 export { default as AppShell } from './components/organisms/AppShell/AppShell.svelte';
+export {
+	getAppChrome,
+	setAppChrome,
+	AppChrome
+} from './components/organisms/AppShell/app-chrome.svelte.js';
+export type { AppShellContextual } from './components/organisms/AppShell/app-chrome.svelte.js';
 export { default as EditorShell } from './components/organisms/EditorShell/EditorShell.svelte';
 export { default as BlueprintEditor } from './components/organisms/BlueprintEditor/BlueprintEditor.svelte';
 export { default as CanvasEditor } from './components/organisms/CanvasEditor/CanvasEditor.svelte';

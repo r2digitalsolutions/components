@@ -10,11 +10,15 @@ const meta = {
 	},
 	argTypes: {
 		fullHeight: { control: 'boolean' },
-		framed: { control: 'boolean' }
+		framed: { control: 'boolean' },
+		showRail: { control: 'boolean' },
+		showContextual: { control: 'boolean' }
 	},
 	args: {
 		fullHeight: true,
-		framed: false
+		framed: false,
+		showRail: false,
+		showContextual: false
 	}
 } satisfies Meta<typeof AppShellStory>;
 
@@ -22,6 +26,16 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Fullscreen: Story = {};
+
+export const WithRail: Story = {
+	name: 'With icon rail',
+	args: { showRail: true }
+};
+
+export const Coolify: Story = {
+	name: 'Rail + contextual',
+	args: { showRail: true, showContextual: true }
+};
 
 export const FramedPreview: Story = {
 	name: 'Framed preview',
