@@ -97,24 +97,27 @@ Hay dos ejes independientes en `<html>`:
 - **slate** — gris frío (hue 265, el look actual).
 - **neutral** — croma 0, sin castaño azul. Misma familia que Tailwind `neutral` (`#171717`, `#fafafa`).
 
-Para evitar FOUC, fíjalo en `app.html` antes de pintar:
+Para evitar FOUC, fíjalo en `app.html` con **cookie** (no `localStorage`; en SSR no existe `setItem`):
 
 ```html
 <html lang="es" data-theme="neutral">
 	<head>
 		<script>
 			(function () {
-				var palette = localStorage.getItem('r2-theme-palette') || 'neutral';
-				document.documentElement.setAttribute('data-theme', palette);
-				if (
-					localStorage.theme === 'dark' ||
-					localStorage.getItem('r2-theme') === 'dark' ||
-					(!('theme' in localStorage) &&
-						!localStorage.getItem('r2-theme') &&
-						window.matchMedia('(prefers-color-scheme: dark)').matches)
-				) {
-					document.documentElement.classList.add('dark');
+				function getCookie(name) {
+					var m = document.cookie.match(
+						new RegExp('(?:^|; )' + name.replace(/([.$?*|{}()[\]\\/+^])/g, '\\$1') + '=([^;]*)')
+					);
+					return m ? decodeURIComponent(m[1]) : null;
 				}
+				var palette = getCookie('r2-theme-palette') || 'neutral';
+				document.documentElement.setAttribute('data-theme', palette);
+				var theme = getCookie('r2-theme');
+				var dark =
+					theme === 'dark' ||
+					((!theme || theme === 'system') &&
+						window.matchMedia('(prefers-color-scheme: dark)').matches);
+				document.documentElement.classList.toggle('dark', dark);
 			})();
 		</script>
 	</head>
