@@ -73,7 +73,7 @@
 		framed = false,
 		mainClass = '',
 		class: className = '',
-		actions,
+		actions: actionsSlot,
 		children
 	}: AppShellProps = $props();
 
@@ -98,7 +98,12 @@
 		};
 	});
 
-	const resolvedContextual = $derived(chrome.contextual ?? propContextual);
+	const resolvedContextual = $derived(chrome.source?.() ?? propContextual);
+	const contextualKey = $derived(
+		resolvedContextual
+			? `${resolvedContextual.parentHref ?? ''}:${resolvedContextual.brand ?? ''}:${resolvedContextual.description ?? ''}`
+			: ''
+	);
 	const showRail = $derived(rail.length > 0 || railFooter.length > 0);
 	let mobileOpen = $state(false);
 
@@ -198,26 +203,28 @@
 	{/if}
 
 	{#if resolvedContextual}
-		<div
-			class={[
-				'z-40 h-full shrink-0',
-				!mobileOpen && 'max-md:hidden',
-				mobileOpen &&
-					mobileShowsContextual &&
-					'max-md:fixed max-md:inset-y-0 max-md:z-40 max-md:shadow-xl',
-				mobileOpen && mobileShowsContextual && showRail && 'max-md:left-14',
-				mobileOpen && mobileShowsContextual && !showRail && 'max-md:left-0'
-			]}
-		>
-			<Sidebar
-				brand={resolvedContextual.brand ?? brand}
-				groups={resolvedContextual.groups}
-				value={resolvedContextual.value}
-				collapsible={false}
-				header={resolvedContextual.header ?? contextualHeaderDefault}
-				onchange={onContextualNav}
-			/>
-		</div>
+		{#key contextualKey}
+			<div
+				class={[
+					'z-40 h-full shrink-0',
+					!mobileOpen && 'max-md:hidden',
+					mobileOpen &&
+						mobileShowsContextual &&
+						'max-md:fixed max-md:inset-y-0 max-md:z-40 max-md:shadow-xl',
+					mobileOpen && mobileShowsContextual && showRail && 'max-md:left-14',
+					mobileOpen && mobileShowsContextual && !showRail && 'max-md:left-0'
+				]}
+			>
+				<Sidebar
+					brand={resolvedContextual.brand ?? brand}
+					groups={resolvedContextual.groups}
+					value={resolvedContextual.value}
+					collapsible={false}
+					header={resolvedContextual.header ?? contextualHeaderDefault}
+					onchange={onContextualNav}
+				/>
+			</div>
+		{/key}
 	{/if}
 
 	<div class="min-h-0 min-w-0 flex flex-1 flex-col">
@@ -261,7 +268,7 @@
 					</div>
 				{/snippet}
 				{#snippet actions()}
-					{#if actions}{@render actions()}{/if}
+					{#if actionsSlot}{@render actionsSlot()}{/if}
 				{/snippet}
 			</Navbar>
 		{/if}

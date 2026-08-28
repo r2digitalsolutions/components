@@ -15,10 +15,19 @@ export interface AppShellContextual {
 }
 
 export class AppChrome {
-	contextual = $state.raw<AppShellContextual | null>(null);
+	/** Live reader so nested layouts stay reactive when `[id]` is reused. */
+	source = $state.raw<(() => AppShellContextual | null) | null>(null);
 
-	setContextual(nav: AppShellContextual | null) {
-		this.contextual = nav;
+	get contextual(): AppShellContextual | null {
+		return this.source?.() ?? null;
+	}
+
+	setContextual(nav: AppShellContextual | (() => AppShellContextual | null) | null) {
+		if (nav === null) {
+			this.source = null;
+			return;
+		}
+		this.source = typeof nav === 'function' ? nav : () => nav;
 	}
 }
 
