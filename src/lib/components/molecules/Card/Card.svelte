@@ -50,7 +50,8 @@
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <div
 	class={[
-		'flex flex-col overflow-hidden rounded-2xl transition-[box-shadow,transform,border-color] duration-200',
+		'flex flex-col rounded-2xl transition-[box-shadow,transform,border-color] duration-200',
+		hoverable ? 'overflow-visible' : 'overflow-hidden',
 		variantClasses[variant],
 		hoverable &&
 			'cursor-pointer hover:-translate-y-0.5 hover:border-border-strong hover:shadow-md',

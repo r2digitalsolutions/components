@@ -165,6 +165,8 @@
 		expandedRow?: Snippet<[T, DataGridColumn<T>[]]>;
 		/** Custom card/list body; falls back to title + fields. */
 		itemCard?: Snippet<[T]>;
+		/** Border + surface around list/card/grid items. Inner cards already have their own. */
+		itemFrame?: boolean;
 		dockExtra?: Snippet;
 		leading?: Snippet;
 		onselectionchange?: (selection: GridSelection) => void;
@@ -222,6 +224,7 @@
 		cell,
 		expandedRow,
 		itemCard,
+		itemFrame = true,
 		dockExtra,
 		leading,
 		onselectionchange,
@@ -1924,7 +1927,10 @@
 			<!-- list / card / grid modes -->
 			<div
 				class={[
-					'min-h-0 w-full flex-1 overflow-auto rounded-xl border border-border bg-surface-elevated p-3',
+					'min-h-0 w-full flex-1',
+					itemFrame
+						? 'overflow-auto rounded-xl border border-border bg-surface-elevated p-3'
+						: 'overflow-visible p-1',
 					viewMode === 'list' && 'flex flex-col gap-2',
 					viewMode === 'card' && 'flex flex-col gap-3',
 					viewMode === 'grid' &&
