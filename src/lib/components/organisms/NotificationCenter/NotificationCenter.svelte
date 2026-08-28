@@ -14,11 +14,26 @@
 		type?: 'info' | 'success' | 'warning' | 'error';
 	}
 
+	export interface NotificationCenterLabels {
+		title?: string;
+		/** Badge next to the title. `{n}` is replaced with unread count. */
+		newCount?: string;
+		markAllRead?: string;
+		clearAll?: string;
+		empty?: string;
+		/** Trigger aria-label when there are no unread items */
+		trigger?: string;
+		/** Appended to trigger aria-label when unread. `{n}` is unread count. */
+		unreadSuffix?: string;
+	}
+
 	interface NotificationCenterProps {
 		id?: string;
 		items?: NotificationItem[];
 		open?: boolean;
 		class?: string;
+		labels?: NotificationCenterLabels;
+		showClear?: boolean;
 		onitemclick?: (item: NotificationItem) => void;
 		onmarkallread?: () => void;
 		onclear?: () => void;
@@ -29,6 +44,8 @@
 		items = $bindable([]),
 		open = $bindable(false),
 		class: className = '',
+		showClear = true,
+		labels = {},
 		onitemclick,
 		onmarkallread,
 		onclear
@@ -41,6 +58,22 @@
 	const baseId = $derived(id ?? `notif-${Math.random().toString(36).slice(2, 9)}`);
 	const popoverId = $derived(`${baseId}-popover`);
 	const unreadCount = $derived(items.filter((n) => !n.read).length);
+
+	const DEFAULT_LABELS: Required<NotificationCenterLabels> = {
+		title: 'Notifications',
+		newCount: '{n} new',
+		markAllRead: 'Mark all read',
+		clearAll: 'Clear all',
+		empty: 'No notifications',
+		trigger: 'Notifications',
+		unreadSuffix: ', {n} unread'
+	};
+
+	const copy = $derived({ ...DEFAULT_LABELS, ...labels });
+
+	function withCount(template: string, n: number) {
+		return template.replaceAll('{n}', String(n));
+	}
 
 	function positionPopover() {
 		if (!triggerEl || !popoverEl) return;
@@ -136,7 +169,7 @@
 		type="button"
 		popovertarget={popoverId}
 		popovertargetaction="toggle"
-		aria-label={`Notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ''}`}
+		aria-label="{copy.trigger}{unreadCount > 0 ? withCount(copy.unreadSuffix, unreadCount) : ''}"
 		aria-expanded={open}
 		aria-controls={popoverId}
 		class="relative flex h-9 w-9 items-center justify-center rounded-lg text-secondary outline-none transition-colors hover:bg-surface-overlay hover:text-primary focus-visible:ring-2 focus-visible:ring-brand-500/30"
@@ -173,16 +206,16 @@
 		style={popoverStyle}
 		class="notif-panel inset-auto m-0 flex flex-col overflow-hidden rounded-xl border border-border bg-surface-elevated shadow-2xl outline-none"
 		role="dialog"
-		aria-label="Notifications"
+		aria-label={copy.title}
 	>
 		<div class="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
 			<div class="flex items-center gap-2">
-				<h3 class="text-sm font-semibold text-primary">Notifications</h3>
+				<h3 class="text-sm font-semibold text-primary">{copy.title}</h3>
 				{#if unreadCount > 0}
 					<span
 						class="rounded-full bg-brand-100 px-2 py-0.5 text-xs font-medium text-brand-600 dark:bg-brand-900 dark:text-brand-400"
 					>
-						{unreadCount} new
+						{withCount(copy.newCount, unreadCount)}
 					</span>
 				{/if}
 			</div>
@@ -193,16 +226,16 @@
 						onclick={markAllRead}
 						class="rounded-lg px-2 py-1 text-xs font-medium text-brand-600 transition-colors hover:bg-surface-overlay dark:text-brand-400"
 					>
-						Mark all read
+						{copy.markAllRead}
 					</button>
 				{/if}
-				{#if items.length > 0}
+				{#if showClear && items.length > 0}
 					<button
 						type="button"
 						onclick={clear}
 						class="rounded-lg px-2 py-1 text-xs font-medium text-muted transition-colors hover:bg-surface-overlay hover:text-primary"
 					>
-						Clear all
+						{copy.clearAll}
 					</button>
 				{/if}
 			</div>
@@ -225,7 +258,7 @@
 							d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
 						/>
 					</svg>
-					<p class="text-sm text-muted">No notifications</p>
+					<p class="text-sm text-muted">{copy.empty}</p>
 				</div>
 			{:else}
 				<div class="divide-y divide-border">

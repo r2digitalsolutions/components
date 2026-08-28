@@ -230,7 +230,7 @@
 			ontoggle={onToggle}
 			style={panelStyle}
 			class={[
-				'popover-panel m-0 max-w-[min(20rem,calc(100vw-1rem))] rounded-xl border border-border bg-surface-elevated p-3 shadow-xl outline-none',
+				'popover-panel m-0 rounded-xl border-border bg-surface-elevated p-3 shadow-xl max-w-[min(20rem,calc(100vw-1rem))] border outline-none',
 				panelClass
 			]}
 		>
@@ -241,7 +241,7 @@
 			bind:this={panelEl}
 			role="dialog"
 			class={[
-				'absolute z-50 min-w-48 rounded-xl border border-border bg-surface-elevated p-3 shadow-xl',
+				'min-w-48 rounded-xl border-border bg-surface-elevated p-3 shadow-xl absolute z-50 border',
 				absolutePos[placement],
 				absoluteAlign[align][placement],
 				panelClass

@@ -1036,7 +1036,10 @@ export type {
 export { default as Menubar } from './components/organisms/Menubar/Menubar.svelte';
 export type { MenubarItem, MenubarSubItem } from './components/organisms/Menubar/Menubar.svelte';
 export { default as NotificationCenter } from './components/organisms/NotificationCenter/NotificationCenter.svelte';
-export type { NotificationItem } from './components/organisms/NotificationCenter/NotificationCenter.svelte';
+export type {
+	NotificationItem,
+	NotificationCenterLabels
+} from './components/organisms/NotificationCenter/NotificationCenter.svelte';
 export { default as Kanban } from './components/organisms/Kanban/Kanban.svelte';
 export type {
 	KanbanColumn,

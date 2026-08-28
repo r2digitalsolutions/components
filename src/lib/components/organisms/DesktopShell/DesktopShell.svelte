@@ -71,13 +71,7 @@
 		y?: number;
 	}
 
-	export type DesktopWallpaper =
-		| 'aurora'
-		| 'slate'
-		| 'mint'
-		| 'dusk'
-		| 'paper'
-		| 'custom';
+	export type DesktopWallpaper = 'aurora' | 'slate' | 'mint' | 'dusk' | 'paper' | 'custom';
 
 	export type DesktopShellHeight = 'sm' | 'md' | 'lg' | 'xl' | 'full';
 
@@ -138,10 +132,8 @@
 			'bg-[radial-gradient(ellipse_at_20%_0%,rgb(56_189_248_/_0.28),transparent_50%),radial-gradient(ellipse_at_80%_10%,rgb(167_139_250_/_0.22),transparent_45%),linear-gradient(160deg,var(--surface),var(--surface-overlay))]',
 		slate:
 			'bg-[radial-gradient(circle_at_30%_20%,rgb(100_116_139_/_0.3),transparent_50%),linear-gradient(165deg,#0f172a,#1e293b_55%,#334155)]',
-		mint:
-			'bg-[radial-gradient(ellipse_at_top,rgb(52_211_153_/_0.22),transparent_50%),linear-gradient(160deg,var(--surface),rgb(236_253_245))]',
-		dusk:
-			'bg-[radial-gradient(ellipse_at_70%_0%,rgb(251_146_60_/_0.28),transparent_45%),radial-gradient(ellipse_at_10%_80%,rgb(99_102_241_/_0.2),transparent_40%),linear-gradient(165deg,#1e1b4b,#312e81_40%,#7c2d12)]',
+		mint: 'bg-[radial-gradient(ellipse_at_top,rgb(52_211_153_/_0.22),transparent_50%),linear-gradient(160deg,var(--surface),rgb(236_253_245))]',
+		dusk: 'bg-[radial-gradient(ellipse_at_70%_0%,rgb(251_146_60_/_0.28),transparent_45%),radial-gradient(ellipse_at_10%_80%,rgb(99_102_241_/_0.2),transparent_40%),linear-gradient(165deg,#1e1b4b,#312e81_40%,#7c2d12)]',
 		paper:
 			'bg-[linear-gradient(180deg,var(--surface-elevated),var(--surface)),repeating-linear-gradient(0deg,transparent,transparent_23px,rgb(0_0_0_/_0.03)_24px)]'
 	};
@@ -192,7 +184,14 @@
 
 	const DEFAULT_WIDGETS: DesktopWidget[] = [
 		{ id: 'w-weather', kind: 'weather', title: 'Weather', x: 16, y: 16 },
-		{ id: 'w-sticky', kind: 'sticky', title: 'Notes', body: 'Ship desktop polish\n· Icons ✓\n· Menubar ✓', x: 16, y: 140 },
+		{
+			id: 'w-sticky',
+			kind: 'sticky',
+			title: 'Notes',
+			body: 'Ship desktop polish\n· Icons ✓\n· Menubar ✓',
+			x: 16,
+			y: 140
+		},
 		{ id: 'w-stats', kind: 'stats', title: 'Pulse', x: 16, y: 280 }
 	];
 
@@ -245,9 +244,7 @@
 	let contextTarget = $state<ContextTarget>({ type: 'desktop' });
 
 	const openWindows = $derived(
-		windows
-			.filter((w) => !w.closed)
-			.sort((a, b) => (a.rect.z ?? 0) - (b.rect.z ?? 0))
+		windows.filter((w) => !w.closed).sort((a, b) => (a.rect.z ?? 0) - (b.rect.z ?? 0))
 	);
 	const taskbarWindows = $derived(windows.filter((w) => !w.closed));
 	const visibleTaskbar = $derived(taskbarWindows.slice(0, TASKBAR_VISIBLE));
@@ -413,9 +410,7 @@
 		const z = nextZ();
 		emit(
 			windows.map((w) =>
-				w.id === id
-					? { ...w, closed: false, rect: { ...w.rect, z, minimized: false } }
-					: w
+				w.id === id ? { ...w, closed: false, rect: { ...w.rect, z, minimized: false } } : w
 			)
 		);
 		activeId = id;
@@ -424,9 +419,7 @@
 
 	function updateRect(id: string, rect: WindowRect) {
 		emit(
-			windows.map((w) =>
-				w.id === id ? { ...w, rect: { ...rect, z: rect.z ?? w.rect.z } } : w
-			)
+			windows.map((w) => (w.id === id ? { ...w, rect: { ...rect, z: rect.z ?? w.rect.z } } : w))
 		);
 	}
 
@@ -681,7 +674,20 @@
 
 	function resolveIcon(id?: DesktopIconId, kind?: string): DesktopIconId {
 		if (id) return id;
-		if (kind && ['files', 'mail', 'music', 'notes', 'settings', 'stats', 'calendar', 'terminal', 'team'].includes(kind)) {
+		if (
+			kind &&
+			[
+				'files',
+				'mail',
+				'music',
+				'notes',
+				'settings',
+				'stats',
+				'calendar',
+				'terminal',
+				'team'
+			].includes(kind)
+		) {
 			return kind as DesktopIconId;
 		}
 		return 'app';
@@ -698,7 +704,7 @@
 
 <div
 	class={[
-		'relative flex w-full flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-sm',
+		'rounded-2xl border-border bg-surface shadow-sm relative flex w-full flex-col overflow-hidden border',
 		HEIGHT[height],
 		className
 	]}
@@ -714,11 +720,11 @@
 
 	{#if showMenubar}
 		<div
-			class="relative z-40 flex shrink-0 items-center gap-2 border-b border-border bg-surface-elevated/95 px-2.5 py-1.5 backdrop-blur"
+			class="gap-2 border-border bg-surface-elevated/95 px-2.5 py-1.5 backdrop-blur relative z-40 flex shrink-0 items-center border-b"
 		>
-			<BrandMark mark={brandMark} name={brand} size="sm" showName class="hidden sm:inline-flex" />
+			<BrandMark mark={brandMark} name={brand} size="sm" showName class="sm:inline-flex hidden" />
 			<BrandMark mark={brandMark} name={brand} size="sm" class="sm:hidden" />
-			<div class="h-4 w-px shrink-0 bg-border" aria-hidden="true"></div>
+			<div class="h-4 bg-border w-px shrink-0" aria-hidden="true"></div>
 			<Menubar items={menubarItems} class="min-w-0 flex-1" onselect={onMenubarSelect} />
 			{#if showPresence}
 				<SessionPresenceBadge size="sm" showLabel={false} />
@@ -731,7 +737,7 @@
 		<div
 			bind:this={desktopEl}
 			class={[
-				'relative min-h-0 flex-1 overflow-hidden',
+				'min-h-0 relative flex-1 overflow-hidden',
 				wallpaper !== 'custom' && WALLPAPER_CLASS[wallpaper]
 			]}
 			style={wallpaperBg}
@@ -741,7 +747,7 @@
 			}}
 		>
 			{#if showDesktopIcons && launcherApps.length}
-				<div class="absolute left-3 top-3 z-[1] flex w-[4.75rem] flex-col gap-0.5">
+				<div class="left-3 top-3 gap-0.5 absolute z-[1] flex w-[4.75rem] flex-col">
 					{#each launcherApps.slice(0, 8) as app (app.id)}
 						<!-- svelte-ignore a11y_no_static_element_interactions -->
 						<div
@@ -752,7 +758,7 @@
 						>
 							<button
 								type="button"
-								class="group flex w-full flex-col items-center gap-1 rounded-xl px-1 py-1.5 text-center transition-colors hover:bg-black/10 dark:hover:bg-white/10"
+								class="group gap-1 rounded-xl px-1 py-1.5 hover:bg-black/10 dark:hover:bg-white/10 flex w-full flex-col items-center text-center transition-colors"
 								onclick={(e) => {
 									e.stopPropagation();
 									openApp(app);
@@ -764,7 +770,7 @@
 									size="lg"
 								/>
 								<span
-									class="line-clamp-2 w-full text-center text-[10px] font-medium leading-tight text-primary"
+									class="font-medium leading-tight text-primary line-clamp-2 w-full text-center text-[10px]"
 								>
 									{app.title}
 								</span>
@@ -775,11 +781,11 @@
 			{/if}
 
 			{#if showWidgets}
-				<div class="pointer-events-none absolute right-3 top-3 z-[1] flex w-44 flex-col gap-2">
+				<div class="right-3 top-3 w-44 gap-2 pointer-events-none absolute z-[1] flex flex-col">
 					{#each widgets as widget (widget.id)}
 						<!-- svelte-ignore a11y_no_static_element_interactions -->
 						<div
-							class="pointer-events-auto rounded-xl border border-border/70 bg-surface-elevated/90 p-3 shadow-sm backdrop-blur"
+							class="rounded-xl border-border/70 bg-surface-elevated/90 p-3 shadow-sm backdrop-blur pointer-events-auto border"
 							onpointerdown={(e) => e.stopPropagation()}
 							oncontextmenu={(e) => {
 								e.stopPropagation();
@@ -787,33 +793,42 @@
 							}}
 						>
 							{#if widget.kind === 'weather'}
-								<div class="flex items-start gap-2">
+								<div class="gap-2 flex items-start">
 									<span
-										class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sky-500/15 text-sky-700 dark:text-sky-300"
+										class="h-9 w-9 rounded-lg bg-sky-500/15 text-sky-700 dark:text-sky-300 flex shrink-0 items-center justify-center"
 									>
 										<CloudSun class="h-[18px] w-[18px]" strokeWidth={2} />
 									</span>
 									<div class="min-w-0">
 										<p class="text-xs font-medium text-muted">{widget.title ?? 'Weather'}</p>
-										<p class="text-lg font-semibold tabular-nums text-primary">22°</p>
-										<p class="text-[11px] text-secondary">Partly cloudy</p>
+										<p class="text-lg font-semibold text-primary tabular-nums">22°</p>
+										<p class="text-secondary text-[11px]">Partly cloudy</p>
 									</div>
 								</div>
 							{:else if widget.kind === 'sticky'}
-								<p class="text-[11px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">
+								<p
+									class="font-semibold tracking-wide text-amber-700 dark:text-amber-300 text-[11px] uppercase"
+								>
 									{widget.title ?? 'Sticky'}
 								</p>
-								<p class="mt-1 whitespace-pre-line text-xs leading-relaxed text-primary">
+								<p class="mt-1 text-xs leading-relaxed text-primary whitespace-pre-line">
 									{widget.body ?? 'Add a note…'}
 								</p>
 							{:else if widget.kind === 'stats'}
-								<p class="mb-2 text-[11px] font-medium text-muted">{widget.title ?? 'Stats'}</p>
+								<p class="mb-2 font-medium text-muted text-[11px]">{widget.title ?? 'Stats'}</p>
 								<div class="space-y-1">
-									<StatCard label="Active" value="128" delta="+4%" trend="up" variant="ghost" class="!p-2" />
+									<StatCard
+										label="Active"
+										value="128"
+										delta="+4%"
+										trend="up"
+										variant="ghost"
+										class="!p-2"
+									/>
 								</div>
 							{:else}
-								<p class="text-sm font-semibold tabular-nums text-primary">{clock}</p>
-								<p class="text-[11px] text-muted">{clockDate}</p>
+								<p class="text-sm font-semibold text-primary tabular-nums">{clock}</p>
+								<p class="text-muted text-[11px]">{clockDate}</p>
 							{/if}
 						</div>
 					{/each}
@@ -856,10 +871,10 @@
 			{#if startOpen}
 				<!-- svelte-ignore a11y_no_static_element_interactions -->
 				<div
-					class="absolute bottom-3 left-3 z-[1000] flex w-[19rem] flex-col overflow-hidden rounded-2xl border border-border bg-surface-elevated/95 shadow-xl backdrop-blur"
+					class="bottom-3 left-3 rounded-2xl border-border bg-surface-elevated/95 shadow-xl backdrop-blur absolute z-[1000] flex w-[19rem] flex-col overflow-hidden border"
 					onpointerdown={(e) => e.stopPropagation()}
 				>
-					<div class="flex items-center gap-2 border-b border-border px-3 py-2.5">
+					<div class="gap-2 border-border px-3 py-2.5 flex items-center border-b">
 						<BrandMark mark={brandMark} name={brand} size="sm" showName />
 					</div>
 
@@ -868,7 +883,7 @@
 
 						<div class="max-h-56 space-y-0.5 overflow-y-auto">
 							{#if !filteredApps.length}
-								<p class="px-2 py-4 text-center text-xs text-muted">No apps found</p>
+								<p class="px-2 py-4 text-xs text-muted text-center">No apps found</p>
 							{:else}
 								{#each filteredApps as app (app.id)}
 									<Tile
@@ -894,7 +909,7 @@
 						</div>
 					</div>
 
-					<div class="flex items-center gap-1 border-t border-border p-1.5">
+					<div class="gap-1 border-border p-1.5 flex items-center border-t">
 						<Tooltip content="Cascade">
 							<IconButton label="Cascade windows" size="sm" onclick={cascadeWindows}>
 								<Layers class="h-4 w-4" strokeWidth={2} />
@@ -913,7 +928,7 @@
 						<div class="min-w-0 flex-1"></div>
 						<button
 							type="button"
-							class="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-[11px] text-muted hover:bg-surface-overlay hover:text-secondary"
+							class="gap-1.5 rounded-lg px-2 py-1 text-muted hover:bg-surface-overlay hover:text-secondary inline-flex items-center text-[11px]"
 							onclick={() => {
 								startOpen = false;
 								commandOpen = true;
@@ -929,7 +944,7 @@
 
 		{#if showTaskbar}
 			<div
-				class="relative z-40 flex shrink-0 items-center gap-2 border-t border-border bg-surface-elevated/95 px-2 py-2 backdrop-blur sm:px-3"
+				class="gap-2 border-border bg-surface-elevated/95 px-2 py-2 backdrop-blur sm:px-3 relative z-40 flex shrink-0 items-center border-t"
 			>
 				{#if showStart}
 					<Tooltip content="Start" side="top">
@@ -972,9 +987,9 @@
 					{@render taskbarLeading()}
 				{/if}
 
-				<div class="flex min-w-0 flex-1 items-center justify-center gap-1 overflow-x-auto px-1">
+				<div class="min-w-0 gap-1 px-1 flex flex-1 items-center justify-center overflow-x-auto">
 					<div
-						class="inline-flex items-center gap-0.5 rounded-2xl border border-border/70 bg-surface/70 p-1 shadow-sm"
+						class="gap-0.5 rounded-2xl border-border/70 bg-surface/70 p-1 shadow-sm inline-flex items-center border"
 					>
 						{#each visibleTaskbar as win (win.id)}
 							<!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -988,7 +1003,7 @@
 									<button
 										type="button"
 										class={[
-											'relative flex h-9 w-9 items-center justify-center rounded-xl transition-colors',
+											'h-9 w-9 rounded-xl relative flex items-center justify-center transition-colors',
 											activeId === win.id && !win.rect.minimized
 												? 'bg-brand-500/15 text-brand-700 dark:text-brand-300'
 												: 'text-secondary hover:bg-surface-overlay hover:text-primary',
@@ -1006,7 +1021,7 @@
 										/>
 										{#if activeId === win.id && !win.rect.minimized}
 											<span
-												class="absolute inset-x-2 bottom-0.5 h-0.5 rounded-full bg-brand-500"
+												class="inset-x-2 bottom-0.5 h-0.5 bg-brand-500 absolute rounded-full"
 												aria-hidden="true"
 											></span>
 										{/if}
@@ -1026,7 +1041,7 @@
 							>
 								{#snippet trigger()}
 									<span
-										class="flex h-9 w-9 items-center justify-center rounded-xl text-secondary hover:bg-surface-overlay"
+										class="h-9 w-9 rounded-xl text-secondary hover:bg-surface-overlay flex items-center justify-center"
 										aria-label={`More windows (${overflowTaskbar.length})`}
 									>
 										<MoreHorizontal class="h-4 w-4" strokeWidth={2} />
@@ -1037,7 +1052,7 @@
 					</div>
 				</div>
 
-				<div class="flex shrink-0 items-center gap-1.5">
+				<div class="gap-1.5 flex shrink-0 items-center">
 					{#if showWindowCount}
 						<Badge size="sm" variant="secondary" class="tabular-nums">
 							{taskbarWindows.length - minimizedCount}/{taskbarWindows.length}
@@ -1074,20 +1089,20 @@
 								<button
 									type="button"
 									data-popover-trigger
-									class="flex min-w-[4.5rem] flex-col items-end rounded-xl px-2.5 py-1 text-right transition-colors hover:bg-surface-overlay"
+									class="rounded-xl px-2.5 py-1 hover:bg-surface-overlay flex min-w-[4.5rem] flex-col items-end text-right transition-colors"
 									aria-expanded={clockOpen}
 									aria-haspopup="dialog"
 									onclick={() => {
 										startOpen = false;
 									}}
 								>
-									<span class="text-xs font-semibold tabular-nums text-primary">{clock}</span>
-									<span class="text-[10px] text-muted">{clockDate}</span>
+									<span class="text-xs font-semibold text-primary tabular-nums">{clock}</span>
+									<span class="text-muted text-[10px]">{clockDate}</span>
 								</button>
 							{/snippet}
 							<div class="space-y-3">
-								<div class="border-b border-border pb-2">
-									<p class="text-2xl font-semibold tabular-nums tracking-tight text-primary">
+								<div class="border-border pb-2 border-b">
+									<p class="text-2xl font-semibold tracking-tight text-primary tabular-nums">
 										{clock}
 									</p>
 									<p class="text-sm text-secondary">{clockDate}</p>
