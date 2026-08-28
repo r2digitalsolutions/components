@@ -136,23 +136,24 @@
 	]}
 >
 	{#snippet contextualHeaderDefault()}
-		{#if resolvedContextual}
+		{@const ctx = resolvedContextual}
+		{#if ctx}
 			<div class="min-w-0 space-y-1">
-				{#if resolvedContextual.parentHref && resolvedContextual.parentLabel}
+				{#if ctx?.parentHref && ctx?.parentLabel}
 					<a
-						href={resolvedContextual.parentHref}
+						href={ctx?.parentHref}
 						class="text-muted hover:text-primary block truncate text-[11px]"
 					>
-						{resolvedContextual.parentLabel}
+						{ctx?.parentLabel}
 					</a>
 				{/if}
-				<p class="text-sm font-semibold text-primary truncate">{resolvedContextual.brand}</p>
+				<p class="text-sm font-semibold text-primary truncate">{ctx?.brand}</p>
 				<div class="gap-1.5 flex flex-wrap items-center">
-					{#if resolvedContextual.status}
-						<Badge variant="secondary" size="sm">{resolvedContextual.status}</Badge>
+					{#if ctx?.status}
+						<Badge variant="secondary" size="sm">{ctx?.status}</Badge>
 					{/if}
-					{#if resolvedContextual.description}
-						<span class="text-muted truncate text-[11px]">{resolvedContextual.description}</span>
+					{#if ctx?.description}
+						<span class="text-muted truncate text-[11px]">{ctx?.description}</span>
 					{/if}
 				</div>
 			</div>
@@ -216,11 +217,11 @@
 				]}
 			>
 				<Sidebar
-					brand={resolvedContextual.brand ?? brand}
-					groups={resolvedContextual.groups}
-					value={resolvedContextual.value}
+					brand={resolvedContextual?.brand ?? brand}
+					groups={resolvedContextual?.groups ?? []}
+					value={resolvedContextual?.value ?? ''}
 					collapsible={false}
-					header={resolvedContextual.header ?? contextualHeaderDefault}
+					header={resolvedContextual?.header ?? contextualHeaderDefault}
 					onchange={onContextualNav}
 				/>
 			</div>
