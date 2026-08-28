@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Component, Snippet } from 'svelte';
 	import Divider from '$lib/components/atoms/Divider/Divider.svelte';
+	import RailMark from '$lib/components/atoms/RailMark/RailMark.svelte';
 
 	export type SidebarIcon = Component<{
 		class?: string;
@@ -55,10 +56,10 @@
 
 	function itemClass(item: SidebarItem) {
 		return [
-			'flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-sm transition-colors',
+			'relative flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-sm transition-colors',
 			'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30',
 			value === item.id
-				? 'bg-brand-50 font-medium text-brand-700 dark:bg-brand-950/40 dark:text-brand-300'
+				? 'bg-surface-overlay font-medium text-primary'
 				: 'text-secondary hover:bg-surface-overlay hover:text-primary',
 			item.disabled && 'pointer-events-none cursor-not-allowed opacity-40',
 			collapsed && 'justify-center'
@@ -87,6 +88,7 @@
 			class={itemClass(item)}
 			onclick={() => select(item.id, item.disabled)}
 		>
+			<RailMark active={value === item.id} side="right" length="short" inset="sm" />
 			{@render itemGlyph(item)}
 			{#if !collapsed}
 				<span class="truncate">{item.label}</span>
@@ -101,6 +103,7 @@
 			class={itemClass(item)}
 			onclick={() => select(item.id, item.disabled)}
 		>
+			<RailMark active={value === item.id} side="right" length="short" inset="sm" />
 			{@render itemGlyph(item)}
 			{#if !collapsed}
 				<span class="truncate">{item.label}</span>

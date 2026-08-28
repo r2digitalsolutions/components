@@ -91,16 +91,16 @@
 			aria-current={value === item.id ? 'page' : undefined}
 			onclick={() => select(item.id)}
 			class={[
-				'block w-full rounded-lg px-3 py-2 text-left transition-colors',
-				'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30',
+				'rounded-lg px-3 py-2 block w-full text-left transition-colors',
+				'focus-visible:ring-brand-500/30 focus-visible:ring-2 focus-visible:outline-none',
 				value === item.id
-					? 'bg-brand-50 text-brand-700 dark:bg-brand-950/40 dark:text-brand-300'
+					? 'bg-surface-overlay font-medium text-primary'
 					: 'text-secondary hover:bg-surface-overlay hover:text-primary'
 			]}
 		>
-			<span class="block text-sm font-medium">{item.label}</span>
+			<span class="text-sm font-medium block">{item.label}</span>
 			{#if item.description}
-				<span class="mt-0.5 block text-xs text-muted">{item.description}</span>
+				<span class="mt-0.5 text-xs text-muted block">{item.description}</span>
 			{/if}
 		</a>
 	{:else}
@@ -110,17 +110,17 @@
 			aria-current={value === item.id ? 'page' : undefined}
 			onclick={() => select(item.id, item.disabled)}
 			class={[
-				'w-full rounded-lg px-3 py-2 text-left transition-colors',
-				'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30',
+				'rounded-lg px-3 py-2 w-full text-left transition-colors',
+				'focus-visible:ring-brand-500/30 focus-visible:ring-2 focus-visible:outline-none',
 				value === item.id
-					? 'bg-brand-50 font-medium text-brand-700 dark:bg-brand-950/40 dark:text-brand-300'
+					? 'bg-surface-overlay font-medium text-primary'
 					: 'text-secondary hover:bg-surface-overlay hover:text-primary',
 				item.disabled && 'cursor-not-allowed opacity-40'
 			]}
 		>
-			<span class="block text-sm font-medium">{item.label}</span>
+			<span class="text-sm font-medium block">{item.label}</span>
 			{#if item.description}
-				<span class="mt-0.5 block text-xs text-muted">{item.description}</span>
+				<span class="mt-0.5 text-xs text-muted block">{item.description}</span>
 			{/if}
 		</button>
 	{/if}
@@ -128,37 +128,37 @@
 
 <div
 	class={[
-		'flex w-full flex-col overflow-hidden rounded-2xl border border-border bg-surface-elevated lg:min-h-112 lg:flex-row',
+		'rounded-2xl border-border bg-surface-elevated lg:min-h-112 lg:flex-row flex w-full flex-col overflow-hidden border',
 		className
 	]}
 >
 	<!-- Desktop aside -->
 	<aside
-		class="hidden w-56 shrink-0 flex-col border-r border-border bg-surface lg:flex"
+		class="w-56 border-border bg-surface lg:flex hidden shrink-0 flex-col border-r"
 		aria-label={title}
 	>
-		<div class="border-b border-border px-4 py-4">
+		<div class="border-border px-4 py-4 border-b">
 			<p class="text-sm font-semibold text-primary">{title}</p>
 			{#if description}
 				<p class="mt-0.5 text-xs text-muted">{description}</p>
 			{/if}
 		</div>
 
-		<nav class="flex-1 overflow-y-auto px-2 py-3" aria-label={`${title} sections`}>
+		<nav class="px-2 py-3 flex-1 overflow-y-auto" aria-label={`${title} sections`}>
 			{#each resolvedGroups as group, gi (group.id)}
 				{#if group.label}
 					<p
 						class={[
-							'mb-1 px-2 text-[11px] font-semibold uppercase tracking-wide text-muted',
+							'mb-1 px-2 font-semibold tracking-wide text-muted text-[11px] uppercase',
 							gi > 0 && 'mt-4'
 						]}
 					>
 						{group.label}
 					</p>
 				{:else if gi > 0}
-					<div class="my-2 border-t border-border" aria-hidden="true"></div>
+					<div class="my-2 border-border border-t" aria-hidden="true"></div>
 				{/if}
-				<ul class="flex flex-col gap-0.5">
+				<ul class="gap-0.5 flex flex-col">
 					{#each group.items as item (item.id)}
 						<li>{@render navButton(item)}</li>
 					{/each}
@@ -167,16 +167,16 @@
 		</nav>
 
 		{#if footer}
-			<div class="mt-auto border-t border-border p-3">
+			<div class="border-border p-3 mt-auto border-t">
 				{@render footer()}
 			</div>
 		{/if}
 	</aside>
 
 	<!-- Main panel -->
-	<section class="flex min-w-0 flex-1 flex-col">
+	<section class="min-w-0 flex flex-1 flex-col">
 		<!-- Mobile top bar -->
-		<div class="space-y-3 border-b border-border px-4 py-3 lg:hidden">
+		<div class="space-y-3 border-border px-4 py-3 lg:hidden border-b">
 			<div>
 				<p class="text-sm font-semibold text-primary">{title}</p>
 				{#if description}
@@ -189,14 +189,14 @@
 		{#if showHeader || header}
 			<div
 				class={[
-					'border-b border-border px-4 py-4 sm:px-6',
-					stickyHeader && 'sticky top-0 z-10 bg-surface-elevated/95 backdrop-blur'
+					'border-border px-4 py-4 sm:px-6 border-b',
+					stickyHeader && 'top-0 bg-surface-elevated/95 backdrop-blur sticky z-10'
 				]}
 			>
 				{#if header}
 					{@render header()}
 				{:else if showHeader && active}
-					<div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+					<div class="gap-3 sm:flex-row sm:items-start sm:justify-between flex flex-col">
 						<div class="min-w-0 space-y-1">
 							<Heading level={2} size="lg">{active.label}</Heading>
 							{#if active.description}
@@ -204,7 +204,7 @@
 							{/if}
 						</div>
 						{#if actionsSlot}
-							<div class="flex shrink-0 flex-wrap items-center gap-2">
+							<div class="gap-2 flex shrink-0 flex-wrap items-center">
 								{@render actionsSlot()}
 							</div>
 						{/if}
@@ -213,7 +213,7 @@
 			</div>
 		{/if}
 
-		<div class="min-w-0 flex-1 px-4 py-5 sm:px-6 sm:py-6">
+		<div class="min-w-0 px-4 py-5 sm:px-6 sm:py-6 flex-1">
 			{#if children}{@render children()}{/if}
 		</div>
 	</section>

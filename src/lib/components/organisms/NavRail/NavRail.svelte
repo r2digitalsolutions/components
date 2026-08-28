@@ -46,7 +46,7 @@
 		'relative flex h-10 w-10 items-center justify-center rounded-lg transition-colors',
 		'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30',
 		value === item.id
-			? 'bg-brand-50 text-brand-700 dark:bg-brand-950/40 dark:text-brand-300'
+			? 'bg-surface-overlay text-primary'
 			: 'text-secondary hover:bg-surface-overlay hover:text-primary',
 		item.disabled && 'pointer-events-none cursor-not-allowed opacity-40'
 	];
