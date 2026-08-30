@@ -9,6 +9,8 @@
 		gap?: ClusterGap;
 		align?: ClusterAlign;
 		justify?: ClusterJustify;
+		/** When false, items stay on one row (no wrap). Default true. */
+		wrap?: boolean;
 		class?: string;
 		children?: Snippet;
 	}
@@ -17,6 +19,7 @@
 		gap = 'sm',
 		align = 'center',
 		justify = 'start',
+		wrap = true,
 		class: className = '',
 		children
 	}: ClusterProps = $props();
@@ -44,6 +47,15 @@
 	};
 </script>
 
-<div class={['flex flex-wrap', gaps[gap], aligns[align], justifies[justify], className]}>
+<div
+	class={[
+		'flex',
+		wrap ? 'flex-wrap' : 'flex-nowrap',
+		gaps[gap],
+		aligns[align],
+		justifies[justify],
+		className
+	]}
+>
 	{#if children}{@render children()}{/if}
 </div>
