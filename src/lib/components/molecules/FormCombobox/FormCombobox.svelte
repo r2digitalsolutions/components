@@ -75,8 +75,9 @@
 	}
 </script>
 
-<div class={['w-full space-y-1', className]}>
+<div class="w-full space-y-1">
 	<Combobox
+		class={className}
 		{label}
 		{placeholder}
 		{options}

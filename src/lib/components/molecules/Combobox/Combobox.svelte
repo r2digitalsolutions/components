@@ -179,8 +179,17 @@
 		});
 	}
 
+	function commitPendingQuery() {
+		const trimmed = query.trim();
+		if (!creatable || !trimmed || trimmed === value) return;
+		value = trimmed;
+		onchange?.(trimmed);
+	}
+
 	function onPopoverClose() {
+		commitPendingQuery();
 		if (selected) query = selected.label;
+		else if (value) query = value;
 		else if (!creatable) query = '';
 	}
 
@@ -300,8 +309,11 @@
 	}
 
 	$effect(() => {
-		if (selected && !open && query !== selected.label) {
+		if (open) return;
+		if (selected && query !== selected.label) {
 			query = selected.label;
+		} else if (value && query !== value) {
+			query = value;
 		}
 	});
 
