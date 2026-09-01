@@ -105,6 +105,9 @@
 			{disabled}
 			{size}
 			{status}
+			{min}
+			{max}
+			{step}
 			type="number"
 			bind:value={text}
 			onblur={() => commit(text)}
@@ -151,6 +154,9 @@
 			{disabled}
 			{size}
 			{status}
+			{min}
+			{max}
+			{step}
 			type="number"
 			bind:value={text}
 			onblur={() => commit(text)}
@@ -193,6 +199,9 @@
 			{disabled}
 			{size}
 			{status}
+			{min}
+			{max}
+			{step}
 			type="number"
 			bind:value={text}
 			onblur={() => commit(text)}

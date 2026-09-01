@@ -1,7 +1,9 @@
 <script lang="ts">
+	import { on } from 'svelte/events';
 	import Calendar from '../Calendar/Calendar.svelte';
 	import type { CalendarDot } from '../Calendar/Calendar.svelte';
 	import type { TimeFormat } from '../TimePicker/TimePicker.svelte';
+	import { createId } from '$lib/utils/id.js';
 
 	interface DateTimePickerProps {
 		/** Date part `YYYY-MM-DD`. */
@@ -44,9 +46,16 @@
 		onchange
 	}: DateTimePickerProps = $props();
 
-	let rootEl = $state<HTMLDivElement | null>(null);
+	let triggerEl = $state<HTMLElement | null>(null);
+	let panelEl = $state<HTMLDivElement | null>(null);
 	let hourListEl = $state<HTMLDivElement | null>(null);
 	let minuteListEl = $state<HTMLDivElement | null>(null);
+	let placed = $state(false);
+	let panelId = $state('');
+
+	$effect(() => {
+		panelId ||= createId('datetimepicker');
+	});
 
 	const hours24 = Array.from({ length: 24 }, (_, i) => i);
 	const minutes = $derived(
@@ -82,7 +91,6 @@
 		onchange?.({ date, time, value });
 	}
 
-	// Keep parts in sync when `value` is set externally
 	$effect(() => {
 		if (!value) return;
 		const [d, t] = value.includes('T') ? value.split('T') : [value, time];
@@ -122,21 +130,120 @@
 		return formatTimeDisplay(time);
 	});
 
+	function estimatePanelSize() {
+		return { panelW: 672, panelH: 380 };
+	}
+
+	function positionPanel(opts: { measure?: boolean; show?: boolean } = {}) {
+		if (!triggerEl) return;
+		if (opts.show) placed = true;
+
+		const trigger = triggerEl.getBoundingClientRect();
+		if (trigger.width < 2 && trigger.height < 2) return;
+
+		const vv = window.visualViewport;
+		const viewW = vv?.width ?? window.innerWidth;
+		const viewH = vv?.height ?? window.innerHeight;
+		const viewLeft = vv?.offsetLeft ?? 0;
+		const viewTop = vv?.offsetTop ?? 0;
+		const gap = 8;
+		const pad = 8;
+		const estimated = estimatePanelSize();
+		const canMeasure = opts.measure !== false && !!panelEl?.matches(':popover-open');
+		const panelW = Math.min(
+			canMeasure && panelEl?.offsetWidth ? panelEl.offsetWidth : estimated.panelW,
+			viewW - pad * 2
+		);
+		const panelH = Math.min(
+			canMeasure && panelEl?.offsetHeight ? panelEl.offsetHeight : estimated.panelH,
+			viewH - pad * 2
+		);
+
+		const spaceBelow = viewTop + viewH - trigger.bottom - gap - pad;
+		const spaceAbove = trigger.top - viewTop - gap - pad;
+		const side: 'top' | 'bottom' = spaceBelow < panelH && spaceAbove > spaceBelow ? 'top' : 'bottom';
+
+		let top = side === 'bottom' ? trigger.bottom + gap : trigger.top - panelH - gap;
+		let left = trigger.left;
+
+		left = Math.min(Math.max(viewLeft + pad, left), viewLeft + viewW - panelW - pad);
+		top = Math.min(Math.max(viewTop + pad, top), viewTop + viewH - panelH - pad);
+
+		if (panelEl) {
+			const s = panelEl.style;
+			s.setProperty('margin', '0');
+			s.setProperty('inset', 'auto');
+			s.setProperty('top', `${Math.round(top)}px`);
+			s.setProperty('left', `${Math.round(left)}px`);
+			s.setProperty('right', 'auto');
+			s.setProperty('bottom', 'auto');
+			s.setProperty('width', 'max-content');
+			s.setProperty('visibility', placed ? 'visible' : 'hidden');
+		}
+	}
+
+	function schedulePosition() {
+		queueMicrotask(() => {
+			positionPanel();
+			requestAnimationFrame(() => {
+				positionPanel();
+				requestAnimationFrame(() => positionPanel({ show: true }));
+			});
+		});
+	}
+
+	function syncNative() {
+		if (!panelEl) return;
+		const isOpen = panelEl.matches(':popover-open');
+		try {
+			if (open && !isOpen) panelEl.showPopover();
+			else if (!open && isOpen) panelEl.hidePopover();
+		} catch {
+			/* ignore */
+		}
+	}
+
 	function setOpen(next: boolean) {
-		if (disabled) return;
+		if (disabled && next) return;
 		open = next;
 	}
 
-	function onDocPointerDown(e: PointerEvent) {
-		if (!open || !rootEl) return;
-		const path = typeof e.composedPath === 'function' ? e.composedPath() : [];
-		if (path.includes(rootEl) || rootEl.contains(e.target as Node)) return;
-		setOpen(false);
+	function handleBeforeToggle(event: ToggleEvent) {
+		if (event.newState === 'open') {
+			if (disabled) {
+				event.preventDefault();
+				return;
+			}
+			placed = false;
+			positionPanel({ measure: false });
+		} else {
+			placed = false;
+		}
 	}
 
-	function onKey(e: KeyboardEvent) {
-		if (e.key === 'Escape' && open) setOpen(false);
+	function handleToggle(event: ToggleEvent) {
+		open = event.newState === 'open';
+		if (open) schedulePosition();
+		else placed = false;
 	}
+
+	$effect(() => {
+		open;
+		queueMicrotask(() => {
+			syncNative();
+			if (open) positionPanel();
+		});
+	});
+
+	$effect(() => {
+		if (!open) return;
+		const offResize = on(window, 'resize', () => positionPanel());
+		const offScroll = on(window, 'scroll', () => positionPanel(), { capture: true });
+		return () => {
+			offResize();
+			offScroll();
+		};
+	});
 
 	function handleDateChange(detail: { value: string }) {
 		date = detail.value;
@@ -184,14 +291,13 @@
 	});
 </script>
 
-<svelte:document onpointerdown={onDocPointerDown} onkeydown={onKey} />
-
-<div class={['relative w-full min-w-[20rem] max-w-[22rem]', className]} bind:this={rootEl}>
+<div class={['w-full min-w-[20rem] max-w-[22rem]', className]}>
 	{#if label}
 		<span class="mb-1.5 block text-sm font-medium text-primary">{label}</span>
 	{/if}
 
 	<div
+		bind:this={triggerEl}
 		class={[
 			'flex h-10 w-full items-center overflow-hidden rounded-xl border border-border bg-surface-elevated transition-colors',
 			open && 'border-brand-500 ring-2 ring-brand-500/20',
@@ -201,8 +307,11 @@
 		<button
 			type="button"
 			{disabled}
-			onclick={() => setOpen(!open)}
+			popovertarget={panelId}
+			popovertargetaction="toggle"
 			aria-expanded={open}
+			aria-haspopup="dialog"
+			aria-controls={panelId}
 			class={[
 				'flex h-full min-w-0 flex-1 items-center gap-2 px-3.5 text-left text-sm',
 				'hover:bg-surface-overlay focus-visible:outline-none',
@@ -241,14 +350,19 @@
 		{/if}
 	</div>
 
-	{#if open}
-		<div
-			role="dialog"
-			aria-label="Choose date and time"
-			class="absolute left-0 z-50 mt-2 flex w-max max-w-[min(100vw-1rem,42rem)] flex-col overflow-hidden rounded-2xl border border-border bg-surface-elevated shadow-xl sm:flex-row sm:items-stretch"
-			onpointerdown={(e) => e.stopPropagation()}
-		>
-			<div class="w-[22rem] shrink-0 p-3.5">
+	<div
+		bind:this={panelEl}
+		id={panelId}
+		popover="auto"
+		role="dialog"
+		aria-label="Choose date and time"
+		onbeforetoggle={handleBeforeToggle}
+		ontoggle={handleToggle}
+		data-placed={placed ? true : undefined}
+		class="datetime-picker-popover m-0 flex w-max max-w-[min(100vw-1rem,42rem)] flex-col overflow-hidden rounded-2xl border border-border bg-surface-elevated p-2 shadow-xl outline-none sm:flex-row sm:items-stretch"
+	>
+		{#key open}
+			<div class="w-[22rem] shrink-0 p-1.5">
 				<Calendar
 					mode="single"
 					bind:value={date}
@@ -320,6 +434,29 @@
 					</div>
 				</div>
 			</div>
-		</div>
-	{/if}
+		{/key}
+	</div>
 </div>
+
+<style>
+	.datetime-picker-popover {
+		position: fixed;
+		inset: unset;
+		margin: 0;
+		width: max-content;
+		height: max-content;
+	}
+
+	.datetime-picker-popover:popover-open {
+		display: flex;
+	}
+
+	.datetime-picker-popover:popover-open:not([data-placed]) {
+		visibility: hidden;
+		pointer-events: none;
+	}
+
+	.datetime-picker-popover:not(:popover-open) {
+		display: none;
+	}
+</style>
