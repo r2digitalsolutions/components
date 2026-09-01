@@ -6,7 +6,7 @@
 		format = '24h',
 		minuteStep = 5,
 		label = 'Date & time',
-		closeOnSelect = true
+		closeOnSelect = false
 	}: {
 		format?: TimeFormat;
 		minuteStep?: number;

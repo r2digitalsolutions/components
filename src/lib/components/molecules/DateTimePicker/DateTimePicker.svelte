@@ -1,8 +1,10 @@
 <script lang="ts">
 	import { on } from 'svelte/events';
+	import Button from '$lib/components/atoms/Button/Button.svelte';
 	import Calendar from '../Calendar/Calendar.svelte';
 	import type { CalendarDot } from '../Calendar/Calendar.svelte';
 	import type { TimeFormat } from '../TimePicker/TimePicker.svelte';
+	import { i18n } from '$lib/utils/i18n.svelte.js';
 	import { createId } from '$lib/utils/id.js';
 
 	interface DateTimePickerProps {
@@ -22,7 +24,13 @@
 		dots?: CalendarDot[];
 		format?: TimeFormat;
 		minuteStep?: number;
+		/**
+		 * When false (default), edits stay in the panel until Save; Cancel discards.
+		 * When true, each pick commits immediately and may close the panel.
+		 */
 		closeOnSelect?: boolean;
+		cancelLabel?: string;
+		saveLabel?: string;
 		class?: string;
 		onchange?: (detail: { date: string; time: string; value: string }) => void;
 	}
@@ -41,7 +49,9 @@
 		dots = [],
 		format = '24h',
 		minuteStep = 5,
-		closeOnSelect = true,
+		closeOnSelect = false,
+		cancelLabel,
+		saveLabel,
 		class: className = '',
 		onchange
 	}: DateTimePickerProps = $props();
@@ -52,6 +62,14 @@
 	let minuteListEl = $state<HTMLDivElement | null>(null);
 	let placed = $state(false);
 	let panelId = $state('');
+	let draftDate = $state('');
+	let draftTime = $state('');
+
+	const resolvedCancelLabel = $derived(cancelLabel ?? i18n.t('cancel'));
+	const resolvedSaveLabel = $derived(saveLabel ?? i18n.t('save'));
+	const confirmMode = $derived(!closeOnSelect);
+	const panelDate = $derived(confirmMode ? draftDate : date);
+	const panelTime = $derived(confirmMode ? draftTime : time);
 
 	$effect(() => {
 		panelId ||= createId('datetimepicker');
@@ -101,7 +119,7 @@
 		}
 	});
 
-	const parsedTime = $derived(parseTime(time));
+	const parsedTime = $derived(parseTime(panelTime));
 	const selectedH = $derived(parsedTime?.h ?? null);
 	const selectedM = $derived(parsedTime?.m ?? null);
 
@@ -131,7 +149,33 @@
 	});
 
 	function estimatePanelSize() {
-		return { panelW: 672, panelH: 380 };
+		return { panelW: 672, panelH: confirmMode ? 432 : 380 };
+	}
+
+	function beginDraft() {
+		draftDate = date;
+		draftTime = time || '09:00';
+	}
+
+	function setPanelDate(next: string) {
+		if (confirmMode) draftDate = next;
+		else date = next;
+	}
+
+	function setPanelTime(next: string) {
+		if (confirmMode) draftTime = next;
+		else time = next;
+	}
+
+	function commitDraft() {
+		date = draftDate;
+		time = draftTime || '09:00';
+		emit();
+		setOpen(false);
+	}
+
+	function cancelDraft() {
+		setOpen(false);
 	}
 
 	function positionPanel(opts: { measure?: boolean; show?: boolean } = {}) {
@@ -214,6 +258,7 @@
 				event.preventDefault();
 				return;
 			}
+			if (confirmMode) beginDraft();
 			placed = false;
 			positionPanel({ measure: false });
 		} else {
@@ -246,23 +291,28 @@
 	});
 
 	function handleDateChange(detail: { value: string }) {
-		date = detail.value;
-		if (!time) time = '09:00';
-		emit();
-		if (closeOnSelect && date && time) setOpen(false);
+		setPanelDate(detail.value);
+		const currentTime = confirmMode ? draftTime : time;
+		if (!currentTime) setPanelTime('09:00');
+		if (!confirmMode) {
+			emit();
+			if (closeOnSelect && date && time) setOpen(false);
+		}
 	}
 
 	function pickHour(h: number) {
 		const m = selectedM ?? 0;
-		time = toTime(h, m);
-		emit();
+		setPanelTime(toTime(h, m));
+		if (!confirmMode) emit();
 	}
 
 	function pickMinute(m: number) {
 		const h = selectedH ?? 9;
-		time = toTime(h, m);
-		emit();
-		if (closeOnSelect && date && time) setOpen(false);
+		setPanelTime(toTime(h, m));
+		if (!confirmMode) {
+			emit();
+			if (closeOnSelect && date && time) setOpen(false);
+		}
 	}
 
 	function clear(e: MouseEvent) {
@@ -359,81 +409,93 @@
 		onbeforetoggle={handleBeforeToggle}
 		ontoggle={handleToggle}
 		data-placed={placed ? true : undefined}
-		class="datetime-picker-popover m-0 flex w-max max-w-[min(100vw-1rem,42rem)] flex-col overflow-hidden rounded-2xl border border-border bg-surface-elevated p-2 shadow-xl outline-none sm:flex-row sm:items-stretch"
+		class="datetime-picker-popover m-0 flex w-max max-w-[min(100vw-1rem,42rem)] flex-col overflow-hidden rounded-2xl border border-border bg-surface-elevated shadow-xl outline-none"
 	>
 		{#key open}
-			<div class="w-[22rem] shrink-0 p-1.5">
-				<Calendar
-					mode="single"
-					bind:value={date}
-					{min}
-					{max}
-					{disabledDates}
-					{dots}
-					framed={false}
-					class="w-full"
-					onchange={handleDateChange}
-				/>
-			</div>
-			<div
-				class="flex w-full shrink-0 flex-col border-t border-border sm:w-40 sm:border-l sm:border-t-0"
-			>
-				<span
-					class="shrink-0 border-b border-border px-3 py-2.5 text-center text-[11px] font-medium uppercase tracking-wide text-muted"
+			<div class="flex flex-col sm:flex-row sm:items-stretch">
+				<div class="w-[22rem] shrink-0 p-1.5">
+					<Calendar
+						mode="single"
+						value={panelDate}
+						{min}
+						{max}
+						{disabledDates}
+						{dots}
+						framed={false}
+						class="w-full"
+						onchange={handleDateChange}
+					/>
+				</div>
+				<div
+					class="flex w-full shrink-0 flex-col border-t border-border sm:w-40 sm:border-l sm:border-t-0"
 				>
-					Time
-				</span>
-				<div class="grid min-h-0 flex-1 grid-cols-2 divide-x divide-border">
-					<div
-						bind:this={hourListEl}
-						class="h-[18.5rem] overflow-y-auto p-1.5"
-						role="listbox"
-						aria-label="Hours"
+					<span
+						class="shrink-0 border-b border-border px-3 py-2.5 text-center text-[11px] font-medium uppercase tracking-wide text-muted"
 					>
-						{#each hours24 as h (h)}
-							<button
-								type="button"
-								role="option"
-								aria-pressed={selectedH === h}
-								aria-selected={selectedH === h}
-								onclick={() => pickHour(h)}
-								class={[
-									'w-full rounded-lg px-2 py-1.5 text-sm transition-colors',
-									selectedH === h
-										? 'bg-brand-500 font-semibold text-white'
-										: 'text-primary hover:bg-surface-overlay'
-								]}
-							>
-								{hourLabel(h)}
-							</button>
-						{/each}
-					</div>
-					<div
-						bind:this={minuteListEl}
-						class="h-[18.5rem] overflow-y-auto p-1.5"
-						role="listbox"
-						aria-label="Minutes"
-					>
-						{#each minutes as m (m)}
-							<button
-								type="button"
-								role="option"
-								aria-pressed={selectedM === m}
-								aria-selected={selectedM === m}
-								onclick={() => pickMinute(m)}
-								class={[
-									'w-full rounded-lg px-2 py-1.5 text-sm transition-colors',
-									selectedM === m
-										? 'bg-brand-500 font-semibold text-white'
-										: 'text-primary hover:bg-surface-overlay'
-								]}
-							>
-								{pad(m)}
-							</button>
-						{/each}
+						Time
+					</span>
+					<div class="grid min-h-0 flex-1 grid-cols-2 divide-x divide-border">
+						<div
+							bind:this={hourListEl}
+							class="h-[18.5rem] overflow-y-auto p-1.5"
+							role="listbox"
+							aria-label="Hours"
+						>
+							{#each hours24 as h (h)}
+								<button
+									type="button"
+									role="option"
+									aria-pressed={selectedH === h}
+									aria-selected={selectedH === h}
+									onclick={() => pickHour(h)}
+									class={[
+										'w-full rounded-lg px-2 py-1.5 text-sm transition-colors',
+										selectedH === h
+											? 'bg-brand-500 font-semibold text-white'
+											: 'text-primary hover:bg-surface-overlay'
+									]}
+								>
+									{hourLabel(h)}
+								</button>
+							{/each}
+						</div>
+						<div
+							bind:this={minuteListEl}
+							class="h-[18.5rem] overflow-y-auto p-1.5"
+							role="listbox"
+							aria-label="Minutes"
+						>
+							{#each minutes as m (m)}
+								<button
+									type="button"
+									role="option"
+									aria-pressed={selectedM === m}
+									aria-selected={selectedM === m}
+									onclick={() => pickMinute(m)}
+									class={[
+										'w-full rounded-lg px-2 py-1.5 text-sm transition-colors',
+										selectedM === m
+											? 'bg-brand-500 font-semibold text-white'
+											: 'text-primary hover:bg-surface-overlay'
+									]}
+								>
+									{pad(m)}
+								</button>
+							{/each}
+						</div>
 					</div>
 				</div>
 			</div>
+			{#if confirmMode}
+				<div class="flex items-center justify-end gap-2 border-t border-border px-3 py-2.5">
+					<Button type="button" variant="ghost" size="sm" onclick={cancelDraft}>
+						{resolvedCancelLabel}
+					</Button>
+					<Button type="button" size="sm" disabled={!draftDate} onclick={commitDraft}>
+						{resolvedSaveLabel}
+					</Button>
+				</div>
+			{/if}
 		{/key}
 	</div>
 </div>

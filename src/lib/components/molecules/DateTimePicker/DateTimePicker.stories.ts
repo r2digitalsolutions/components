@@ -14,7 +14,7 @@ const meta = {
 		format: '24h',
 		minuteStep: 5,
 		label: 'Date & time',
-		closeOnSelect: true
+		closeOnSelect: false
 	}
 } satisfies Meta<typeof DateTimePickerStory>;
 
@@ -23,7 +23,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
 export const TwelveHour: Story = { args: { format: '12h' } };
-export const KeepOpen: Story = {
-	name: 'Keep open after select',
-	args: { closeOnSelect: false }
+export const InstantClose: Story = {
+	name: 'Instant commit (legacy)',
+	args: { closeOnSelect: true }
 };
