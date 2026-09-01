@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import { on } from 'svelte/events';
 	import ComboboxItem from '$lib/components/molecules/ComboboxItem/ComboboxItem.svelte';
 	import {
 		COMBOBOX_CREATE_KEY,
@@ -65,6 +66,8 @@
 	}: ComboboxProps = $props();
 
 	let rootEl = $state<HTMLDivElement | null>(null);
+	let triggerEl = $state<HTMLDivElement | null>(null);
+	let popoverEl = $state<HTMLDivElement | null>(null);
 	let inputEl = $state<HTMLInputElement | null>(null);
 	let highlighted = $state(0);
 	let childEntries = $state<{ id: number; value: string; disabled: boolean; label: string }[]>([]);
@@ -116,6 +119,78 @@
 	);
 	const highlightedKey = $derived(navKeys[activeIndex] ?? null);
 	const hasRows = $derived(items.length > 0 || childEntries.length > 0 || Boolean(children));
+
+	function positionPopover(opts: { measure?: boolean } = {}) {
+		if (!triggerEl || !popoverEl) return;
+		if (!popoverEl.matches(':popover-open') && opts.measure !== false) return;
+
+		const rect = triggerEl.getBoundingClientRect();
+		if (rect.width < 2 && rect.height < 2) return;
+
+		const gap = 8;
+		const margin = 8;
+		const maxH = 240;
+		const spaceBelow = window.innerHeight - rect.bottom - gap - margin;
+		const spaceAbove = rect.top - gap - margin;
+		const openUp = spaceBelow < 120 && spaceAbove > spaceBelow;
+		const height = Math.min(maxH, Math.max(80, openUp ? spaceAbove : spaceBelow));
+
+		const top = openUp ? undefined : rect.bottom + gap;
+		const bottom = openUp ? window.innerHeight - rect.top + gap : undefined;
+
+		const style = [
+			'position:fixed',
+			'margin:0',
+			'inset:auto',
+			`left:${Math.max(margin, Math.min(rect.left, window.innerWidth - rect.width - margin))}px`,
+			`width:${rect.width}px`,
+			top !== undefined ? `top:${top}px` : 'top:auto',
+			bottom !== undefined ? `bottom:${bottom}px` : 'bottom:auto',
+			`max-height:${height}px`
+		].join(';');
+
+		popoverEl.style.cssText = style;
+	}
+
+	function syncNative() {
+		if (!popoverEl) return;
+		const isOpen = popoverEl.matches(':popover-open');
+		try {
+			if (open && !isOpen) popoverEl.showPopover();
+			else if (!open && isOpen) popoverEl.hidePopover();
+		} catch {
+			/* ignore */
+		}
+	}
+
+	function onPopoverClose() {
+		if (selected) query = selected.label;
+		else if (!creatable) query = '';
+	}
+
+	function handleBeforeToggle(event: ToggleEvent) {
+		if (event.newState === 'open' && disabled) {
+			event.preventDefault();
+			return;
+		}
+		if (event.newState === 'open') {
+			positionPopover({ measure: false });
+		}
+	}
+
+	function handleToggle(event: ToggleEvent) {
+		const next = event.newState === 'open';
+		open = next;
+		if (next) {
+			highlighted = 0;
+			queueMicrotask(() => {
+				positionPopover();
+				requestAnimationFrame(() => positionPopover());
+			});
+		} else {
+			onPopoverClose();
+		}
+	}
 
 	function setOpen(next: boolean) {
 		if (disabled) return;
@@ -207,19 +282,37 @@
 		}
 	}
 
-	function onDocPointerDown(e: PointerEvent) {
-		if (!open || !rootEl) return;
-		const path = typeof e.composedPath === 'function' ? e.composedPath() : [];
-		if (path.includes(rootEl) || rootEl.contains(e.target as Node)) return;
-		setOpen(false);
-		if (selected) query = selected.label;
-		else if (!creatable) query = '';
-	}
-
 	$effect(() => {
 		if (selected && !open && query !== selected.label) {
 			query = selected.label;
 		}
+	});
+
+	$effect(() => {
+		open;
+		queueMicrotask(() => {
+			syncNative();
+			if (open) positionPopover();
+		});
+	});
+
+	$effect(() => {
+		if (!open) return;
+
+		let frame = 0;
+		const reposition = () => {
+			cancelAnimationFrame(frame);
+			frame = requestAnimationFrame(() => positionPopover());
+		};
+
+		const offScroll = on(window, 'scroll', reposition, { capture: true, passive: true });
+		const offResize = on(window, 'resize', reposition);
+
+		return () => {
+			cancelAnimationFrame(frame);
+			offScroll();
+			offResize();
+		};
 	});
 
 	const ctx: ComboboxContext = {
@@ -243,14 +336,13 @@
 	setComboboxContext(ctx);
 </script>
 
-<svelte:document onpointerdown={onDocPointerDown} />
-
-<div class={['max-w-sm relative w-full', className]} bind:this={rootEl}>
+<div class={['max-w-sm w-full', className]} bind:this={rootEl}>
 	{#if label}
 		<span class="mb-1.5 text-sm font-medium text-primary block">{label}</span>
 	{/if}
 
 	<div
+		bind:this={triggerEl}
 		class={[
 			'h-10 gap-2 rounded-xl border-border bg-surface-elevated px-3 flex items-center border transition-colors',
 			open && 'border-brand-500 ring-brand-500/20 ring-2',
@@ -312,12 +404,16 @@
 		{/if}
 	</div>
 
-	{#if open}
-		<div
-			id={listboxId}
-			role="listbox"
-			class="left-0 right-0 mt-2 max-h-60 rounded-xl border-border bg-surface-elevated p-1.5 shadow-xl absolute z-50 overflow-y-auto border"
-		>
+	<div
+		bind:this={popoverEl}
+		id={listboxId}
+		popover="auto"
+		role="listbox"
+		onbeforetoggle={handleBeforeToggle}
+		ontoggle={handleToggle}
+		class="combobox-popover inset-auto m-0 overflow-y-auto rounded-xl border border-border bg-surface-elevated p-1.5 shadow-xl outline-none"
+	>
+		{#if open}
 			{#if !hasRows}
 				<div class="px-3 py-2.5 text-xs text-muted text-center">{emptyText}</div>
 			{:else}
@@ -369,6 +465,20 @@
 				{/each}
 				{@render children?.()}
 			{/if}
-		</div>
-	{/if}
+		{/if}
+	</div>
 </div>
+
+<style>
+	.combobox-popover {
+		position: fixed;
+	}
+
+	.combobox-popover:popover-open {
+		display: block;
+	}
+
+	.combobox-popover:not(:popover-open) {
+		display: none;
+	}
+</style>
