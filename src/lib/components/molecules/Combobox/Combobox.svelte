@@ -310,11 +310,11 @@
 
 	$effect(() => {
 		if (open) return;
-		if (selected && query !== selected.label) {
-			query = selected.label;
-		} else if (value && query !== value) {
-			query = value;
+		if (selected) {
+			if (query !== selected.label) query = selected.label;
+			return;
 		}
+		if (value && query !== value) query = value;
 	});
 
 	$effect(() => {
