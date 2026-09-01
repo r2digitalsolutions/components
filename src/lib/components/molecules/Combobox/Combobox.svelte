@@ -70,6 +70,7 @@
 	let popoverEl = $state<HTMLDivElement | null>(null);
 	let inputEl = $state<HTMLInputElement | null>(null);
 	let highlighted = $state(0);
+	let openingGesture = $state(false);
 	let childEntries = $state<{ id: number; value: string; disabled: boolean; label: string }[]>([]);
 	let nextChildId = 0;
 	const uid = $props.id();
@@ -163,6 +164,21 @@
 		}
 	}
 
+	function onDocPointerDown(event: PointerEvent) {
+		if (!open || openingGesture) return;
+		const target = event.target;
+		if (!(target instanceof Node)) return;
+		if (rootEl?.contains(target) || popoverEl?.contains(target)) return;
+		setOpen(false);
+	}
+
+	function markOpeningGesture() {
+		openingGesture = true;
+		queueMicrotask(() => {
+			openingGesture = false;
+		});
+	}
+
 	function onPopoverClose() {
 		if (selected) query = selected.label;
 		else if (!creatable) query = '';
@@ -194,6 +210,7 @@
 
 	function setOpen(next: boolean) {
 		if (disabled) return;
+		if (next) markOpeningGesture();
 		open = next;
 		if (next) {
 			highlighted = 0;
@@ -307,11 +324,17 @@
 
 		const offScroll = on(window, 'scroll', reposition, { capture: true, passive: true });
 		const offResize = on(window, 'resize', reposition);
+		// Defer past the opening click — same gesture must not count as outside.
+		const timer = window.setTimeout(() => {
+			document.addEventListener('pointerdown', onDocPointerDown, true);
+		}, 0);
 
 		return () => {
 			cancelAnimationFrame(frame);
 			offScroll();
 			offResize();
+			window.clearTimeout(timer);
+			document.removeEventListener('pointerdown', onDocPointerDown, true);
 		};
 	});
 
@@ -407,17 +430,16 @@
 	<div
 		bind:this={popoverEl}
 		id={listboxId}
-		popover="auto"
+		popover="manual"
 		role="listbox"
 		onbeforetoggle={handleBeforeToggle}
 		ontoggle={handleToggle}
 		class="combobox-popover inset-auto m-0 overflow-y-auto rounded-xl border border-border bg-surface-elevated p-1.5 shadow-xl outline-none"
 	>
-		{#if open}
-			{#if !hasRows}
-				<div class="px-3 py-2.5 text-xs text-muted text-center">{emptyText}</div>
-			{:else}
-				{#each items as item, index (itemKey(item))}
+		{#if !hasRows}
+			<div class="px-3 py-2.5 text-xs text-muted text-center">{emptyText}</div>
+		{:else}
+			{#each items as item, index (itemKey(item))}
 					{#if item.kind === 'create'}
 						<ComboboxItem
 							value={COMBOBOX_CREATE_KEY}
@@ -465,7 +487,6 @@
 				{/each}
 				{@render children?.()}
 			{/if}
-		{/if}
 	</div>
 </div>
 
