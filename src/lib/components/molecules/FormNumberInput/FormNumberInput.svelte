@@ -71,6 +71,7 @@
 
 <div class={['w-full', className]}>
 	<NumberInput
+		{name}
 		{label}
 		{min}
 		{max}

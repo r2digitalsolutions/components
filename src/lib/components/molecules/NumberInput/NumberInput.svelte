@@ -2,6 +2,7 @@
 	import Input from '$lib/components/atoms/Input/Input.svelte';
 
 	interface NumberInputProps {
+		name?: string;
 		value?: number;
 		min?: number;
 		max?: number;
@@ -18,6 +19,7 @@
 	}
 
 	let {
+		name,
 		value = $bindable(0),
 		min,
 		max,
@@ -97,6 +99,7 @@
 <div class={['number-input w-full', className]}>
 	{#if controls === 'sides'}
 		<Input
+			{name}
 			{label}
 			{helperText}
 			{disabled}
@@ -142,6 +145,7 @@
 		</Input>
 	{:else if controls === 'stacked'}
 		<Input
+			{name}
 			{label}
 			{helperText}
 			{disabled}
@@ -183,6 +187,7 @@
 		</Input>
 	{:else}
 		<Input
+			{name}
 			{label}
 			{helperText}
 			{disabled}
