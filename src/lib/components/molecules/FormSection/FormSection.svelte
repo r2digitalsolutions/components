@@ -166,13 +166,14 @@
 			class={[
 				useSplit && 'lg:hidden',
 				isCard && 'px-4 pt-4 sm:px-5 sm:pt-5',
+				isCard && !divided && 'pb-1',
 				!isCard && 'pb-0'
 			]}
 		>
 			<div class="flex items-start justify-between gap-3">
 				<div class="flex min-w-0 flex-1 items-start gap-3">
 					{@render iconEl('md')}
-					<div class="min-w-0 space-y-1">
+					<div class="min-w-0 space-y-0.5">
 						{#if eyebrow}
 							<p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
 								{eyebrow}
@@ -192,7 +193,7 @@
 			</div>
 
 			{#if divided && layout === 'stack'}
-				<div class={['mt-4 border-b border-border', isCard && '-mx-4 sm:-mx-5']}></div>
+				<div class={['mt-3 border-b border-border', isCard && '-mx-4 sm:-mx-5']}></div>
 			{/if}
 		</div>
 	{/if}
@@ -200,7 +201,8 @@
 	{#if open}
 		<div
 			class={[
-				isCard && 'px-4 py-4 sm:px-5 sm:py-5',
+				isCard && divided && 'px-4 py-4 sm:px-5 sm:py-5',
+				isCard && !divided && 'px-4 pt-2 pb-4 sm:px-5 sm:pb-5',
 				!isCard && (collapsible || divided) && layout === 'stack' && 'pt-4',
 				useSplit &&
 					'lg:grid lg:grid-cols-[minmax(12rem,17rem)_minmax(0,1fr)] lg:items-start lg:gap-10'
