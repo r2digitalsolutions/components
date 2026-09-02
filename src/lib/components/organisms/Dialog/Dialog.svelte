@@ -76,6 +76,8 @@
 	}: DialogProps = $props();
 
 	let dialogEl = $state<HTMLDialogElement | null>(null);
+	/** Ignora clics en backdrop justo tras cerrar un diálogo nativo (p. ej. selector de archivos). */
+	let suppressBackdropUntil = 0;
 	const titleId = $derived(`${id}-title`);
 	const descriptionId = $derived(`${id}-description`);
 
@@ -152,6 +154,15 @@
 		};
 	});
 
+	$effect(() => {
+		if (!open || typeof window === 'undefined') return;
+		const onWindowFocus = () => {
+			suppressBackdropUntil = Date.now() + 400;
+		};
+		window.addEventListener('focus', onWindowFocus);
+		return () => window.removeEventListener('focus', onWindowFocus);
+	});
+
 	function close(reason: 'close' | 'cancel' | 'confirm' | 'backdrop' | 'escape' = 'close') {
 		if (!open) return;
 		open = false;
@@ -186,6 +197,7 @@
 
 	function handleBackdropClick(event: MouseEvent) {
 		if (!dialogEl) return;
+		if (Date.now() < suppressBackdropUntil) return;
 		const rect = dialogEl.getBoundingClientRect();
 		const clickedInDialog =
 			event.clientX >= rect.left &&
