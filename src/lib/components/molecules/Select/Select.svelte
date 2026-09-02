@@ -605,33 +605,41 @@
 							onpointerdown={(e) => handleOptionPointerDown(e, option)}
 							onclick={() => selectOption(option)}
 							onpointerenter={() => {
-								if (ignoreHover || option.disabled) return;
+								if (option.disabled) return;
+								ignoreHover = false;
 								highlightedIndex = index;
 							}}
 							class={[
 								'group gap-2.5 rounded-lg px-2.5 py-2 text-sm relative flex w-full items-center text-left outline-none select-none',
 								'transition-[background-color,color,box-shadow] duration-75',
 								option.disabled ? 'cursor-not-allowed opacity-40' : 'cursor-pointer',
-								(isHighlighted || isSelected) && !option.disabled
+								isHighlighted && !option.disabled
 									? 'bg-brand-500 text-white shadow-sm'
-									: 'text-primary'
+									: isSelected && !option.disabled
+										? 'bg-brand-500/10 text-primary font-medium'
+										: 'text-primary hover:bg-surface-overlay'
 							]}
 						>
 							{#if !hasChildren}
 								<span
 									class={[
 										'h-4 w-4 flex shrink-0 items-center justify-center rounded-full border transition-colors duration-75',
-										(isHighlighted || isSelected) && !option.disabled
+										isHighlighted && !option.disabled
 											? isSelected
 												? 'border-white bg-white'
 												: 'border-white/60 bg-transparent'
-											: 'border-border-strong bg-transparent'
+											: isSelected && !option.disabled
+												? 'border-brand-500 bg-brand-500'
+												: 'border-border-strong bg-transparent'
 									]}
 									aria-hidden="true"
 								>
 									{#if isSelected}
 										<svg
-											class="h-2.5 w-2.5 text-brand-600"
+											class={[
+												'h-2.5 w-2.5',
+												isHighlighted ? 'text-brand-600' : 'text-white'
+											]}
 											viewBox="0 0 24 24"
 											fill="none"
 											stroke="currentColor"
@@ -644,14 +652,12 @@
 							{/if}
 
 							<span class="min-w-0 flex-1">
-								<span class={['block truncate', isSelected && 'font-medium']}>
-									{option.label}
-								</span>
+								<span class="block truncate">{option.label}</span>
 								{#if secondary}
 									<span
 										class={[
 											'mt-0.5 block truncate text-[11px]',
-											(isHighlighted || isSelected) && !option.disabled
+											isHighlighted && !option.disabled
 												? 'text-white/75'
 												: 'text-secondary'
 										]}
@@ -665,7 +671,7 @@
 								<svg
 									class={[
 										'h-4 w-4 shrink-0',
-										(isHighlighted || isSelected) && !option.disabled
+										isHighlighted && !option.disabled
 											? 'text-white/80'
 											: 'text-secondary'
 									]}

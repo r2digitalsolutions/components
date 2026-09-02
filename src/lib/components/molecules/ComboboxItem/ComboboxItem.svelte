@@ -79,9 +79,11 @@
 			'focus-visible:ring-brand-500/30 focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset',
 			disabled && 'cursor-not-allowed opacity-40',
 			!disabled &&
-				(item.isHighlighted || item.isSelected
+				(item.isHighlighted
 					? 'bg-brand-500 text-white'
-					: 'text-primary hover:bg-surface-overlay'),
+					: item.isSelected
+						? 'bg-brand-500/10 font-medium text-primary'
+						: 'text-primary hover:bg-surface-overlay'),
 			className
 		]}
 	>
