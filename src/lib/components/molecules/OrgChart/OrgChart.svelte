@@ -74,65 +74,42 @@
 	</button>
 {/snippet}
 
-{#snippet childForest(node: OrgNode)}
-	{#if node.children?.length}
-		{#if node.children.length === 1}
-			<div class="flex flex-col items-center">
-				<div class="h-6 w-px shrink-0 bg-border" aria-hidden="true"></div>
-				{@render branch(node.children[0])}
-			</div>
-		{:else}
-			<div class="flex flex-col items-center">
-				<div class="h-6 w-px shrink-0 bg-border" aria-hidden="true"></div>
+{#snippet tree(node: OrgNode)}
+	<div class="flex flex-col items-center">
+		<div class="shrink-0" style:width="{CARD_W}px">
+			{@render nodeCard(node)}
+		</div>
+		{#if node.children?.length}
+			<div class="h-6 w-0.5 shrink-0 bg-border-strong" aria-hidden="true"></div>
+			{#if node.children.length === 1}
+				{@render tree(node.children[0])}
+			{:else}
 				<div
-					class="relative inline-flex items-start justify-center gap-4 pt-4"
+					class="relative inline-flex items-start justify-center gap-4"
 					style:--siblings={node.children.length}
 				>
 					<div
-						class="pointer-events-none absolute top-0 h-px bg-border"
+						class="pointer-events-none absolute top-0 h-0.5 bg-border-strong"
 						style:left="calc(50% / var(--siblings))"
 						style:right="calc(50% / var(--siblings))"
 						aria-hidden="true"
 					></div>
 					{#each node.children as child (child.id)}
-						<div class="flex shrink-0 flex-col items-center" style:width="{CARD_W}px">
-							<div class="h-4 w-px shrink-0 bg-border" aria-hidden="true"></div>
-							<div class="w-full">
-								{@render nodeCard(child)}
-							</div>
+						<div class="flex shrink-0 flex-col items-center" style:min-width="{CARD_W}px">
+							<div class="h-4 w-0.5 shrink-0 bg-border-strong" aria-hidden="true"></div>
+							{@render tree(child)}
 						</div>
 					{/each}
 				</div>
-				<div class="inline-flex items-start justify-center gap-4">
-					{#each node.children as child (child.id)}
-						<div
-							class="flex flex-col items-center pt-2"
-							style:min-width="{CARD_W}px"
-						>
-							{#if child.children?.length}
-								{@render childForest(child)}
-							{/if}
-						</div>
-					{/each}
-				</div>
-			</div>
+			{/if}
 		{/if}
-	{/if}
-{/snippet}
-
-{#snippet branch(node: OrgNode)}
-	<div class="flex flex-col items-center">
-		<div class="w-full" style:width="{CARD_W}px">
-			{@render nodeCard(node)}
-		</div>
-		{@render childForest(node)}
 	</div>
 {/snippet}
 
 <div class={['overflow-x-auto py-4', className]} role="tree" aria-label="Organization chart">
 	{#if root}
-		<div class="flex justify-center px-4 pb-2">
-			{@render branch(root)}
+		<div class="flex min-w-max justify-center px-4 pb-2">
+			{@render tree(root)}
 		</div>
 	{:else}
 		<p class="py-8 text-center text-sm text-muted">No organization data</p>
