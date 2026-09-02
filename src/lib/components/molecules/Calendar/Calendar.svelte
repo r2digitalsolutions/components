@@ -81,6 +81,10 @@
 	let panel = $state<Panel>('days');
 	/** Which month column owns the month/year picker when months=2. */
 	let pickerOffset = $state(0);
+	/** Range drag: anchor day and live preview end (YYYY-MM-DD). */
+	let dragAnchor = $state<string | null>(null);
+	let dragPreviewEnd = $state<string | null>(null);
+	let isDragging = $state(false);
 
 	const weekDays = $derived(
 		Array.from({ length: 7 }, (_, i) =>
@@ -214,21 +218,104 @@
 		return false;
 	}
 
+	function rangeDisplayStart() {
+		if (mode !== 'range') return start;
+		if (isDragging && dragAnchor) {
+			if (!dragPreviewEnd) return dragAnchor;
+			return dragAnchor <= dragPreviewEnd ? dragAnchor : dragPreviewEnd;
+		}
+		return start;
+	}
+
+	function rangeDisplayEnd() {
+		if (mode !== 'range') return end;
+		if (isDragging && dragAnchor && dragPreviewEnd) {
+			return dragAnchor <= dragPreviewEnd ? dragPreviewEnd : dragAnchor;
+		}
+		return end;
+	}
+
 	function isSelected(iso: string) {
 		if (mode === 'single') return value === iso;
 		if (mode === 'multiple') return values.includes(iso);
-		if (!start) return false;
-		if (!end) return start === iso;
-		return iso >= start && iso <= end;
+		const rangeStart = rangeDisplayStart();
+		const rangeEnd = rangeDisplayEnd();
+		if (!rangeStart) return false;
+		if (!rangeEnd) return rangeStart === iso;
+		return iso >= rangeStart && iso <= rangeEnd;
 	}
 
 	function isRangeEdge(iso: string) {
-		return mode === 'range' && (iso === start || iso === end);
+		if (mode !== 'range') return false;
+		const rangeStart = rangeDisplayStart();
+		const rangeEnd = rangeDisplayEnd();
+		return iso === rangeStart || iso === rangeEnd;
 	}
 
 	function isInRange(iso: string) {
-		return mode === 'range' && !!start && !!end && iso > start && iso < end;
+		if (mode !== 'range') return false;
+		const rangeStart = rangeDisplayStart();
+		const rangeEnd = rangeDisplayEnd();
+		return !!rangeStart && !!rangeEnd && iso > rangeStart && iso < rangeEnd;
 	}
+
+	function dayFromTarget(target: EventTarget | null) {
+		if (!(target instanceof Element)) return null;
+		const button = target.closest('[data-calendar-day]');
+		if (!(button instanceof HTMLElement)) return null;
+		const iso = button.dataset.calendarDay;
+		return iso && !isDisabled(iso) ? iso : null;
+	}
+
+	function beginRangeDrag(iso: string, event: PointerEvent) {
+		if (mode !== 'range' || isDisabled(iso)) return;
+		event.preventDefault();
+		isDragging = true;
+		dragAnchor = iso;
+		dragPreviewEnd = null;
+	}
+
+	function finishRangeDrag(iso: string | null) {
+		if (!dragAnchor) return;
+
+		if (dragPreviewEnd && dragPreviewEnd !== dragAnchor) {
+			const rangeStart = dragAnchor <= dragPreviewEnd ? dragAnchor : dragPreviewEnd;
+			const rangeEnd = dragAnchor <= dragPreviewEnd ? dragPreviewEnd : dragAnchor;
+			start = rangeStart;
+			end = rangeEnd;
+			emit();
+		} else {
+			pick(iso ?? dragAnchor);
+		}
+
+		isDragging = false;
+		dragAnchor = null;
+		dragPreviewEnd = null;
+	}
+
+	$effect(() => {
+		if (!isDragging) return;
+
+		const onMove = (event: PointerEvent) => {
+			const iso = dayFromTarget(document.elementFromPoint(event.clientX, event.clientY));
+			if (iso) dragPreviewEnd = iso;
+		};
+
+		const onUp = (event: PointerEvent) => {
+			const iso =
+				dayFromTarget(document.elementFromPoint(event.clientX, event.clientY)) ?? dragAnchor;
+			finishRangeDrag(iso);
+		};
+
+		window.addEventListener('pointermove', onMove);
+		window.addEventListener('pointerup', onUp);
+		window.addEventListener('pointercancel', onUp);
+		return () => {
+			window.removeEventListener('pointermove', onMove);
+			window.removeEventListener('pointerup', onUp);
+			window.removeEventListener('pointercancel', onUp);
+		};
+	});
 
 	function emit() {
 		onchange?.({ mode, value, values, start, end });
@@ -275,10 +362,13 @@
 		const mid = isInRange(iso);
 		const disabled = isDisabled(iso);
 		const isToday = iso === todayIso;
+		const rangeStart = rangeDisplayStart();
+		const rangeEnd = rangeDisplayEnd();
 
 		return [
 			'relative flex size-9 items-center justify-center rounded-lg text-sm transition-colors',
 			'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30',
+			mode === 'range' && !disabled && 'touch-none select-none',
 			disabled && 'cursor-not-allowed opacity-30',
 			!disabled && !selected && !mid && 'text-primary hover:bg-surface-overlay',
 			mid && 'rounded-none bg-brand-500/15 text-primary',
@@ -286,17 +376,17 @@
 			edge && 'bg-brand-500 font-semibold text-white',
 			selected &&
 				mode === 'range' &&
-				start &&
-				end &&
-				iso === start &&
-				end !== start &&
+				rangeStart &&
+				rangeEnd &&
+				iso === rangeStart &&
+				rangeEnd !== rangeStart &&
 				'rounded-r-none',
 			selected &&
 				mode === 'range' &&
-				start &&
-				end &&
-				iso === end &&
-				end !== start &&
+				rangeStart &&
+				rangeEnd &&
+				iso === rangeEnd &&
+				rangeEnd !== rangeStart &&
 				'rounded-l-none',
 			isToday && !selected && !mid && 'ring-1 ring-brand-500/40'
 		];
@@ -319,8 +409,12 @@
 		framed && 'rounded-2xl border border-border p-3 shadow-sm',
 		!framed && 'p-0.5',
 		dual && panel === 'days' ? 'w-fit' : 'w-80',
+		isDragging && 'select-none',
 		className
 	]}
+	onpointerleave={() => {
+		if (isDragging) dragPreviewEnd = null;
+	}}
 >
 	{#if panel === 'days'}
 		<div class={['flex', dual ? 'flex-col gap-4 sm:flex-row sm:gap-2' : 'flex-col']}>
@@ -391,7 +485,22 @@
 									type="button"
 									disabled={isDisabled(cell.date)}
 									aria-pressed={isSelected(cell.date)}
-									onclick={() => pick(cell.date)}
+									data-calendar-day={cell.date}
+									onclick={() => {
+										if (mode !== 'range') pick(cell.date);
+									}}
+									onpointerdown={
+										mode === 'range'
+											? (event) => beginRangeDrag(cell.date, event)
+											: undefined
+									}
+									onpointerenter={
+										mode === 'range' && isDragging && !isDisabled(cell.date)
+											? () => {
+													dragPreviewEnd = cell.date;
+												}
+											: undefined
+									}
 									class={dayClass(cell.date)}
 								>
 									<span class="relative z-10">{cell.day}</span>

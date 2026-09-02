@@ -196,12 +196,19 @@
 		const spaceAbove = rect.top - gap;
 		const openUp = spaceBelow < Math.min(maxHeight, 160) && spaceAbove > spaceBelow;
 		const available = Math.max(120, openUp ? spaceAbove : spaceBelow);
+		const maxWidth = Math.min(320, window.innerWidth - 16);
+		let left = rect.left;
+		if (left + maxWidth > window.innerWidth - 8) {
+			left = Math.max(8, window.innerWidth - maxWidth - 8);
+		}
 
 		listboxStyle = [
 			`top: ${openUp ? 'auto' : `${rect.bottom + gap}px`}`,
 			`bottom: ${openUp ? `${window.innerHeight - rect.top + gap}px` : 'auto'}`,
-			`left: ${rect.left}px`,
-			`width: ${rect.width}px`,
+			`left: ${left}px`,
+			`min-width: ${rect.width}px`,
+			`width: max-content`,
+			`max-width: ${maxWidth}px`,
 			`max-height: ${Math.min(maxHeight, available)}px`
 		].join('; ');
 	}
@@ -577,7 +584,7 @@
 					>
 						<path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
 					</svg>
-					<span class="truncate">{currentLevel.title}</span>
+					<span class="whitespace-nowrap">{currentLevel.title}</span>
 				</button>
 				<div class="border-border mx-1.5 mb-0.5 h-px border-b" role="separator"></div>
 			{/if}
@@ -652,11 +659,11 @@
 							{/if}
 
 							<span class="min-w-0 flex-1">
-								<span class="block truncate">{option.label}</span>
+								<span class="block whitespace-nowrap">{option.label}</span>
 								{#if secondary}
 									<span
 										class={[
-											'mt-0.5 block truncate text-[11px]',
+											'mt-0.5 block text-[11px] whitespace-nowrap',
 											isHighlighted && !option.disabled
 												? 'text-white/75'
 												: 'text-secondary'
