@@ -317,6 +317,12 @@ export { default as VirtualList } from './components/molecules/VirtualList/Virtu
 export { default as MasonryGrid } from './components/molecules/MasonryGrid/MasonryGrid.svelte';
 export { default as OrgChart } from './components/molecules/OrgChart/OrgChart.svelte';
 export type { OrgNode } from './components/molecules/OrgChart/OrgChart.svelte';
+export { default as PanZoomViewport } from './components/molecules/PanZoomViewport/PanZoomViewport.svelte';
+export {
+	getPanZoomContext,
+	PAN_ZOOM_CTX,
+	type PanZoomContext
+} from './components/molecules/PanZoomViewport/panZoomContext.js';
 export { default as TableToolbar } from './components/molecules/TableToolbar/TableToolbar.svelte';
 export type {
 	TableColumnOption,

@@ -29,7 +29,7 @@
 	};
 </script>
 
-<div class="rounded-2xl border border-border bg-surface-elevated p-4">
-	<p class="mb-4 text-sm font-semibold text-primary">Organization</p>
-	<OrgChart {root} />
+<div class="rounded-2xl border border-border bg-surface-elevated p-2">
+	<p class="mb-2 px-2 text-sm font-semibold text-primary">Organization</p>
+	<OrgChart {root} viewportHeight="480px" />
 </div>
