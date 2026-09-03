@@ -48,13 +48,31 @@
 	const titleSize: Record<PageHeaderSize, string> = {
 		sm: 'text-lg font-semibold',
 		md: 'text-2xl font-semibold',
-		lg: 'text-3xl font-bold'
+		lg: 'text-3xl font-bold tracking-tight'
 	};
 
 	const spacing: Record<PageHeaderSize, string> = {
 		sm: 'space-y-2',
 		md: 'space-y-3',
-		lg: 'space-y-4'
+		lg: 'space-y-5'
+	};
+
+	const bodyGap: Record<PageHeaderSize, string> = {
+		sm: 'gap-2',
+		md: 'gap-3',
+		lg: 'gap-4'
+	};
+
+	const textStack: Record<PageHeaderSize, string> = {
+		sm: 'space-y-1',
+		md: 'space-y-1.5',
+		lg: 'space-y-2'
+	};
+
+	const descriptionClass: Record<PageHeaderSize, string> = {
+		sm: 'max-w-2xl text-sm leading-snug text-muted',
+		md: 'max-w-2xl text-sm leading-relaxed text-muted',
+		lg: 'max-w-3xl text-base leading-relaxed text-muted'
 	};
 
 	const resolvedSize = $derived<PageHeaderSize>(
@@ -75,15 +93,15 @@
 		<Breadcrumb items={breadcrumbs} />
 	{/if}
 
-	<div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-		<div class="flex min-w-0 items-center gap-2">
+	<div class={['flex flex-col sm:flex-row sm:items-start sm:justify-between', bodyGap[resolvedSize]]}>
+		<div class={['flex min-w-0 items-start', bodyGap[resolvedSize]]}>
 			{#if leading}
-				<div class="shrink-0">
+				<div class="shrink-0 pt-0.5">
 					{@render leading()}
 				</div>
 			{/if}
 
-			<div class="min-w-0 space-y-0.5">
+			<div class={['min-w-0', textStack[resolvedSize]]}>
 				{#if loading}
 					<Skeleton
 						variant="rounded"
@@ -94,8 +112,8 @@
 						<Skeleton variant="rounded" width="18rem" height="1rem" class="mt-1.5" />
 					{/if}
 				{:else}
-					<div class="flex min-w-0 items-center gap-2">
-						<h1 class={['truncate tracking-tight text-primary', titleSize[resolvedSize]]}>
+					<div class="flex min-w-0 flex-wrap items-center gap-2.5">
+						<h1 class={['min-w-0 text-primary', titleSize[resolvedSize]]}>
 							{title}
 						</h1>
 						{#if status}
@@ -105,10 +123,10 @@
 						{/if}
 					</div>
 					{#if description}
-						<p class="max-w-2xl text-sm leading-snug text-muted">{description}</p>
+						<p class={descriptionClass[resolvedSize]}>{description}</p>
 					{/if}
 					{#if meta}
-						<div class="pt-1">
+						<div class={resolvedSize === 'lg' ? 'pt-1' : 'pt-0.5'}>
 							{@render meta()}
 						</div>
 					{/if}
@@ -117,7 +135,7 @@
 		</div>
 
 		{#if actions && !loading}
-			<div class="flex shrink-0 flex-wrap items-center gap-2">
+			<div class="flex shrink-0 flex-wrap items-center gap-2 sm:pt-1">
 				{@render actions()}
 			</div>
 		{:else if loading}

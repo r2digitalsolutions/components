@@ -2,12 +2,12 @@
 	import type { Snippet } from 'svelte';
 
 	export type IconBoxTone = 'brand' | 'neutral' | 'success' | 'warning' | 'error' | 'info';
-	export type IconBoxSize = 'sm' | 'md' | 'lg';
+	export type IconBoxSize = 'sm' | 'md' | 'lg' | 'xl';
 
 	interface IconBoxProps {
 		tone?: IconBoxTone;
 		size?: IconBoxSize;
-		rounded?: 'lg' | 'xl' | 'full';
+		rounded?: 'lg' | 'xl' | '2xl' | 'full';
 		class?: string;
 		children?: Snippet;
 	}
@@ -32,12 +32,14 @@
 	const sizes: Record<IconBoxSize, string> = {
 		sm: 'h-8 w-8 [&_svg]:h-3.5 [&_svg]:w-3.5',
 		md: 'h-10 w-10 [&_svg]:h-4 [&_svg]:w-4',
-		lg: 'h-12 w-12 [&_svg]:h-5 [&_svg]:w-5'
+		lg: 'h-12 w-12 [&_svg]:h-5 [&_svg]:w-5',
+		xl: 'h-16 w-16 [&_svg]:h-7 [&_svg]:w-7 sm:h-20 sm:w-20 sm:[&_svg]:h-8 sm:[&_svg]:w-8'
 	};
 
-	const radii: Record<'lg' | 'xl' | 'full', string> = {
+	const radii: Record<'lg' | 'xl' | '2xl' | 'full', string> = {
 		lg: 'rounded-lg',
 		xl: 'rounded-xl',
+		'2xl': 'rounded-2xl',
 		full: 'rounded-full'
 	};
 </script>
