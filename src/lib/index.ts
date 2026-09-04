@@ -1021,7 +1021,10 @@ export type {
 	BottomNavIcon
 } from './components/organisms/BottomNav/BottomNav.svelte';
 export { default as CommandPalette } from './components/organisms/CommandPalette/CommandPalette.svelte';
-export type { CommandItem } from './components/organisms/CommandPalette/CommandPalette.svelte';
+export type {
+	CommandItem,
+	CommandIcon
+} from './components/organisms/CommandPalette/CommandPalette.svelte';
 export { default as AppShell } from './components/organisms/AppShell/AppShell.svelte';
 export {
 	getAppChrome,

@@ -15,6 +15,10 @@ export interface UiMessages {
 	addItem: string;
 	removeItem: string;
 	noItems: string;
+	/** CommandPalette */
+	noResults: string;
+	commandPalette: string;
+	commandPalettePlaceholder: string;
 	/** FileUploader */
 	uploadFiles: string;
 	uploadHelper: string;
@@ -66,6 +70,9 @@ const en: UiMessages = {
 	addItem: 'Add item',
 	removeItem: 'Remove item',
 	noItems: 'No items yet',
+	noResults: 'No results',
+	commandPalette: 'Command palette',
+	commandPalettePlaceholder: 'Type a command or search…',
 	uploadFiles: 'Upload files',
 	uploadHelper: 'SVG, PNG, JPG or GIF (max. 10MB)',
 	dropToUpload: 'Drop files to upload',
@@ -111,6 +118,9 @@ const es: UiMessages = {
 	addItem: 'Añadir elemento',
 	removeItem: 'Eliminar elemento',
 	noItems: 'Sin elementos todavía',
+	noResults: 'Sin resultados',
+	commandPalette: 'Paleta de comandos',
+	commandPalettePlaceholder: 'Escribe un comando o busca…',
 	uploadFiles: 'Subir archivos',
 	uploadHelper: 'SVG, PNG, JPG o GIF (máx. 10MB)',
 	dropToUpload: 'Suelta los archivos para subirlos',
@@ -156,6 +166,9 @@ const pt: UiMessages = {
 	addItem: 'Adicionar item',
 	removeItem: 'Remover item',
 	noItems: 'Ainda sem itens',
+	noResults: 'Sem resultados',
+	commandPalette: 'Paleta de comandos',
+	commandPalettePlaceholder: 'Escreve um comando ou pesquisa…',
 	uploadFiles: 'Carregar ficheiros',
 	uploadHelper: 'SVG, PNG, JPG ou GIF (máx. 10MB)',
 	dropToUpload: 'Largue os ficheiros para carregar',
@@ -201,6 +214,9 @@ const fr: UiMessages = {
 	addItem: 'Ajouter un élément',
 	removeItem: 'Supprimer l’élément',
 	noItems: 'Aucun élément pour l’instant',
+	noResults: 'Aucun résultat',
+	commandPalette: 'Palette de commandes',
+	commandPalettePlaceholder: 'Tapez une commande ou recherchez…',
 	uploadFiles: 'Téléverser des fichiers',
 	uploadHelper: 'SVG, PNG, JPG ou GIF (max. 10MB)',
 	dropToUpload: 'Déposez les fichiers pour les téléverser',
@@ -246,6 +262,9 @@ const de: UiMessages = {
 	addItem: 'Element hinzufügen',
 	removeItem: 'Element entfernen',
 	noItems: 'Noch keine Elemente',
+	noResults: 'Keine Ergebnisse',
+	commandPalette: 'Befehlspalette',
+	commandPalettePlaceholder: 'Befehl eingeben oder suchen…',
 	uploadFiles: 'Dateien hochladen',
 	uploadHelper: 'SVG, PNG, JPG oder GIF (max. 10MB)',
 	dropToUpload: 'Dateien zum Hochladen ablegen',
@@ -291,6 +310,9 @@ const ca: UiMessages = {
 	addItem: 'Afegir element',
 	removeItem: 'Eliminar element',
 	noItems: 'Encara sense elements',
+	noResults: 'Sense resultats',
+	commandPalette: 'Paleta de comandes',
+	commandPalettePlaceholder: 'Escriu una comanda o cerca…',
 	uploadFiles: 'Pujar fitxers',
 	uploadHelper: 'SVG, PNG, JPG o GIF (màx. 10MB)',
 	dropToUpload: 'Deixa anar els fitxers per pujar-los',
