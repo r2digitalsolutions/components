@@ -2,7 +2,9 @@
 	import type { Component } from 'svelte';
 	import { untrack } from 'svelte';
 	import Kbd from '$lib/components/atoms/Kbd/Kbd.svelte';
+	import IconButton from '$lib/components/atoms/IconButton/IconButton.svelte';
 	import { i18n } from '$lib/utils/i18n.svelte';
+	import { Mic, MicOff } from '@lucide/svelte';
 
 	export type CommandIcon = Component<{
 		class?: string;
@@ -24,29 +26,39 @@
 
 	interface CommandPaletteProps {
 		open?: boolean;
+		query?: string;
 		items?: CommandItem[];
 		placeholder?: string;
 		emptyLabel?: string;
 		loading?: boolean;
+		voiceEnabled?: boolean;
+		listening?: boolean;
+		micLabel?: string;
+		stopMicLabel?: string;
 		class?: string;
 		onselect?: (item: CommandItem) => void;
 		onclose?: () => void;
 		onquery?: (query: string) => void;
+		onmicclick?: () => void;
 	}
 
 	let {
 		open = $bindable(false),
+		query = $bindable(''),
 		items = [],
 		placeholder,
 		emptyLabel,
 		loading = false,
+		voiceEnabled = false,
+		listening = false,
+		micLabel = 'Hablar',
+		stopMicLabel = 'Parar micrófono',
 		class: className = '',
 		onselect,
 		onclose,
-		onquery
+		onquery,
+		onmicclick
 	}: CommandPaletteProps = $props();
-
-	let query = $state('');
 	let activeIndex = $state(0);
 	let dialogEl = $state<HTMLDialogElement | null>(null);
 	let listEl = $state<HTMLDivElement | null>(null);
@@ -232,6 +244,25 @@
 				oninput={onInput}
 				onkeydown={onKeydown}
 			/>
+			{#if voiceEnabled}
+				<IconButton
+					variant="ghost"
+					size="xs"
+					label={listening ? stopMicLabel : micLabel}
+					aria-pressed={listening}
+					onclick={(e) => {
+						e.stopPropagation();
+						onmicclick?.();
+					}}
+					class={listening ? 'text-red-500 hover:text-red-600' : 'text-muted'}
+				>
+					{#if listening}
+						<MicOff size={16} strokeWidth={2} />
+					{:else}
+						<Mic size={16} strokeWidth={2} />
+					{/if}
+				</IconButton>
+			{/if}
 			{#if loading}
 				<span
 					class="h-4 w-4 animate-spin border-border border-t-brand-500 shrink-0 rounded-full border-2"

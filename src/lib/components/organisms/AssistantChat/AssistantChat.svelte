@@ -30,6 +30,8 @@
 		draft?: string;
 		loading?: boolean;
 		loadingLabel?: string;
+		/** When false, input stays disabled via `loading` but the spinner bubble is hidden (parent paints status in a message). */
+		showLoadingBubble?: boolean;
 		error?: string | null;
 		voiceEnabled?: boolean;
 		voiceOutput?: boolean;
@@ -63,6 +65,7 @@
 		draft = $bindable(''),
 		loading = false,
 		loadingLabel = 'Procesando…',
+		showLoadingBubble = true,
 		error = null,
 		voiceEnabled = true,
 		voiceOutput = $bindable(true),
@@ -220,7 +223,7 @@
 					{/if}
 				{/each}
 
-				{#if loading}
+				{#if loading && showLoadingBubble}
 					<div class="flex items-center gap-2">
 						<span
 							class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-600 dark:bg-brand-900/40 dark:text-brand-400"
@@ -236,14 +239,6 @@
 						</div>
 					</div>
 				{/if}
-
-				{#if error}
-					<div
-						class="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600 dark:border-red-800/40 dark:bg-red-950/20 dark:text-red-400"
-					>
-						{error}
-					</div>
-				{/if}
 			</div>
 		{/if}
 	</div>
@@ -254,8 +249,11 @@
 			<input
 				type="text"
 				bind:value={draft}
-				{placeholder}
-				class="h-9 min-w-0 flex-1 rounded-xl border border-border bg-surface px-3 text-sm text-primary outline-none transition-shadow placeholder:text-muted focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20"
+				placeholder={listening ? statusLabel || placeholder : placeholder}
+				class={[
+					'h-9 min-w-0 flex-1 rounded-xl border bg-surface px-3 text-sm text-primary outline-none transition-shadow placeholder:text-muted focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20',
+					listening ? 'border-red-400 ring-2 ring-red-500/20' : 'border-border'
+				]}
 				disabled={loading}
 				onkeydown={handleKeydown}
 				aria-label={placeholder}
@@ -301,6 +299,10 @@
 				</IconButton>
 			</div>
 		</div>
+
+		{#if error}
+			<p class="mt-1.5 px-1 text-xs text-red-600 dark:text-red-400">{error}</p>
+		{/if}
 
 		{#if footerExtra}
 			{@render footerExtra()}
