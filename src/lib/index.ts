@@ -1080,6 +1080,9 @@ export { default as RegisterForm } from './components/organisms/RegisterForm/Reg
 export { default as ForgotPasswordForm } from './components/organisms/ForgotPasswordForm/ForgotPasswordForm.svelte';
 export { default as OtpVerify } from './components/organisms/OtpVerify/OtpVerify.svelte';
 export { default as ChatWindow } from './components/organisms/ChatWindow/ChatWindow.svelte';
+export { default as AssistantChat } from './components/organisms/AssistantChat/AssistantChat.svelte';
+export type { AssistantMessage } from './components/organisms/AssistantChat/AssistantChat.svelte';
+export { default as AssistantFab } from './components/organisms/AssistantFab/AssistantFab.svelte';
 export { default as CommentThread } from './components/organisms/CommentThread/CommentThread.svelte';
 export type { CommentItem } from './components/organisms/CommentThread/CommentThread.svelte';
 export { default as ActivityFeed } from './components/organisms/ActivityFeed/ActivityFeed.svelte';

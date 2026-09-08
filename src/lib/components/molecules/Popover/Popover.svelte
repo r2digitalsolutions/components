@@ -230,7 +230,7 @@
 			ontoggle={onToggle}
 			style={panelStyle}
 			class={[
-				'popover-panel m-0 rounded-xl border-border bg-surface-elevated p-3 shadow-xl max-w-[min(20rem,calc(100vw-1rem))] border outline-none',
+				'popover-panel m-0 rounded-xl border-border bg-surface-elevated p-3 shadow-xl max-w-[min(26rem,calc(100vw-1rem))] border outline-none',
 				panelClass
 			]}
 		>
