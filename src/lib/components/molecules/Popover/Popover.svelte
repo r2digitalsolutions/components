@@ -86,8 +86,8 @@
 		const viewTop = vv?.offsetTop ?? 0;
 		const pad = 8;
 
-		const panelW = Math.max(panelEl.offsetWidth, 280);
-		const panelH = Math.max(panelEl.offsetHeight, 120);
+		const panelW = Math.max(panelEl.offsetWidth || 0, unstyled ? 1 : 280);
+		const panelH = Math.max(panelEl.offsetHeight || 0, unstyled ? 1 : 120);
 
 		let place: PopoverPlacement = placement;
 		if (place === 'top' || place === 'bottom') {
@@ -126,8 +126,15 @@
 			`left:${Math.round(left)}px`,
 			'right:auto',
 			'bottom:auto',
-			`width:${Math.round(panelW)}px`
-		].join(';');
+			unstyled ? 'width:max-content' : `width:${Math.round(panelW)}px`,
+			unstyled ? 'height:max-content' : null,
+			unstyled ? 'background:transparent' : null,
+			unstyled ? 'border:none' : null,
+			unstyled ? 'padding:0' : null,
+			unstyled ? 'overflow:visible' : null
+		]
+			.filter(Boolean)
+			.join(';');
 	}
 
 	function syncNative() {
@@ -232,6 +239,7 @@
 			role="dialog"
 			ontoggle={onToggle}
 			style={panelStyle}
+			data-unstyled={unstyled ? 'true' : undefined}
 			class={[
 				'popover-panel m-0 outline-none',
 				unstyled
@@ -262,8 +270,19 @@
 </div>
 
 <style>
-	/* UA popover defaults to inset:0 — force anchor via inline style */
+	/* UA popover paints a canvas background — kill it for anchored panels */
+	.popover-panel {
+		background-color: transparent;
+		color: inherit;
+	}
 	.popover-panel:popover-open {
 		inset: unset;
+	}
+	.popover-panel[data-unstyled='true'] {
+		background: transparent !important;
+		border: none !important;
+		padding: 0 !important;
+		box-shadow: none !important;
+		overflow: visible;
 	}
 </style>
