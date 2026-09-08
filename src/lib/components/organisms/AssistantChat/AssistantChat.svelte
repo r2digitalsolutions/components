@@ -248,23 +248,7 @@
 
 	<!-- Footer -->
 	<footer class="shrink-0 border-t border-border px-3 py-2.5">
-		<div class="flex items-center gap-2">
-			{#if voiceEnabled}
-				<IconButton
-					variant="ghost"
-					size="sm"
-					label={listening ? stopMicLabel : micLabel}
-					onclick={() => onmicclick?.()}
-					class={listening ? 'text-red-500 hover:text-red-600' : ''}
-				>
-					{#if listening}
-						<MicOff size={16} strokeWidth={2} />
-					{:else}
-						<Mic size={16} strokeWidth={2} />
-					{/if}
-				</IconButton>
-			{/if}
-
+		<div class="flex items-center gap-1.5">
 			<input
 				type="text"
 				bind:value={draft}
@@ -275,30 +259,45 @@
 				aria-label={placeholder}
 			/>
 
-			{#if voiceEnabled}
-				<IconButton
-					variant="ghost"
-					size="sm"
-					label={voiceOutput ? voiceOnLabel : voiceOffLabel}
-					onclick={toggleVoice}
-				>
-					{#if voiceOutput}
-						<Volume2 size={16} strokeWidth={2} />
-					{:else}
-						<VolumeX size={16} strokeWidth={2} />
-					{/if}
-				</IconButton>
-			{/if}
+			<div class="flex shrink-0 items-center gap-0.5">
+				{#if voiceEnabled}
+					<IconButton
+						variant="ghost"
+						size="sm"
+						label={listening ? stopMicLabel : micLabel}
+						onclick={() => onmicclick?.()}
+						class={listening ? 'text-red-500 hover:text-red-600' : ''}
+					>
+						{#if listening}
+							<MicOff size={16} strokeWidth={2} />
+						{:else}
+							<Mic size={16} strokeWidth={2} />
+						{/if}
+					</IconButton>
+					<IconButton
+						variant="ghost"
+						size="sm"
+						label={voiceOutput ? voiceOnLabel : voiceOffLabel}
+						onclick={toggleVoice}
+					>
+						{#if voiceOutput}
+							<Volume2 size={16} strokeWidth={2} />
+						{:else}
+							<VolumeX size={16} strokeWidth={2} />
+						{/if}
+					</IconButton>
+				{/if}
 
-			<IconButton
-				variant={canSend ? 'primary' : 'ghost'}
-				size="sm"
-				label={sendLabel}
-				disabled={!canSend}
-				onclick={handleSend}
-			>
-				<Send size={16} strokeWidth={2} />
-			</IconButton>
+				<IconButton
+					variant={canSend ? 'primary' : 'ghost'}
+					size="sm"
+					label={sendLabel}
+					disabled={!canSend}
+					onclick={handleSend}
+				>
+					<Send size={16} strokeWidth={2} />
+				</IconButton>
+			</div>
 		</div>
 
 		{#if footerExtra}

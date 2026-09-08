@@ -10,6 +10,8 @@
 		align?: PopoverAlign;
 		strategy?: 'fixed' | 'absolute';
 		offset?: number;
+		/** Solo ancla/posiciona; sin fondo, borde ni padding (el contenido aporta el chrome). */
+		unstyled?: boolean;
 		class?: string;
 		panelClass?: string;
 		trigger?: Snippet;
@@ -23,6 +25,7 @@
 		align = 'center',
 		strategy = 'fixed',
 		offset = 8,
+		unstyled = false,
 		class: className = '',
 		panelClass = '',
 		trigger,
@@ -230,7 +233,10 @@
 			ontoggle={onToggle}
 			style={panelStyle}
 			class={[
-				'popover-panel m-0 rounded-xl border-border bg-surface-elevated p-3 shadow-xl max-w-[min(26rem,calc(100vw-1rem))] border outline-none',
+				'popover-panel m-0 outline-none',
+				unstyled
+					? 'border-0 bg-transparent p-0 shadow-none'
+					: 'rounded-xl border border-border bg-surface-elevated p-3 shadow-xl max-w-[min(26rem,calc(100vw-1rem))]',
 				panelClass
 			]}
 		>
@@ -241,7 +247,10 @@
 			bind:this={panelEl}
 			role="dialog"
 			class={[
-				'min-w-48 rounded-xl border-border bg-surface-elevated p-3 shadow-xl absolute z-50 border',
+				'absolute z-50 outline-none',
+				unstyled
+					? 'border-0 bg-transparent p-0 shadow-none'
+					: 'min-w-48 rounded-xl border border-border bg-surface-elevated p-3 shadow-xl',
 				absolutePos[placement],
 				absoluteAlign[align][placement],
 				panelClass
