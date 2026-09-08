@@ -32,6 +32,8 @@
 		defaultValue?: unknown;
 		type?: string;
 		'aria-invalid'?: boolean | 'true' | 'false';
+		autocomplete?: string;
+		uncontrolled?: boolean;
 	}
 
 	let {
@@ -53,7 +55,9 @@
 		onchange,
 		defaultValue: _kitDefaultValue = undefined,
 		type: _kitType = undefined,
-		'aria-invalid': _ariaInvalid = undefined
+		'aria-invalid': _ariaInvalid = undefined,
+		autocomplete,
+		uncontrolled = false
 	}: FormPasswordInputProps = $props();
 
 	const form = getFormContext();
@@ -111,6 +115,8 @@
 		helperText={resolved.helperText}
 		oninput={handleInput}
 		{onchange}
+		{autocomplete}
+		{uncontrolled}
 		bind:value
 	/>
 </div>

@@ -71,6 +71,8 @@
 		/** Absorbed if a Kit `.as()` object is spread by mistake. */
 		defaultValue?: unknown;
 		'aria-invalid'?: boolean | 'true' | 'false';
+		autocomplete?: string;
+		uncontrolled?: boolean;
 	}
 
 	let {
@@ -97,7 +99,9 @@
 		oninput,
 		onchange,
 		defaultValue: _kitDefaultValue = undefined,
-		'aria-invalid': _ariaInvalid = undefined
+		'aria-invalid': _ariaInvalid = undefined,
+		autocomplete,
+		uncontrolled = false
 	}: FormFieldProps = $props();
 
 	const form = getFormContext();
@@ -186,6 +190,8 @@
 			{onchange}
 			status={resolved.status}
 			helperText={resolved.helperText}
+			{autocomplete}
+			{uncontrolled}
 			bind:value
 		/>
 	{/if}

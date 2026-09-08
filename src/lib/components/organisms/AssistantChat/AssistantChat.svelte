@@ -29,6 +29,7 @@
 		messages?: AssistantMessage[];
 		draft?: string;
 		loading?: boolean;
+		loadingLabel?: string;
 		error?: string | null;
 		voiceEnabled?: boolean;
 		voiceOutput?: boolean;
@@ -61,6 +62,7 @@
 		messages = [],
 		draft = $bindable(''),
 		loading = false,
+		loadingLabel = 'Procesando…',
 		error = null,
 		voiceEnabled = true,
 		voiceOutput = $bindable(true),
@@ -230,7 +232,7 @@
 							class="flex items-center gap-2 rounded-2xl rounded-bl-sm bg-surface-overlay px-3.5 py-2.5"
 						>
 							<LoaderCircle size={14} strokeWidth={2} class="animate-spin text-muted" />
-							<span class="text-xs text-muted">Procesando…</span>
+							<span class="text-xs text-muted">{loadingLabel}</span>
 						</div>
 					</div>
 				{/if}

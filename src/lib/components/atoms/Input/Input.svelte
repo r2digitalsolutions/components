@@ -31,6 +31,9 @@
 		onfocus?: (e: FocusEvent) => void;
 		onblur?: (e: FocusEvent) => void;
 		onkeydown?: (e: KeyboardEvent) => void;
+		autocomplete?: string;
+		/** Native form value only (no Svelte bind). Needed for login + autofill. */
+		uncontrolled?: boolean;
 	}
 
 	let {
@@ -58,7 +61,9 @@
 		onchange,
 		onfocus,
 		onblur,
-		onkeydown
+		onkeydown,
+		autocomplete,
+		uncontrolled = false
 	}: InputProps = $props();
 
 	let autoId = $state<string | undefined>(undefined);
@@ -67,7 +72,9 @@
 	});
 	const inputId = $derived(id ?? autoId);
 	const helperId = $derived(inputId ? `${inputId}-helper` : undefined);
-	const hasClear = $derived(clearable && value.length > 0 && !disabled && !readonly);
+	const hasClear = $derived(
+		!uncontrolled && clearable && value.length > 0 && !disabled && !readonly
+	);
 
 	const wrapperSizeClasses: Record<InputSize, string> = {
 		sm: 'h-8 text-sm',
@@ -137,32 +144,62 @@
 				</span>
 			{/if}
 
-			<input
-				id={inputId}
-				{name}
-				{type}
-				{placeholder}
-				{disabled}
-				{readonly}
-				{required}
-				{autofocus}
-				{min}
-				{max}
-				{step}
-				bind:value
-				aria-describedby={helperText ? helperId : undefined}
-				aria-invalid={status === 'error'}
-				class={[
-					'min-w-0 text-primary placeholder:text-muted h-full flex-1 self-stretch bg-transparent outline-none disabled:cursor-not-allowed',
-					type === 'search' &&
-						'[&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-decoration]:appearance-none'
-				]}
-				{oninput}
-				{onchange}
-				{onfocus}
-				{onblur}
-				{onkeydown}
-			/>
+			{#if uncontrolled}
+				<input
+					id={inputId}
+					{name}
+					{type}
+					{placeholder}
+					{disabled}
+					{readonly}
+					{required}
+					{autofocus}
+					{min}
+					{max}
+					{step}
+					{autocomplete}
+					aria-describedby={helperText ? helperId : undefined}
+					aria-invalid={status === 'error'}
+					class={[
+						'min-w-0 text-primary placeholder:text-muted h-full flex-1 self-stretch bg-transparent outline-none disabled:cursor-not-allowed',
+						type === 'search' &&
+							'[&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-decoration]:appearance-none'
+					]}
+					{oninput}
+					{onchange}
+					{onfocus}
+					{onblur}
+					{onkeydown}
+				/>
+			{:else}
+				<input
+					id={inputId}
+					{name}
+					{type}
+					{placeholder}
+					{disabled}
+					{readonly}
+					{required}
+					{autofocus}
+					{min}
+					{max}
+					{step}
+					{autocomplete}
+					bind:value
+					aria-describedby={helperText ? helperId : undefined}
+					aria-invalid={status === 'error'}
+					class={[
+						'min-w-0 text-primary placeholder:text-muted h-full flex-1 self-stretch bg-transparent outline-none disabled:cursor-not-allowed',
+						type === 'search' &&
+							'[&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-decoration]:appearance-none'
+					]}
+					{oninput}
+					{onchange}
+					{onfocus}
+					{onblur}
+					{onkeydown}
+				/>
+			{/if}
 		</label>
 
 		{#if hasClear}

@@ -15,6 +15,8 @@
 		class?: string;
 		oninput?: (e: Event) => void;
 		onchange?: (e: Event) => void;
+		autocomplete?: string;
+		uncontrolled?: boolean;
 	}
 
 	let {
@@ -30,7 +32,9 @@
 		status = 'default',
 		class: className = '',
 		oninput,
-		onchange
+		onchange,
+		autocomplete,
+		uncontrolled = false
 	}: PasswordInputProps = $props();
 
 	let visible = $state(false);
@@ -48,6 +52,8 @@
 		{size}
 		{status}
 		type={visible ? 'text' : 'password'}
+		{autocomplete}
+		{uncontrolled}
 		bind:value
 		{oninput}
 		{onchange}
