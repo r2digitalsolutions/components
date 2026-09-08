@@ -6,7 +6,13 @@ const meta = {
 	component: DashboardGridStory,
 	tags: ['autodocs'],
 	parameters: {
-		layout: 'padded'
+		layout: 'padded',
+		docs: {
+			description: {
+				component:
+					'Responsive dashboard grid. Use `stackBelow` (default `960`, or `false` to disable) to collapse into a single-column reading-order stack when the **grid container** is narrow (ResizeObserver; sidebar-aware). Drag/resize are disabled while stacked.'
+			}
+		}
 	},
 	argTypes: {
 		example: {

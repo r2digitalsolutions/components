@@ -89,6 +89,12 @@
 		onreset?: () => void;
 		/** Label shown in the drop placeholder while dragging */
 		dropLabel?: string;
+		/**
+		 * Container width (px) below which the grid stacks into a single column.
+		 * Measured on the grid itself (sidebar-aware). Pass `false` to disable.
+		 * Default `960`.
+		 */
+		stackBelow?: number | false;
 	}
 
 	let {
@@ -118,13 +124,15 @@
 		onremove,
 		onadd,
 		onreset,
-		dropLabel = 'Drop here'
+		dropLabel = 'Drop here',
+		stackBelow = 960
 	}: DashboardGridProps = $props();
 
 	const DRAG_THRESHOLD = 6;
 
 	let containerEl: HTMLDivElement | null = null;
 	let ghostEl: HTMLDivElement | null = null;
+	let stacked = $state(false);
 	let draggingId = $state<string | null>(null);
 	let resizingId = $state<string | null>(null);
 	let resizeEdge = $state<WidgetResizeEdge>('se');
@@ -158,6 +166,11 @@
 
 	const contentRows = $derived(layoutBounds(layout).rows);
 	const rows = $derived(Math.max(contentRows + (editable ? padRows : 0), minRows));
+	const displayLayout = $derived.by((): GridItem[] => {
+		if (!stacked) return layout;
+		return [...layout].sort((a, b) => a.y - b.y || a.x - b.x);
+	});
+	const interactionsEnabled = $derived(!stacked);
 	const draggingItem = $derived(layout.find((it) => it.id === draggingId) ?? null);
 	const snapPreview = $derived.by((): GridItem | null => {
 		if (!draggingItem || !dragMoved) return null;
@@ -276,9 +289,36 @@
 		};
 	}
 
+	function syncStacked(width: number) {
+		if (stackBelow === false) {
+			if (stacked) {
+				resetInteraction();
+				stacked = false;
+			}
+			return;
+		}
+		const next = width < stackBelow;
+		if (next === stacked) return;
+		if (next) resetInteraction();
+		stacked = next;
+	}
+
 	function attachContainer(node: HTMLElement) {
 		containerEl = node as HTMLDivElement;
+		if (typeof ResizeObserver === 'undefined') {
+			syncStacked(node.clientWidth);
+			return () => {
+				if (containerEl === node) containerEl = null;
+			};
+		}
+		const ro = new ResizeObserver((entries) => {
+			const w = entries[0]?.contentRect.width ?? node.clientWidth;
+			syncStacked(w);
+		});
+		ro.observe(node);
+		syncStacked(node.clientWidth);
 		return () => {
+			ro.disconnect();
 			if (containerEl === node) containerEl = null;
 		};
 	}
@@ -300,11 +340,12 @@
 		const target = e.target as HTMLElement | null;
 		if (target?.closest('button, a, [data-resize-handle], [data-widget-toolbar]')) return;
 		onselect?.(id);
-		if (draggable) onDragStart(id, e);
+		if (!interactionsEnabled || !draggable) return;
+		onDragStart(id, e);
 	}
 
 	function onDragStart(id: string, e: PointerEvent) {
-		if (!editable || !draggable) return;
+		if (!editable || !draggable || !interactionsEnabled) return;
 		e.preventDefault();
 		e.stopPropagation();
 		const item = layout.find((it) => it.id === id);
@@ -341,7 +382,7 @@
 	}
 
 	function onResizeStart(id: string, e: PointerEvent, edge: WidgetResizeEdge) {
-		if (!editable) return;
+		if (!editable || !interactionsEnabled) return;
 		e.preventDefault();
 		e.stopPropagation();
 		const item = layout.find((it) => it.id === id);
@@ -440,6 +481,11 @@
 	}
 
 	function styleFor(item: GridItem): string {
+		if (stacked) {
+			// Prefer content height; keep a floor from the saved desktop span.
+			const minH = Math.max(item.h * rowHeight, 160);
+			return `width:100%;min-height:${minH}px;height:auto;`;
+		}
 		const x = item.x + 1;
 		const y = item.y + 1;
 		return `grid-column: ${x} / span ${item.w}; grid-row: ${y} / span ${item.h};`;
@@ -455,10 +501,26 @@
 	}
 
 	const gridStyle = $derived(
-		`display:grid;grid-template-columns:repeat(${cols},minmax(0,1fr));grid-auto-rows:${rowHeight}px;gap:${gap}px;min-height:${rows * rowHeight + Math.max(0, rows - 1) * gap}px;`
+		stacked
+			? `display:flex;flex-direction:column;gap:${gap}px;`
+			: `display:grid;grid-template-columns:repeat(${cols},minmax(0,1fr));grid-auto-rows:${rowHeight}px;gap:${gap}px;min-height:${rows * rowHeight + Math.max(0, rows - 1) * gap}px;`
 	);
 
 	const guideRows = $derived(Math.max(rows, minRows));
+	const showGuides = $derived(editable && showGrid && !stacked);
+	const containerOverflowClass = $derived.by(() => {
+		if (stacked) {
+			return editable && showGrid ? 'pt-3 overflow-visible' : 'overflow-visible';
+		}
+		return editable ? 'pt-3 overflow-visible' : 'overflow-hidden';
+	});
+
+	$effect(() => {
+		// Re-evaluate when the breakpoint prop changes (ResizeObserver handles width).
+		void stackBelow;
+		if (containerEl) syncStacked(containerEl.clientWidth);
+		else if (stackBelow === false) syncStacked(0);
+	});
 
 	onDestroy(() => {
 		resetInteraction();
@@ -497,13 +559,13 @@
 			{@attach attachContainer}
 			class={[
 				'rounded-xl relative w-full',
-				editable ? 'pt-3 overflow-visible' : 'overflow-hidden',
-				editable && showGrid && 'ring-border ring-1',
-				editable && 'select-none'
+				containerOverflowClass,
+				showGuides && 'ring-border ring-1',
+				editable && !stacked && 'select-none'
 			]}
 			style={gridStyle}
 		>
-			{#if editable && showGrid}
+			{#if showGuides}
 				{#each Array.from({ length: cols * guideRows }, (_, i) => i) as cell (cell)}
 					{@const cx = cell % cols}
 					{@const cy = Math.floor(cell / cols)}
@@ -516,7 +578,7 @@
 				{/each}
 			{/if}
 
-			{#if draggable && originPreview}
+			{#if interactionsEnabled && draggable && originPreview}
 				<div
 					class="pointer-events-none z-[2] rounded-xl border-2 border-dashed border-muted/60 bg-muted/10"
 					style={styleFor(originPreview)}
@@ -524,7 +586,7 @@
 				></div>
 			{/if}
 
-			{#if draggable && snapPreview}
+			{#if interactionsEnabled && draggable && snapPreview}
 				<div
 					class="pointer-events-none z-[3] rounded-xl border-2 border-dashed border-brand-500 bg-brand-500/20 shadow-[inset_0_0_0_1px_rgba(var(--color-brand-500),0.25)]"
 					style={styleFor(snapPreview)}
@@ -538,16 +600,18 @@
 				</div>
 			{/if}
 
-			{#each layout as item (item.id)}
+			{#each displayLayout as item (item.id)}
 				{@const meta = widgetMeta(item)}
 				{@const clamped = clampItem(item, cols)}
 				{@const selected = selectedId === item.id}
+				{@const canDrag = editable && interactionsEnabled && draggable && !item.static}
+				{@const canResize = editable && interactionsEnabled && !item.static}
 				<!-- svelte-ignore a11y_no_static_element_interactions -->
 				<div
 					data-grid-id={item.id}
 					class={[
 						'min-h-0 min-w-0 relative z-[1] flex flex-col',
-						editable && draggable && !item.static && 'cursor-grab',
+						canDrag && 'cursor-grab',
 						(draggingId === item.id || resizingId === item.id) && 'z-20',
 						draggingId === item.id && dragMoved && 'pointer-events-none opacity-30',
 						selected && !dragMoved && 'ring-brand-500 ring-offset-surface ring-2 ring-offset-2'
@@ -596,13 +660,13 @@
 						flush={meta.flush ?? false}
 						collapsible={meta.collapsible ?? false}
 						{editable}
-						draggable={editable && draggable && !item.static}
-						resizable={editable && !item.static}
-						resizeEdges={editable ? (['s', 'e', 'se'] as const) : undefined}
+						draggable={canDrag}
+						resizable={canResize}
+						resizeEdges={canResize ? (['s', 'e', 'se'] as const) : undefined}
 						loading={meta.loading}
 						empty={meta.empty}
 						onreload={meta.onReload}
-						class="h-full w-full"
+						class={stacked ? 'min-h-full w-full' : 'h-full w-full'}
 						ondragstart={(e) => onDragStart(item.id, e)}
 						onresizestart={(e, edge) => onResizeStart(item.id, e, edge)}
 					>
@@ -633,7 +697,7 @@
 	{/if}
 </div>
 
-{#if draggable && ghostBox}
+{#if interactionsEnabled && draggable && ghostBox}
 	<div
 		{@attach attachGhost}
 		class="pointer-events-none fixed z-[500]"
