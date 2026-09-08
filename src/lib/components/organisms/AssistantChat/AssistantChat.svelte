@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Snippet } from 'svelte';
+	import { tick, type Snippet } from 'svelte';
 	import IconButton from '$lib/components/atoms/IconButton/IconButton.svelte';
 	import {
 		Sparkles,
@@ -10,7 +10,9 @@
 		Volume2,
 		VolumeX,
 		LoaderCircle,
-		RotateCcw
+		RotateCcw,
+		Copy,
+		Check
 	} from '@lucide/svelte';
 
 	export interface AssistantMessage {
@@ -30,7 +32,7 @@
 		draft?: string;
 		loading?: boolean;
 		loadingLabel?: string;
-		/** When false, input stays disabled via `loading` but the spinner bubble is hidden (parent paints status in a message). */
+		/** When false, the spinner bubble is hidden (parent paints status in a message). */
 		showLoadingBubble?: boolean;
 		error?: string | null;
 		voiceEnabled?: boolean;
@@ -43,12 +45,15 @@
 		stopMicLabel?: string;
 		voiceOnLabel?: string;
 		voiceOffLabel?: string;
+		copyChatLabel?: string;
+		copiedChatLabel?: string;
 		class?: string;
 		result?: Snippet<[AssistantMessage]>;
 		footerExtra?: Snippet;
 		onsend?: () => void;
 		onclose?: () => void;
 		onnewchat?: () => void;
+		oncopychat?: () => void | Promise<void>;
 		onmicclick?: () => void;
 		onvoiceoutputchange?: (on: boolean) => void;
 		onsuggestion?: (text: string) => void;
@@ -77,21 +82,46 @@
 		stopMicLabel = 'Detener micrófono',
 		voiceOnLabel = 'Voz activada',
 		voiceOffLabel = 'Voz desactivada',
+		copyChatLabel = 'Copiar chat',
+		copiedChatLabel = 'Copiado',
 		class: className = '',
 		result,
 		footerExtra,
 		onsend,
 		onclose,
 		onnewchat,
+		oncopychat,
 		onmicclick,
 		onvoiceoutputchange,
 		onsuggestion
 	}: AssistantChatProps = $props();
 
 	let scrollEl = $state<HTMLDivElement | null>(null);
+	let inputEl: HTMLInputElement | null = null;
+	/** Restore the composer after send / SvelteKit form focus reset. */
+	let retainComposerFocus = false;
+	let copiedFlash = $state(false);
 
 	const isEmpty = $derived(messages.length === 0 && !loading);
 	const canSend = $derived(draft.trim().length > 0 && !loading);
+	const pendingAssistantId = $derived.by(() => {
+		if (!loading || messages.length === 0) return null;
+		const last = messages[messages.length - 1];
+		if (last?.role === 'assistant' && !last.content.trim()) return last.id;
+		return null;
+	});
+	const showTrailingLoader = $derived(loading && showLoadingBubble && !pendingAssistantId);
+
+	function focusComposer() {
+		inputEl?.focus({ preventScroll: true });
+	}
+
+	/** Parent can call this after client-side navigation (goto). */
+	export function focus() {
+		retainComposerFocus = true;
+		focusComposer();
+		void tick().then(focusComposer);
+	}
 
 	$effect(() => {
 		void messages.length;
@@ -104,14 +134,26 @@
 		return () => cancelAnimationFrame(raf);
 	});
 
+	$effect(() => {
+		if (!open || loading || !retainComposerFocus) return;
+		const id = requestAnimationFrame(() => {
+			if (open && retainComposerFocus) focusComposer();
+			if (!loading) retainComposerFocus = false;
+		});
+		return () => cancelAnimationFrame(id);
+	});
+
 	function handleClose() {
+		retainComposerFocus = false;
 		open = false;
 		onclose?.();
 	}
 
 	function handleSend() {
 		if (!canSend) return;
+		retainComposerFocus = true;
 		onsend?.();
+		void tick().then(focusComposer);
 	}
 
 	function handleKeydown(e: KeyboardEvent) {
@@ -129,6 +171,15 @@
 	function toggleVoice() {
 		voiceOutput = !voiceOutput;
 		onvoiceoutputchange?.(voiceOutput);
+	}
+
+	async function handleCopyChat() {
+		if (!oncopychat || messages.length === 0) return;
+		await oncopychat();
+		copiedFlash = true;
+		window.setTimeout(() => {
+			copiedFlash = false;
+		}, 1600);
 	}
 </script>
 
@@ -154,6 +205,19 @@
 				<p class="text-xs text-muted truncate">{statusLabel}</p>
 			{/if}
 		</div>
+		<IconButton
+			variant="ghost"
+			size="xs"
+			label={copiedFlash ? copiedChatLabel : copyChatLabel}
+			disabled={messages.length === 0 || !oncopychat}
+			onclick={() => void handleCopyChat()}
+		>
+			{#if copiedFlash}
+				<Check size={14} strokeWidth={2} />
+			{:else}
+				<Copy size={14} strokeWidth={2} />
+			{/if}
+		</IconButton>
 		<IconButton variant="ghost" size="xs" label={newChatLabel} onclick={() => onnewchat?.()}>
 			<RotateCcw size={14} strokeWidth={2} />
 		</IconButton>
@@ -193,7 +257,7 @@
 					{#if message.role === 'user'}
 						<div class="flex justify-end">
 							<div
-								class="rounded-2xl rounded-br-sm bg-brand-600 px-3.5 py-2.5 text-sm leading-relaxed text-white max-w-[80%]"
+								class="rounded-2xl rounded-br-sm bg-brand-600 px-3.5 py-2.5 text-sm leading-relaxed text-white max-w-[80%] whitespace-pre-wrap"
 							>
 								{message.content}
 							</div>
@@ -208,9 +272,16 @@
 									<Sparkles size={12} strokeWidth={2} />
 								</span>
 								<div
-									class="rounded-2xl rounded-bl-sm bg-surface-overlay px-3.5 py-2.5 text-sm leading-relaxed text-primary max-w-[calc(100%-2rem)]"
+									class="rounded-2xl rounded-bl-sm bg-surface-overlay px-3.5 py-2.5 text-sm leading-relaxed text-primary max-w-[calc(100%-2rem)] whitespace-pre-wrap"
 								>
-									{message.content}
+									{#if message.id === pendingAssistantId}
+										<span class="gap-2 text-muted flex items-center">
+											<LoaderCircle size={14} strokeWidth={2} class="animate-spin shrink-0" />
+											<span class="text-xs">{loadingLabel}</span>
+										</span>
+									{:else}
+										{message.content}
+									{/if}
 								</div>
 							</div>
 							{#if result}
@@ -222,7 +293,7 @@
 					{/if}
 				{/each}
 
-				{#if loading && showLoadingBubble}
+				{#if showTrailingLoader}
 					<div class="gap-2 flex items-center">
 						<span
 							class="h-6 w-6 bg-brand-100 text-brand-600 dark:bg-brand-900/40 dark:text-brand-400 flex shrink-0 items-center justify-center rounded-full"
@@ -246,6 +317,17 @@
 	<footer class="border-border px-3 py-2.5 shrink-0 border-t">
 		<div class="gap-1.5 flex items-center">
 			<input
+				{@attach (node) => {
+					inputEl = node;
+					$effect(() => {
+						if (!open || loading || !retainComposerFocus) return;
+						node.focus();
+						retainComposerFocus = false;
+					});
+					return () => {
+						if (inputEl === node) inputEl = null;
+					};
+				}}
 				type="text"
 				bind:value={draft}
 				placeholder={listening ? statusLabel || placeholder : placeholder}
@@ -253,7 +335,6 @@
 					'h-9 min-w-0 rounded-xl bg-surface px-3 text-sm text-primary placeholder:text-muted focus:border-brand-400 focus:ring-brand-500/20 flex-1 border transition-shadow outline-none focus:ring-2',
 					listening ? 'border-red-400 ring-red-500/20 ring-2' : 'border-border'
 				]}
-				disabled={loading}
 				onkeydown={handleKeydown}
 				aria-label={placeholder}
 			/>
