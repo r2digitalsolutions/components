@@ -33,6 +33,8 @@
 		loading?: boolean;
 		voiceEnabled?: boolean;
 		listening?: boolean;
+		/** When false, opening keeps the current query (voice dictation). */
+		resetQueryOnOpen?: boolean;
 		micLabel?: string;
 		stopMicLabel?: string;
 		class?: string;
@@ -51,6 +53,7 @@
 		loading = false,
 		voiceEnabled = false,
 		listening = false,
+		resetQueryOnOpen = true,
 		micLabel = 'Hablar',
 		stopMicLabel = 'Parar micrófono',
 		class: className = '',
@@ -141,9 +144,11 @@
 	$effect(() => {
 		if (!dialogEl) return;
 		if (open && !dialogEl.open) {
-			query = '';
+			if (resetQueryOnOpen) {
+				query = '';
+				untrack(() => onquery?.(''));
+			}
 			activeIndex = Math.max(0, firstEnabledIndex());
-			untrack(() => onquery?.(''));
 			ignoreBackdropUntil = Date.now() + 400;
 			dialogEl.showModal();
 		} else if (!open && dialogEl.open) {

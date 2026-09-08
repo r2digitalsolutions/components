@@ -134,25 +134,25 @@
 
 <div
 	class={[
-		'flex flex-col overflow-hidden rounded-2xl border border-border bg-surface-elevated shadow-xl',
-		'h-[min(560px,70vh)] w-full min-w-[320px] max-w-[420px]',
+		'rounded-2xl border-border bg-surface-elevated shadow-xl flex flex-col overflow-hidden border',
+		'h-[min(560px,70vh)] w-full max-w-[420px] min-w-[320px]',
 		className
 	]}
 	role="complementary"
 	aria-label={title}
 >
 	<!-- Header -->
-	<header class="flex shrink-0 items-center gap-2 border-b border-border px-3 py-2.5">
+	<header class="gap-2 border-border px-3 py-2.5 flex shrink-0 items-center border-b">
 		<span
-			class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-brand-100 text-brand-600 dark:bg-brand-900/40 dark:text-brand-400"
+			class="h-7 w-7 rounded-lg bg-brand-100 text-brand-600 dark:bg-brand-900/40 dark:text-brand-400 flex shrink-0 items-center justify-center"
 			aria-hidden="true"
 		>
 			<Sparkles size={15} strokeWidth={2} />
 		</span>
 		<div class="min-w-0 flex-1">
-			<p class="truncate text-sm font-semibold text-primary">{title}</p>
+			<p class="text-sm font-semibold text-primary truncate">{title}</p>
 			{#if statusLabel}
-				<p class="truncate text-xs text-muted">{statusLabel}</p>
+				<p class="text-xs text-muted truncate">{statusLabel}</p>
 			{/if}
 		</div>
 		<IconButton variant="ghost" size="xs" label={newChatLabel} onclick={() => onnewchat?.()}>
@@ -164,22 +164,22 @@
 	</header>
 
 	<!-- Body -->
-	<div bind:this={scrollEl} class="min-h-0 flex-1 overflow-y-auto px-3 py-3">
+	<div bind:this={scrollEl} class="min-h-0 px-3 py-3 flex-1 overflow-y-auto">
 		{#if isEmpty}
-			<div class="flex flex-col items-center justify-center gap-4 py-8 text-center">
+			<div class="gap-4 py-8 flex flex-col items-center justify-center text-center">
 				<span
-					class="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-50 text-brand-500 dark:bg-brand-950/30 dark:text-brand-400"
+					class="h-12 w-12 rounded-2xl bg-brand-50 text-brand-500 dark:bg-brand-950/30 dark:text-brand-400 flex items-center justify-center"
 					aria-hidden="true"
 				>
 					<Sparkles size={24} strokeWidth={1.5} />
 				</span>
 				<p class="text-sm text-muted">{emptyHint}</p>
 				{#if suggestions.length}
-					<div class="flex flex-wrap justify-center gap-2">
+					<div class="gap-2 flex flex-wrap justify-center">
 						{#each suggestions as suggestion (suggestion)}
 							<button
 								type="button"
-								class="rounded-full border border-border bg-surface px-3 py-1.5 text-xs text-secondary transition-colors hover:border-brand-400 hover:text-brand-600 dark:hover:text-brand-400"
+								class="border-border bg-surface px-3 py-1.5 text-xs text-secondary hover:border-brand-400 hover:text-brand-600 dark:hover:text-brand-400 rounded-full border transition-colors"
 								onclick={() => handleSuggestion(suggestion)}
 							>
 								{suggestion}
@@ -189,27 +189,27 @@
 				{/if}
 			</div>
 		{:else}
-			<div class="flex flex-col gap-3">
+			<div class="gap-3 flex flex-col">
 				{#each messages as message (message.id)}
 					{#if message.role === 'user'}
 						<div class="flex justify-end">
 							<div
-								class="max-w-[80%] rounded-2xl rounded-br-sm bg-brand-600 px-3.5 py-2.5 text-sm leading-relaxed text-white"
+								class="rounded-2xl rounded-br-sm bg-brand-600 px-3.5 py-2.5 text-sm leading-relaxed text-white max-w-[80%]"
 							>
 								{message.content}
 							</div>
 						</div>
 					{:else}
-						<div class="flex flex-col gap-1.5">
-							<div class="flex items-start gap-2">
+						<div class="gap-1.5 flex flex-col">
+							<div class="gap-2 flex items-start">
 								<span
-									class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-600 dark:bg-brand-900/40 dark:text-brand-400"
+									class="mt-0.5 h-6 w-6 bg-brand-100 text-brand-600 dark:bg-brand-900/40 dark:text-brand-400 flex shrink-0 items-center justify-center rounded-full"
 									aria-hidden="true"
 								>
 									<Sparkles size={12} strokeWidth={2} />
 								</span>
 								<div
-									class="max-w-[calc(100%-2rem)] rounded-2xl rounded-bl-sm bg-surface-overlay px-3.5 py-2.5 text-sm leading-relaxed text-primary"
+									class="rounded-2xl rounded-bl-sm bg-surface-overlay px-3.5 py-2.5 text-sm leading-relaxed text-primary max-w-[calc(100%-2rem)]"
 								>
 									{message.content}
 								</div>
@@ -224,15 +224,15 @@
 				{/each}
 
 				{#if loading && showLoadingBubble}
-					<div class="flex items-center gap-2">
+					<div class="gap-2 flex items-center">
 						<span
-							class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-600 dark:bg-brand-900/40 dark:text-brand-400"
+							class="h-6 w-6 bg-brand-100 text-brand-600 dark:bg-brand-900/40 dark:text-brand-400 flex shrink-0 items-center justify-center rounded-full"
 							aria-hidden="true"
 						>
 							<Sparkles size={12} strokeWidth={2} />
 						</span>
 						<div
-							class="flex items-center gap-2 rounded-2xl rounded-bl-sm bg-surface-overlay px-3.5 py-2.5"
+							class="gap-2 rounded-2xl rounded-bl-sm bg-surface-overlay px-3.5 py-2.5 flex items-center"
 						>
 							<LoaderCircle size={14} strokeWidth={2} class="animate-spin text-muted" />
 							<span class="text-xs text-muted">{loadingLabel}</span>
@@ -244,22 +244,22 @@
 	</div>
 
 	<!-- Footer -->
-	<footer class="shrink-0 border-t border-border px-3 py-2.5">
-		<div class="flex items-center gap-1.5">
+	<footer class="border-border px-3 py-2.5 shrink-0 border-t">
+		<div class="gap-1.5 flex items-center">
 			<input
 				type="text"
 				bind:value={draft}
 				placeholder={listening ? statusLabel || placeholder : placeholder}
 				class={[
-					'h-9 min-w-0 flex-1 rounded-xl border bg-surface px-3 text-sm text-primary outline-none transition-shadow placeholder:text-muted focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20',
-					listening ? 'border-red-400 ring-2 ring-red-500/20' : 'border-border'
+					'h-9 min-w-0 rounded-xl bg-surface px-3 text-sm text-primary placeholder:text-muted focus:border-brand-400 focus:ring-brand-500/20 flex-1 border transition-shadow outline-none focus:ring-2',
+					listening ? 'border-red-400 ring-red-500/20 ring-2' : 'border-border'
 				]}
 				disabled={loading}
 				onkeydown={handleKeydown}
 				aria-label={placeholder}
 			/>
 
-			<div class="flex shrink-0 items-center gap-0.5">
+			<div class="gap-0.5 flex shrink-0 items-center">
 				{#if voiceEnabled}
 					<IconButton
 						variant="ghost"
