@@ -28,6 +28,8 @@
 		placeholder?: string;
 		emptyHint?: string;
 		suggestions?: string[];
+		/** Chips shown under the conversation (after the user has messages). */
+		followUpSuggestions?: string[];
 		messages?: AssistantMessage[];
 		draft?: string;
 		loading?: boolean;
@@ -66,6 +68,7 @@
 		placeholder = 'Escribe un mensaje…',
 		emptyHint = '¿En qué puedo ayudarte?',
 		suggestions = [],
+		followUpSuggestions = [],
 		messages = [],
 		draft = $bindable(''),
 		loading = false,
@@ -307,6 +310,20 @@
 							<LoaderCircle size={14} strokeWidth={2} class="animate-spin text-muted" />
 							<span class="text-xs text-muted">{loadingLabel}</span>
 						</div>
+					</div>
+				{/if}
+
+				{#if !loading && followUpSuggestions.length}
+					<div class="ml-8 gap-2 flex flex-wrap">
+						{#each followUpSuggestions as suggestion (suggestion)}
+							<button
+								type="button"
+								class="border-border bg-surface px-3 py-1.5 text-xs text-secondary hover:border-brand-400 hover:text-brand-600 dark:hover:text-brand-400 rounded-full border transition-colors"
+								onclick={() => handleSuggestion(suggestion)}
+							>
+								{suggestion}
+							</button>
+						{/each}
 					</div>
 				{/if}
 			</div>
