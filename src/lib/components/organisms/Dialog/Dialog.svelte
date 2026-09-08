@@ -198,14 +198,10 @@
 	function handleBackdropClick(event: MouseEvent) {
 		if (!dialogEl) return;
 		if (Date.now() < suppressBackdropUntil) return;
-		const rect = dialogEl.getBoundingClientRect();
-		const clickedInDialog =
-			event.clientX >= rect.left &&
-			event.clientX <= rect.right &&
-			event.clientY >= rect.top &&
-			event.clientY <= rect.bottom;
-
-		if (clickedInDialog) return;
+		// Native <dialog>: only the dialog node itself is the backdrop target.
+		// Children (and Popover API listboxes that extend outside the panel) still
+		// bubble here — ignore those so Select/DatePicker don't close the modal.
+		if (event.target !== dialogEl) return;
 		if (!closeOnBackdrop || confirmLoading) return;
 		close('backdrop');
 	}
