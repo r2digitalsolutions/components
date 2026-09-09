@@ -5,6 +5,7 @@
 
 	export type SelectCardLayout = 'media' | 'row';
 	export type SelectCardCheck = 'box' | 'badge' | 'none';
+	export type SelectCardTone = 'brand' | 'success' | 'error' | 'warning' | 'info';
 
 	interface SelectCardProps {
 		title?: string;
@@ -18,6 +19,8 @@
 		layout?: SelectCardLayout;
 		/** box = SelectionBox · badge = check pill · none = border only */
 		check?: SelectCardCheck;
+		/** Accent when selected (default brand) */
+		tone?: SelectCardTone;
 		class?: string;
 		leading?: Snippet;
 		children?: Snippet;
@@ -36,6 +39,7 @@
 		disabled = false,
 		layout = 'media',
 		check = 'box',
+		tone = 'brand',
 		class: className = '',
 		leading,
 		children,
@@ -44,16 +48,51 @@
 		onchange
 	}: SelectCardProps = $props();
 
+	const selectedTone: Record<SelectCardTone, string> = {
+		brand: 'border-brand-500 bg-brand-50/50 ring-2 ring-brand-500/20 dark:bg-brand-950/30',
+		success:
+			'border-emerald-500 bg-emerald-50/70 ring-2 ring-emerald-500/20 dark:border-emerald-400 dark:bg-emerald-950/35',
+		error: 'border-red-500 bg-red-50/70 ring-2 ring-red-500/20 dark:border-red-400 dark:bg-red-950/35',
+		warning:
+			'border-amber-500 bg-amber-50/70 ring-2 ring-amber-500/20 dark:border-amber-400 dark:bg-amber-950/35',
+		info: 'border-sky-500 bg-sky-50/70 ring-2 ring-sky-500/20 dark:border-sky-400 dark:bg-sky-950/35'
+	};
+
+	const hoverTone: Record<SelectCardTone, string> = {
+		brand: 'hover:border-brand-300 dark:hover:border-brand-700',
+		success: 'hover:border-emerald-300 dark:hover:border-emerald-700',
+		error: 'hover:border-red-300 dark:hover:border-red-700',
+		warning: 'hover:border-amber-300 dark:hover:border-amber-700',
+		info: 'hover:border-sky-300 dark:hover:border-sky-700'
+	};
+
+	const badgeTone: Record<SelectCardTone, string> = {
+		brand: 'border-brand-500 bg-brand-500 text-white',
+		success: 'border-emerald-500 bg-emerald-500 text-white',
+		error: 'border-red-500 bg-red-500 text-white',
+		warning: 'border-amber-500 bg-amber-500 text-white',
+		info: 'border-sky-500 bg-sky-500 text-white'
+	};
+
+	const focusTone: Record<SelectCardTone, string> = {
+		brand: 'focus-visible:ring-brand-500/30',
+		success: 'focus-visible:ring-emerald-500/30',
+		error: 'focus-visible:ring-red-500/30',
+		warning: 'focus-visible:ring-amber-500/30',
+		info: 'focus-visible:ring-sky-500/30'
+	};
+
 	const rootClass = $derived(
 		[
 			'group relative w-full text-left transition-all',
-			'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30 focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
+			'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
+			focusTone[tone],
 			disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
 			layout === 'media' && 'flex flex-col overflow-hidden rounded-xl border',
 			layout === 'row' && 'flex items-center gap-3 rounded-xl border p-3',
 			selected
-				? 'border-brand-500 bg-brand-50/40 ring-2 ring-brand-500/20 dark:bg-brand-950/25'
-				: 'border-border bg-surface-elevated hover:border-brand-300 dark:hover:border-brand-700',
+				? selectedTone[tone]
+				: ['border-border bg-surface-elevated', hoverTone[tone]].join(' '),
 			className
 		]
 			.filter(Boolean)
@@ -116,7 +155,7 @@
 							class={[
 								'flex h-6 w-6 items-center justify-center rounded-full border shadow-sm transition-colors',
 								selected
-									? 'border-brand-500 bg-brand-500 text-white'
+									? badgeTone[tone]
 									: 'border-border bg-surface-elevated/90 text-transparent backdrop-blur-sm'
 							]}
 							aria-hidden="true"
@@ -168,9 +207,7 @@
 			<span
 				class={[
 					'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors',
-					selected
-						? 'border-brand-500 bg-brand-500 text-white'
-						: 'border-border-strong bg-surface text-transparent'
+					selected ? badgeTone[tone] : 'border-border-strong bg-surface text-transparent'
 				]}
 				aria-hidden="true"
 			>
