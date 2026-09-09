@@ -485,6 +485,18 @@
 			: [];
 		return [...base, 'h-auto', 'max-h-fit', 'w-full', 'shrink-0'].join(' ');
 	});
+
+	/** Content-sized frames (e.g. DashboardGrid stacked KPIs) must not clip or scroll the body. */
+	const contentFit = $derived(
+		collapsed ||
+			(typeof className === 'string' &&
+				className
+					.split(/\s+/)
+					.some((token) => token === 'h-auto' || token === 'max-h-fit'))
+	);
+	const bodyOverflowClass = $derived(
+		contentFit ? 'overflow-visible' : flush ? 'overflow-hidden' : 'overflow-auto'
+	);
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -607,7 +619,14 @@
 	{/if}
 
 	{#if !collapsed}
-		<div class={['min-h-0 relative flex-1', flush ? 'p-0 overflow-hidden' : 'p-3 overflow-auto']}>
+		<div
+			class={[
+				'relative',
+				contentFit ? 'flex-none' : 'min-h-0 flex-1',
+				flush ? 'p-0' : 'p-3',
+				bodyOverflowClass
+			]}
+		>
 			{#if busy}
 				{#if loadingMode === 'spinner'}
 					<div

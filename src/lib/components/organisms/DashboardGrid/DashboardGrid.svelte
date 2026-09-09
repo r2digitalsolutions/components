@@ -480,11 +480,27 @@
 		}
 	}
 
+	/** List/data widgets may keep a capped height + internal scroll when stacked. */
+	function isScrollableType(type: string | undefined): boolean {
+		if (!type) return false;
+		return (
+			type === 'recent_activity' ||
+			type === 'pending_invoices' ||
+			type === 'low_stock' ||
+			type === 'follow_ups_overdue'
+		);
+	}
+
 	function styleFor(item: GridItem): string {
 		if (stacked) {
-			// Prefer content height; keep a floor from the saved desktop span.
-			const minH = Math.max(item.h * rowHeight, 160);
-			return `width:100%;min-height:${minH}px;height:auto;`;
+			// Tablet/narrow: ignore desktop row spans so KPI/stat cards grow with content.
+			// Only data lists keep a max height (from saved span) for internal scroll.
+			const meta = metaById[item.id];
+			if (isScrollableType(meta?.type)) {
+				const maxH = Math.max(item.h * rowHeight, 240);
+				return `width:100%;height:${maxH}px;max-height:${maxH}px;`;
+			}
+			return 'width:100%;height:auto;';
 		}
 		const x = item.x + 1;
 		const y = item.y + 1;
@@ -666,7 +682,11 @@
 						loading={meta.loading}
 						empty={meta.empty}
 						onreload={meta.onReload}
-						class={stacked ? 'min-h-full w-full' : 'h-full w-full'}
+						class={stacked
+							? isScrollableType(meta.type)
+								? 'h-full min-h-0 w-full'
+								: 'h-auto w-full'
+							: 'h-full w-full'}
 						ondragstart={(e) => onDragStart(item.id, e)}
 						onresizestart={(e, edge) => onResizeStart(item.id, e, edge)}
 					>
