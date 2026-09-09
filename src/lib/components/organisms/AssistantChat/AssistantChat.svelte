@@ -188,7 +188,7 @@
 
 <div
 	class={[
-		'rounded-2xl border-border bg-surface-elevated shadow-xl flex h-[min(560px,70vh)] w-[min(420px,calc(100vw-2rem))] shrink-0 flex-col overflow-hidden border',
+		'rounded-2xl border-border bg-surface-elevated shadow-xl flex h-[min(560px,calc(100dvh-5.5rem))] max-h-[calc(100dvh-5.5rem)] w-[min(420px,calc(100vw-2rem))] shrink-0 flex-col overflow-hidden border',
 		className
 	]}
 	role="complementary"

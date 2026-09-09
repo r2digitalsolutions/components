@@ -10,7 +10,7 @@ const meta = {
 		docs: {
 			description: {
 				component:
-					'Responsive dashboard grid. Use `stackBelow` (default `960`, or `false` to disable) to collapse into a single-column reading-order stack when the **grid container** is narrow (ResizeObserver; sidebar-aware). While stacked, widgets size to content (desktop row spans are ignored) except list/data types, which keep a capped height for internal scroll. Drag/resize are disabled while stacked.'
+					'Responsive dashboard grid. Use `stackBelow` (default `960`, or `false` to disable) to collapse into a single-column reading-order stack when the **grid container** is narrow (ResizeObserver; sidebar-aware). While stacked, all widgets size to content (desktop row spans ignored) so the page has a single scroll. Drag/resize are disabled while stacked.'
 			}
 		}
 	},
