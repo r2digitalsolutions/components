@@ -508,7 +508,7 @@ export { default as OfflineBanner } from './components/molecules/OfflineBanner/O
 export { default as UnsavedChanges } from './components/molecules/UnsavedChanges/UnsavedChanges.svelte';
 export { default as ErrorBoundary } from './components/molecules/ErrorBoundary/ErrorBoundary.svelte';
 export { default as StatCard } from './components/molecules/StatCard/StatCard.svelte';
-export type { StatCardTrend } from './components/molecules/StatCard/StatCard.svelte';
+export type { StatCardTrend, StatCardSize } from './components/molecules/StatCard/StatCard.svelte';
 export { default as MediaCard } from './components/molecules/MediaCard/MediaCard.svelte';
 export { default as FormActions } from './components/molecules/FormActions/FormActions.svelte';
 export { default as FormSection } from './components/molecules/FormSection/FormSection.svelte';
@@ -662,7 +662,10 @@ export type {
 export { default as CompareSlider } from './components/molecules/CompareSlider/CompareSlider.svelte';
 export { default as PdfViewer } from './components/molecules/PdfViewer/PdfViewer.svelte';
 export { default as ImageGallery } from './components/molecules/ImageGallery/ImageGallery.svelte';
-export type { GalleryImage } from './components/molecules/ImageGallery/ImageGallery.svelte';
+export type {
+	GalleryImage,
+	GalleryLayout
+} from './components/molecules/ImageGallery/ImageGallery.svelte';
 export { default as LogViewer } from './components/molecules/LogViewer/LogViewer.svelte';
 export type { LogEntry, LogLevel } from './components/molecules/LogViewer/LogViewer.svelte';
 export { default as PriceTag } from './components/molecules/PriceTag/PriceTag.svelte';

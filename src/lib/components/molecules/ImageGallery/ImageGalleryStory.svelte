@@ -3,7 +3,7 @@
 	import type { GalleryImage } from './ImageGallery.svelte';
 
 	interface Props {
-		variant?: 'default' | 'featured' | 'masonry';
+		variant?: 'default' | 'featured' | 'masonry' | 'hero';
 	}
 
 	let { variant = 'default' }: Props = $props();
@@ -60,6 +60,8 @@
 		<ImageGallery {images} layout="featured" showCaptions cols={4} class="w-full" />
 	{:else if variant === 'masonry'}
 		<ImageGallery {images} layout="masonry" showCaptions class="w-full" />
+	{:else if variant === 'hero'}
+		<ImageGallery {images} layout="hero" class="w-full" />
 	{:else}
 		<ImageGallery {images} cols={3} showCaptions class="w-full" />
 	{/if}

@@ -25,6 +25,8 @@
 		maxSizeMb?: number;
 		/** Show image thumbnails / file cards for selected files. */
 		showPreview?: boolean;
+		/** Append “multiple · max N MB” under the hint. Default true. */
+		showConstraints?: boolean;
 		class?: string;
 		ondropfiles?: (files: File[]) => void;
 		onchange?: (files: File[]) => void;
@@ -41,6 +43,7 @@
 		disabled = false,
 		maxSizeMb = 25,
 		showPreview = true,
+		showConstraints = true,
 		class: className = '',
 		ondropfiles,
 		onchange,
@@ -239,8 +242,8 @@
 		<div>
 			<p class="text-sm font-medium text-primary">{label}</p>
 			<p class="mt-0.5 text-xs text-muted">
-				{hint}{#if multiple} · multiple{/if}
-				{#if maxSizeMb} · max {maxSizeMb}MB{/if}
+				{hint}{#if showConstraints && multiple} · multiple{/if}
+				{#if showConstraints && maxSizeMb} · max {maxSizeMb}MB{/if}
 			</p>
 		</div>
 		<input

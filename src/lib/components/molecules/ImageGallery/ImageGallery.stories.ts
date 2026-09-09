@@ -11,7 +11,7 @@ const meta = {
 	argTypes: {
 		variant: {
 			control: 'select',
-			options: ['default', 'featured', 'masonry']
+			options: ['default', 'featured', 'masonry', 'hero']
 		}
 	}
 } satisfies Meta<typeof ImageGalleryStory>;
@@ -29,4 +29,8 @@ export const Featured: Story = {
 
 export const Masonry: Story = {
 	args: { variant: 'masonry' }
+};
+
+export const Hero: Story = {
+	args: { variant: 'hero' }
 };

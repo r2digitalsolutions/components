@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	import AspectRatio from '$lib/components/atoms/AspectRatio/AspectRatio.svelte';
 	import ImageLightbox from '$lib/components/molecules/ImageLightbox/ImageLightbox.svelte';
 	import type { LightboxImage } from '$lib/components/molecules/ImageLightbox/ImageLightbox.svelte';
@@ -11,14 +12,18 @@
 		caption?: string;
 	}
 
-	type GalleryLayout = 'grid' | 'featured' | 'masonry';
+	export type GalleryLayout = 'grid' | 'featured' | 'masonry' | 'hero';
 
 	interface ImageGalleryProps {
 		images?: GalleryImage[];
 		cols?: 2 | 3 | 4;
 		layout?: GalleryLayout;
 		showCaptions?: boolean;
+		/** Footer line under the gallery. Default true. */
+		showHint?: boolean;
+		hint?: string;
 		class?: string;
+		empty?: Snippet;
 	}
 
 	const {
@@ -26,7 +31,10 @@
 		cols = 3,
 		layout = 'grid',
 		showCaptions = false,
-		class: className = ''
+		showHint = true,
+		hint,
+		class: className = '',
+		empty
 	}: ImageGalleryProps = $props();
 
 	let open = $state(false);
@@ -51,6 +59,12 @@
 				: 'grid-cols-2 lg:grid-cols-3'
 	);
 
+	const heroVisible = $derived(images.slice(0, layout === 'hero' && images.length > 4 ? 4 : images.length));
+	const heroExtra = $derived(Math.max(0, images.length - heroVisible.length));
+	const hintText = $derived(
+		hint ?? `${images.length} photos · click to open lightbox`
+	);
+
 	const tones = [
 		'from-slate-600 to-slate-800',
 		'from-sky-500 to-indigo-700',
@@ -68,6 +82,19 @@
 	function markFailed(id: string) {
 		failed = { ...failed, [id]: true };
 	}
+
+	const heroGridClass = $derived.by(() => {
+		const n = heroVisible.length;
+		if (n <= 1) return 'grid-cols-1';
+		if (n === 2) return 'grid-cols-2';
+		return 'grid-cols-2 grid-rows-2';
+	});
+
+	const heroMainSpan = $derived.by(() => {
+		const n = heroVisible.length;
+		if (n === 3) return 'row-span-2';
+		return '';
+	});
 </script>
 
 {#snippet tile(img: GalleryImage, i: number, ratio = 1, featured = false)}
@@ -82,10 +109,7 @@
 		<AspectRatio {ratio}>
 			{#if failed[img.id]}
 				<div
-					class={[
-						'flex h-full w-full items-end bg-gradient-to-br p-4',
-						tones[i % tones.length]
-					]}
+					class={['flex h-full w-full items-end bg-gradient-to-br p-4', tones[i % tones.length]]}
 				>
 					<span class="text-sm font-medium text-white/90">{img.alt}</span>
 				</div>
@@ -119,14 +143,70 @@
 	</button>
 {/snippet}
 
+{#snippet fillTile(img: GalleryImage, i: number, spanClass = '', extra = 0)}
+	<button
+		type="button"
+		class={[
+			'group relative min-h-0 overflow-hidden rounded-xl border border-border bg-surface-overlay text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40',
+			spanClass
+		]}
+		onclick={() => openAt(i)}
+	>
+		{#if failed[img.id]}
+			<div class={['flex h-full w-full items-end bg-gradient-to-br p-4', tones[i % tones.length]]}>
+				<span class="text-sm font-medium text-white/90">{img.alt}</span>
+			</div>
+		{:else}
+			<img
+				src={img.src}
+				alt={img.alt}
+				loading="eager"
+				decoding="async"
+				class="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+				onerror={() => markFailed(img.id)}
+			/>
+		{/if}
+		<div
+			class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent opacity-0 transition group-hover:opacity-100"
+		></div>
+		<span
+			class="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/45 text-white opacity-0 backdrop-blur-sm transition group-hover:opacity-100"
+		>
+			<Expand class="h-4 w-4" />
+		</span>
+		{#if extra > 0}
+			<span
+				class="absolute inset-0 flex items-center justify-center bg-neutral-950/55 text-lg font-semibold text-white"
+			>
+				+{extra}
+			</span>
+		{/if}
+	</button>
+{/snippet}
+
 <div class={['w-full space-y-3', className]}>
 	{#if images.length === 0}
-		<div
-			class="flex min-h-64 w-full items-center justify-center rounded-2xl border border-dashed border-border bg-surface-overlay px-6 text-sm text-muted"
-		>
-			No images yet
+		{#if empty}
+			{@render empty()}
+		{:else}
+			<div
+				class="flex min-h-64 w-full items-center justify-center rounded-2xl border border-dashed border-border bg-surface-overlay px-6 text-sm text-muted"
+			>
+				No images yet
+			</div>
+		{/if}
+	{:else if layout === 'hero'}
+		<div class={['grid h-72 gap-2 sm:h-80', heroGridClass]}>
+			{#each heroVisible as img, i (img.id)}
+				{@render fillTile(
+					img,
+					i,
+					i === 0 ? heroMainSpan : '',
+					i === heroVisible.length - 1 ? heroExtra : 0
+				)}
+			{/each}
 		</div>
-	{:else if layout === 'featured' && images.length > 0}
+	{:else if layout === 'featured'}
 		<div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
 			{@render tile(images[0], 0, 1, true)}
 			{#each images.slice(1) as img, i (img.id)}
@@ -162,7 +242,7 @@
 						/>
 					{/if}
 					<span
-						class="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/45 text-white opacity-0 backdrop-blur-sm transition group-hover:opacity-100"
+						class="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/45 text-white opacity-0 backdrop-blur-sm transition group-hover:opacity-100"
 					>
 						<Expand class="h-4 w-4" />
 					</span>
@@ -177,8 +257,8 @@
 		</div>
 	{/if}
 
-	{#if images.length}
-		<p class="text-xs text-muted">{images.length} photos · click to open lightbox</p>
+	{#if images.length && showHint}
+		<p class="text-xs text-muted">{hintText}</p>
 	{/if}
 
 	{#if lightboxImages.length}
