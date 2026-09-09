@@ -30,6 +30,9 @@
 		suggestions?: string[];
 		/** Chips shown under the conversation (after the user has messages). */
 		followUpSuggestions?: string[];
+		/** Active CRM query, shown under the header (e.g. «Presupuestos · María · el mes pasado»). */
+		contextLabel?: string;
+		contextAriaLabel?: string;
 		messages?: AssistantMessage[];
 		draft?: string;
 		loading?: boolean;
@@ -69,6 +72,8 @@
 		emptyHint = '¿En qué puedo ayudarte?',
 		suggestions = [],
 		followUpSuggestions = [],
+		contextLabel = '',
+		contextAriaLabel = '',
 		messages = [],
 		draft = $bindable(''),
 		loading = false,
@@ -228,6 +233,16 @@
 			<X size={14} strokeWidth={2} />
 		</IconButton>
 	</header>
+
+	{#if contextLabel}
+		<div
+			class="border-border bg-surface-overlay px-3 py-1.5 leading-snug text-muted truncate border-b text-[11px]"
+			title={contextLabel}
+			aria-label={contextAriaLabel || contextLabel}
+		>
+			{contextLabel}
+		</div>
+	{/if}
 
 	<!-- Body -->
 	<div bind:this={scrollEl} class="min-h-0 px-3 py-3 flex-1 overflow-y-auto">
