@@ -74,12 +74,11 @@
 	class={[
 		'gap-3 sm:flex-row sm:items-center flex w-full flex-col',
 		alignClasses[align],
-		variant === 'bar' &&
-			[
-				// Bleed through Card body padding when `--card-pad-*` is set; no-op otherwise.
-				'-mx-[length:var(--card-pad-x,0px)] -mb-[length:var(--card-pad-y,0px)]',
-				'rounded-b-2xl border-t border-border bg-surface/50 px-4 py-3 sm:px-5'
-			],
+		/**
+		 * `bar` is for a sibling of the padded body (Card `footer` snippet, or
+		 * padding="none" + manual body pad). Never nest `bar` inside Card body padding.
+		 */
+		variant === 'bar' && 'rounded-b-2xl border-t border-border bg-surface/50 px-4 py-3 sm:px-5',
 		variant === 'sticky' &&
 			'border-border bg-surface-elevated/95 px-4 py-3 backdrop-blur-md dark:shadow-black/30 sm:px-5 shrink-0 border-t shadow-[0_-8px_24px_rgb(0,0,0,0.06)]',
 		variant === 'plain' && 'gap-2',

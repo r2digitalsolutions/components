@@ -44,14 +44,6 @@
 		lg: 'px-5 py-5 sm:px-6 sm:py-6'
 	};
 
-	/** Lets nested `FormActions variant="bar"` bleed to the card edges. */
-	const contentPadVars: Record<CardPadding, string> = {
-		none: '',
-		sm: '[--card-pad-x:0.75rem] [--card-pad-y:0.625rem]',
-		md: '[--card-pad-x:1rem] [--card-pad-y:0.875rem] sm:[--card-pad-x:1.25rem] sm:[--card-pad-y:1rem]',
-		lg: '[--card-pad-x:1.25rem] [--card-pad-y:1.25rem] sm:[--card-pad-x:1.5rem] sm:[--card-pad-y:1.5rem]'
-	};
-
 	const isClickable = $derived(!!onclick || hoverable);
 </script>
 
@@ -89,8 +81,7 @@
 		<div
 			class={[
 				'flex min-w-0 flex-1 flex-col',
-				padding !== 'none' ? paddingClasses[padding] : '',
-				padding !== 'none' ? contentPadVars[padding] : ''
+				padding !== 'none' ? paddingClasses[padding] : ''
 			]}
 		>
 			{@render children()}
