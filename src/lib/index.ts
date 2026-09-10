@@ -855,6 +855,9 @@ export type {
 	BentoGridCols,
 	BentoGridGap
 } from './components/molecules/BentoGrid/BentoGrid.svelte';
+export { default as StoreProductTile } from './components/molecules/StoreProductTile/StoreProductTile.svelte';
+export type { StoreProductTag } from './components/molecules/StoreProductTile/StoreProductTile.svelte';
+export { default as StoreRail } from './components/molecules/StoreRail/StoreRail.svelte';
 export { default as WidgetFrame } from './components/molecules/WidgetFrame/WidgetFrame.svelte';
 export type {
 	WidgetResizeEdge,
