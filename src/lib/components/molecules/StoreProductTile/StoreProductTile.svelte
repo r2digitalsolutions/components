@@ -40,9 +40,33 @@
 		badge
 	}: Props = $props();
 
+	const TAG_PRIORITY: StoreProductTag[] = ['featured', 'new', 'popular'];
+
 	const visibleTags = $derived(
 		tags.filter((t): t is StoreProductTag => t === 'new' || t === 'featured' || t === 'popular')
 	);
+
+	/** Max 2 chips so the promo header stays one row. */
+	const displayTags = $derived(
+		TAG_PRIORITY.filter((t) => visibleTags.includes(t)).slice(0, installed ? 1 : 2)
+	);
+
+	function tagVariant(tag: StoreProductTag): 'info' | 'warning' | 'default' {
+		if (tag === 'new') return 'info';
+		if (tag === 'featured') return 'warning';
+		return 'default';
+	}
+
+	function tagClass(tag: StoreProductTag): string {
+		if (tag === 'featured') {
+			// Explicit amber so it reads on promo gradients (not brand teal).
+			return 'border-0 bg-amber-500 text-amber-950 dark:bg-amber-500 dark:text-amber-950';
+		}
+		if (tag === 'popular') {
+			return 'border-0 bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200';
+		}
+		return '';
+	}
 </script>
 
 <button
@@ -54,16 +78,13 @@
 	{#if featured}
 		<div class="ms-tile__promo bg-gradient-to-br {accentClass}">
 			<div class="ms-tile__promo-mesh" aria-hidden="true"></div>
-			{#if visibleTags.length || installed || badge}
+			{#if displayTags.length || installed || badge}
 				<div class="ms-tile__tags">
 					{#if badge}
 						{@render badge()}
 					{:else}
-						{#each visibleTags as tag (tag)}
-							<Badge
-								variant={tag === 'new' ? 'info' : tag === 'featured' ? 'primary' : 'secondary'}
-								size="sm"
-							>
+						{#each displayTags as tag (tag)}
+							<Badge variant={tagVariant(tag)} size="sm" class={tagClass(tag)}>
 								{TAG_LABELS[tag]}
 							</Badge>
 						{/each}
@@ -93,17 +114,14 @@
 				<div class="ms-tile__icon-shine" aria-hidden="true"></div>
 				<Icon class="relative size-9 text-white drop-shadow-sm sm:size-10" />
 			</div>
-			{#if visibleTags[0]}
+			{#if displayTags[0]}
 				<span class="ms-tile__corner">
 					<Badge
-						variant={visibleTags[0] === 'new'
-							? 'info'
-							: visibleTags[0] === 'featured'
-								? 'primary'
-								: 'secondary'}
+						variant={tagVariant(displayTags[0])}
 						size="sm"
+						class={tagClass(displayTags[0])}
 					>
-						{TAG_LABELS[visibleTags[0]]}
+						{TAG_LABELS[displayTags[0]]}
 					</Badge>
 				</span>
 			{:else if installed}
@@ -275,9 +293,11 @@
 		left: 0.75rem;
 		z-index: 2;
 		display: flex;
-		flex-wrap: wrap;
+		flex-wrap: nowrap;
+		align-items: center;
 		gap: 0.35rem;
 		max-width: calc(100% - 5.5rem);
+		overflow: hidden;
 	}
 	.ms-tile__promo-copy {
 		position: relative;
