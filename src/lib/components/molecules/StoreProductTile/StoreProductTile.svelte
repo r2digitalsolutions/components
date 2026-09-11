@@ -17,15 +17,19 @@
 		categoryLabel?: string;
 		installed?: boolean;
 		/**
-		 * Estado legible en el listado (p. ej. «Instalado», «En licencia», «No incluido»).
-		 * Si no se pasa y `installed`, se usa «Instalado».
+		 * Estado legible en el listado (p. ej. «Activo», «En licencia», «No incluido»).
+		 * Si no se pasa y `installed`, se usa «Activo».
 		 */
 		statusLabel?: string;
 		/** landscape promotional card */
 		featured?: boolean;
+		/** Compact row for list view (ignored when featured). */
+		layout?: 'grid' | 'list';
 		tags?: StoreProductTag[];
 		icon: Component;
 		accentClass?: string;
+		/** Prefer link navigation when set (store detail URLs). */
+		href?: string;
 		onclick?: () => void;
 		/** Optional custom badge area */
 		badge?: Snippet;
@@ -39,9 +43,11 @@
 		installed = false,
 		statusLabel = '',
 		featured = false,
+		layout = 'grid',
 		tags = [],
 		icon: Icon,
 		accentClass = 'from-neutral-800 to-neutral-600',
+		href = '',
 		onclick,
 		badge
 	}: Props = $props();
@@ -58,13 +64,24 @@
 	);
 
 	const resolvedStatus = $derived(
-		statusLabel.trim() || (installed ? 'Instalado' : '')
+		statusLabel.trim() || (installed ? 'Activo' : '')
 	);
-	const statusToneOk = $derived(installed || resolvedStatus === 'Instalado');
+	const statusToneOk = $derived(
+		installed || resolvedStatus === 'Activo' || resolvedStatus === 'Instalado'
+	);
+	const isList = $derived(!featured && layout === 'list');
+	const rootClass = $derived(
+		[
+			'group ms-tile',
+			featured && 'ms-tile--featured',
+			isList && 'ms-tile--list'
+		]
+			.filter(Boolean)
+			.join(' ')
+	);
 
 	function tagVariant(tag: StoreProductTag): 'info' | 'warning' | 'default' {
 		if (tag === 'new') return 'info';
-		// Featured uses custom amber + white via tagClass (avoid warning’s amber text).
 		if (tag === 'featured') return 'default';
 		return 'default';
 	}
@@ -78,14 +95,15 @@
 		}
 		return '';
 	}
+
+	function onActivate(e: MouseEvent) {
+		if (href) return;
+		e.preventDefault();
+		onclick?.();
+	}
 </script>
 
-<button
-	type="button"
-	class="group ms-tile"
-	class:ms-tile--featured={featured}
-	{onclick}
->
+{#snippet body()}
 	{#if featured}
 		<div class="ms-tile__promo bg-gradient-to-br {accentClass}">
 			<div class="ms-tile__promo-mesh" aria-hidden="true"></div>
@@ -127,6 +145,41 @@
 				<Icon class="size-10 text-white drop-shadow" />
 			</div>
 		</div>
+	{:else if isList}
+		<div class="ms-tile__list-icon bg-gradient-to-br {accentClass}">
+			<div class="ms-tile__icon-shine" aria-hidden="true"></div>
+			<Icon class="relative size-7 text-white drop-shadow-sm" />
+		</div>
+		<div class="ms-tile__list-body">
+			<div class="ms-tile__list-top">
+				<span class="ms-tile__name">{name}</span>
+				{#if resolvedStatus}
+					<Badge variant={statusToneOk ? 'success' : 'secondary'} size="sm">
+						{resolvedStatus}
+					</Badge>
+				{:else if displayTags[0]}
+					<Badge
+						variant={tagVariant(displayTags[0])}
+						size="sm"
+						class={tagClass(displayTags[0])}
+					>
+						{TAG_LABELS[displayTags[0]]}
+					</Badge>
+				{/if}
+			</div>
+			{#if description}
+				<span class="ms-tile__list-desc">{description}</span>
+			{/if}
+			<div class="ms-tile__list-meta">
+				{#if categoryLabel}
+					<span>{categoryLabel}</span>
+					<span aria-hidden="true">·</span>
+				{/if}
+				<span class="ms-tile__price">{priceLabel}</span>
+				<span aria-hidden="true">·</span>
+				<span class="ms-tile__publisher">Evoteg</span>
+			</div>
+		</div>
 	{:else}
 		<div class="ms-tile__icon-shell">
 			<div class="ms-tile__icon bg-gradient-to-br {accentClass}">
@@ -135,7 +188,7 @@
 			</div>
 			{#if statusToneOk}
 				<span class="ms-tile__corner">
-					<Badge variant="success" size="sm">{resolvedStatus || 'Instalado'}</Badge>
+					<Badge variant="success" size="sm">{resolvedStatus || 'Activo'}</Badge>
 				</span>
 			{:else if displayTags[0]}
 				<span class="ms-tile__corner">
@@ -167,7 +220,17 @@
 			<span class="ms-tile__price">{priceLabel}</span>
 		</div>
 	{/if}
-</button>
+{/snippet}
+
+{#if href}
+	<a class={rootClass} {href} data-sveltekit-preload-data="hover">
+		{@render body()}
+	</a>
+{:else}
+	<button type="button" class={rootClass} onclick={onActivate}>
+		{@render body()}
+	</button>
+{/if}
 
 <style>
 	.ms-tile {
@@ -182,6 +245,8 @@
 		padding: 0;
 		cursor: pointer;
 		border-radius: 1rem;
+		text-decoration: none;
+		color: inherit;
 		transition:
 			transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
 			filter 200ms ease;
@@ -192,6 +257,71 @@
 	.ms-tile:focus-visible {
 		outline: 2px solid var(--color-brand-500, #2563eb);
 		outline-offset: 4px;
+	}
+	.ms-tile--list {
+		flex-direction: row;
+		align-items: center;
+		gap: 0.9rem;
+		padding: 0.75rem 0.85rem;
+		border-radius: 1rem;
+		background: rgb(255 255 255 / 0.78);
+		border: 1px solid rgb(0 0 0 / 0.06);
+		box-shadow: 0 6px 18px rgb(0 0 0 / 0.04);
+	}
+	.ms-tile--list:hover {
+		transform: translateY(-1px);
+		border-color: rgb(0 0 0 / 0.1);
+	}
+	:global(.dark) .ms-tile--list {
+		background: rgb(23 23 23 / 0.88);
+		border-color: rgb(255 255 255 / 0.06);
+	}
+	.ms-tile__list-icon {
+		position: relative;
+		display: grid;
+		place-items: center;
+		width: 3.25rem;
+		height: 3.25rem;
+		border-radius: 22%;
+		flex-shrink: 0;
+		overflow: hidden;
+		box-shadow:
+			0 8px 18px rgb(0 0 0 / 0.2),
+			0 1px 0 rgb(255 255 255 / 0.2) inset;
+	}
+	.ms-tile__list-body {
+		min-width: 0;
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		gap: 0.2rem;
+	}
+	.ms-tile__list-top {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.75rem;
+	}
+	.ms-tile__list-desc {
+		font-size: 0.8rem;
+		line-height: 1.35;
+		color: var(--color-neutral-600, #525252);
+		display: -webkit-box;
+		-webkit-line-clamp: 1;
+		line-clamp: 1;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+	}
+	:global(.dark) .ms-tile__list-desc {
+		color: var(--color-neutral-400, #a3a3a3);
+	}
+	.ms-tile__list-meta {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.35rem;
+		font-size: 0.75rem;
+		color: var(--color-neutral-500, #737373);
 	}
 	.ms-tile__icon-shell {
 		position: relative;
