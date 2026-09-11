@@ -279,8 +279,13 @@
 		{#if children}
 			<div
 				class={[
-					'px-5 py-2 text-sm text-primary',
-					scrollable && 'max-h-[min(60vh,28rem)] overflow-y-auto'
+					'min-h-0 flex-1 px-5 py-2 text-sm text-primary',
+					scrollable &&
+						(size === 'full'
+							? 'max-h-[calc(100vh-11rem)] overflow-y-auto'
+							: size === 'xl'
+								? 'max-h-[min(70vh,36rem)] overflow-y-auto'
+								: 'max-h-[min(60vh,28rem)] overflow-y-auto')
 				]}
 			>
 				{@render children()}

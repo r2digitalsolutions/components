@@ -190,7 +190,9 @@
 	const widthClass = $derived.by(() => {
 		const layout = props.layout ?? 'grid';
 		if (layout === 'vertical') return 'w-112 max-w-full';
-		if (layout === 'table' || props.showComparison) return 'w-208 max-w-full';
+		if (layout === 'table' || layout === 'list' || layout === 'compare' || props.showComparison) {
+			return 'w-208 max-w-full';
+		}
 		if (layout === 'horizontal') return 'w-192 max-w-full';
 		if (layout === 'bento' || layout === 'split') return 'w-208 max-w-full';
 		if ((props.columns ?? 3) >= 4 || planSet === 'four') return 'w-224 max-w-full';
@@ -209,7 +211,12 @@
 		showFeatures={props.showFeatures ?? true}
 		showComparison={props.showComparison ?? false}
 		maxFeatures={props.maxFeatures}
-		comparisonRows={planSet === 'comparison' || props.layout === 'table' ? comparisonRows : undefined}
+		comparisonRows={planSet === 'comparison' ||
+		props.layout === 'table' ||
+		props.layout === 'list' ||
+		props.layout === 'compare'
+			? comparisonRows
+			: undefined}
 		onselect={(id) => (selectedId = id)}
 	>
 		{#snippet footer()}

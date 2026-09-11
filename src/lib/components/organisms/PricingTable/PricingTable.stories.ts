@@ -11,7 +11,17 @@ const meta = {
 	argTypes: {
 		layout: {
 			control: 'select',
-			options: ['grid', 'horizontal', 'vertical', 'bento', 'compact', 'split', 'table']
+			options: [
+				'grid',
+				'horizontal',
+				'vertical',
+				'bento',
+				'compact',
+				'split',
+				'table',
+				'list',
+				'compare'
+			]
 		},
 		columns: { control: 'select', options: [2, 3, 4] },
 		planSet: {
@@ -44,6 +54,7 @@ export const Bento: Story = { args: { layout: 'bento', planSet: 'bento' } };
 export const Compact: Story = { args: { layout: 'compact', planSet: 'four', columns: 4 } };
 export const Split: Story = { args: { layout: 'split' } };
 export const Table: Story = { args: { layout: 'table', planSet: 'comparison' } };
+export const ListCompare: Story = { args: { layout: 'list', planSet: 'comparison' } };
 export const CardsPlusComparison: Story = {
 	args: { layout: 'grid', showComparison: true, planSet: 'comparison' }
 };

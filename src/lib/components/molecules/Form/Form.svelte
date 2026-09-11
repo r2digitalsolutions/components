@@ -178,6 +178,7 @@
 				};
 				check();
 			});
+			// Do not preventDefault — Kit remote attachment owns progressive enhancement.
 			return;
 		}
 		e.preventDefault();
