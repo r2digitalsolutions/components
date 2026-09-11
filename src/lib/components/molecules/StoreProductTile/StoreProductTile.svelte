@@ -53,14 +53,14 @@
 
 	function tagVariant(tag: StoreProductTag): 'info' | 'warning' | 'default' {
 		if (tag === 'new') return 'info';
-		if (tag === 'featured') return 'warning';
+		// Featured uses custom amber + white via tagClass (avoid warning’s amber text).
+		if (tag === 'featured') return 'default';
 		return 'default';
 	}
 
 	function tagClass(tag: StoreProductTag): string {
 		if (tag === 'featured') {
-			// Explicit amber so it reads on promo gradients (not brand teal).
-			return 'border-0 bg-amber-500 text-amber-950 dark:bg-amber-500 dark:text-amber-950';
+			return '!border-0 !bg-amber-500 !text-white dark:!bg-amber-500 dark:!text-white';
 		}
 		if (tag === 'popular') {
 			return 'border-0 bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200';
