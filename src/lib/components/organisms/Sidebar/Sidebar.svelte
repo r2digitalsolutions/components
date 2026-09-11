@@ -175,7 +175,7 @@
 	</nav>
 
 	{#if footer}
-		<div class={['border-border p-3 border-t', collapsed && 'flex justify-center']}>
+		<div class={['border-border min-w-0 overflow-hidden border-t p-3', collapsed && 'flex justify-center']}>
 			{@render footer()}
 		</div>
 	{/if}

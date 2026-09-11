@@ -125,11 +125,11 @@
 	});
 </script>
 
-<div bind:this={rootEl} class={['relative inline-flex', className]}>
+<div bind:this={rootEl} class={['relative flex w-full min-w-0', className]}>
 	<button
 		type="button"
 		class={[
-			'inline-flex items-center text-left transition-colors',
+			'inline-flex w-full min-w-0 max-w-full items-center text-left transition-colors',
 			'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40',
 			variant === 'outline' &&
 				'gap-2.5 rounded-xl border border-border bg-surface-elevated hover:bg-surface-overlay',
@@ -143,12 +143,14 @@
 		aria-expanded={open}
 		onclick={toggle}
 	>
-		<Avatar {src} {name} size={avatarSize} {status} />
+		<span class="shrink-0">
+			<Avatar {src} {name} size={avatarSize} {status} />
+		</span>
 		{#if showMeta}
-			<span class="hidden min-w-0 sm:block">
-				<span class="block max-w-[9rem] truncate text-sm font-medium text-primary">{name}</span>
+			<span class="hidden min-w-0 flex-1 overflow-hidden sm:block">
+				<span class="block truncate text-sm font-medium text-primary">{name}</span>
 				{#if showSubtitle && (email || role)}
-					<span class="block max-w-[11rem] truncate text-xs text-muted">
+					<span class="block truncate text-xs text-muted">
 						{role ? `${role}` : ''}{role && email ? ' · ' : ''}{email ?? ''}
 					</span>
 				{/if}
