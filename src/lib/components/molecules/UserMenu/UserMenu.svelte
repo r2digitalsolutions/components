@@ -1,8 +1,10 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import { on } from 'svelte/events';
 	import Avatar from '$lib/components/atoms/Avatar/Avatar.svelte';
 	import Badge from '$lib/components/atoms/Badge/Badge.svelte';
 	import StatusDot from '$lib/components/atoms/StatusDot/StatusDot.svelte';
+	import { createId } from '$lib/utils/id.js';
 
 	export interface UserMenuItem {
 		id: string;
@@ -74,7 +76,29 @@
 		onopenchange
 	}: UserMenuProps = $props();
 
-	let rootEl = $state<HTMLDivElement | null>(null);
+	let triggerEl = $state<HTMLButtonElement | null>(null);
+	let menuEl = $state<HTMLDivElement | null>(null);
+	let menuStyle = $state('');
+	let menuId = $state('');
+
+	$effect(() => {
+		if (!menuId) menuId = createId('user-menu');
+	});
+
+	/**
+	 * Declarative invoker avoids the light-dismiss ↔ click race:
+	 * without an associated source, pointerup closes and click reopens.
+	 */
+	$effect(() => {
+		const btn = triggerEl;
+		const menu = menuEl;
+		if (!btn || !menu) return;
+		btn.popoverTargetElement = menu;
+		btn.popoverTargetAction = 'toggle';
+		return () => {
+			btn.popoverTargetElement = null;
+		};
+	});
 
 	const avatarSize = $derived(size === 'sm' ? 'sm' : size === 'lg' ? 'lg' : 'md');
 	const statusLabel = $derived(
@@ -94,39 +118,111 @@
 		onopenchange?.(next);
 	}
 
-	function toggle() {
-		setOpen(!open);
+	function positionMenu() {
+		if (!triggerEl || !menuEl) return;
+		if (!menuEl.matches(':popover-open')) return;
+
+		const rect = triggerEl.getBoundingClientRect();
+		const gap = 8;
+		const margin = 8;
+		const vv = window.visualViewport;
+		const viewW = vv?.width ?? window.innerWidth;
+		const viewH = vv?.height ?? window.innerHeight;
+		const viewLeft = vv?.offsetLeft ?? 0;
+		const viewTop = vv?.offsetTop ?? 0;
+
+		const width = Math.min(Math.max(rect.width, 280), viewW - margin * 2);
+		const height = menuEl.offsetHeight || 280;
+
+		const spaceBelow = viewTop + viewH - rect.bottom - gap - margin;
+		const spaceAbove = rect.top - viewTop - gap - margin;
+
+		let place: 'top' | 'bottom' = side;
+		if (side === 'bottom' && height > spaceBelow && spaceAbove > spaceBelow) place = 'top';
+		else if (side === 'top' && height > spaceAbove && spaceBelow > spaceAbove) place = 'bottom';
+
+		let top: number;
+		if (place === 'bottom') {
+			top = rect.bottom + gap;
+			if (top + height > viewTop + viewH - margin) {
+				top = Math.max(viewTop + margin, viewTop + viewH - margin - height);
+			}
+		} else {
+			top = rect.top - gap - height;
+			if (top < viewTop + margin) top = viewTop + margin;
+		}
+
+		let left = align === 'end' ? rect.right - width : rect.left;
+		left = Math.min(Math.max(left, viewLeft + margin), viewLeft + viewW - margin - width);
+
+		menuStyle = [
+			`top:${top}px`,
+			'bottom:auto',
+			`left:${left}px`,
+			'right:auto',
+			`width:${width}px`,
+			'height:auto',
+			'max-height:none'
+		].join(';');
+	}
+
+	function closeMenu() {
+		if (menuEl?.matches(':popover-open')) menuEl.hidePopover();
 	}
 
 	function select(item: UserMenuItem) {
 		if (item.disabled || item.separator) return;
 		onselect?.(item.id, item);
-		setOpen(false);
+		closeMenu();
 	}
 
-	function onDocPointer(e: PointerEvent) {
-		if (!open || !rootEl) return;
-		if (!rootEl.contains(e.target as Node)) setOpen(false);
+	function handleBeforeToggle(event: ToggleEvent) {
+		if (event.newState === 'open') {
+			queueMicrotask(() => {
+				positionMenu();
+				requestAnimationFrame(() => positionMenu());
+			});
+		}
 	}
 
-	function onKey(e: KeyboardEvent) {
-		if (!open) return;
-		if (e.key === 'Escape') setOpen(false);
+	function handleToggle(event: ToggleEvent) {
+		const next = event.newState === 'open';
+		setOpen(next);
+		if (next) {
+			queueMicrotask(() => {
+				positionMenu();
+				requestAnimationFrame(() => positionMenu());
+			});
+		}
 	}
 
 	$effect(() => {
-		if (typeof window === 'undefined') return;
-		document.addEventListener('pointerdown', onDocPointer);
-		window.addEventListener('keydown', onKey);
+		if (!open) return;
+		let frame = 0;
+		const reposition = (event?: Event) => {
+			const target = event?.target;
+			if (target instanceof Node && menuEl?.contains(target)) return;
+			cancelAnimationFrame(frame);
+			frame = requestAnimationFrame(() => positionMenu());
+		};
+		const offScroll = on(window, 'scroll', reposition, { capture: true, passive: true });
+		const offResize = on(window, 'resize', reposition);
+		const offVisual =
+			typeof window.visualViewport !== 'undefined' && window.visualViewport
+				? on(window.visualViewport, 'resize', reposition)
+				: () => {};
 		return () => {
-			document.removeEventListener('pointerdown', onDocPointer);
-			window.removeEventListener('keydown', onKey);
+			cancelAnimationFrame(frame);
+			offScroll();
+			offResize();
+			offVisual();
 		};
 	});
 </script>
 
-<div bind:this={rootEl} class={['relative flex w-full min-w-0', className]}>
+<div class={['relative flex w-full min-w-0', className]}>
 	<button
+		bind:this={triggerEl}
 		type="button"
 		class={[
 			'inline-flex w-full min-w-0 max-w-full items-center text-left transition-colors',
@@ -141,7 +237,7 @@
 		]}
 		aria-haspopup="menu"
 		aria-expanded={open}
-		onclick={toggle}
+		aria-controls={menuId || undefined}
 	>
 		<span class="shrink-0">
 			<Avatar {src} {name} size={avatarSize} {status} />
@@ -170,77 +266,90 @@
 		{/if}
 	</button>
 
-	{#if open}
-		<div
-			class={[
-				'absolute z-50 w-[min(100vw-2rem,18rem)] overflow-hidden rounded-2xl border border-border bg-surface-elevated shadow-xl',
-				side === 'top' ? 'bottom-full mb-2' : 'top-full mt-2',
-				align === 'end' ? 'right-0' : 'left-0'
-			]}
-			role="menu"
-			aria-label="User menu"
-		>
-			{#if header}
-				{@render header()}
-			{:else}
-				<div class="border-b border-border bg-surface-overlay/50 px-3.5 py-3">
-					<div class="flex items-start gap-3">
-						<Avatar {src} {name} size="lg" {status} />
-						<div class="min-w-0 flex-1 pt-0.5">
-							<p class="truncate text-sm font-semibold text-primary">{name}</p>
-							{#if email}
-								<p class="truncate text-xs text-muted">{email}</p>
+	<div
+		bind:this={menuEl}
+		id={menuId}
+		popover="auto"
+		role="menu"
+		tabindex={-1}
+		aria-label="User menu"
+		style={menuStyle}
+		ontoggle={handleToggle}
+		onbeforetoggle={handleBeforeToggle}
+		class="user-menu m-0 overflow-hidden rounded-2xl border border-border bg-surface-elevated shadow-xl inset-auto outline-none"
+	>
+		{#if header}
+			{@render header()}
+		{:else}
+			<div class="border-b border-border bg-surface-overlay/50 px-3.5 py-3">
+				<div class="flex items-start gap-3">
+					<Avatar {src} {name} size="lg" {status} />
+					<div class="min-w-0 flex-1 pt-0.5">
+						<p class="truncate text-sm font-semibold text-primary">{name}</p>
+						{#if email}
+							<p class="truncate text-xs text-muted">{email}</p>
+						{/if}
+						<div class="mt-2 flex flex-wrap items-center gap-2">
+							{#if status && statusLabel}
+								<StatusDot {status} size="sm" showLabel label={statusLabel} />
 							{/if}
-							<div class="mt-2 flex flex-wrap items-center gap-2">
-								{#if status && statusLabel}
-									<StatusDot {status} size="sm" showLabel label={statusLabel} />
-								{/if}
-								{#if role}
-									<span class="rounded-md bg-surface-elevated px-1.5 py-0.5 text-[10px] font-medium text-secondary ring-1 ring-border">
-										{role}
-									</span>
-								{/if}
-								{#if plan}
-									<Badge variant="primary" size="sm">{plan}</Badge>
-								{/if}
-							</div>
+							{#if role}
+								<span
+									class="rounded-md bg-surface-elevated px-1.5 py-0.5 text-[10px] font-medium text-secondary ring-1 ring-border"
+								>
+									{role}
+								</span>
+							{/if}
+							{#if plan}
+								<Badge variant="primary" size="sm">{plan}</Badge>
+							{/if}
 						</div>
 					</div>
 				</div>
-			{/if}
-
-			<div class="p-1.5">
-				{#each items as item (item.id)}
-					{#if item.separator}
-						<div class="my-1.5 border-t border-border" role="separator"></div>
-					{:else}
-						<button
-							type="button"
-							role="menuitem"
-							disabled={item.disabled}
-							onclick={() => select(item)}
-							class={[
-								'flex w-full items-start gap-2 rounded-xl px-2.5 py-2 text-left transition-colors',
-								'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30',
-								item.destructive
-									? 'text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40'
-									: 'text-primary hover:bg-surface-overlay',
-								item.disabled && 'cursor-not-allowed opacity-40'
-							]}
-						>
-							<span class="min-w-0 flex-1">
-								<span class="block text-sm font-medium">{item.label}</span>
-								{#if item.description}
-									<span class="block text-xs text-muted">{item.description}</span>
-								{/if}
-							</span>
-							{#if item.shortcut}
-								<span class="mt-0.5 shrink-0 font-mono text-[10px] text-muted">{item.shortcut}</span>
-							{/if}
-						</button>
-					{/if}
-				{/each}
 			</div>
+		{/if}
+
+		<div class="p-1.5">
+			{#each items as item (item.id)}
+				{#if item.separator}
+					<div class="my-1.5 border-t border-border" role="separator"></div>
+				{:else}
+					<button
+						type="button"
+						role="menuitem"
+						disabled={item.disabled}
+						onclick={() => select(item)}
+						class={[
+							'flex w-full items-start gap-2 rounded-xl px-2.5 py-2 text-left transition-colors',
+							'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30',
+							item.destructive
+								? 'text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40'
+								: 'text-primary hover:bg-surface-overlay',
+							item.disabled && 'cursor-not-allowed opacity-40'
+						]}
+					>
+						<span class="min-w-0 flex-1">
+							<span class="block text-sm font-medium">{item.label}</span>
+							{#if item.description}
+								<span class="block text-xs text-muted">{item.description}</span>
+							{/if}
+						</span>
+						{#if item.shortcut}
+							<span class="mt-0.5 shrink-0 font-mono text-[10px] text-muted">{item.shortcut}</span>
+						{/if}
+					</button>
+				{/if}
+			{/each}
 		</div>
-	{/if}
+	</div>
 </div>
+
+<style>
+	.user-menu {
+		position: fixed;
+	}
+
+	.user-menu:popover-open {
+		display: block;
+	}
+</style>
