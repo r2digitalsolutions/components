@@ -16,6 +16,11 @@
 		priceLabel: string;
 		categoryLabel?: string;
 		installed?: boolean;
+		/**
+		 * Estado legible en el listado (p. ej. «Instalado», «En licencia», «No incluido»).
+		 * Si no se pasa y `installed`, se usa «Instalado».
+		 */
+		statusLabel?: string;
 		/** landscape promotional card */
 		featured?: boolean;
 		tags?: StoreProductTag[];
@@ -32,6 +37,7 @@
 		priceLabel,
 		categoryLabel = '',
 		installed = false,
+		statusLabel = '',
 		featured = false,
 		tags = [],
 		icon: Icon,
@@ -50,6 +56,11 @@
 	const displayTags = $derived(
 		TAG_PRIORITY.filter((t) => visibleTags.includes(t)).slice(0, installed ? 1 : 2)
 	);
+
+	const resolvedStatus = $derived(
+		statusLabel.trim() || (installed ? 'Instalado' : '')
+	);
+	const statusToneOk = $derived(installed || resolvedStatus === 'Instalado');
 
 	function tagVariant(tag: StoreProductTag): 'info' | 'warning' | 'default' {
 		if (tag === 'new') return 'info';
@@ -78,7 +89,7 @@
 	{#if featured}
 		<div class="ms-tile__promo bg-gradient-to-br {accentClass}">
 			<div class="ms-tile__promo-mesh" aria-hidden="true"></div>
-			{#if displayTags.length || installed || badge}
+			{#if displayTags.length || resolvedStatus || badge}
 				<div class="ms-tile__tags">
 					{#if badge}
 						{@render badge()}
@@ -88,8 +99,10 @@
 								{TAG_LABELS[tag]}
 							</Badge>
 						{/each}
-						{#if installed}
-							<Badge variant="success" size="sm">Instalado</Badge>
+						{#if resolvedStatus}
+							<Badge variant={statusToneOk ? 'success' : 'secondary'} size="sm">
+								{resolvedStatus}
+							</Badge>
 						{/if}
 					{/if}
 				</div>
@@ -102,7 +115,13 @@
 				{#if description}
 					<span class="ms-tile__promo-desc">{description}</span>
 				{/if}
-				<span class="ms-tile__promo-price">{priceLabel}</span>
+				<span class="ms-tile__promo-price">
+					{#if resolvedStatus && statusToneOk}
+						{resolvedStatus}
+						<span class="ms-tile__promo-sep" aria-hidden="true">·</span>
+					{/if}
+					{priceLabel}
+				</span>
 			</div>
 			<div class="ms-tile__promo-icon bg-gradient-to-br {accentClass}">
 				<Icon class="size-10 text-white drop-shadow" />
@@ -114,7 +133,11 @@
 				<div class="ms-tile__icon-shine" aria-hidden="true"></div>
 				<Icon class="relative size-9 text-white drop-shadow-sm sm:size-10" />
 			</div>
-			{#if displayTags[0]}
+			{#if statusToneOk}
+				<span class="ms-tile__corner">
+					<Badge variant="success" size="sm">{resolvedStatus || 'Instalado'}</Badge>
+				</span>
+			{:else if displayTags[0]}
 				<span class="ms-tile__corner">
 					<Badge
 						variant={tagVariant(displayTags[0])}
@@ -124,13 +147,23 @@
 						{TAG_LABELS[displayTags[0]]}
 					</Badge>
 				</span>
-			{:else if installed}
-				<span class="ms-tile__dot" title="Instalado" aria-label="Instalado"></span>
+			{:else if resolvedStatus}
+				<span class="ms-tile__corner">
+					<Badge variant="secondary" size="sm">{resolvedStatus}</Badge>
+				</span>
 			{/if}
 		</div>
 		<div class="ms-tile__meta">
 			<span class="ms-tile__name">{name}</span>
 			<span class="ms-tile__publisher">Evoteg</span>
+			{#if resolvedStatus}
+				<span
+					class="ms-tile__status"
+					class:ms-tile__status--ok={statusToneOk}
+				>
+					{resolvedStatus}
+				</span>
+			{/if}
 			<span class="ms-tile__price">{priceLabel}</span>
 		</div>
 	{/if}
@@ -208,19 +241,6 @@
 		left: 0.45rem;
 		z-index: 2;
 	}
-	.ms-tile__dot {
-		position: absolute;
-		top: 0.55rem;
-		right: 0.55rem;
-		width: 0.55rem;
-		height: 0.55rem;
-		border-radius: 999px;
-		background: #16a34a;
-		box-shadow: 0 0 0 3px rgb(255 255 255 / 0.9);
-	}
-	:global(.dark) .ms-tile__dot {
-		box-shadow: 0 0 0 3px rgb(28 28 28);
-	}
 	.ms-tile__meta {
 		display: flex;
 		flex-direction: column;
@@ -240,12 +260,26 @@
 		color: var(--color-neutral-50, #fafafa);
 	}
 	.ms-tile__publisher,
-	.ms-tile__price {
+	.ms-tile__price,
+	.ms-tile__status {
 		color: var(--color-neutral-500, #737373);
 		font-size: 0.75rem;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+	}
+	.ms-tile__status {
+		font-weight: 600;
+		color: var(--color-neutral-600, #525252);
+	}
+	.ms-tile__status--ok {
+		color: #15803d;
+	}
+	:global(.dark) .ms-tile__status {
+		color: var(--color-neutral-400, #a3a3a3);
+	}
+	:global(.dark) .ms-tile__status--ok {
+		color: #4ade80;
 	}
 	.ms-tile__price {
 		font-weight: 550;
@@ -253,6 +287,10 @@
 	}
 	:global(.dark) .ms-tile__price {
 		color: var(--color-neutral-300, #d4d4d4);
+	}
+	.ms-tile__promo-sep {
+		margin-inline: 0.25rem;
+		opacity: 0.65;
 	}
 
 	.ms-tile--featured {
