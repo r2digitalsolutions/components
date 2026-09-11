@@ -58,7 +58,7 @@
 
 <span
 	class={[
-		'inline-flex items-center font-medium',
+		'inline-flex shrink-0 items-center whitespace-nowrap font-medium',
 		rounded ? 'rounded-full' : 'rounded-md',
 		variantClasses[variant],
 		sizeClasses[size],
