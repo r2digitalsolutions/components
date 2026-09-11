@@ -3,7 +3,7 @@
 	import { untrack } from 'svelte';
 	import Kbd from '$lib/components/atoms/Kbd/Kbd.svelte';
 	import IconButton from '$lib/components/atoms/IconButton/IconButton.svelte';
-	import { i18n } from '$lib/utils/i18n.svelte';
+	import { i18n } from '$lib/utils/i18n.svelte.js';
 	import { Mic, MicOff } from '@lucide/svelte';
 
 	export type CommandIcon = Component<{
