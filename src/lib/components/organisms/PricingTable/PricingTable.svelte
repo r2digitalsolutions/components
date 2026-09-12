@@ -240,11 +240,12 @@
 		onbillingperiodchange?.(billingPeriod);
 	}
 
-	function planColClass(plan: PricingPlan) {
+	/** Selection chrome only on the plan header — never paint feature rows. */
+	function planHeaderClass(plan: PricingPlan) {
 		const selected = selectedId === plan.id;
 		return [
-			plan.featured && 'bg-brand-50/50 dark:bg-brand-950/20',
-			selected && 'bg-brand-50/80 ring-inset ring-2 ring-brand-500/35 dark:bg-brand-950/30'
+			plan.featured && !selected && 'bg-brand-50/40 dark:bg-brand-950/15',
+			selected && 'bg-surface-elevated'
 		];
 	}
 </script>
@@ -447,15 +448,17 @@
 								scope="col"
 								class={[
 									'min-w-40 px-3 py-4 text-center align-top font-normal',
-									planColClass(plan)
+									planHeaderClass(plan)
 								]}
 							>
 								<button
 									type="button"
 									class={[
-										'flex w-full flex-col items-center gap-2 rounded-xl px-2 py-2 text-center transition-colors',
-										selected && 'bg-brand-500/10',
-										!plan.disabled && 'hover:bg-surface-overlay/50',
+										'flex w-full flex-col items-center gap-2 rounded-xl border px-2 py-2 text-center transition-colors',
+										selected
+											? 'border-border-strong bg-surface-overlay ring-2 ring-border'
+											: 'border-transparent',
+										!plan.disabled && !selected && 'hover:border-border hover:bg-surface-overlay/40',
 										plan.disabled && 'cursor-not-allowed opacity-50'
 									]}
 									disabled={plan.disabled}
@@ -465,7 +468,11 @@
 									<div class="flex min-h-6 flex-wrap items-center justify-center gap-1.5">
 										<span class="text-sm font-semibold text-primary">{plan.name}</span>
 										{#if badgeText}
-											<Badge size="sm" variant="primary" class="whitespace-nowrap">
+											<Badge
+												size="sm"
+												variant={selected ? 'default' : 'primary'}
+												class="whitespace-nowrap"
+											>
 												{badgeText}
 											</Badge>
 										{/if}
@@ -479,9 +486,11 @@
 									<span
 										class={[
 											'inline-flex h-8 w-full max-w-40 items-center justify-center rounded-lg px-3 text-xs font-medium',
-											selected || plan.featured
-												? 'bg-brand-600 text-white'
-												: 'bg-surface-overlay text-primary ring-1 ring-border'
+											selected
+												? 'bg-surface-overlay text-primary ring-2 ring-border-strong'
+												: plan.featured
+													? 'bg-brand-600 text-white'
+													: 'bg-surface-overlay text-primary ring-1 ring-border'
 										]}
 									>
 										{plan.cta ?? 'Select'}
@@ -497,18 +506,24 @@
 							class="sticky left-0 z-40 bg-surface px-4 py-2.5 text-left"
 						></th>
 						{#each plans as plan (plan.id)}
+							{@const selected = selectedId === plan.id}
 							<th
 								scope="col"
 								class={[
 									'px-3 py-2.5 text-center text-xs font-semibold text-secondary',
-									planColClass(plan)
+									planHeaderClass(plan)
 								]}
 							>
 								<button
 									type="button"
-									class="w-full rounded-md px-1 py-0.5 hover:bg-surface-overlay/60"
+									class={[
+										'w-full rounded-lg border px-2 py-1 transition-colors',
+										selected
+											? 'border-border-strong bg-surface-overlay text-primary ring-2 ring-border'
+											: 'border-transparent hover:bg-surface-overlay/60'
+									]}
 									disabled={plan.disabled}
-									aria-pressed={selectedId === plan.id}
+									aria-pressed={selected}
 									onclick={() => select(plan.id, plan.disabled)}
 								>
 									{plan.name}
@@ -536,13 +551,7 @@
 							{row.label}
 						</th>
 						{#each row.values as value, vi (`${row.id}-${plans[vi]?.id ?? vi}`)}
-							{@const plan = plans[vi]}
-							<td
-								class={[
-									'px-3 py-3 text-center',
-									plan && planColClass(plan)
-								]}
-							>
+							<td class="px-3 py-3 text-center">
 								{@render matrixCell(value)}
 							</td>
 						{/each}

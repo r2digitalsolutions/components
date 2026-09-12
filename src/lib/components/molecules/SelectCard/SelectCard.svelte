@@ -5,7 +5,7 @@
 
 	export type SelectCardLayout = 'media' | 'row';
 	export type SelectCardCheck = 'box' | 'badge' | 'none';
-	export type SelectCardTone = 'brand' | 'success' | 'error' | 'warning' | 'info';
+	export type SelectCardTone = 'brand' | 'neutral' | 'success' | 'error' | 'warning' | 'info';
 
 	interface SelectCardProps {
 		title?: string;
@@ -50,6 +50,7 @@
 
 	const selectedTone: Record<SelectCardTone, string> = {
 		brand: 'border-brand-500 bg-brand-50/50 ring-2 ring-brand-500/20 dark:bg-brand-950/30',
+		neutral: 'border-border-strong bg-surface-overlay ring-2 ring-border dark:bg-surface-overlay/80',
 		success:
 			'border-emerald-500 bg-emerald-50/70 ring-2 ring-emerald-500/20 dark:border-emerald-400 dark:bg-emerald-950/35',
 		error: 'border-red-500 bg-red-50/70 ring-2 ring-red-500/20 dark:border-red-400 dark:bg-red-950/35',
@@ -60,6 +61,7 @@
 
 	const hoverTone: Record<SelectCardTone, string> = {
 		brand: 'hover:border-brand-300 dark:hover:border-brand-700',
+		neutral: 'hover:border-border-strong',
 		success: 'hover:border-emerald-300 dark:hover:border-emerald-700',
 		error: 'hover:border-red-300 dark:hover:border-red-700',
 		warning: 'hover:border-amber-300 dark:hover:border-amber-700',
@@ -68,6 +70,7 @@
 
 	const badgeTone: Record<SelectCardTone, string> = {
 		brand: 'border-brand-500 bg-brand-500 text-white',
+		neutral: 'border-border-strong bg-surface-overlay text-primary',
 		success: 'border-emerald-500 bg-emerald-500 text-white',
 		error: 'border-red-500 bg-red-500 text-white',
 		warning: 'border-amber-500 bg-amber-500 text-white',
@@ -76,6 +79,7 @@
 
 	const focusTone: Record<SelectCardTone, string> = {
 		brand: 'focus-visible:ring-brand-500/30',
+		neutral: 'focus-visible:ring-border',
 		success: 'focus-visible:ring-emerald-500/30',
 		error: 'focus-visible:ring-red-500/30',
 		warning: 'focus-visible:ring-amber-500/30',
