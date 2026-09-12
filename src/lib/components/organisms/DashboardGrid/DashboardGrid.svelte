@@ -297,6 +297,9 @@
 			}
 			return;
 		}
+		// Width 0 is common during SSR / before layout — do not treat it as "narrow"
+		// or the grid stacks on the server and snaps back to the saved layout on hydrate.
+		if (width <= 0) return;
 		const next = width < stackBelow;
 		if (next === stacked) return;
 		if (next) resetInteraction();
