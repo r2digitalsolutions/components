@@ -10,6 +10,8 @@
 		cancelLabel?: string;
 		confirmLoading?: boolean;
 		confirmDisabled?: boolean;
+		/** Keep open while an async confirm runs (e.g. remote form). Default true. */
+		closeOnConfirm?: boolean;
 		children?: Snippet;
 		onconfirm?: () => void;
 		oncancel?: () => void;
@@ -24,6 +26,7 @@
 		cancelLabel = 'Cancel',
 		confirmLoading = false,
 		confirmDisabled = false,
+		closeOnConfirm = true,
 		children,
 		onconfirm,
 		oncancel,
@@ -39,6 +42,7 @@
 	{cancelLabel}
 	{confirmLoading}
 	{confirmDisabled}
+	{closeOnConfirm}
 	tone="danger"
 	confirmVariant="destructive"
 	size="sm"
