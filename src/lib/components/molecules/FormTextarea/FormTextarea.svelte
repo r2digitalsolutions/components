@@ -3,6 +3,8 @@
 	import {
 		getFormContext,
 		resolveFormFieldState,
+		resolveRemoteInputProps,
+		parseRemoteFieldName,
 		applyFormDataSync
 	} from '$lib/utils/formContext.js';
 
@@ -52,14 +54,27 @@
 	}: FormTextareaProps = $props();
 
 	const form = getFormContext();
+	const parsed = $derived(parseRemoteFieldName(name));
+	const logicalName = $derived(parsed.logicalName);
+	const htmlName = $derived.by(() => {
+		if (parsed.isEncoded) return parsed.htmlName;
+		return resolveRemoteInputProps(form?.remoteFormId, name, 'text').name;
+	});
 	const resolved = $derived(
-		resolveFormFieldState({ name, errorMessage, helperText, status, disabled, form })
+		resolveFormFieldState({
+			name: logicalName,
+			errorMessage,
+			helperText,
+			status,
+			disabled,
+			form
+		})
 	);
 
 	$effect(() => {
-		if (!bindData || !name || !form) return;
+		if (!bindData || !logicalName || !form) return;
 		applyFormDataSync({
-			fromCtx: form.data[name],
+			fromCtx: form.data[logicalName],
 			getLocal: () => value,
 			setLocal: (v) => {
 				value = v;
@@ -69,9 +84,9 @@
 	});
 
 	function handleInput(e: Event) {
-		if (bindData && name && form) {
-			form.setData(name, (e.currentTarget as HTMLTextAreaElement).value);
-			form.clearError(name);
+		if (bindData && logicalName && form) {
+			form.setData(logicalName, (e.currentTarget as HTMLTextAreaElement).value);
+			form.clearError(logicalName);
 		}
 		oninput?.(e);
 	}
@@ -80,7 +95,7 @@
 <div class={['w-full', className]}>
 	<Textarea
 		{id}
-		{name}
+		name={htmlName}
 		{label}
 		{placeholder}
 		disabled={resolved.disabled}

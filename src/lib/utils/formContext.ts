@@ -92,21 +92,28 @@ export function getRemoteFormId(action: string | undefined | null): string | nul
  * Resolve HTML input props for a field inside a Kit remote form.
  * Prefer a precomputed `formId` string so fields never touch Kit proxies.
  *
- * Kit’s `fields.x.as(type)` uses plain names (`email`, `n:age`). Do **not** append
- * `/formId` — remote ids look like `hash/name` and would produce invalid paths
- * (`email/dp12ax/login_remote`) that break `convert_formdata`.
+ * Kit requires names that end with `/${formId}` (from `.as()`), e.g.
+ * `email/1p9kxmo/login_user` or `n:age/1p9kxmo/login_user`.
  */
 export function resolveRemoteInputProps(
-	_formId: string | null | undefined,
+	formId: string | null | undefined,
 	logicalName: string | undefined,
 	type: string = 'text'
 ): ResolvedRemoteInputProps {
 	if (!logicalName) return {};
 
+	// Already Kit-encoded (contains `/formId` or was passed from `.as()`).
+	if (logicalName.includes('/')) {
+		return { name: logicalName };
+	}
+
 	let prefix = '';
 	if (type === 'number' || type === 'range') prefix = 'n:';
 	else if (type === 'checkbox' || type === 'boolean') prefix = 'b:';
-	return { name: `${prefix}${logicalName}` };
+
+	const base = `${prefix}${logicalName}`;
+	if (!formId) return { name: base };
+	return { name: `${base}/${formId}` };
 }
 
 export type ParsedRemoteFieldName = {
@@ -126,8 +133,8 @@ export type ParsedRemoteFieldName = {
  * Otherwise treats the first `/` after an optional `n:`/`b:` prefix as the form-id boundary
  * (logical paths use `.` / `[n]`, never `/`).
  *
- * Note: current Kit `.as()` emits plain names without `/formId`. Encoding with the
- * full remote id (`hash/name`) must not be reintroduced — it breaks convert_formdata.
+ * Note: Kit `.as()` emits names ending with `/${formId}` (e.g. `email/hash/login`).
+ * `resolveRemoteInputProps` must append the same suffix when given a logical name.
  */
 export function parseRemoteFieldName(
 	name: string | undefined,

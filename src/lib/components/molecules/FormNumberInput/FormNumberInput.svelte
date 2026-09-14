@@ -3,6 +3,8 @@
 	import {
 		getFormContext,
 		resolveFormFieldState,
+		resolveRemoteInputProps,
+		parseRemoteFieldName,
 		applyFormDataSync
 	} from '$lib/utils/formContext.js';
 
@@ -43,14 +45,27 @@
 	}: FormNumberInputProps = $props();
 
 	const form = getFormContext();
+	const parsed = $derived(parseRemoteFieldName(name));
+	const logicalName = $derived(parsed.logicalName);
+	const htmlName = $derived.by(() => {
+		if (parsed.isEncoded) return parsed.htmlName;
+		return resolveRemoteInputProps(form?.remoteFormId, name, 'number').name;
+	});
 	const resolved = $derived(
-		resolveFormFieldState({ name, errorMessage, helperText, status, disabled, form })
+		resolveFormFieldState({
+			name: logicalName,
+			errorMessage,
+			helperText,
+			status,
+			disabled,
+			form
+		})
 	);
 
 	$effect(() => {
-		if (!bindData || !name || !form) return;
+		if (!bindData || !logicalName || !form) return;
 		applyFormDataSync({
-			fromCtx: form.data[name],
+			fromCtx: form.data[logicalName],
 			getLocal: () => value,
 			setLocal: (v) => {
 				value = v;
@@ -61,9 +76,9 @@
 
 	function handleChange(next: number) {
 		value = next;
-		if (bindData && name && form) {
-			form.setData(name, next);
-			form.clearError(name);
+		if (bindData && logicalName && form) {
+			form.setData(logicalName, next);
+			form.clearError(logicalName);
 		}
 		onchange?.(next);
 	}
@@ -71,7 +86,7 @@
 
 <div class={['w-full', className]}>
 	<NumberInput
-		{name}
+		name={htmlName}
 		{label}
 		{min}
 		{max}
