@@ -63,18 +63,6 @@
 
 	const activeIds = $derived(selectedIds ?? (selectedId ? [selectedId] : []));
 	const activeSet = $derived(new Set(activeIds));
-	const ancestorOfSelection = $derived.by(() => {
-		const map = new Map(layers.map((l) => [l.id, l]));
-		const out = new Set<string>();
-		for (const id of activeIds) {
-			let cur = map.get(id);
-			while (cur?.parentId) {
-				out.add(cur.parentId);
-				cur = map.get(cur.parentId);
-			}
-		}
-		return out;
-	});
 	const inheritedLocked = $derived.by(() => {
 		const map = new Map(layers.map((l) => [l.id, l]));
 		const out = new Set<string>();
@@ -280,9 +268,7 @@
 					'flex w-full items-center gap-0.5 rounded-md px-1 py-1 text-left text-xs transition-colors',
 					activeSet.has(layer.id)
 						? 'bg-brand-500/15 text-primary'
-							: ancestorOfSelection.has(layer.id)
-								? 'bg-brand-500/10 text-primary ring-1 ring-inset ring-brand-500/35'
-							: 'text-secondary hover:bg-surface-overlay hover:text-primary',
+						: 'text-secondary hover:bg-surface-overlay hover:text-primary',
 					dragId === layer.id && 'opacity-50',
 					nesting && 'ring-1 ring-brand-500 bg-brand-500/10'
 				]}

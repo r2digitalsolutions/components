@@ -179,8 +179,9 @@ export function isLayoutSizeLocked(
 }
 
 /**
- * Ancestors to draw while a nested layer is selected (UMG / Canva parent chrome).
- * Skips `canvasPanel` (full-bleed artboard) and layers already in the selection.
+ * Ancestors to draw while a nested layer is selected (frame clip bounds).
+ * Skips the artboard, the current selection, and `group` — groups hug the
+ * children AABB, so outlining them looks like extra selection.
  */
 export function selectionAncestorIds(layers: CanvasLayer[], selectedIds: string[]): string[] {
 	const selected = new Set(selectedIds);
@@ -188,7 +189,14 @@ export function selectionAncestorIds(layers: CanvasLayer[], selectedIds: string[
 	const seen = new Set<string>();
 	for (const id of selectedIds) {
 		for (const anc of getAncestors(layers, id)) {
-			if (selected.has(anc.id) || seen.has(anc.id) || anc.kind === 'canvasPanel') continue;
+			if (
+				selected.has(anc.id) ||
+				seen.has(anc.id) ||
+				anc.kind === 'canvasPanel' ||
+				anc.kind === 'group'
+			) {
+				continue;
+			}
 			seen.add(anc.id);
 			out.push(anc.id);
 		}

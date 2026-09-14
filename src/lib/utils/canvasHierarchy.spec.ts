@@ -148,7 +148,7 @@ describe('layout lock + selection ancestors', () => {
 		expect(isLayoutSizeLocked([grid, cell], cell.id)).toBe(true);
 	});
 
-	it('returns parent ids (not canvasPanel) when a nested child is selected', () => {
+	it('does not outline a hugging group (or the artboard) when a nested child is selected', () => {
 		const panel = createCanvasLayer('canvasPanel', {
 			name: 'Artboard',
 			rect: { x: 0, y: 0, w: 400, h: 400 },
@@ -167,8 +167,23 @@ describe('layout lock + selection ancestors', () => {
 			zIndex: 0
 		});
 		const layers = [panel, group, child];
-		expect(selectionAncestorIds(layers, [child.id])).toEqual([group.id]);
+		expect(selectionAncestorIds(layers, [child.id])).toEqual([]);
 		expect(selectionAncestorIds(layers, [group.id])).toEqual([]);
+	});
+
+	it('outlines a frame parent, not a hugging group', () => {
+		const border = createCanvasLayer('border', {
+			name: 'Border',
+			rect: { x: 0, y: 0, w: 400, h: 400 },
+			zIndex: 0
+		});
+		const child = createCanvasLayer('rect', {
+			name: 'Child',
+			parentId: border.id,
+			rect: { x: 40, y: 40, w: 80, h: 80 },
+			zIndex: 0
+		});
+		expect(selectionAncestorIds([border, child], [child.id])).toEqual([border.id]);
 	});
 });
 
