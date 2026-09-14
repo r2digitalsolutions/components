@@ -150,10 +150,9 @@
 			bind:rect
 			minW={layer.kind === 'line' || layer.kind === 'arrow' || layer.kind === 'path' ? 16 : 40}
 			minH={layer.kind === 'line' ? 4 : layer.kind === 'arrow' || layer.kind === 'path' ? 16 : 24}
-			class={[
-				'bg-transparent',
-				passthrough || readOnly ? 'pointer-events-none' : ''
-			].filter(Boolean).join(' ')}
+			class={['bg-transparent', passthrough || readOnly ? 'pointer-events-none' : '']
+				.filter(Boolean)
+				.join(' ')}
 			onchange={(r) => {
 				rect = r;
 				onchange?.(r);
@@ -184,12 +183,12 @@
 					<video src={layer.src} class={['h-full w-full', fitClass]} muted playsinline></video>
 				{:else if layer.kind === 'text' || layer.kind === 'sticky'}
 					<div
-						class="flex h-full w-full px-2 py-1"
+						class="px-2 py-1 flex h-full w-full"
 						style:background={layer.kind === 'sticky'
 							? (layer.fill ?? '#fef08a')
 							: layer.textBackground}
 						style:color={layer.color ?? (layer.kind === 'sticky' ? '#713f12' : '#0f172a')}
-						style:font-size="{(layer.fontSize ?? (layer.kind === 'sticky' ? 20 : 32))}px"
+						style:font-size="{layer.fontSize ?? (layer.kind === 'sticky' ? 20 : 32)}px"
 						style:font-weight={layer.fontWeight ?? 600}
 						style:font-family={layer.fontFamily}
 						style:font-style={layer.fontStyle ?? 'normal'}
@@ -249,7 +248,7 @@
 						class={[
 							'absolute rounded-full',
 							vertical
-								? 'left-1/2 top-0 h-full -translate-x-1/2'
+								? 'top-0 left-1/2 h-full -translate-x-1/2'
 								: 'left-0 top-1/2 w-full -translate-y-1/2'
 						]}
 						style:background={layer.fill ?? '#94a3b8'}
@@ -264,7 +263,11 @@
 					{@const len = vertical ? bh : bw}
 					{@const thick = vertical ? bw : bh}
 					{@const head = Math.min(Math.max(14, thick * 0.9), len * 0.35, 40)}
-					<svg class="h-full w-full overflow-visible" viewBox={`0 0 ${bw} ${bh}`} aria-hidden="true">
+					<svg
+						class="h-full w-full overflow-visible"
+						viewBox={`0 0 ${bw} ${bh}`}
+						aria-hidden="true"
+					>
 						{#if vertical}
 							{@const cx = bw / 2}
 							<line
@@ -303,7 +306,11 @@
 					{@const d = layer.points
 						.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x * bw} ${p.y * bh}`)
 						.join(' ')}
-					<svg class="h-full w-full overflow-visible" viewBox={`0 0 ${bw} ${bh}`} aria-hidden="true">
+					<svg
+						class="h-full w-full overflow-visible"
+						viewBox={`0 0 ${bw} ${bh}`}
+						aria-hidden="true"
+					>
 						<path
 							d={layer.closed ? `${d} Z` : d}
 							fill={layer.closed ? (layer.fill ?? '#0f172a') : 'none'}
@@ -318,7 +325,9 @@
 					<div
 						class="relative h-full w-full"
 						style:overflow={panelClip ? 'hidden' : 'visible'}
-						style:background={layer.fill && layer.fill !== 'transparent' ? layer.fill : 'transparent'}
+						style:background={layer.fill && layer.fill !== 'transparent'
+							? layer.fill
+							: 'transparent'}
 						style:border={layer.kind === 'namedSlot'
 							? '1px dashed color-mix(in oklab, #3b82f6 50%, transparent)'
 							: layer.kind === 'scrollBox'
@@ -332,14 +341,14 @@
 					>
 						{#if layer.kind === 'namedSlot'}
 							<span
-								class="pointer-events-none absolute left-1.5 top-1.5 rounded bg-brand-500/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-brand-600"
+								class="left-1.5 top-1.5 rounded bg-brand-500/15 px-1.5 py-0.5 font-semibold tracking-wide text-brand-600 pointer-events-none absolute text-[9px] uppercase"
 							>
 								{layer.slotName || layer.name || 'Slot'}
 							</span>
 						{/if}
 						{#if layer.kind === 'scrollBox'}
 							<span
-								class="pointer-events-none absolute left-1.5 top-1.5 rounded bg-surface-overlay/90 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-muted"
+								class="left-1.5 top-1.5 rounded bg-surface-overlay/90 px-1.5 py-0.5 font-semibold tracking-wide text-muted pointer-events-none absolute text-[9px] uppercase"
 							>
 								Scroll
 							</span>
@@ -347,7 +356,7 @@
 					</div>
 				{:else}
 					<div
-						class="flex h-full w-full items-center justify-center gap-2 bg-surface-overlay/80 text-secondary"
+						class="gap-2 bg-surface-overlay/80 text-secondary flex h-full w-full items-center justify-center"
 					>
 						<MediaKindIcon kind={layer.kind === 'audio' ? 'audio' : 'image'} />
 						<span class="text-xs">{layer.name}</span>

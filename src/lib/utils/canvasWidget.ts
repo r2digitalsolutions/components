@@ -54,7 +54,10 @@ export function createWidgetDefinition(
 	};
 }
 
-function remapLayerIds(layers: CanvasLayer[]): { layers: CanvasLayer[]; idMap: Map<string, string> } {
+function remapLayerIds(layers: CanvasLayer[]): {
+	layers: CanvasLayer[];
+	idMap: Map<string, string>;
+} {
 	const idMap = new Map<string, string>();
 	for (const l of layers) idMap.set(l.id, uid('layer'));
 	const next = layers.map((l) => ({
@@ -120,9 +123,7 @@ export function createWidgetFromSelection(
 		const wasRoot = oldId ? selectedIds.includes(oldId) : false;
 		if (wasRoot) {
 			const abs = oldId ? absMap.get(oldId) : null;
-			const local = abs
-				? { x: abs.x - minX, y: abs.y - minY, w: abs.w, h: abs.h }
-				: l.rect;
+			const local = abs ? { x: abs.x - minX, y: abs.y - minY, w: abs.w, h: abs.h } : l.rect;
 			return {
 				...l,
 				parentId: null,
@@ -205,9 +206,7 @@ export function placeWidgetInstance(
 	const parentAbs = parentId
 		? (absMap.get(parentId) ?? { x: 0, y: 0, w: doc.width, h: doc.height })
 		: { x: 0, y: 0, w: doc.width, h: doc.height };
-	const pad = parentLayer
-		? contentPadding(parentLayer)
-		: { left: 0, top: 0, right: 0, bottom: 0 };
+	const pad = parentLayer ? contentPadding(parentLayer) : { left: 0, top: 0, right: 0, bottom: 0 };
 	const contentW = Math.max(1, parentAbs.w - pad.left - pad.right);
 	const contentH = Math.max(1, parentAbs.h - pad.top - pad.bottom);
 	const x = opts?.x ?? (parentId ? Math.round((contentW - def.width) / 2) : 80);
@@ -405,9 +404,7 @@ export function flattenLayersWithWidgets(
 				continue;
 			}
 			const resolved = resolveWidgetInstance(layer, def);
-			let nested = resolved.map((l) =>
-				l.parentId === null ? { ...l, parentId: layer.id } : l
-			);
+			let nested = resolved.map((l) => (l.parentId === null ? { ...l, parentId: layer.id } : l));
 
 			const defW = Math.max(1, def.width);
 			const defH = Math.max(1, def.height);
@@ -475,11 +472,7 @@ export function flattenLayersWithWidgets(
 						slot: kid.slot
 							? {
 									...kid.slot,
-									...slotFromLocalRect(
-										{ width: instW, height: instH },
-										kidRect,
-										kid.slot.anchors
-									)
+									...slotFromLocalRect({ width: instW, height: instH }, kidRect, kid.slot.anchors)
 								}
 							: defaultSlotFromRect(kidRect)
 					};
@@ -758,10 +751,7 @@ export function getNamedSlotsFromDefinition(
 		}));
 }
 
-export function listFillableSlotsForInstance(
-	doc: CanvasDocument,
-	instanceId: string
-): string[] {
+export function listFillableSlotsForInstance(doc: CanvasDocument, instanceId: string): string[] {
 	const inst = doc.layers.find((l) => l.id === instanceId && l.kind === 'widget');
 	if (!inst?.definitionId) return [];
 	const def = (doc.widgets ?? []).find((w) => w.id === inst.definitionId);
