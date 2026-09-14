@@ -26,6 +26,7 @@ import {
 	slotFromLocalRect,
 	stepAxis,
 	syncSlotFromRect,
+	translateSelectionAbsolute,
 	translateSlot,
 	wrapSelection,
 	isMarqueePassThroughKind
@@ -767,5 +768,64 @@ describe('scrollBox preview offsets', () => {
 		expect(m.thumb).toBeLessThan(100);
 		expect(m.offset).toBeGreaterThan(0);
 		expect(m.offset).toBeLessThan(100 - m.thumb);
+	});
+});
+
+describe('translateSelectionAbsolute', () => {
+	const root = { width: 400, height: 300 };
+
+	it('moves a group and a sibling without double-moving group children', () => {
+		const a = createCanvasLayer('rect', {
+			name: 'A',
+			rect: { x: 10, y: 10, w: 40, h: 40 },
+			zIndex: 0
+		});
+		const b = createCanvasLayer('text', {
+			name: 'B',
+			rect: { x: 80, y: 10, w: 50, h: 20 },
+			zIndex: 1
+		});
+		const path = createCanvasLayer('path', {
+			name: 'P',
+			rect: { x: 10, y: 100, w: 80, h: 40 },
+			zIndex: 2
+		});
+		const wrapped = wrapSelection(
+			emptyCanvasDocument({ width: 400, height: 300, layers: [a, b, path] }),
+			[a.id, b.id],
+			'group'
+		);
+		expect(wrapped).not.toBeNull();
+		const groupId = wrapped!.wrapperId;
+		const next = translateSelectionAbsolute(wrapped!.doc.layers, [groupId, path.id], 15, 20, root);
+		const abs = computeAbsoluteRects(next, root);
+		expect(abs.get(a.id)).toEqual({ x: 25, y: 30, w: 40, h: 40 });
+		expect(abs.get(b.id)).toEqual({ x: 95, y: 30, w: 50, h: 20 });
+		expect(abs.get(path.id)).toEqual({ x: 25, y: 120, w: 80, h: 40 });
+		expect((abs.get(b.id)?.x ?? 0) - (abs.get(a.id)?.x ?? 0)).toBe(70);
+	});
+
+	it('does not independently move a child when its group is also selected', () => {
+		const a = createCanvasLayer('rect', {
+			name: 'A',
+			rect: { x: 10, y: 10, w: 40, h: 40 },
+			zIndex: 0
+		});
+		const b = createCanvasLayer('text', {
+			name: 'B',
+			rect: { x: 80, y: 10, w: 50, h: 20 },
+			zIndex: 1
+		});
+		const wrapped = wrapSelection(
+			emptyCanvasDocument({ width: 400, height: 300, layers: [a, b] }),
+			[a.id, b.id],
+			'group'
+		);
+		expect(wrapped).not.toBeNull();
+		const groupId = wrapped!.wrapperId;
+		const next = translateSelectionAbsolute(wrapped!.doc.layers, [groupId, a.id], 10, 0, root);
+		const abs = computeAbsoluteRects(next, root);
+		expect(abs.get(a.id)?.x).toBe(20);
+		expect(abs.get(b.id)?.x).toBe(90);
 	});
 });

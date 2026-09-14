@@ -37,14 +37,7 @@ export type CanvasTextAlign = 'left' | 'center' | 'right';
 export type CanvasFontStyle = 'normal' | 'italic';
 export type CanvasTextDecoration = 'none' | 'underline' | 'line-through';
 export type CanvasAlign =
-	| 'left'
-	| 'center-h'
-	| 'right'
-	| 'top'
-	| 'center-v'
-	| 'bottom'
-	| 'center'
-	| 'full';
+	'left' | 'center-h' | 'right' | 'top' | 'center-v' | 'bottom' | 'center' | 'full';
 
 /** Normalized point inside a layer rect (0–1). */
 export interface CanvasPoint {
@@ -188,7 +181,10 @@ export interface CanvasDocument {
 const TOP_LEFT: CanvasAnchors = { minX: 0, minY: 0, maxX: 0, maxY: 0 };
 
 /** Top-left point anchors; offsets encode x/y/w/h without needing parent size. */
-export function defaultSlotFromRect(rect: CanvasLayerRect, anchors: CanvasAnchors = TOP_LEFT): CanvasSlot {
+export function defaultSlotFromRect(
+	rect: CanvasLayerRect,
+	anchors: CanvasAnchors = TOP_LEFT
+): CanvasSlot {
 	const a = { ...anchors };
 	// Only valid without parent size when anchors are a point at origin (top-left).
 	if (a.minX === 0 && a.minY === 0 && a.maxX === 0 && a.maxY === 0) {
@@ -307,7 +303,9 @@ export function emptyCanvasDocument(
 }
 
 /** Migrate v1 (flat absolute layers) → v2 (parentId + slot). */
-export function migrateCanvasDocument(doc: CanvasDocument | (Omit<CanvasDocument, 'version'> & { version?: number })): CanvasDocument {
+export function migrateCanvasDocument(
+	doc: CanvasDocument | (Omit<CanvasDocument, 'version'> & { version?: number })
+): CanvasDocument {
 	const version = doc.version ?? 1;
 	if (version >= 2) {
 		// Hot path: already v2 with slots — keep identity to avoid thrashing drag reactivity.
@@ -377,7 +375,8 @@ export function createCanvasLayer(
 		fill: partial?.fill ?? d.fill,
 		stroke: partial?.stroke,
 		strokeWidth:
-			partial?.strokeWidth ?? (kind === 'line' || kind === 'arrow' || kind === 'path' ? 4 : undefined),
+			partial?.strokeWidth ??
+			(kind === 'line' || kind === 'arrow' || kind === 'path' ? 4 : undefined),
 		fontSize: partial?.fontSize ?? d.fontSize,
 		fontWeight: partial?.fontWeight,
 		fontFamily: partial?.fontFamily,
@@ -386,8 +385,7 @@ export function createCanvasLayer(
 		letterSpacing: partial?.letterSpacing,
 		lineHeight: partial?.lineHeight,
 		textAlign: partial?.textAlign ?? (kind === 'text' || kind === 'sticky' ? 'left' : undefined),
-		autoSize:
-			partial?.autoSize ?? (kind === 'text' ? true : kind === 'sticky' ? false : undefined),
+		autoSize: partial?.autoSize ?? (kind === 'text' ? true : kind === 'sticky' ? false : undefined),
 		color: partial?.color ?? d.color ?? (kind === 'text' ? '#0f172a' : undefined),
 		textBackground: partial?.textBackground,
 		objectFit: partial?.objectFit ?? (kind === 'image' || kind === 'video' ? 'cover' : undefined),
@@ -406,7 +404,7 @@ export function createCanvasLayer(
 		autoSizeChildren:
 			partial?.autoSizeChildren ?? d.autoSizeChildren ?? (kind === 'group' ? true : undefined),
 		gap: partial?.gap ?? d.gap,
-		slotName: partial?.slotName ?? (kind === 'namedSlot' ? partial?.name ?? d.name : undefined),
+		slotName: partial?.slotName ?? (kind === 'namedSlot' ? (partial?.name ?? d.name) : undefined),
 		fillSlot: partial?.fillSlot,
 		columns: partial?.columns ?? (kind === 'uniformGrid' ? 2 : undefined),
 		definitionId: partial?.definitionId,
@@ -528,10 +526,7 @@ export function canvasLayerFieldDefault(
 	}
 }
 
-export function isCanvasFieldModified(
-	layer: CanvasLayer,
-	field: CanvasResettableField
-): boolean {
+export function isCanvasFieldModified(layer: CanvasLayer, field: CanvasResettableField): boolean {
 	const def = canvasLayerFieldDefault(layer.kind, field);
 	const raw = layer[field as keyof CanvasLayer];
 	// Missing autoSize / autoSizeChildren on older docs → kind default.
@@ -624,7 +619,8 @@ export function snapLayerRect(
 	minW = 24,
 	minH = 24,
 	guides: Pick<CanvasGuide, 'orientation' | 'position'>[] = [],
-	guideThreshold = 8
+	guideThreshold = 8,
+	clampToBounds = true
 ): CanvasLayerRect {
 	const snap = (v: number) => (enabled ? Math.round(v / cellSize) * cellSize : v);
 	let w = Math.max(minW, enabled ? snap(rect.w) : rect.w);
@@ -638,10 +634,12 @@ export function snapLayerRect(
 		y = snapped.y;
 	}
 
-	x = Math.min(Math.max(0, x), Math.max(0, bounds.width - w));
-	y = Math.min(Math.max(0, y), Math.max(0, bounds.height - h));
-	w = Math.min(w, bounds.width - x);
-	h = Math.min(h, bounds.height - y);
+	if (clampToBounds) {
+		x = Math.min(Math.max(0, x), Math.max(0, bounds.width - w));
+		y = Math.min(Math.max(0, y), Math.max(0, bounds.height - h));
+		w = Math.min(w, bounds.width - x);
+		h = Math.min(h, bounds.height - y);
+	}
 	return { x, y, w, h };
 }
 

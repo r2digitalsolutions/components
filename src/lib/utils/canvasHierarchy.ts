@@ -1175,3 +1175,34 @@ export function scaleSelectionAbsolute(
 	}
 	return applyAbsoluteRects(layers, nextAbsMap, absMap, rootSize);
 }
+
+/**
+ * Translate a multi-selection as one rigid body. Only top-level selected layers
+ * move; descendants keep parent-local coords so a group+child selection does not
+ * double-shift nested items.
+ */
+export function translateSelectionAbsolute(
+	layers: CanvasLayer[],
+	selectedIds: string[],
+	dx: number,
+	dy: number,
+	rootSize: { width: number; height: number },
+	absMap = computeAbsoluteRects(layers, rootSize)
+): CanvasLayer[] {
+	if (Math.abs(dx) < 0.01 && Math.abs(dy) < 0.01) return layers;
+	const byId = new Map(layers.map((l) => [l.id, l]));
+	const top = new Set(topLevelSelectedIds(layers, selectedIds));
+	return layers.map((l) => {
+		if (!top.has(l.id)) return l;
+		const a = absMap.get(l.id) ?? l.rect;
+		const parent = l.parentId ? (byId.get(l.parentId) ?? null) : null;
+		const parentAbs = l.parentId ? (absMap.get(l.parentId) ?? null) : rootFrame(rootSize);
+		return layerFromAbsoluteRect(
+			l,
+			{ x: a.x + dx, y: a.y + dy, w: a.w, h: a.h },
+			parentAbs,
+			parent,
+			rootSize
+		);
+	});
+}

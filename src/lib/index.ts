@@ -1672,6 +1672,7 @@ export {
 	scaleSelectionAbsolute,
 	shouldAutoSizeChildren,
 	topLevelSelectedIds,
+	translateSelectionAbsolute,
 	unionAbsRect,
 	deleteSubtree,
 	duplicateSubtree,

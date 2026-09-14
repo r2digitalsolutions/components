@@ -49,7 +49,9 @@
 		scrollBoxOverflow,
 		scrollBarMetrics,
 		selectionAncestorIds,
-		clipPathForLayer
+		clipPathForLayer,
+		topLevelSelectedIds,
+		translateSelectionAbsolute
 	} from '$lib/utils/canvasHierarchy.js';
 	import { flattenLayersWithWidgets } from '$lib/utils/canvasWidget.js';
 	import { backgroundAlpha } from '$lib/utils/canvasExport.js';
@@ -193,6 +195,11 @@
 	let selectionLive = $state<{ x: number; y: number; w: number; h: number } | null>(null);
 	let selectionBaseLayers = $state<CanvasLayer[] | null>(null);
 	let selectionBaseBox = $state<{ x: number; y: number; w: number; h: number } | null>(null);
+	/** Snapshot for rigid multi-select drag (from pointer-down, not last frame). */
+	let moveBaseLayers = $state<CanvasLayer[] | null>(null);
+	let moveBaseAbs = $state<Map<string, { x: number; y: number; w: number; h: number }> | null>(
+		null
+	);
 	const selectionFrame = $derived(selectionLive ?? selectionBounds);
 
 	const fitScale = $derived.by(() => {
@@ -291,7 +298,14 @@
 			return r;
 		},
 		clampRect(rect: WidgetRect, minW: number, minH: number) {
-			return clampWidgetRect(rect, { width: doc.width, height: doc.height }, minW, minH);
+			const sized = {
+				...rect,
+				w: Math.max(minW, rect.w),
+				h: Math.max(minH, rect.h)
+			};
+			// Snap on = stay on the artboard. Snap off = free, including off-canvas.
+			if (!snap) return sized;
+			return clampWidgetRect(sized, { width: doc.width, height: doc.height }, minW, minH);
 		}
 	};
 
@@ -334,25 +348,53 @@
 		});
 	}
 
-	function commitGroupGeometry(next: CanvasLayer[]) {
-		draftLayers = fitGroupsToChildren(next, { width: doc.width, height: doc.height });
-		if (interactCount === 0) commitDraft();
-	}
-
 	function commitDraft() {
 		if (!draftLayers) return;
-		const layers = draftLayers;
+		const layers = fitGroupsToChildren(draftLayers, { width: doc.width, height: doc.height });
 		draftLayers = null;
 		ondocumentchange?.({ ...doc, layers });
+	}
+
+	function commitGroupGeometry(next: CanvasLayer[]) {
+		if (interactCount > 0) {
+			draftLayers = next;
+			return;
+		}
+		draftLayers = fitGroupsToChildren(next, { width: doc.width, height: doc.height });
+		commitDraft();
+	}
+
+	function clearMoveSnapshot() {
+		moveBaseLayers = null;
+		moveBaseAbs = null;
+	}
+
+	function clampDeltaToKeepUnion(
+		union: { x: number; y: number; w: number; h: number },
+		dx: number,
+		dy: number
+	) {
+		let x = union.x + dx;
+		let y = union.y + dy;
+		if (union.w < doc.width) x = Math.min(Math.max(0, x), doc.width - union.w);
+		if (union.h < doc.height) y = Math.min(Math.max(0, y), doc.height - union.h);
+		return { dx: x - union.x, dy: y - union.y };
 	}
 
 	function handleLayerInteract(active: boolean) {
 		if (active) {
 			interactCount += 1;
+			if (selectedIds.length > 1 && !moveBaseLayers) {
+				moveBaseLayers = workingLayers;
+				moveBaseAbs = new Map(absMap);
+			}
 			return;
 		}
 		interactCount = Math.max(0, interactCount - 1);
-		if (interactCount === 0) commitDraft();
+		if (interactCount === 0) {
+			clearMoveSnapshot();
+			commitDraft();
+		}
 	}
 
 	function cancelLayerDraft() {
@@ -361,6 +403,7 @@
 		selectionBaseLayers = null;
 		selectionBaseBox = null;
 		selectionLive = null;
+		clearMoveSnapshot();
 	}
 
 	function isLayoutLocked(layer: CanvasLayer): boolean {
@@ -395,7 +438,9 @@
 			{ width: doc.width, height: doc.height },
 			minW,
 			minH,
-			guideSnapList
+			guideSnapList,
+			8,
+			false
 		);
 
 		const prevAbs = absMap.get(source.id) ?? source.rect;
@@ -417,21 +462,34 @@
 			(Math.abs(dx) > 0.01 || Math.abs(dy) > 0.01);
 
 		if (groupMove) {
+			const baseLayers = moveBaseLayers ?? layers;
+			const baseAbs = moveBaseAbs ?? absMap;
+			const start = baseAbs.get(source.id) ?? source.rect;
+			let moveDx = nextAbs.x - start.x;
+			let moveDy = nextAbs.y - start.y;
+			const movableIds = selectedIds.filter(
+				(id) =>
+					!isEffectivelyLocked(workingLayers, id, workingById) &&
+					!isLayoutPositionLocked(workingLayers, id, workingById)
+			);
+			if (snap) {
+				const top = topLevelSelectedIds(baseLayers, movableIds);
+				const union = unionAbsRect(baseAbs, top);
+				if (union) {
+					const clamped = clampDeltaToKeepUnion(union, moveDx, moveDy);
+					moveDx = clamped.dx;
+					moveDy = clamped.dy;
+				}
+			}
 			commitGroupGeometry(
-				layers.map((l) => {
-					if (!selectedSet.has(l.id) || isEffectivelyLocked(workingLayers, l.id, workingById)) {
-						return l;
-					}
-					if (isLayoutPositionLocked(workingLayers, l.id, workingById)) return l;
-					const a = absMap.get(l.id) ?? l.rect;
-					const moved = {
-						x: a.x + dx,
-						y: a.y + dy,
-						w: a.w,
-						h: a.h
-					};
-					return absToLocalUpdate(l, moved);
-				})
+				translateSelectionAbsolute(
+					baseLayers,
+					movableIds,
+					moveDx,
+					moveDy,
+					{ width: doc.width, height: doc.height },
+					baseAbs
+				)
 			);
 			return;
 		}
