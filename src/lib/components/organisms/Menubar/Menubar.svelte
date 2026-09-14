@@ -301,21 +301,31 @@
 	}
 
 	.menubar-trigger-idle {
-		color: var(--color-secondary, var(--secondary, #737373));
+		color: var(--text-secondary, var(--color-text-secondary, #737373));
 	}
 
 	.menubar-trigger-idle:hover {
-		background: color-mix(in oklab, var(--color-surface-overlay, #f5f5f5) 80%, transparent);
-		color: var(--color-primary, var(--primary, #171717));
+		/* text-primary is light in dark mode → soft white wash (never surface-overlay #171717) */
+		background: color-mix(in oklab, var(--text-primary, var(--color-text-primary, CanvasText)) 14%, transparent);
+		color: var(--text-primary, var(--color-text-primary, CanvasText));
 	}
 
 	.menubar-trigger-open {
-		background: color-mix(in oklab, var(--color-brand-500, #3b82f6) 18%, transparent);
-		color: var(--color-primary, var(--primary, #171717));
+		background: color-mix(in oklab, var(--color-brand-500, #3b82f6) 22%, transparent);
+		color: var(--text-primary, var(--color-text-primary, CanvasText));
 	}
 
-	:global(.dark) .menubar-trigger-open {
-		background: color-mix(in oklab, var(--color-brand-500, #3b82f6) 28%, transparent);
+	:global(.dark) .menubar-trigger-idle:hover,
+	:global(html.dark) .menubar-trigger-idle:hover,
+	:global(:root.dark) .menubar-trigger-idle:hover {
+		background: color-mix(in oklab, #fff 14%, transparent);
+		color: #fff;
+	}
+
+	:global(.dark) .menubar-trigger-open,
+	:global(html.dark) .menubar-trigger-open,
+	:global(:root.dark) .menubar-trigger-open {
+		background: color-mix(in oklab, var(--color-brand-500, #3b82f6) 32%, transparent);
 		color: #fff;
 	}
 
@@ -377,7 +387,7 @@
 	}
 
 	:global(.menubar-item-default) {
-		color: var(--color-primary, var(--primary, #171717));
+		color: var(--text-primary, var(--color-text-primary, #171717));
 	}
 
 	:global(.dark) :global(.menubar-item-default) {
