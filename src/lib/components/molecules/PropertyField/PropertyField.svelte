@@ -77,12 +77,20 @@
 		</span>
 	{/if}
 
-	<span class="flex min-w-0 items-center gap-0.5 truncate" title={label}>
+	<span class="flex min-w-0 items-center justify-start gap-0.5 text-left" title={label}>
+		<Text
+			size="xs"
+			tone={canReset ? 'primary' : 'secondary'}
+			as="span"
+			class={['min-w-0 flex-1 truncate font-medium', canReset && 'text-amber-700 dark:text-amber-400']}
+		>
+			{label}
+		</Text>
 		{#if exposed !== null}
 			<IconButton
 				label={exposed ? 'Hide from instances' : 'Expose on instances'}
 				size="xs"
-				class={exposed ? 'text-brand-600' : 'text-muted'}
+				class={['shrink-0', exposed ? 'text-brand-600' : 'text-muted']}
 				onclick={() => onexpose?.(!exposed)}
 			>
 				{#if exposed}
@@ -92,14 +100,6 @@
 				{/if}
 			</IconButton>
 		{/if}
-		<Text
-			size="xs"
-			tone={canReset ? 'primary' : 'secondary'}
-			as="span"
-			class={['truncate font-medium', canReset && 'text-amber-700 dark:text-amber-400']}
-		>
-			{label}
-		</Text>
 	</span>
 
 	<div

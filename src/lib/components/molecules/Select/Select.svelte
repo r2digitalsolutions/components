@@ -28,7 +28,7 @@
 		 * and highlight it. Defaults to true.
 		 */
 		flyToSelected?: boolean;
-		size?: 'sm' | 'md' | 'lg';
+		size?: 'xs' | 'sm' | 'md' | 'lg';
 		class?: string;
 		onchange?: (value: string) => void;
 	}
@@ -160,6 +160,7 @@
 	);
 
 	const sizeClasses = {
+		xs: 'h-7 text-xs px-2 gap-1.5 rounded-lg',
 		sm: 'h-8 text-sm px-3',
 		md: 'h-10 text-sm px-3.5',
 		lg: 'h-12 text-base px-4'

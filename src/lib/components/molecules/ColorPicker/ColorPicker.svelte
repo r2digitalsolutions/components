@@ -2,7 +2,7 @@
 	import { createId } from '$lib/utils/id.js';
 
 	export type ColorFormat = 'hex' | 'rgb' | 'hsl';
-	type ColorPickerSize = 'sm' | 'md' | 'lg';
+	type ColorPickerSize = 'xs' | 'sm' | 'md' | 'lg';
 
 	interface ColorPickerProps {
 		value?: string;
@@ -49,24 +49,28 @@
 	}: ColorPickerProps = $props();
 
 	const triggerSizeClasses: Record<ColorPickerSize, string> = {
+		xs: 'h-7 gap-1.5 rounded-lg px-1.5',
 		sm: 'h-8 gap-2 rounded-lg px-2',
 		md: 'h-10 gap-2.5 rounded-xl px-2.5',
 		lg: 'h-12 gap-3 rounded-xl px-3'
 	};
 
 	const swatchSizeClasses: Record<ColorPickerSize, string> = {
+		xs: 'h-4 w-4 rounded',
 		sm: 'h-5 w-5 rounded-md',
 		md: 'h-7 w-7 rounded-lg',
 		lg: 'h-8 w-8 rounded-lg'
 	};
 
 	const valueSizeClasses: Record<ColorPickerSize, string> = {
+		xs: 'text-xs',
 		sm: 'text-sm',
 		md: 'text-sm',
 		lg: 'text-base'
 	};
 
 	const chevronSizeClasses: Record<ColorPickerSize, string> = {
+		xs: 'h-3 w-3',
 		sm: 'h-3.5 w-3.5',
 		md: 'h-4 w-4',
 		lg: 'h-4 w-4'

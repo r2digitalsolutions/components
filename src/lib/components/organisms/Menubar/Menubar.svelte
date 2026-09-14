@@ -6,6 +6,10 @@
 		separator?: boolean;
 		shortcut?: string;
 		destructive?: boolean;
+		/** Show a leading check column (macOS / Cursor style). */
+		checked?: boolean;
+		/** Nested flyout submenu. */
+		children?: MenubarSubItem[];
 	}
 
 	export interface MenubarItem {
@@ -27,9 +31,11 @@
 	}: MenubarProps = $props();
 
 	let openId = $state<string | null>(null);
+	let flyoutId = $state<string | null>(null);
 	let menubarEl = $state<HTMLElement | null>(null);
 	let menuEl = $state<HTMLDivElement | null>(null);
 	let menuStyle = $state('');
+	let highlightedId = $state<string | null>(null);
 
 	function menuDomId(id: string) {
 		return `menubar-menu-${id}`;
@@ -44,6 +50,8 @@
 			}
 		}
 		openId = null;
+		flyoutId = null;
+		highlightedId = null;
 		menuStyle = '';
 	}
 
@@ -58,20 +66,22 @@
 		const spaceBelow = window.innerHeight - rect.bottom - pad;
 		const openUp = spaceBelow < menuH && rect.top > spaceBelow;
 		let left = rect.left;
-		const menuW = Math.max(200, menuEl.offsetWidth || 200);
+		const menuW = Math.max(220, menuEl.offsetWidth || 220);
 		if (left + menuW > window.innerWidth - pad) {
 			left = Math.max(pad, window.innerWidth - menuW - pad);
 		}
 		// inset:auto must come BEFORE top/left — shorthand would clear them
 		if (openUp) {
-			menuStyle = `position:fixed;margin:0;inset:auto;bottom:${Math.round(window.innerHeight - rect.top + 6)}px;left:${Math.round(left)}px;`;
+			menuStyle = `position:fixed;margin:0;inset:auto;bottom:${Math.round(window.innerHeight - rect.top + 2)}px;left:${Math.round(left)}px;`;
 		} else {
-			menuStyle = `position:fixed;margin:0;inset:auto;top:${Math.round(rect.bottom + 6)}px;left:${Math.round(left)}px;`;
+			menuStyle = `position:fixed;margin:0;inset:auto;top:${Math.round(rect.bottom + 2)}px;left:${Math.round(left)}px;`;
 		}
 	}
 
 	function open(id: string) {
 		openId = id;
+		flyoutId = null;
+		highlightedId = null;
 		queueMicrotask(() => {
 			if (!menuEl) return;
 			try {
@@ -91,6 +101,7 @@
 
 	function select(subItem: MenubarSubItem, parentId: string) {
 		if (subItem.disabled || subItem.separator) return;
+		if (subItem.children?.length) return;
 		onselect?.(subItem.id, parentId);
 		close();
 	}
@@ -118,8 +129,14 @@
 	function onToggle(e: ToggleEvent) {
 		if (e.newState === 'closed') {
 			openId = null;
+			flyoutId = null;
+			highlightedId = null;
 			menuStyle = '';
 		}
+	}
+
+	function levelHasChecks(list: MenubarSubItem[]) {
+		return list.some((i) => !i.separator && i.checked !== undefined);
 	}
 
 	$effect(() => {
@@ -138,7 +155,87 @@
 	const openItem = $derived(items.find((i) => i.id === openId) ?? null);
 </script>
 
-<nav bind:this={menubarEl} class={['flex items-center gap-0.5', className]} role="menubar">
+{#snippet menuRows(list: MenubarSubItem[], parentId: string)}
+	{@const checks = levelHasChecks(list)}
+	{#each list as sub (sub.id)}
+		{#if sub.separator}
+			<div class="menubar-sep" role="separator"></div>
+		{:else}
+			{@const hasChildren = Boolean(sub.children?.length)}
+			{@const isHot = highlightedId === sub.id || flyoutId === sub.id}
+			<div
+				class="relative"
+				role="presentation"
+				onmouseenter={() => {
+					if (sub.disabled) return;
+					highlightedId = sub.id;
+					flyoutId = hasChildren ? sub.id : null;
+				}}
+			>
+				<button
+					type="button"
+					role={sub.checked !== undefined ? 'menuitemcheckbox' : 'menuitem'}
+					disabled={sub.disabled}
+					aria-disabled={sub.disabled || undefined}
+					aria-checked={sub.checked !== undefined ? sub.checked : undefined}
+					aria-haspopup={hasChildren ? 'menu' : undefined}
+					aria-expanded={hasChildren ? flyoutId === sub.id : undefined}
+					onclick={() => select(sub, parentId)}
+					class={[
+						'menubar-item',
+						isHot && !sub.disabled && 'menubar-item-hot',
+						sub.disabled && 'menubar-item-disabled',
+						!sub.disabled && sub.destructive && 'menubar-item-danger',
+						!sub.disabled && !sub.destructive && 'menubar-item-default'
+					]}
+				>
+					{#if checks}
+						<span class="menubar-check" aria-hidden="true">
+							{#if sub.checked}
+								<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+								</svg>
+							{/if}
+						</span>
+					{/if}
+					<span class="menubar-label">{sub.label}</span>
+					{#if sub.shortcut && !hasChildren}
+						<span class="menubar-shortcut">{sub.shortcut}</span>
+					{:else if hasChildren}
+						<svg
+							class="menubar-chevron"
+							width="12"
+							height="12"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2.25"
+							aria-hidden="true"
+						>
+							<path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+						</svg>
+					{/if}
+				</button>
+
+				{#if hasChildren && flyoutId === sub.id && sub.children?.length}
+					<div
+						class="menubar-panel menubar-flyout"
+						role="menu"
+						tabindex="-1"
+						onmouseenter={() => {
+							flyoutId = sub.id;
+							highlightedId = sub.id;
+						}}
+					>
+						{@render menuRows(sub.children, parentId)}
+					</div>
+				{/if}
+			</div>
+		{/if}
+	{/each}
+{/snippet}
+
+<div bind:this={menubarEl} class={['menubar-bar flex items-center gap-px', className]} role="menubar">
 	{#each items as item (item.id)}
 		{@const isOpen = openId === item.id}
 		<button
@@ -154,29 +251,14 @@
 			}}
 			onkeydown={(e) => handleMenuKeydown(e, item)}
 			class={[
-				'flex h-7 items-center gap-1 rounded-md px-2.5 text-xs font-medium transition-colors duration-100 outline-none sm:h-8 sm:px-3 sm:text-sm',
-				'focus-visible:ring-2 focus-visible:ring-brand-500/30',
-				isOpen
-					? 'bg-surface-overlay text-primary'
-					: 'text-secondary hover:bg-surface-overlay hover:text-primary'
+				'menubar-trigger',
+				isOpen ? 'menubar-trigger-open' : 'menubar-trigger-idle'
 			]}
 		>
 			{item.label}
-			{#if item.items?.length}
-				<svg
-					class={['h-3 w-3 opacity-60 transition-transform duration-150', isOpen && 'rotate-180']}
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2.5"
-					aria-hidden="true"
-				>
-					<path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-				</svg>
-			{/if}
 		</button>
 	{/each}
-</nav>
+</div>
 
 <!-- Single shared menu in the top layer (native Popover) -->
 <div
@@ -184,41 +266,13 @@
 	id={openId ? menuDomId(openId) : 'menubar-menu'}
 	popover="auto"
 	role="menu"
+	tabindex="-1"
 	ontoggle={onToggle}
 	style={menuStyle}
-	class="menubar-popover m-0 min-w-[200px] rounded-xl border border-border bg-surface-elevated p-1.5 shadow-xl outline-none"
+	class="menubar-popover menubar-panel m-0 outline-none"
 >
 	{#if openItem?.items?.length}
-		{#each openItem.items as sub (sub.id)}
-			{#if sub.separator}
-				<div class="my-1 h-px bg-border" role="separator"></div>
-			{:else}
-				<button
-					type="button"
-					role="menuitem"
-					disabled={sub.disabled}
-					onclick={() => select(sub, openItem.id)}
-					class={[
-						'flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm transition-colors duration-75 outline-none',
-						sub.disabled && 'cursor-not-allowed opacity-40',
-						!sub.disabled &&
-							sub.destructive &&
-							'text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40',
-						!sub.disabled && !sub.destructive && 'text-primary hover:bg-surface-overlay',
-						'focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500/30'
-					]}
-				>
-					<span class="min-w-0 flex-1 truncate">{sub.label}</span>
-					{#if sub.shortcut}
-						<kbd
-							class="ml-auto shrink-0 rounded bg-surface-overlay px-1.5 py-0.5 font-mono text-[10px] text-muted"
-						>
-							{sub.shortcut}
-						</kbd>
-					{/if}
-				</button>
-			{/if}
-		{/each}
+		{@render menuRows(openItem.items, openItem.id)}
 	{/if}
 </div>
 
@@ -226,5 +280,159 @@
 	/* UA popover defaults to inset:0 — force anchor via inline style */
 	.menubar-popover:popover-open {
 		inset: unset;
+	}
+
+	.menubar-trigger {
+		display: flex;
+		align-items: center;
+		height: 1.5rem;
+		padding: 0 0.5rem;
+		border-radius: 0.25rem;
+		font-size: 0.8125rem;
+		line-height: 1;
+		font-weight: 400;
+		letter-spacing: -0.01em;
+		outline: none;
+		transition: background-color 80ms ease, color 80ms ease;
+	}
+
+	.menubar-trigger:focus-visible {
+		box-shadow: 0 0 0 2px color-mix(in oklab, var(--color-brand-500, #3b82f6) 35%, transparent);
+	}
+
+	.menubar-trigger-idle {
+		color: var(--color-secondary, var(--secondary, #737373));
+	}
+
+	.menubar-trigger-idle:hover {
+		background: color-mix(in oklab, var(--color-surface-overlay, #f5f5f5) 80%, transparent);
+		color: var(--color-primary, var(--primary, #171717));
+	}
+
+	.menubar-trigger-open {
+		background: color-mix(in oklab, var(--color-brand-500, #3b82f6) 18%, transparent);
+		color: var(--color-primary, var(--primary, #171717));
+	}
+
+	:global(.dark) .menubar-trigger-open {
+		background: color-mix(in oklab, var(--color-brand-500, #3b82f6) 28%, transparent);
+		color: #fff;
+	}
+
+	:global(.menubar-panel) {
+		min-width: 13.75rem;
+		padding: 0.25rem;
+		border-radius: 0.5rem;
+		border: 1px solid color-mix(in oklab, var(--color-border, #e5e5e5) 90%, transparent);
+		background: color-mix(in oklab, var(--color-surface-elevated, #fff) 88%, transparent);
+		backdrop-filter: blur(20px) saturate(1.4);
+		-webkit-backdrop-filter: blur(20px) saturate(1.4);
+		box-shadow:
+			0 0 0 0.5px color-mix(in oklab, #000 8%, transparent),
+			0 10px 40px -8px color-mix(in oklab, #000 35%, transparent),
+			0 4px 12px -4px color-mix(in oklab, #000 18%, transparent);
+	}
+
+	:global(.dark) :global(.menubar-panel),
+	:global([data-theme='dark']) :global(.menubar-panel) {
+		border-color: color-mix(in oklab, #fff 12%, transparent);
+		background: color-mix(in oklab, #1c1c1e 82%, transparent);
+		box-shadow:
+			0 0 0 0.5px color-mix(in oklab, #fff 8%, transparent),
+			0 16px 48px -12px color-mix(in oklab, #000 65%, transparent),
+			0 4px 16px -4px color-mix(in oklab, #000 40%, transparent);
+	}
+
+	:global(.menubar-flyout) {
+		position: absolute;
+		left: calc(100% - 2px);
+		top: -0.25rem;
+		z-index: 2;
+	}
+
+	:global(.menubar-sep) {
+		height: 1px;
+		margin: 0.25rem 0.5rem;
+		background: color-mix(in oklab, var(--color-border, #e5e5e5) 85%, transparent);
+	}
+
+	:global(.dark) :global(.menubar-sep) {
+		background: color-mix(in oklab, #fff 12%, transparent);
+	}
+
+	:global(.menubar-item) {
+		display: flex;
+		width: 100%;
+		align-items: center;
+		gap: 0.5rem;
+		min-height: 1.375rem;
+		padding: 0.2rem 0.5rem;
+		border-radius: 0.25rem;
+		font-size: 0.8125rem;
+		line-height: 1.2;
+		letter-spacing: -0.01em;
+		text-align: left;
+		outline: none;
+		transition: background-color 60ms ease, color 60ms ease;
+	}
+
+	:global(.menubar-item-default) {
+		color: var(--color-primary, var(--primary, #171717));
+	}
+
+	:global(.dark) :global(.menubar-item-default) {
+		color: #f5f5f5;
+	}
+
+	:global(.menubar-item-hot) {
+		background: var(--color-brand-500, #007aff) !important;
+		color: #fff !important;
+	}
+
+	:global(.menubar-item-hot) :global(.menubar-shortcut),
+	:global(.menubar-item-hot) :global(.menubar-chevron),
+	:global(.menubar-item-hot) :global(.menubar-check) {
+		color: color-mix(in oklab, #fff 78%, transparent) !important;
+	}
+
+	:global(.menubar-item-danger):not(:global(.menubar-item-hot)) {
+		color: #ef4444;
+	}
+
+	:global(.menubar-item-disabled) {
+		cursor: not-allowed;
+		opacity: 0.38;
+	}
+
+	:global(.menubar-check) {
+		display: flex;
+		width: 0.875rem;
+		height: 0.875rem;
+		flex-shrink: 0;
+		align-items: center;
+		justify-content: center;
+	}
+
+	:global(.menubar-label) {
+		min-width: 0;
+		flex: 1;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	:global(.menubar-shortcut) {
+		margin-left: 1.5rem;
+		flex-shrink: 0;
+		font-size: 0.75rem;
+		letter-spacing: 0.02em;
+		color: var(--color-muted, #a3a3a3);
+		font-variant-numeric: tabular-nums;
+	}
+
+	:global(.menubar-chevron) {
+		margin-left: 0.75rem;
+		flex-shrink: 0;
+		opacity: 0.7;
 	}
 </style>

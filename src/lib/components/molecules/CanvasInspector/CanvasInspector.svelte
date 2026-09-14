@@ -403,6 +403,7 @@
 									/>
 								{:else if prop.field === 'fill' || prop.field === 'color' || prop.field === 'stroke' || prop.field === 'textBackground'}
 									<ColorPicker
+										size="xs"
 										value={String(current ?? '#000000')}
 										showSwatches={false}
 										onchange={(v) => onoverride?.({ propId: prop.id, value: v })}
@@ -463,7 +464,7 @@
 				{@const slots = listFillableSlotsForInstance(doc, parentWidget?.id ?? '')}
 				<PropertyField label="Fill slot">
 					<Select
-						size="sm"
+						size="xs"
 						options={[
 							{ value: '', label: 'Host (default)' },
 							...slots.map((s) => ({ value: s, label: s }))
@@ -475,7 +476,7 @@
 			{/if}
 			<PropertyField label="Anchors">
 				<Select
-					size="sm"
+					size="xs"
 					options={anchorOptions}
 					value={currentAnchorPreset()}
 					onchange={(v) => setAnchorPreset(v)}
@@ -487,7 +488,7 @@
 			</p>
 			<PropertyField label="Size rule">
 				<Select
-					size="sm"
+					size="xs"
 					options={sizeRuleOptions}
 					value={layer.slot?.sizeRule === 'auto' ? 'fixed' : (layer.slot?.sizeRule ?? 'fixed')}
 					onchange={(v) =>
@@ -506,7 +507,7 @@
 				<div class="grid grid-cols-2 gap-2">
 					<PropertyField label={parentKind === 'hBox' ? 'Align Y' : 'Align X'}>
 						<Select
-							size="sm"
+							size="xs"
 							options={alignAxisOptions}
 							value={String(
 								parentKind === 'hBox'
@@ -826,6 +827,7 @@
 				onreset={() => resetField('shadowColor')}
 			>
 				<ColorPicker
+					size="xs"
 					value={layer.shadowColor ?? '#000000'}
 					showSwatches={false}
 					onchange={(v) => patch({ shadowColor: v })}
@@ -884,7 +886,7 @@
 					onreset={() => resetField('objectFit')}
 				>
 					<Select
-						size="sm"
+						size="xs"
 						options={fitOptions}
 						value={layer.objectFit ?? 'cover'}
 						onchange={(v) => patch({ objectFit: v as CanvasLayer['objectFit'] })}
@@ -957,7 +959,7 @@
 				</PropertyField>
 				<PropertyField label="Weight">
 					<Select
-						size="sm"
+						size="xs"
 						options={weightOptions}
 						value={String(layer.fontWeight ?? 600)}
 						onchange={(v) => patch({ fontWeight: v })}
@@ -965,7 +967,7 @@
 				</PropertyField>
 				<PropertyField label="Style">
 					<Select
-						size="sm"
+						size="xs"
 						options={styleOptions}
 						value={layer.fontStyle ?? 'normal'}
 						onchange={(v) => patch({ fontStyle: v as CanvasLayer['fontStyle'] })}
@@ -973,7 +975,7 @@
 				</PropertyField>
 				<PropertyField label="Decoration">
 					<Select
-						size="sm"
+						size="xs"
 						options={decoOptions}
 						value={layer.textDecoration ?? 'none'}
 						onchange={(v) => patch({ textDecoration: v as CanvasLayer['textDecoration'] })}
@@ -981,7 +983,7 @@
 				</PropertyField>
 				<PropertyField label="Align">
 					<Select
-						size="sm"
+						size="xs"
 						options={alignOptions}
 						value={layer.textAlign ?? 'left'}
 						onchange={(v) => patch({ textAlign: v as CanvasLayer['textAlign'] })}
@@ -995,6 +997,7 @@
 					onreset={() => resetField('color')}
 				>
 					<ColorPicker
+						size="xs"
 						value={layer.color ?? '#0f172a'}
 						onchange={(v) => patch({ color: v })}
 					/>
@@ -1008,6 +1011,7 @@
 						onreset={() => resetField('textBackground')}
 					>
 						<ColorPicker
+							size="xs"
 							value={layer.textBackground ?? '#ffffff'}
 							alpha
 							onchange={(v) => patch({ textBackground: v })}
@@ -1023,6 +1027,7 @@
 						onreset={() => resetField('fill')}
 					>
 						<ColorPicker
+							size="xs"
 							value={layer.fill ?? '#fef08a'}
 							onchange={(v) => patch({ fill: v })}
 						/>
@@ -1060,6 +1065,7 @@
 					onreset={() => resetField('fill')}
 				>
 					<ColorPicker
+						size="xs"
 						value={layer.fill ?? '#3b82f6'}
 						onchange={(v) => patch({ fill: v })}
 					/>
@@ -1094,6 +1100,7 @@
 					onreset={() => resetField('stroke')}
 				>
 					<ColorPicker
+						size="xs"
 						value={layer.stroke ?? '#000000'}
 						onchange={(v) => patch({ stroke: v })}
 					/>
@@ -1149,6 +1156,7 @@
 			{/if}
 			<PropertyField label="Background">
 				<ColorPicker
+					size="xs"
 					value={doc.background || '#ffffff'}
 					alpha
 					onchange={(v) => patchDoc({ background: v })}
