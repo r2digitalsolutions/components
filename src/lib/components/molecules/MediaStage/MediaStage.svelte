@@ -16,6 +16,7 @@
 		type MarqueeRect as MarqueeBox
 	} from '$lib/utils/marqueeSelect.js';
 	import {
+		applyTextAutoSize,
 		createCanvasGuide,
 		pathPointsToDoc,
 		rebakePathLayer,
@@ -410,7 +411,12 @@
 			return;
 		}
 
-		const updated = absToLocalUpdate(source, nextAbs);
+		const updated = applyTextAutoSize(
+			source,
+			absToLocalUpdate(source, nextAbs),
+			prevAbs,
+			nextAbs
+		);
 		draftLayers = layers.map((l) => (l.id === updated.id ? updated : l));
 		// If somehow interact end already fired without draft, commit immediately.
 		if (interactCount === 0) commitDraft();

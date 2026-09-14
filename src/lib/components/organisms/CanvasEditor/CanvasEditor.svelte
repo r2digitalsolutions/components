@@ -20,6 +20,7 @@
 	import {
 		CANVAS_PRESETS,
 		alignLayerRect,
+		applyTextAutoSize,
 		createCanvasGuide,
 		createCanvasLayer,
 		createPathFromDocPoints,
@@ -664,7 +665,7 @@
 					alignment: l.slot?.alignment,
 					order: l.slot?.order
 				};
-				return { ...l, rect, slot };
+				return applyTextAutoSize(l, { ...l, rect, slot }, l.rect, rect);
 			})
 		);
 	}

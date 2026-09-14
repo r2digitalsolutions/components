@@ -1612,6 +1612,7 @@ export {
 	canvasLayerFieldDefault,
 	isCanvasFieldModified,
 	resetCanvasField,
+	applyTextAutoSize,
 	CANVAS_PRESETS,
 	presetIdForSize
 } from './utils/canvasDocument.js';

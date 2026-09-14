@@ -113,6 +113,11 @@ export interface CanvasLayer {
 	letterSpacing?: number;
 	lineHeight?: number;
 	textAlign?: CanvasTextAlign;
+	/**
+	 * When true, resizing the text box scales `fontSize` with the box
+	 * (geometric mean of width/height scale — Unreal/Canva-style).
+	 */
+	autoSize?: boolean;
 	color?: string;
 	/** Text box background */
 	textBackground?: string;
@@ -375,6 +380,8 @@ export function createCanvasLayer(
 		letterSpacing: partial?.letterSpacing,
 		lineHeight: partial?.lineHeight,
 		textAlign: partial?.textAlign ?? (kind === 'text' || kind === 'sticky' ? 'left' : undefined),
+		autoSize:
+			partial?.autoSize ?? (kind === 'text' ? true : kind === 'sticky' ? false : undefined),
 		color: partial?.color ?? d.color ?? (kind === 'text' ? '#0f172a' : undefined),
 		textBackground: partial?.textBackground,
 		objectFit: partial?.objectFit ?? (kind === 'image' || kind === 'video' ? 'cover' : undefined),
@@ -426,6 +433,7 @@ export type CanvasResettableField =
 	| 'letterSpacing'
 	| 'lineHeight'
 	| 'textAlign'
+	| 'autoSize'
 	| 'color'
 	| 'textBackground'
 	| 'objectFit'
@@ -482,6 +490,8 @@ export function canvasLayerFieldDefault(
 		case 'letterSpacing':
 		case 'lineHeight':
 			return undefined;
+		case 'autoSize':
+			return kind === 'text' ? true : kind === 'sticky' ? false : undefined;
 		case 'textAlign':
 			return kind === 'text' || kind === 'sticky' ? 'left' : undefined;
 		case 'color':
@@ -511,8 +521,10 @@ export function isCanvasFieldModified(
 	layer: CanvasLayer,
 	field: CanvasResettableField
 ): boolean {
-	const cur = layer[field as keyof CanvasLayer];
 	const def = canvasLayerFieldDefault(layer.kind, field);
+	const raw = layer[field as keyof CanvasLayer];
+	// Missing autoSize on older docs → treat as the kind default (text=true).
+	const cur = field === 'autoSize' && raw === undefined ? def : raw;
 	return !canvasValuesEqual(cur, def);
 }
 
@@ -521,6 +533,36 @@ export function resetCanvasField(
 	field: CanvasResettableField
 ): Partial<CanvasLayer> {
 	return { [field]: canvasLayerFieldDefault(layer.kind, field) } as Partial<CanvasLayer>;
+}
+
+/**
+ * Scale fontSize with the box when `autoSize` is on (text / sticky).
+ * Uses geometric mean of width & height scale so both axes affect size.
+ */
+export function applyTextAutoSize(
+	from: CanvasLayer,
+	to: CanvasLayer,
+	prev: Pick<CanvasLayerRect, 'w' | 'h'>,
+	next: Pick<CanvasLayerRect, 'w' | 'h'>
+): CanvasLayer {
+	if (from.kind !== 'text' && from.kind !== 'sticky') return to;
+	const enabled = from.autoSize ?? from.kind === 'text';
+	if (!enabled) return to;
+
+	const dw = Math.abs(next.w - prev.w);
+	const dh = Math.abs(next.h - prev.h);
+	if (dw < 0.5 && dh < 0.5) return to;
+
+	const sx = next.w / Math.max(1, prev.w);
+	const sy = next.h / Math.max(1, prev.h);
+	const scale = Math.sqrt(sx * sy);
+	if (!Number.isFinite(scale) || Math.abs(scale - 1) < 0.001) return to;
+
+	const base = from.fontSize ?? (from.kind === 'sticky' ? 20 : 32);
+	return {
+		...to,
+		fontSize: Math.max(8, Math.min(400, Math.round(base * scale)))
+	};
 }
 
 export function reorderCanvasLayers(layers: CanvasLayer[], orderedIds: string[]): CanvasLayer[] {

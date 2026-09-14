@@ -12,6 +12,7 @@
 	import FileUploader from '$lib/components/organisms/FileUploader/FileUploader.svelte';
 	import {
 		alignLayerRect,
+		applyTextAutoSize,
 		isCanvasFieldModified,
 		resetCanvasField,
 		type CanvasAlign,
@@ -272,8 +273,10 @@
 
 	function patchRect(partial: Partial<CanvasLayer['rect']>) {
 		if (!layer || !doc) return;
+		const prev = layer.rect;
 		const rect = { ...layer.rect, ...partial };
-		onchange?.(syncSlotFromRect({ ...layer, rect }, parentContentSize));
+		const synced = syncSlotFromRect({ ...layer, rect }, parentContentSize);
+		onchange?.(applyTextAutoSize(layer, synced, prev, rect));
 	}
 
 	function applyAlign(align: CanvasAlign) {
@@ -282,9 +285,9 @@
 			return;
 		}
 		if (!layer || !doc) return;
-		patch({
-			rect: alignLayerRect(layer.rect, { width: doc.width, height: doc.height }, align)
-		});
+		const prev = layer.rect;
+		const rect = alignLayerRect(layer.rect, { width: doc.width, height: doc.height }, align);
+		onchange?.(applyTextAutoSize(layer, { ...layer, rect }, prev, rect));
 	}
 
 	function replaceMedia(files: File[]) {
@@ -326,6 +329,7 @@
 				onexpose={(v) => toggleExpose('visible', 'Visible', v)}
 				modified={fieldModified('visible')}
 				onreset={() => resetField('visible')}
+				valueAlign="end"
 			>
 				<Toggle
 					checked={layer.visible}
@@ -337,6 +341,7 @@
 				label="Locked"
 				modified={fieldModified('locked')}
 				onreset={() => resetField('locked')}
+				valueAlign="end"
 			>
 				<Toggle checked={layer.locked} onchange={(v) => patch({ locked: v })} size="sm" />
 			</PropertyField>
@@ -349,12 +354,13 @@
 			>
 				<Slider
 					size="sm"
+					variant="inset"
 					min={0}
 					max={1}
 					step={0.01}
 					value={layer.opacity}
 					showValue
-					valuePosition="header"
+					valuePosition="inline"
 					oninput={(v) => patch({ opacity: v })}
 				/>
 			</PropertyField>
@@ -528,8 +534,8 @@
 				</div>
 			{/if}
 			{#if showContainerPadding}
-				<div class="grid grid-cols-2 gap-2">
-					<PropertyField label="Pad L">
+				<div class="grid grid-cols-2 gap-x-1 gap-y-0.5">
+					<PropertyField label="Pad L" labelWidth="2.75rem" compact>
 						<Input
 							type="number"
 							size="sm"
@@ -553,7 +559,7 @@
 							}}
 						/>
 					</PropertyField>
-					<PropertyField label="Pad T">
+					<PropertyField label="Pad T" labelWidth="2.75rem" compact>
 						<Input
 							type="number"
 							size="sm"
@@ -577,7 +583,7 @@
 							}}
 						/>
 					</PropertyField>
-					<PropertyField label="Pad R">
+					<PropertyField label="Pad R" labelWidth="2.75rem" compact>
 						<Input
 							type="number"
 							size="sm"
@@ -601,7 +607,7 @@
 							}}
 						/>
 					</PropertyField>
-					<PropertyField label="Pad B">
+					<PropertyField label="Pad B" labelWidth="2.75rem" compact>
 						<Input
 							type="number"
 							size="sm"
@@ -631,6 +637,7 @@
 				label="Clip children"
 				modified={fieldModified('clipChildren')}
 				onreset={() => resetField('clipChildren')}
+				valueAlign="end"
 			>
 				<Toggle
 					checked={!!layer.clipChildren || layer.kind === 'scrollBox'}
@@ -724,8 +731,8 @@
 				</div>
 			</div>
 
-			<div class="grid grid-cols-2 gap-2">
-				<PropertyField label="X">
+			<div class="grid grid-cols-2 gap-x-1 gap-y-0.5">
+				<PropertyField label="X" labelWidth="1.25rem" compact>
 					<Input
 						type="number"
 						size="sm"
@@ -735,7 +742,7 @@
 							patchRect({ x: Number((e.currentTarget as HTMLInputElement).value) })}
 					/>
 				</PropertyField>
-				<PropertyField label="Y">
+				<PropertyField label="Y" labelWidth="1.25rem" compact>
 					<Input
 						type="number"
 						size="sm"
@@ -745,7 +752,7 @@
 							patchRect({ y: Number((e.currentTarget as HTMLInputElement).value) })}
 					/>
 				</PropertyField>
-				<PropertyField label="W">
+				<PropertyField label="W" labelWidth="1.25rem" compact>
 					<Input
 						type="number"
 						size="sm"
@@ -754,7 +761,7 @@
 							patchRect({ w: Number((e.currentTarget as HTMLInputElement).value) })}
 					/>
 				</PropertyField>
-				<PropertyField label="H">
+				<PropertyField label="H" labelWidth="1.25rem" compact>
 					<Input
 						type="number"
 						size="sm"
@@ -781,12 +788,13 @@
 			>
 				<Slider
 					size="sm"
+					variant="inset"
 					min={-180}
 					max={180}
 					step={1}
 					value={layer.rotation ?? 0}
 					showValue
-					valuePosition="header"
+					valuePosition="inline"
 					unit="°"
 					oninput={(v) => patch({ rotation: v })}
 				/>
@@ -801,12 +809,13 @@
 			>
 				<Slider
 					size="sm"
+					variant="inset"
 					min={0}
 					max={64}
 					step={1}
 					value={layer.shadowBlur ?? 0}
 					showValue
-					valuePosition="header"
+					valuePosition="inline"
 					unit="px"
 					oninput={(v) => patch({ shadowBlur: v })}
 				/>
@@ -829,12 +838,13 @@
 			>
 				<Slider
 					size="sm"
+					variant="inset"
 					min={0}
 					max={40}
 					step={1}
 					value={layer.blur ?? 0}
 					showValue
-					valuePosition="header"
+					valuePosition="inline"
 					unit="px"
 					oninput={(v) => patch({ blur: v })}
 				/>
@@ -889,12 +899,13 @@
 				>
 					<Slider
 						size="sm"
+						variant="inset"
 						min={0}
 						max={200}
 						step={1}
 						value={layer.borderRadius ?? 0}
 						showValue
-						valuePosition="header"
+						valuePosition="inline"
 						unit="px"
 						oninput={(v) => patch({ borderRadius: v })}
 					/>
@@ -915,6 +926,18 @@
 						rows={3}
 						value={layer.text ?? ''}
 						oninput={(e) => patch({ text: (e.currentTarget as HTMLTextAreaElement).value })}
+					/>
+				</PropertyField>
+				<PropertyField
+					label="Auto size"
+					modified={fieldModified('autoSize')}
+					onreset={() => resetField('autoSize')}
+					valueAlign="end"
+				>
+					<Toggle
+						checked={layer.autoSize ?? layer.kind === 'text'}
+						onchange={(v) => patch({ autoSize: v })}
+						size="sm"
 					/>
 				</PropertyField>
 				<PropertyField
@@ -1051,12 +1074,13 @@
 					>
 						<Slider
 							size="sm"
+							variant="inset"
 							min={0}
 							max={200}
 							step={1}
 							value={layer.borderRadius ?? 0}
 							showValue
-							valuePosition="header"
+							valuePosition="inline"
 							unit="px"
 							oninput={(v) => patch({ borderRadius: v })}
 						/>

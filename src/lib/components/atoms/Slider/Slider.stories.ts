@@ -13,7 +13,8 @@ const meta = {
 		value: { control: 'number' },
 		disabled: { control: 'boolean' },
 		showValue: { control: 'boolean' },
-		valuePosition: { control: 'select', options: ['tooltip', 'header'] },
+		valuePosition: { control: 'select', options: ['tooltip', 'header', 'inline'] },
+		variant: { control: 'select', options: ['default', 'inset'] },
 		showMarks: { control: 'boolean' },
 		unit: { control: 'text' },
 		size: { control: 'select', options: ['sm', 'md', 'lg'] }
@@ -27,6 +28,7 @@ const meta = {
 		disabled: false,
 		showValue: true,
 		valuePosition: 'tooltip',
+		variant: 'default',
 		showMarks: true,
 		unit: '%',
 		size: 'md'
@@ -41,6 +43,20 @@ export const FloatingTooltip: Story = {
 };
 export const HeaderValue: Story = {
 	args: { label: 'Budget Limit', valuePosition: 'header', min: 100, max: 2000, step: 50, value: 850, unit: '€', showMarks: true }
+};
+export const InsetPanel: Story = {
+	args: {
+		label: undefined,
+		variant: 'inset',
+		valuePosition: 'inline',
+		size: 'sm',
+		value: 0.65,
+		min: 0,
+		max: 1,
+		step: 0.01,
+		showMarks: false,
+		unit: ''
+	}
 };
 export const LargeSize: Story = {
 	args: { label: 'Zoom Level', size: 'lg', value: 120, min: 50, max: 200, unit: '%', showMarks: true }

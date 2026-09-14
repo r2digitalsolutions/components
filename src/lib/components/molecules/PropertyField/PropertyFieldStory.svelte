@@ -24,12 +24,13 @@
 	>
 		<Slider
 			size="sm"
+			variant="inset"
 			min={0}
 			max={1}
 			step={0.01}
 			bind:value={opacity}
 			showValue
-			valuePosition="header"
+			valuePosition="inline"
 		/>
 	</PropertyField>
 	<p class="px-1 pt-1 text-[10px] text-muted">

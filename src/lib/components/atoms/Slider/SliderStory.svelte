@@ -9,7 +9,8 @@
 		value?: number;
 		disabled?: boolean;
 		showValue?: boolean;
-		valuePosition?: 'header' | 'tooltip';
+		valuePosition?: 'header' | 'tooltip' | 'inline';
+		variant?: 'default' | 'inset';
 		showMarks?: boolean;
 		unit?: string;
 		size?: 'sm' | 'md' | 'lg';
@@ -18,13 +19,14 @@
 
 <div class="w-80 max-w-full p-4">
 	<Slider
-		label={props.label ?? 'Volume'}
+		label={props.label}
 		min={props.min ?? 0}
 		max={props.max ?? 100}
 		step={props.step ?? 1}
 		disabled={props.disabled ?? false}
 		showValue={props.showValue ?? true}
 		valuePosition={props.valuePosition ?? 'tooltip'}
+		variant={props.variant ?? 'default'}
 		showMarks={props.showMarks ?? true}
 		unit={props.unit ?? '%'}
 		size={props.size ?? 'md'}

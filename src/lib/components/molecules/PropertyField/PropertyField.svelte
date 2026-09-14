@@ -9,7 +9,7 @@
 
 	interface PropertyFieldProps {
 		label: string;
-		/** Label column width (CSS), default 40% */
+		/** Fixed label column width (CSS). Use rem for UE-style alignment across the panel. */
 		labelWidth?: string;
 		disabled?: boolean;
 		class?: string;
@@ -24,47 +24,60 @@
 		modified?: boolean;
 		/** Reset this property to its default (UE details panel). */
 		onreset?: () => void;
+		/** Align control in the value column. Defaults to stretch/fill. */
+		valueAlign?: 'start' | 'end' | 'stretch';
+		/** Skip reset gutter — for dense 2-col rows (X/Y/W/H). */
+		compact?: boolean;
 	}
 
 	const {
 		label,
-		labelWidth = '40%',
+		labelWidth = '7rem',
 		disabled = false,
 		class: className = '',
 		children,
 		exposed = null,
 		onexpose,
 		modified = false,
-		onreset
+		onreset,
+		valueAlign = 'stretch',
+		compact = false
 	}: PropertyFieldProps = $props();
 
 	const canReset = $derived(!!onreset && modified && !disabled);
+	const columns = $derived(
+		compact ? `${labelWidth} minmax(0, 1fr)` : `1.25rem ${labelWidth} minmax(0, 1fr)`
+	);
 </script>
 
 <div
 	class={[
-		'grid min-h-7 items-center gap-2 px-1 py-0.5',
+		'grid min-h-7 items-center gap-x-2 px-1 py-0.5',
 		'rounded-sm hover:bg-surface-overlay/70',
 		disabled && 'pointer-events-none opacity-50',
 		className
 	]}
-	style:grid-template-columns={`${labelWidth} minmax(0, 1fr)`}
+	style:grid-template-columns={columns}
 >
+	{#if !compact}
+		<!-- Reset gutter: always reserved so every row shares the same label/value columns -->
+		<span class="flex h-7 w-5 items-center justify-center">
+			{#if canReset}
+				<Tooltip content="Reset to default" side="top">
+					<IconButton
+						label="Reset to default"
+						size="xs"
+						class="text-amber-500 hover:bg-amber-500/10 hover:text-amber-600 dark:text-amber-400 dark:hover:text-amber-300"
+						onclick={() => onreset?.()}
+					>
+						<RotateCcw class="h-3 w-3" strokeWidth={2.5} />
+					</IconButton>
+				</Tooltip>
+			{/if}
+		</span>
+	{/if}
+
 	<span class="flex min-w-0 items-center gap-0.5 truncate" title={label}>
-		{#if canReset}
-			<Tooltip content="Reset to default" side="top">
-				<IconButton
-					label="Reset to default"
-					size="xs"
-					class="text-amber-500 hover:bg-amber-500/10 hover:text-amber-600 dark:text-amber-400 dark:hover:text-amber-300"
-					onclick={() => onreset?.()}
-				>
-					<RotateCcw class="h-3 w-3" strokeWidth={2.5} />
-				</IconButton>
-			</Tooltip>
-		{:else if onreset}
-			<span class="inline-flex h-7 w-7 shrink-0" aria-hidden="true"></span>
-		{/if}
 		{#if exposed !== null}
 			<IconButton
 				label={exposed ? 'Hide from instances' : 'Expose on instances'}
@@ -88,7 +101,15 @@
 			{label}
 		</Text>
 	</span>
-	<div class="min-w-0">
+
+	<div
+		class={[
+			'flex min-h-7 min-w-0 items-center',
+			valueAlign === 'end' && 'justify-end',
+			valueAlign === 'start' && 'justify-start',
+			valueAlign === 'stretch' && '[&>*]:min-w-0 [&>*]:w-full'
+		]}
+	>
 		{#if children}
 			{@render children()}
 		{/if}
