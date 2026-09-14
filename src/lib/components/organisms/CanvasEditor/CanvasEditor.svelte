@@ -1133,31 +1133,42 @@
 			</IconButton>
 		</div>
 
-		<div class="flex items-center gap-0.5">
+		<div class="flex items-center rounded-lg border border-border bg-surface p-0.5">
 			<Tooltip content="Toggle grid">
 				<IconButton
 					label="Toggle grid"
 					size="sm"
-					onclick={() => (showGrid = !showGrid)}
+					aria-pressed={showGrid}
+					onclick={(e) => {
+						showGrid = !showGrid;
+						(e.currentTarget as HTMLButtonElement).blur();
+					}}
 					class={showGrid ? 'bg-brand-500/10 text-brand-600' : undefined}
 				>
 					<Grid3x3 class="h-3.5 w-3.5" />
 				</IconButton>
 			</Tooltip>
 			{#if showGrid}
-				<Select
-					size="sm"
-					class="w-[4.5rem] shrink-0"
-					options={gridSizeOptions}
+				<select
+					class="h-8 min-w-0 shrink-0 rounded-md border-0 bg-transparent px-1 font-mono text-[11px] tabular-nums text-secondary outline-none hover:bg-surface-overlay focus-visible:bg-surface-overlay"
+					aria-label="Grid cell size"
 					value={String(cellSize)}
-					onchange={(v) => (cellSize = Number(v))}
-				/>
+					onchange={(e) => (cellSize = Number(e.currentTarget.value))}
+				>
+					{#each gridSizeOptions as opt (opt.value)}
+						<option value={opt.value}>{opt.label}</option>
+					{/each}
+				</select>
 			{/if}
 			<Tooltip content="Snap to grid & guides">
 				<IconButton
 					label="Toggle snap"
 					size="sm"
-					onclick={() => (snap = !snap)}
+					aria-pressed={snap}
+					onclick={(e) => {
+						snap = !snap;
+						(e.currentTarget as HTMLButtonElement).blur();
+					}}
 					class={snap ? 'bg-brand-500/10 text-brand-600' : undefined}
 				>
 					<Magnet class="h-3.5 w-3.5" />
