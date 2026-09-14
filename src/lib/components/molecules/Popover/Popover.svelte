@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import { bindPopoverInvokerToggle } from '$lib/utils/popoverInvoker.js';
 
 	export type PopoverPlacement = 'top' | 'bottom' | 'left' | 'right';
 	export type PopoverAlign = 'start' | 'center' | 'end';
@@ -38,6 +39,7 @@
 	let rootEl = $state<HTMLDivElement | null>(null);
 	let panelEl = $state<HTMLDivElement | null>(null);
 	let panelStyle = $state('margin:0;inset:auto;');
+	let unbindInvoker: (() => void) | null = null;
 
 	function setOpen(next: boolean) {
 		if (open === next) return;
@@ -55,6 +57,8 @@
 	}
 
 	function bindTrigger() {
+		unbindInvoker?.();
+		unbindInvoker = null;
 		const el = getTriggerEl();
 		if (!el || el === rootEl) return;
 		el.setAttribute('aria-haspopup', 'dialog');
@@ -67,6 +71,7 @@
 		}
 		el.setAttribute('popovertarget', panelId);
 		el.setAttribute('popovertargetaction', 'toggle');
+		unbindInvoker = bindPopoverInvokerToggle(el, () => panelEl);
 	}
 
 	function positionPanel() {
@@ -185,6 +190,7 @@
 				requestAnimationFrame(positionPanel);
 			}
 		});
+		return () => unbindInvoker?.();
 	});
 
 	$effect(() => {

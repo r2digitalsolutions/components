@@ -2,18 +2,27 @@ import { describe, expect, it } from 'vitest';
 import {
 	createCanvasLayer,
 	defaultSlotFromRect,
-	emptyCanvasDocument
+	emptyCanvasDocument,
+	rectFromSlot
 } from './canvasDocument.js';
 import {
 	ANCHOR_PRESETS,
 	applyScrollBoxOffsets,
 	computeAbsoluteRects,
+	enclosingGroupId,
 	isEffectivelyVisible,
+	isEffectivelyLocked,
+	isLayoutPositionLocked,
+	isLayoutSizeLocked,
+	selectionAncestorIds,
 	paintTransformForLayer,
 	reparentLayer,
 	scrollBoxOverflow,
 	scrollBarMetrics,
-	slotFromLocalRect
+	slotFromLocalRect,
+	stepAxis,
+	translateSlot,
+	wrapSelection
 } from './canvasHierarchy.js';
 import {
 	createWidgetDefinition,
@@ -46,6 +55,115 @@ describe('isEffectivelyVisible', () => {
 		const layers = [parent, child];
 		expect(isEffectivelyVisible(layers, parent.id)).toBe(false);
 		expect(isEffectivelyVisible(layers, child.id)).toBe(false);
+	});
+});
+
+describe('isEffectivelyLocked', () => {
+	it('locks descendants when an ancestor is locked', () => {
+		const parent = createCanvasLayer('group', {
+			name: 'Parent',
+			locked: true,
+			rect: { x: 0, y: 0, w: 100, h: 100 },
+			zIndex: 0
+		});
+		const child = createCanvasLayer('rect', {
+			name: 'Child',
+			locked: false,
+			parentId: parent.id,
+			rect: { x: 10, y: 10, w: 40, h: 40 },
+			zIndex: 0
+		});
+		const layers = [parent, child];
+		expect(isEffectivelyLocked(layers, parent.id)).toBe(true);
+		expect(isEffectivelyLocked(layers, child.id)).toBe(true);
+	});
+
+	it('keeps an unlocked child free when the parent is unlocked', () => {
+		const parent = createCanvasLayer('group', {
+			name: 'Parent',
+			locked: false,
+			rect: { x: 0, y: 0, w: 100, h: 100 },
+			zIndex: 0
+		});
+		const child = createCanvasLayer('rect', {
+			name: 'Child',
+			locked: false,
+			parentId: parent.id,
+			rect: { x: 10, y: 10, w: 40, h: 40 },
+			zIndex: 0
+		});
+		expect(isEffectivelyLocked([parent, child], child.id)).toBe(false);
+	});
+});
+
+describe('layout lock + selection ancestors', () => {
+	it('locks X/Y inside hBox/vBox/grid but not inside a group', () => {
+		const group = createCanvasLayer('group', {
+			name: 'Group',
+			rect: { x: 0, y: 0, w: 200, h: 200 },
+			zIndex: 0
+		});
+		const box = createCanvasLayer('vBox', {
+			name: 'Box',
+			rect: { x: 0, y: 0, w: 120, h: 180 },
+			parentId: group.id,
+			zIndex: 0
+		});
+		const inBox = createCanvasLayer('rect', {
+			name: 'In box',
+			parentId: box.id,
+			rect: { x: 0, y: 0, w: 80, h: 40 },
+			zIndex: 0
+		});
+		const inGroup = createCanvasLayer('rect', {
+			name: 'In group',
+			parentId: group.id,
+			rect: { x: 10, y: 10, w: 40, h: 40 },
+			zIndex: 1
+		});
+		const layers = [group, box, inBox, inGroup];
+		expect(isLayoutPositionLocked(layers, inBox.id)).toBe(true);
+		expect(isLayoutSizeLocked(layers, inBox.id)).toBe(false);
+		expect(isLayoutPositionLocked(layers, inGroup.id)).toBe(false);
+	});
+
+	it('locks size inside a uniform grid', () => {
+		const grid = createCanvasLayer('uniformGrid', {
+			name: 'Grid',
+			rect: { x: 0, y: 0, w: 200, h: 200 },
+			zIndex: 0
+		});
+		const cell = createCanvasLayer('rect', {
+			name: 'Cell',
+			parentId: grid.id,
+			rect: { x: 0, y: 0, w: 40, h: 40 },
+			zIndex: 0
+		});
+		expect(isLayoutPositionLocked([grid, cell], cell.id)).toBe(true);
+		expect(isLayoutSizeLocked([grid, cell], cell.id)).toBe(true);
+	});
+
+	it('returns parent ids (not canvasPanel) when a nested child is selected', () => {
+		const panel = createCanvasLayer('canvasPanel', {
+			name: 'Artboard',
+			rect: { x: 0, y: 0, w: 400, h: 400 },
+			zIndex: 0
+		});
+		const group = createCanvasLayer('group', {
+			name: 'Group',
+			parentId: panel.id,
+			rect: { x: 20, y: 20, w: 200, h: 200 },
+			zIndex: 0
+		});
+		const child = createCanvasLayer('rect', {
+			name: 'Child',
+			parentId: group.id,
+			rect: { x: 10, y: 10, w: 40, h: 40 },
+			zIndex: 0
+		});
+		const layers = [panel, group, child];
+		expect(selectionAncestorIds(layers, [child.id])).toEqual([group.id]);
+		expect(selectionAncestorIds(layers, [group.id])).toEqual([]);
 	});
 });
 
@@ -255,6 +373,48 @@ describe('canvasHistory', () => {
 	});
 });
 
+describe('wrapSelection', () => {
+	it('wraps a single layer in a parent (Add parent)', () => {
+		const a = createCanvasLayer('rect', {
+			name: 'A',
+			rect: { x: 20, y: 30, w: 40, h: 50 },
+			zIndex: 0
+		});
+		const doc = emptyCanvasDocument({ width: 400, height: 300, layers: [a] });
+		const result = wrapSelection(doc, [a.id], 'group');
+		expect(result).not.toBeNull();
+		const wrapped = result!.doc.layers.find((l) => l.id === a.id);
+		expect(wrapped?.parentId).toBe(result!.wrapperId);
+		expect(enclosingGroupId(result!.doc.layers, a.id)).toBe(result!.wrapperId);
+	});
+
+	it('wraps sibling layers in a group covering their bounds', () => {
+		const a = createCanvasLayer('rect', {
+			name: 'A',
+			rect: { x: 10, y: 10, w: 40, h: 40 },
+			zIndex: 0
+		});
+		const b = createCanvasLayer('text', {
+			name: 'B',
+			rect: { x: 80, y: 10, w: 50, h: 20 },
+			zIndex: 1
+		});
+		const doc = emptyCanvasDocument({ width: 400, height: 300, layers: [a, b] });
+		const result = wrapSelection(doc, [a.id, b.id], 'group');
+		expect(result).not.toBeNull();
+		const group = result!.doc.layers.find((l) => l.id === result!.wrapperId);
+		expect(group?.kind).toBe('group');
+		expect(group?.parentId ?? null).toBeNull();
+		const wrappedA = result!.doc.layers.find((l) => l.id === a.id);
+		const wrappedB = result!.doc.layers.find((l) => l.id === b.id);
+		expect(wrappedA?.parentId).toBe(group?.id);
+		expect(wrappedB?.parentId).toBe(group?.id);
+		const abs = computeAbsoluteRects(result!.doc.layers, { width: 400, height: 300 });
+		expect(abs.get(a.id)).toEqual({ x: 10, y: 10, w: 40, h: 40 });
+		expect(abs.get(b.id)).toEqual({ x: 80, y: 10, w: 50, h: 20 });
+	});
+});
+
 describe('slotFromLocalRect', () => {
 	it('keeps topLeft offsets equal to rect', () => {
 		const slot = slotFromLocalRect(
@@ -264,6 +424,30 @@ describe('slotFromLocalRect', () => {
 		);
 		expect(slot.offsets.left).toBe(12);
 		expect(slot.offsets.top).toBe(8);
+	});
+});
+
+describe('translateSlot', () => {
+	it('moves the rect without changing size', () => {
+		const parent = { width: 200, height: 200 };
+		const slot = defaultSlotFromRect({ x: 10, y: 20, w: 40, h: 30 });
+		const moved = translateSlot(slot, 8, -4);
+		expect(rectFromSlot(moved, parent)).toEqual({ x: 18, y: 16, w: 40, h: 30 });
+	});
+});
+
+describe('stepAxis', () => {
+	it('steps 1px without snap (10px with Shift)', () => {
+		expect(stepAxis(13, 1, { snap: false, cell: 8 })).toBe(14);
+		expect(stepAxis(13, -1, { snap: false, cell: 8, coarse: true })).toBe(3);
+	});
+
+	it('snaps to the next grid line, then one cell when already on-grid', () => {
+		expect(stepAxis(13, 1, { snap: true, cell: 8 })).toBe(16);
+		expect(stepAxis(16, 1, { snap: true, cell: 8 })).toBe(24);
+		expect(stepAxis(13, -1, { snap: true, cell: 8 })).toBe(8);
+		expect(stepAxis(16, -1, { snap: true, cell: 8 })).toBe(8);
+		expect(stepAxis(16, 1, { snap: true, cell: 8, coarse: true })).toBe(32);
 	});
 });
 
@@ -289,11 +473,7 @@ describe('scrollBox preview offsets', () => {
 		const layers = [box, child];
 		const abs = computeAbsoluteRects(layers, { width: 200, height: 200 });
 		expect(scrollBoxOverflow(box.id, layers, abs).maxY).toBeGreaterThan(0);
-		const painted = applyScrollBoxOffsets(
-			layers,
-			abs,
-			new Map([[box.id, { x: 0, y: 40 }]])
-		);
+		const painted = applyScrollBoxOffsets(layers, abs, new Map([[box.id, { x: 0, y: 40 }]]));
 		expect(painted.get(box.id)).toEqual(abs.get(box.id));
 		expect(painted.get(child.id)?.y).toBe((abs.get(child.id)?.y ?? 0) - 40);
 	});

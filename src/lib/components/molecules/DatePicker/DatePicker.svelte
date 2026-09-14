@@ -7,6 +7,7 @@
 	import { i18n } from '$lib/utils/i18n.svelte.js';
 	import { resolveLocaleTag } from '$lib/utils/i18n.js';
 	import { createId } from '$lib/utils/id.js';
+	import { popoverInvokerToggle } from '$lib/utils/popoverInvoker.js';
 
 	export type DatePickerPlacement =
 		| 'auto'
@@ -417,6 +418,7 @@
 				{disabled}
 				popovertarget={panelId}
 				popovertargetaction="toggle"
+				{@attach popoverInvokerToggle(() => panelEl)}
 				onclick={() => {
 					activeField = 'value';
 				}}

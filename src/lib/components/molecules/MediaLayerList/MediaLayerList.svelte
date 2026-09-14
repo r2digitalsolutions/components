@@ -7,7 +7,7 @@
 		type CanvasElementDef
 	} from '$lib/components/molecules/CanvasElementsPanel/CanvasElementsPanel.svelte';
 	import type { CanvasLayerKind } from '$lib/utils/canvasDocument.js';
-	import { isContainerKind } from '$lib/utils/canvasHierarchy.js';
+	import { isContainerKind, isEffectivelyLocked } from '$lib/utils/canvasHierarchy.js';
 	import Eye from '@lucide/svelte/icons/eye';
 	import EyeOff from '@lucide/svelte/icons/eye-off';
 	import Lock from '@lucide/svelte/icons/lock';
@@ -63,6 +63,26 @@
 
 	const activeIds = $derived(selectedIds ?? (selectedId ? [selectedId] : []));
 	const activeSet = $derived(new Set(activeIds));
+	const ancestorOfSelection = $derived.by(() => {
+		const map = new Map(layers.map((l) => [l.id, l]));
+		const out = new Set<string>();
+		for (const id of activeIds) {
+			let cur = map.get(id);
+			while (cur?.parentId) {
+				out.add(cur.parentId);
+				cur = map.get(cur.parentId);
+			}
+		}
+		return out;
+	});
+	const inheritedLocked = $derived.by(() => {
+		const map = new Map(layers.map((l) => [l.id, l]));
+		const out = new Set<string>();
+		for (const l of layers) {
+			if (!l.locked && isEffectivelyLocked(layers, l.id, map)) out.add(l.id);
+		}
+		return out;
+	});
 
 	let dragId = $state<string | null>(null);
 	let dropTargetId = $state<string | null>(null);
@@ -260,7 +280,9 @@
 					'flex w-full items-center gap-0.5 rounded-md px-1 py-1 text-left text-xs transition-colors',
 					activeSet.has(layer.id)
 						? 'bg-brand-500/15 text-primary'
-						: 'text-secondary hover:bg-surface-overlay hover:text-primary',
+							: ancestorOfSelection.has(layer.id)
+								? 'bg-brand-500/10 text-primary ring-1 ring-inset ring-brand-500/35'
+							: 'text-secondary hover:bg-surface-overlay hover:text-primary',
 					dragId === layer.id && 'opacity-50',
 					nesting && 'ring-1 ring-brand-500 bg-brand-500/10'
 				]}
@@ -378,14 +400,19 @@
 					{/if}
 				</IconButton>
 				<IconButton
-					label={layer.locked ? 'Unlock' : 'Lock'}
+					label={layer.locked
+						? 'Unlock'
+						: inheritedLocked.has(layer.id)
+							? 'Locked by parent'
+							: 'Lock'}
 					size="xs"
+					disabled={inheritedLocked.has(layer.id)}
 					onclick={(e) => {
 						e.stopPropagation();
 						ontogglelocked?.(layer.id);
 					}}
 				>
-					{#if layer.locked}
+					{#if layer.locked || inheritedLocked.has(layer.id)}
 						<Lock class="h-3.5 w-3.5" />
 					{:else}
 						<LockOpen class="h-3.5 w-3.5" />

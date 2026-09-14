@@ -24,7 +24,11 @@
 		passthrough?: boolean;
 		/** Synthetic resolved widget child — not directly editable. */
 		readOnly?: boolean;
-		/** Parent is a layout box (hBox/vBox/…) — no free drag/resize. */
+		/** Parent is a layout box (hBox/vBox/…) — no free drag. */
+		layoutPositionLocked?: boolean;
+		/** Parent owns child size (grid / scaleBox) — no free resize. */
+		layoutSizeLocked?: boolean;
+		/** @deprecated use layoutPositionLocked */
 		layoutLocked?: boolean;
 		class?: string;
 		onclick?: (e: MouseEvent) => void;
@@ -43,6 +47,8 @@
 		selected = false,
 		passthrough = false,
 		readOnly = false,
+		layoutPositionLocked = false,
+		layoutSizeLocked = false,
 		layoutLocked = false,
 		class: className = '',
 		onclick,
@@ -52,6 +58,8 @@
 	}: MediaLayerItemProps = $props();
 
 	const pos = $derived(displayRect ?? layer.rect);
+	const noDrag = $derived(layoutPositionLocked || layoutLocked);
+	const noResize = $derived(layoutSizeLocked || layoutLocked);
 	let rect = $state<WidgetRect>({ x: 0, y: 0, w: 100, h: 100 });
 	let interacting = $state(false);
 
@@ -128,8 +136,8 @@
 			raiseOnSelect={false}
 			stackIndex={stackIndex ?? layer.zIndex}
 			transform={paintTransform}
-			draggable={!layer.locked && !readOnly && !layoutLocked}
-			resizable={!layer.locked && !readOnly && !layoutLocked}
+			draggable={!layer.locked && !readOnly && !noDrag}
+			resizable={!layer.locked && !readOnly && !noResize}
 			bind:rect
 			minW={layer.kind === 'line' || layer.kind === 'arrow' || layer.kind === 'path' ? 16 : 40}
 			minH={layer.kind === 'line' ? 4 : layer.kind === 'arrow' || layer.kind === 'path' ? 16 : 24}

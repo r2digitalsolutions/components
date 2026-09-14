@@ -87,7 +87,7 @@
 		md: 'max-w-md',
 		lg: 'max-w-lg',
 		xl: 'max-w-2xl',
-		full: 'max-w-[min(96rem,calc(100%-2rem))]'
+		full: ''
 	};
 
 	const footerAlignClasses: Record<FooterAlign, string> = {
@@ -212,6 +212,7 @@
 	{id}
 	class={[
 		'dialog-root',
+		size === 'full' && 'dialog-full',
 		sizeClasses[size],
 		position === 'top' && 'dialog-top',
 		!blurBackdrop && 'dialog-no-blur',
@@ -279,10 +280,10 @@
 		{#if children}
 			<div
 				class={[
-					'min-h-0 flex-1 px-5 py-2 text-sm text-primary',
+					'min-h-0 min-w-0 flex-1 px-5 py-2 text-sm text-primary',
 					scrollable &&
 						(size === 'full'
-							? 'max-h-[calc(100vh-11rem)] overflow-y-auto'
+							? 'overflow-auto'
 							: size === 'xl'
 								? 'max-h-[min(70vh,36rem)] overflow-y-auto'
 								: 'max-h-[min(60vh,28rem)] overflow-y-auto')
@@ -332,6 +333,14 @@
 		overflow: visible;
 	}
 
+	.dialog-root.dialog-full {
+		width: calc(100% - 1.5rem);
+		height: calc(100% - 1.5rem);
+		max-width: none;
+		max-height: none;
+		overflow: hidden;
+	}
+
 	.dialog-root.dialog-top {
 		margin-top: 8vh;
 		margin-bottom: auto;
@@ -359,6 +368,13 @@
 		box-shadow: var(--shadow-xl);
 		overflow: hidden;
 		max-height: calc(100vh - 2rem);
+		min-width: 0;
+	}
+
+	.dialog-root.dialog-full .dialog-panel {
+		height: 100%;
+		max-height: 100%;
+		width: 100%;
 	}
 
 	.dialog-root[open] {

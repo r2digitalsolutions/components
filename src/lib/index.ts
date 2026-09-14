@@ -1372,6 +1372,7 @@ export { default as AudioEditorTemplate } from './components/templates/AudioEdit
 export { themeStore } from './utils/theme.svelte.js';
 export type { Theme, ThemePalette } from './utils/theme.svelte.js';
 export { createId } from './utils/id.js';
+export { bindPopoverInvokerToggle, popoverInvokerToggle } from './utils/popoverInvoker.js';
 export { resolveAccessor, accessorPatchKey, resolveRowKey } from './utils/columnAccessor.js';
 export type { ColumnAccessor, RowKey } from './utils/columnAccessor.js';
 export { pageVisibility } from './utils/pageVisibility.svelte.js';
@@ -1642,13 +1643,22 @@ export {
 	getDescendantIds,
 	getSubtreeIds,
 	getAncestors,
+	enclosingGroupId,
 	isEffectivelyVisible,
+	isEffectivelyLocked,
+	isLayoutPositionLocked,
+	isLayoutSizeLocked,
+	selectionAncestorIds,
+	LAYOUT_POSITION_KINDS,
+	LAYOUT_SIZE_KINDS,
 	paintTransformForLayer,
 	isDescendant,
 	canReparent,
 	ANCHOR_PRESETS,
 	resolveSlotRect,
 	slotFromLocalRect,
+	translateSlot,
+	stepAxis,
 	computeAbsoluteRects,
 	absoluteRectFor,
 	reparentLayer,

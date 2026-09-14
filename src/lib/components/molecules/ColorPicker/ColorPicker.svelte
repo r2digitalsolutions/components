@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { createId } from '$lib/utils/id.js';
+	import { popoverInvokerToggle } from '$lib/utils/popoverInvoker.js';
 
 	export type ColorFormat = 'hex' | 'rgb' | 'hsl';
 	type ColorPickerSize = 'xs' | 'sm' | 'md' | 'lg';
@@ -220,20 +221,8 @@
 		].join(';');
 	}
 
-	function showPanel() {
-		if (disabled || !panelEl) return;
-		positionPanel();
-		if (!panelEl.matches(':popover-open')) panelEl.showPopover();
-	}
-
 	function hidePanel() {
 		if (panelEl?.matches(':popover-open')) panelEl.hidePopover();
-	}
-
-	function togglePanel() {
-		if (disabled) return;
-		if (panelEl?.matches(':popover-open')) hidePanel();
-		else showPanel();
 	}
 
 	function handleBeforeToggle(event: ToggleEvent) {
@@ -270,7 +259,9 @@
 		aria-expanded={open}
 		aria-controls={panelId}
 		aria-haspopup="dialog"
-		onclick={togglePanel}
+		popovertarget={panelId}
+		popovertargetaction="toggle"
+		{@attach popoverInvokerToggle(() => panelEl)}
 		class={[
 			'flex w-full items-center border border-border bg-surface-elevated text-left transition-colors',
 			triggerSizeClasses[size],

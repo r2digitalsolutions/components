@@ -36,12 +36,17 @@
 	import {
 		deleteSubtree,
 		duplicateSubtree,
-		groupLayers,
+		getAncestors,
 		isContainerKind,
+		isEffectivelyLocked,
+		isLayoutPositionLocked,
 		computeAbsoluteRects,
 		contentPadding,
 		reparentLayer,
 		reorderSiblings,
+		resolveSlotRect,
+		stepAxis,
+		syncSlotFromRect,
 		ungroupLayers,
 		wrapSelection,
 		slotFromLocalRect
@@ -173,9 +178,7 @@
 	];
 
 	const editingWidget = $derived(
-		editingWidgetId
-			? ((value.widgets ?? []).find((w) => w.id === editingWidgetId) ?? null)
-			: null
+		editingWidgetId ? ((value.widgets ?? []).find((w) => w.id === editingWidgetId) ?? null) : null
 	);
 
 	const stageDoc = $derived.by((): CanvasDocument => {
@@ -192,9 +195,7 @@
 	});
 
 	const selectedLayer = $derived(
-		selectedIds.length === 1
-			? (stageDoc.layers.find((l) => l.id === selectedIds[0]) ?? null)
-			: null
+		selectedIds.length === 1 ? (stageDoc.layers.find((l) => l.id === selectedIds[0]) ?? null) : null
 	);
 	const zoomLabel = $derived(zoom === 1 ? 'Fit' : `${Math.round(zoom * 100)}%`);
 	const presetValue = $derived(presetIdForSize(value.width, value.height));
@@ -298,8 +299,7 @@
 	];
 
 	const ctxItems = $derived.by((): ContextMenuItem[] => {
-		const focusIds =
-			ctxLayerId && !selectedIds.includes(ctxLayerId) ? [ctxLayerId] : selectedIds;
+		const focusIds = ctxLayerId && !selectedIds.includes(ctxLayerId) ? [ctxLayerId] : selectedIds;
 		const hasParent = focusIds.some((id) => {
 			const l = stageDoc.layers.find((x) => x.id === id);
 			return !!l?.parentId;
@@ -429,8 +429,7 @@
 				height: extra?.height ?? d.height,
 				background: extra?.background ?? d.background
 			}));
-			const sizeChanged =
-				extra?.width != null || extra?.height != null;
+			const sizeChanged = extra?.width != null || extra?.height != null;
 			if (sizeChanged && syncInstanceSizes) {
 				next = syncInstanceSizesToDefinition(next, editingWidgetId);
 			}
@@ -513,8 +512,7 @@
 			const candidate = stageDoc.layers.find((l) => l.id === selectedIds[0]);
 			if (candidate && isContainerKind(candidate.kind)) nestParentId = candidate.id;
 		}
-		const nesting =
-			nestParentId !== undefined ? { parentId: nestParentId } : undefined;
+		const nesting = nestParentId !== undefined ? { parentId: nestParentId } : undefined;
 
 		const fillRootCanvas =
 			def.kind === 'canvasPanel' &&
@@ -585,9 +583,7 @@
 
 	function addGuide(orientation: 'horizontal' | 'vertical') {
 		const position =
-			orientation === 'vertical'
-				? Math.round(stageDoc.width / 2)
-				: Math.round(stageDoc.height / 2);
+			orientation === 'vertical' ? Math.round(stageDoc.width / 2) : Math.round(stageDoc.height / 2);
 		emit({
 			...value,
 			guides: [...(value.guides ?? []), createCanvasGuide(orientation, position)]
@@ -599,29 +595,46 @@
 		emit({ ...value, guidesLocked: !value.guidesLocked });
 	}
 
-	function nudgeSelected(dx: number, dy: number) {
-		if (!selectedIds.length) return;
+	function parentContentSize(
+		layer: CanvasLayer,
+		absMap: Map<string, { x: number; y: number; w: number; h: number }>
+	) {
+		const parentId = layer.parentId ?? null;
+		let bounds = { width: stageDoc.width, height: stageDoc.height };
+		if (!parentId) return bounds;
+		const parent = stageDoc.layers.find((p) => p.id === parentId);
+		const parentAbs = absMap.get(parentId);
+		if (parent && parentAbs) {
+			const pad = contentPadding(parent);
+			bounds = {
+				width: Math.max(1, parentAbs.w - pad.left - pad.right),
+				height: Math.max(1, parentAbs.h - pad.top - pad.bottom)
+			};
+		}
+		return bounds;
+	}
+
+	function nudgeSelected(dirX: -1 | 0 | 1, dirY: -1 | 0 | 1, coarse: boolean) {
+		if (!selectedIds.length || (!dirX && !dirY)) return;
 		const set = new Set(selectedIds);
+		const absMap = computeAbsoluteRects(stageDoc.layers, {
+			width: stageDoc.width,
+			height: stageDoc.height
+		});
+		const stepOpts = { snap, cell: cellSize, coarse };
 		emitStageLayers(
 			stageDoc.layers.map((l) => {
-				if (!set.has(l.id) || l.locked) return l;
-				const x = l.rect.x + dx;
-				const y = l.rect.y + dy;
-				const rect = { ...l.rect, x, y };
-				return {
-					...l,
-					rect,
-					slot: l.slot
-						? {
-								...l.slot,
-								offsets: {
-									...l.slot.offsets,
-									left: l.slot.offsets.left + dx,
-									top: l.slot.offsets.top + dy
-								}
-							}
-						: defaultSlotFromRect(rect)
+				if (!set.has(l.id) || isEffectivelyLocked(stageDoc.layers, l.id)) return l;
+				if (getAncestors(stageDoc.layers, l.id).some((a) => set.has(a.id))) return l;
+				if (isLayoutPositionLocked(stageDoc.layers, l.id)) return l;
+				const bounds = parentContentSize(l, absMap);
+				const local = l.slot ? resolveSlotRect(bounds, l.slot) : l.rect;
+				const rect = {
+					...local,
+					x: dirX ? stepAxis(local.x, dirX, stepOpts) : local.x,
+					y: dirY ? stepAxis(local.y, dirY, stepOpts) : local.y
 				};
+				return syncSlotFromRect({ ...l, rect }, bounds);
 			})
 		);
 	}
@@ -644,6 +657,8 @@
 		emitStageLayers(
 			stageDoc.layers.map((l) => {
 				if (!set.has(l.id)) return l;
+				if (isEffectivelyLocked(stageDoc.layers, l.id)) return l;
+				if (isLayoutPositionLocked(stageDoc.layers, l.id)) return l;
 				const parentId = l.parentId ?? null;
 				let bounds = { width: stageDoc.width, height: stageDoc.height };
 				if (parentId) {
@@ -673,19 +688,13 @@
 
 	function deleteSelected() {
 		if (!selectedIds.length) return;
-		const next = deleteSubtree(
-			{ ...stageDoc, widgets: value.widgets },
-			selectedIds
-		);
+		const next = deleteSubtree({ ...stageDoc, widgets: value.widgets }, selectedIds);
 		emitStageLayers(next.layers);
 		selectedIds = [];
 	}
 
 	function duplicateSelected() {
-		const result = duplicateSubtree(
-			{ ...stageDoc, widgets: value.widgets },
-			selectedIds
-		);
+		const result = duplicateSubtree({ ...stageDoc, widgets: value.widgets }, selectedIds);
 		emitStageLayers(result.doc.layers);
 		selectedIds = result.newIds;
 	}
@@ -716,7 +725,9 @@
 	function sendBack() {
 		const set = new Set(selectedIds);
 		let layers = stageDoc.layers;
-		const parents = new Set(stageDoc.layers.filter((l) => set.has(l.id)).map((l) => l.parentId ?? null));
+		const parents = new Set(
+			stageDoc.layers.filter((l) => set.has(l.id)).map((l) => l.parentId ?? null)
+		);
 		for (const pid of parents) {
 			const siblings = layers
 				.filter((l) => (l.parentId ?? null) === pid)
@@ -729,25 +740,26 @@
 		emitStageLayers(layers);
 	}
 
-	function wrapSelected(kind: CanvasLayerKind) {
+	function wrapSelected(kind: CanvasLayerKind, ids = selectedIds) {
+		if (!ids.length) {
+			toast.warning('Select one or more layers to wrap');
+			return;
+		}
 		const result = wrapSelection(
 			{ ...stageDoc, version: 2, widgets: value.widgets ?? [] },
-			selectedIds,
+			ids,
 			kind
 		);
-		if (!result) return;
+		if (!result) {
+			toast.warning('Could not wrap selection');
+			return;
+		}
 		emitStageLayers(result.doc.layers);
 		selectedIds = [result.wrapperId];
 	}
 
-	function groupSelected() {
-		const result = groupLayers(
-			{ ...stageDoc, version: 2, widgets: value.widgets ?? [] },
-			selectedIds
-		);
-		if (!result) return;
-		emitStageLayers(result.doc.layers);
-		selectedIds = [result.wrapperId];
+	function groupSelected(ids = selectedIds) {
+		wrapSelected('group', ids);
 	}
 
 	function ungroupSelected() {
@@ -803,15 +815,16 @@
 
 	function handleCtx(id: string) {
 		const targetId = ctxLayerId;
+		const focusIds = targetId && !selectedIds.includes(targetId) ? [targetId] : selectedIds;
 		if (targetId && !selectedIds.includes(targetId)) selectedIds = [targetId];
 		if (id === 'duplicate') duplicateSelected();
 		else if (id === 'delete') deleteSelected();
 		else if (id === 'bring-front') bringFront();
 		else if (id === 'send-back') sendBack();
-		else if (id === 'group') groupSelected();
+		else if (id === 'group') groupSelected(focusIds);
 		else if (id === 'ungroup') ungroupSelected();
 		else if (id === 'detach') detachSelected();
-		else if (id.startsWith('wrap-')) wrapSelected(id.slice(5) as CanvasLayerKind);
+		else if (id.startsWith('wrap-')) wrapSelected(id.slice(5) as CanvasLayerKind, focusIds);
 		else if (id === 'create-widget') createWidgetSelected();
 		else if (id === 'lock') {
 			const set = new Set(selectedIds);
@@ -820,9 +833,7 @@
 			);
 		} else if (id === 'hide') {
 			const set = new Set(selectedIds);
-			emitStageLayers(
-				stageDoc.layers.map((l) => (set.has(l.id) ? { ...l, visible: false } : l))
-			);
+			emitStageLayers(stageDoc.layers.map((l) => (set.has(l.id) ? { ...l, visible: false } : l)));
 			selectedIds = [];
 		}
 	}
@@ -832,14 +843,10 @@
 		else if (id === 'delete') deleteSelected();
 		else if (id === 'lock') {
 			const set = new Set(selectedIds);
-			emitStageLayers(
-				stageDoc.layers.map((l) => (set.has(l.id) ? { ...l, locked: true } : l))
-			);
+			emitStageLayers(stageDoc.layers.map((l) => (set.has(l.id) ? { ...l, locked: true } : l)));
 		} else if (id === 'hide') {
 			const set = new Set(selectedIds);
-			emitStageLayers(
-				stageDoc.layers.map((l) => (set.has(l.id) ? { ...l, visible: false } : l))
-			);
+			emitStageLayers(stageDoc.layers.map((l) => (set.has(l.id) ? { ...l, visible: false } : l)));
 			selectedIds = [];
 		} else if (id === 'front') bringFront();
 		else if (id === 'back') sendBack();
@@ -875,8 +882,41 @@
 		}
 	}
 
+	function isEditingText(target: EventTarget | null): boolean {
+		if (!(target instanceof HTMLElement)) return false;
+		if (target.isContentEditable || target.closest('[contenteditable="true"]')) return true;
+		const field = target.closest('textarea, select, input');
+		if (!field) return false;
+		if (field instanceof HTMLTextAreaElement || field instanceof HTMLSelectElement) return true;
+		if (field instanceof HTMLInputElement) {
+			const type = (field.type || 'text').toLowerCase();
+			return (
+				type !== 'number' &&
+				type !== 'range' &&
+				type !== 'checkbox' &&
+				type !== 'radio' &&
+				type !== 'button' &&
+				type !== 'hidden'
+			);
+		}
+		return false;
+	}
+
 	function handleKeydown(e: KeyboardEvent) {
 		const t = e.target as HTMLElement | null;
+		const arrow =
+			e.key === 'ArrowLeft' ||
+			e.key === 'ArrowRight' ||
+			e.key === 'ArrowUp' ||
+			e.key === 'ArrowDown';
+		if (arrow && selectedIds.length && !isEditingText(e.target)) {
+			if (drawMode) return;
+			e.preventDefault();
+			const dirX: -1 | 0 | 1 = e.key === 'ArrowLeft' ? -1 : e.key === 'ArrowRight' ? 1 : 0;
+			const dirY: -1 | 0 | 1 = e.key === 'ArrowUp' ? -1 : e.key === 'ArrowDown' ? 1 : 0;
+			nudgeSelected(dirX, dirY, e.shiftKey);
+			return;
+		}
 		if (t?.closest?.('input, textarea, select, [contenteditable="true"]')) return;
 
 		if (drawMode) {
@@ -915,9 +955,7 @@
 			if (selectedIds.length === 1) {
 				const cur = stageDoc.layers.find((l) => l.id === selectedIds[0]);
 				const pid = cur?.parentId ?? null;
-				selectedIds = stageDoc.layers
-					.filter((l) => (l.parentId ?? null) === pid)
-					.map((l) => l.id);
+				selectedIds = stageDoc.layers.filter((l) => (l.parentId ?? null) === pid).map((l) => l.id);
 			} else if (selectedIds.length > 1) {
 				const parents = new Set(
 					selectedIds.map((id) => stageDoc.layers.find((l) => l.id === id)?.parentId ?? null)
@@ -933,9 +971,7 @@
 						.map((l) => l.id);
 				}
 			} else {
-				selectedIds = stageDoc.layers
-					.filter((l) => (l.parentId ?? null) === null)
-					.map((l) => l.id);
+				selectedIds = stageDoc.layers.filter((l) => (l.parentId ?? null) === null).map((l) => l.id);
 			}
 			return;
 		}
@@ -964,16 +1000,6 @@
 				exitWidgetEdit();
 				return;
 			}
-		}
-
-		if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-			if (!selectedIds.length) return;
-			e.preventDefault();
-			const step = e.shiftKey ? (snap ? cellSize * 2 : 10) : snap ? cellSize : 1;
-			if (e.key === 'ArrowLeft') nudgeSelected(-step, 0);
-			else if (e.key === 'ArrowRight') nudgeSelected(step, 0);
-			else if (e.key === 'ArrowUp') nudgeSelected(0, -step);
-			else nudgeSelected(0, step);
 		}
 	}
 
@@ -1060,17 +1086,17 @@
 	}
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
+<svelte:window onkeydowncapture={handleKeydown} />
 
-<div class={['relative flex h-full min-h-0 flex-col', className]}>
+<div class={['min-h-0 relative flex h-full flex-col', className]}>
 	<header
-		class="flex shrink-0 items-center gap-3 border-b border-border bg-surface-elevated px-3 py-2"
+		class="gap-3 border-border bg-surface-elevated px-3 py-2 flex shrink-0 items-center border-b"
 	>
-		<div class="flex min-w-0 items-center gap-2">
+		<div class="min-w-0 gap-2 flex items-center">
 			{#if editingWidget}
 				<button
 					type="button"
-					class="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-xs font-medium text-secondary hover:bg-surface-overlay"
+					class="gap-1 rounded-md px-1.5 py-1 text-xs font-medium text-secondary hover:bg-surface-overlay inline-flex items-center"
 					onclick={() => {
 						exitWidgetEdit();
 						selectedIds = [];
@@ -1080,9 +1106,9 @@
 					Scene
 				</button>
 				<span class="text-muted">/</span>
-				<span class="truncate text-sm font-semibold text-primary">{editingWidget.name}</span>
+				<span class="text-sm font-semibold text-primary truncate">{editingWidget.name}</span>
 			{:else}
-				<span class="hidden text-sm font-semibold text-primary sm:inline">Canvas</span>
+				<span class="text-sm font-semibold text-primary sm:inline hidden">Canvas</span>
 				<Select
 					size="sm"
 					class="w-44"
@@ -1095,15 +1121,15 @@
 			{/if}
 		</div>
 
-		<div class="hidden h-5 w-px bg-border sm:block"></div>
+		<div class="h-5 bg-border sm:block hidden w-px"></div>
 
-		<div class="flex items-center rounded-lg border border-border bg-surface p-0.5">
+		<div class="rounded-lg border-border bg-surface p-0.5 flex items-center border">
 			<IconButton label="Zoom out" size="sm" onclick={() => setZoom(zoom - 0.1)}>
 				<ZoomOut class="h-3.5 w-3.5" />
 			</IconButton>
 			<button
 				type="button"
-				class="min-w-11 rounded-md px-1 py-1 font-mono text-[11px] tabular-nums text-secondary hover:bg-surface-overlay"
+				class="min-w-11 rounded-md px-1 py-1 font-mono text-secondary hover:bg-surface-overlay text-[11px] tabular-nums"
 				onclick={() => setZoom(1)}
 				title="Fit to view"
 			>
@@ -1114,26 +1140,16 @@
 			</IconButton>
 		</div>
 
-		<div class="flex items-center rounded-lg border border-border bg-surface p-0.5">
-			<IconButton
-				label="Undo"
-				size="sm"
-				disabled={!history.past.length}
-				onclick={undo}
-			>
+		<div class="rounded-lg border-border bg-surface p-0.5 flex items-center border">
+			<IconButton label="Undo" size="sm" disabled={!history.past.length} onclick={undo}>
 				<Undo2 class="h-3.5 w-3.5" />
 			</IconButton>
-			<IconButton
-				label="Redo"
-				size="sm"
-				disabled={!history.future.length}
-				onclick={redo}
-			>
+			<IconButton label="Redo" size="sm" disabled={!history.future.length} onclick={redo}>
 				<Redo2 class="h-3.5 w-3.5" />
 			</IconButton>
 		</div>
 
-		<div class="flex items-center rounded-lg border border-border bg-surface p-0.5">
+		<div class="rounded-lg border-border bg-surface p-0.5 flex items-center border">
 			<Tooltip content="Toggle grid">
 				<IconButton
 					label="Toggle grid"
@@ -1150,7 +1166,7 @@
 			</Tooltip>
 			{#if showGrid}
 				<select
-					class="h-8 min-w-0 shrink-0 rounded-md border-0 bg-transparent px-1 font-mono text-[11px] tabular-nums text-secondary outline-none hover:bg-surface-overlay focus-visible:bg-surface-overlay"
+					class="h-8 min-w-0 rounded-md px-1 font-mono text-secondary hover:bg-surface-overlay focus-visible:bg-surface-overlay shrink-0 border-0 bg-transparent text-[11px] tabular-nums outline-none"
 					aria-label="Grid cell size"
 					value={String(cellSize)}
 					onchange={(e) => (cellSize = Number(e.currentTarget.value))}
@@ -1176,9 +1192,9 @@
 			</Tooltip>
 		</div>
 
-		<div class="hidden h-5 w-px bg-border sm:block"></div>
+		<div class="h-5 bg-border sm:block hidden w-px"></div>
 
-		<div class="flex items-center gap-0.5">
+		<div class="gap-0.5 flex items-center">
 			<Tooltip content={drawMode ? 'Exit pen tool (Esc)' : 'Pen — draw path / shape'}>
 				<IconButton
 					label="Pen tool"
@@ -1191,9 +1207,9 @@
 			</Tooltip>
 		</div>
 
-		<div class="hidden h-5 w-px bg-border sm:block"></div>
+		<div class="h-5 bg-border sm:block hidden w-px"></div>
 
-		<div class="flex items-center gap-0.5">
+		<div class="gap-0.5 flex items-center">
 			<Tooltip content={showGuides ? 'Hide guides' : 'Show guides'}>
 				<IconButton
 					label="Toggle guides"
@@ -1231,8 +1247,8 @@
 		</div>
 
 		{#if selectedIds.length}
-			<div class="hidden h-5 w-px bg-border md:block"></div>
-			<div class="hidden items-center gap-1 md:flex">
+			<div class="h-5 bg-border md:block hidden w-px"></div>
+			<div class="gap-1 md:flex hidden items-center">
 				<DropdownMenu
 					size="sm"
 					align="start"
@@ -1241,9 +1257,7 @@
 					onselect={(id) => alignSelected(id as CanvasAlign)}
 				>
 					{#snippet trigger()}
-						<span
-							class="inline-flex items-center gap-1.5 text-xs font-medium text-secondary"
-						>
+						<span class="gap-1.5 text-xs font-medium text-secondary inline-flex items-center">
 							<AlignHorizontalJustifyCenter class="h-3.5 w-3.5" />
 							Align
 						</span>
@@ -1257,7 +1271,7 @@
 					onselect={handleWrapMenu}
 				>
 					{#snippet trigger()}
-						<span class="inline-flex items-center gap-1.5 text-xs font-medium text-secondary">
+						<span class="gap-1.5 text-xs font-medium text-secondary inline-flex items-center">
 							<Group class="h-3.5 w-3.5" />
 							Group
 						</span>
@@ -1266,7 +1280,7 @@
 			</div>
 		{/if}
 
-		<div class="ml-auto flex items-center gap-1">
+		<div class="gap-1 ml-auto flex items-center">
 			<IconButton
 				label="Toggle sidebar"
 				size="sm"
@@ -1293,7 +1307,7 @@
 				onselect={(id) => handleExport(id as CanvasExportFormat)}
 			>
 				{#snippet trigger()}
-					<span class="inline-flex items-center gap-1.5 px-1 text-xs font-medium">
+					<span class="gap-1.5 px-1 text-xs font-medium inline-flex items-center">
 						<Download class="h-3.5 w-3.5" />
 						{exporting ? 'Exporting…' : 'Export'}
 					</span>
@@ -1302,7 +1316,7 @@
 		</div>
 	</header>
 
-	<div class="relative min-h-0 flex-1">
+	<div class="min-h-0 relative flex-1">
 		<EditorShell
 			sidebarTitle="Assets"
 			inspectorTitle="Inspector"
@@ -1335,12 +1349,12 @@
 					class="h-full"
 				>
 					{#snippet start()}
-						<div class="flex h-full min-h-0 flex-col bg-surface-elevated">
-							<div class="flex shrink-0 gap-1 border-b border-border p-2">
+						<div class="min-h-0 bg-surface-elevated flex h-full flex-col">
+							<div class="gap-1 border-border p-2 flex shrink-0 border-b">
 								<button
 									type="button"
 									class={[
-										'flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors',
+										'rounded-md px-2 py-1.5 text-xs font-medium flex-1 transition-colors',
 										sidebarTab === 'elements'
 											? 'bg-brand-500 text-white'
 											: 'text-secondary hover:bg-surface-overlay'
@@ -1352,7 +1366,7 @@
 								<button
 									type="button"
 									class={[
-										'flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors',
+										'rounded-md px-2 py-1.5 text-xs font-medium flex-1 transition-colors',
 										sidebarTab === 'widgets'
 											? 'bg-brand-500 text-white'
 											: 'text-secondary hover:bg-surface-overlay'
@@ -1364,7 +1378,7 @@
 								<button
 									type="button"
 									class={[
-										'flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors',
+										'rounded-md px-2 py-1.5 text-xs font-medium flex-1 transition-colors',
 										sidebarTab === 'uploads'
 											? 'bg-brand-500 text-white'
 											: 'text-secondary hover:bg-surface-overlay'
@@ -1378,11 +1392,11 @@
 								{#if sidebarTab === 'elements'}
 									<CanvasElementsPanel onadd={addElement} />
 								{:else if sidebarTab === 'widgets'}
-									<div class="flex flex-col gap-2 p-3">
-										<p class="text-[11px] text-muted">
+									<div class="gap-2 p-3 flex flex-col">
+										<p class="text-muted text-[11px]">
 											Click to place · pencil to edit · dblclick name to rename
 										</p>
-										<label class="flex items-center gap-2 text-[11px] text-secondary">
+										<label class="gap-2 text-secondary flex items-center text-[11px]">
 											<input
 												type="checkbox"
 												class="rounded border-border"
@@ -1393,15 +1407,15 @@
 										{#each value.widgets ?? [] as w (w.id)}
 											<div
 												class={[
-													'flex items-center gap-0.5 rounded-lg border bg-surface px-1 py-1 text-xs',
+													'gap-0.5 rounded-lg bg-surface px-1 py-1 text-xs flex items-center border',
 													editingWidgetId === w.id
-														? 'border-brand-500 ring-1 ring-brand-500/30'
+														? 'border-brand-500 ring-brand-500/30 ring-1'
 														: 'border-border'
 												]}
 											>
 												<button
 													type="button"
-													class="flex min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 py-1.5 text-left hover:bg-surface-overlay"
+													class="min-w-0 gap-2 rounded-md px-1.5 py-1.5 hover:bg-surface-overlay flex flex-1 items-center text-left"
 													title="Place instance on canvas"
 													onclick={() => {
 														if (editingWidgetId) {
@@ -1416,13 +1430,11 @@
 														}
 													}}
 												>
-													<Component class="h-4 w-4 shrink-0 text-brand-600" />
-													<span class="min-w-0 flex-1 truncate font-medium" title={w.name}>
+													<Component class="h-4 w-4 text-brand-600 shrink-0" />
+													<span class="min-w-0 font-medium flex-1 truncate" title={w.name}>
 														{w.name}
 													</span>
-													<span class="shrink-0 text-[10px] text-muted"
-														>{w.width}×{w.height}</span
-													>
+													<span class="text-muted shrink-0 text-[10px]">{w.width}×{w.height}</span>
 												</button>
 												<IconButton
 													label="Rename widget"
@@ -1466,7 +1478,7 @@
 												</IconButton>
 											</div>
 										{:else}
-											<p class="py-6 text-center text-xs text-muted">
+											<p class="py-6 text-xs text-muted text-center">
 												Select layers and Create Widget, or Group → Create Widget
 											</p>
 										{/each}
@@ -1478,7 +1490,7 @@
 										accept="image/*,video/*"
 										helperText="Images or video"
 										allowText={false}
-										onassetschange={onassetschange}
+										{onassetschange}
 										onselect={(id) => {
 											const asset = assets.find((a) => a.id === id);
 											if (asset) addFromAsset(asset);
@@ -1503,15 +1515,11 @@
 								onselect={selectFromList}
 								ontogglevisible={(id) =>
 									emitStageLayers(
-										stageDoc.layers.map((l) =>
-											l.id === id ? { ...l, visible: !l.visible } : l
-										)
+										stageDoc.layers.map((l) => (l.id === id ? { ...l, visible: !l.visible } : l))
 									)}
 								ontogglelocked={(id) =>
 									emitStageLayers(
-										stageDoc.layers.map((l) =>
-											l.id === id ? { ...l, locked: !l.locked } : l
-										)
+										stageDoc.layers.map((l) => (l.id === id ? { ...l, locked: !l.locked } : l))
 									)}
 								onreorder={(ids, parentId) =>
 									emitStageLayers(reorderSiblings(stageDoc.layers, parentId, ids))}
@@ -1536,7 +1544,7 @@
 			{/snippet}
 
 			{#snippet workspace()}
-				<div class="h-full min-h-0">
+				<div class="min-h-0 h-full">
 					<MediaStage
 						document={stageDoc}
 						{selectedIds}
@@ -1626,7 +1634,7 @@
 		</EditorShell>
 
 		{#if selectedIds.length > 1}
-			<div class="pointer-events-none absolute inset-x-0 bottom-4 z-30 flex justify-center px-4">
+			<div class="inset-x-0 bottom-4 px-4 pointer-events-none absolute z-30 flex justify-center">
 				<div class="pointer-events-auto">
 					<BulkActionBar
 						count={selectedIds.length}
@@ -1667,7 +1675,7 @@
 								{#snippet trigger()}
 									<Tooltip content="Wrap in parent" side="top">
 										<span
-											class="inline-flex h-7 w-7 items-center justify-center rounded-md text-secondary hover:bg-surface-overlay hover:text-primary"
+											class="h-7 w-7 rounded-md text-secondary hover:bg-surface-overlay hover:text-primary inline-flex items-center justify-center"
 											aria-label="Wrap in parent"
 										>
 											<Group class="h-3.5 w-3.5" />

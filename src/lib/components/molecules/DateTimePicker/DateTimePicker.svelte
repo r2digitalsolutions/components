@@ -6,6 +6,7 @@
 	import type { TimeFormat } from '../TimePicker/TimePicker.svelte';
 	import { i18n } from '$lib/utils/i18n.svelte.js';
 	import { createId } from '$lib/utils/id.js';
+	import { popoverInvokerToggle } from '$lib/utils/popoverInvoker.js';
 
 	interface DateTimePickerProps {
 		/** Date part `YYYY-MM-DD`. */
@@ -359,6 +360,7 @@
 			{disabled}
 			popovertarget={panelId}
 			popovertargetaction="toggle"
+			{@attach popoverInvokerToggle(() => panelEl)}
 			aria-expanded={open}
 			aria-haspopup="dialog"
 			aria-controls={panelId}

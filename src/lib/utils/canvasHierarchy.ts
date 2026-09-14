@@ -38,14 +38,25 @@ export const LAYOUT_BOX_KINDS: ReadonlySet<CanvasLayerKind> = new Set([
 	'scrollBox'
 ]);
 
+/** Parents that own child X/Y (UMG slot layout). Group / panel / overlay stay freeform. */
+export const LAYOUT_POSITION_KINDS: ReadonlySet<CanvasLayerKind> = new Set([
+	'hBox',
+	'vBox',
+	'wrapBox',
+	'uniformGrid'
+]);
+
+/** Parents that own child W/H (cell / uniform scale). */
+export const LAYOUT_SIZE_KINDS: ReadonlySet<CanvasLayerKind> = new Set(['uniformGrid', 'scaleBox']);
+
 /**
  * Structural shells whose empty area should start a marquee (not a layer drag),
  * matching Figma-style select-drag on the canvas / inside frames.
+ * Groups are omitted: they behave like a single object (click/drag the group).
  */
 export const MARQUEE_PASS_KINDS: ReadonlySet<CanvasLayerKind> = new Set([
 	'canvasPanel',
 	'overlay',
-	'group',
 	...LAYOUT_BOX_KINDS
 ]);
 
@@ -96,6 +107,12 @@ export function getAncestors(layers: CanvasLayer[], layerId: string): CanvasLaye
 	return out;
 }
 
+/** Outermost `group` ancestor, or null if the layer is not inside a group. */
+export function enclosingGroupId(layers: CanvasLayer[], layerId: string): string | null {
+	const groups = getAncestors(layers, layerId).filter((a) => a.kind === 'group');
+	return groups.length ? groups[groups.length - 1].id : null;
+}
+
 /** True when the layer and every ancestor is visible (flat stage paint must check this). */
 export function isEffectivelyVisible(
 	layers: CanvasLayer[],
@@ -109,6 +126,69 @@ export function isEffectivelyVisible(
 		cur = cur.parentId ? byId.get(cur.parentId) : undefined;
 	}
 	return true;
+}
+
+/** True when the layer or any ancestor is locked (parent lock freezes the whole subtree). */
+export function isEffectivelyLocked(
+	layers: CanvasLayer[],
+	layerId: string,
+	map?: Map<string, CanvasLayer>
+): boolean {
+	const byId = map ?? new Map(layers.map((l) => [l.id, l]));
+	let cur = byId.get(layerId);
+	while (cur) {
+		if (cur.locked) return true;
+		cur = cur.parentId ? byId.get(cur.parentId) : undefined;
+	}
+	return false;
+}
+
+function parentOf(
+	layers: CanvasLayer[],
+	layerId: string,
+	map?: Map<string, CanvasLayer>
+): CanvasLayer | undefined {
+	const byId = map ?? new Map(layers.map((l) => [l.id, l]));
+	const layer = byId.get(layerId);
+	return layer?.parentId ? byId.get(layer.parentId) : undefined;
+}
+
+/** Child X/Y is owned by an hBox / vBox / wrap / grid parent. */
+export function isLayoutPositionLocked(
+	layers: CanvasLayer[],
+	layerId: string,
+	map?: Map<string, CanvasLayer>
+): boolean {
+	const parent = parentOf(layers, layerId, map);
+	return !!parent && LAYOUT_POSITION_KINDS.has(parent.kind);
+}
+
+/** Child W/H is owned by a grid / scaleBox parent. */
+export function isLayoutSizeLocked(
+	layers: CanvasLayer[],
+	layerId: string,
+	map?: Map<string, CanvasLayer>
+): boolean {
+	const parent = parentOf(layers, layerId, map);
+	return !!parent && LAYOUT_SIZE_KINDS.has(parent.kind);
+}
+
+/**
+ * Ancestors to draw while a nested layer is selected (UMG / Canva parent chrome).
+ * Skips `canvasPanel` (full-bleed artboard) and layers already in the selection.
+ */
+export function selectionAncestorIds(layers: CanvasLayer[], selectedIds: string[]): string[] {
+	const selected = new Set(selectedIds);
+	const out: string[] = [];
+	const seen = new Set<string>();
+	for (const id of selectedIds) {
+		for (const anc of getAncestors(layers, id)) {
+			if (selected.has(anc.id) || seen.has(anc.id) || anc.kind === 'canvasPanel') continue;
+			seen.add(anc.id);
+			out.push(anc.id);
+		}
+	}
+	return out;
 }
 
 /**
@@ -141,18 +221,14 @@ export function paintTransformForLayer(
 		const a = absMap.get(anc.id) ?? anc.rect;
 		const ox = a.x + a.w / 2 - selfAbs.x;
 		const oy = a.y + a.h / 2 - selfAbs.y;
-		parts.push(
-			`translate(${ox}px, ${oy}px) rotate(${deg}deg) translate(${-ox}px, ${-oy}px)`
-		);
+		parts.push(`translate(${ox}px, ${oy}px) rotate(${deg}deg) translate(${-ox}px, ${-oy}px)`);
 	}
 
 	const own = layer.rotation ?? 0;
 	if (own) {
 		const ox = selfAbs.w / 2;
 		const oy = selfAbs.h / 2;
-		parts.push(
-			`translate(${ox}px, ${oy}px) rotate(${own}deg) translate(${-ox}px, ${-oy}px)`
-		);
+		parts.push(`translate(${ox}px, ${oy}px) rotate(${own}deg) translate(${-ox}px, ${-oy}px)`);
 	}
 
 	return parts.length ? parts.join(' ') : undefined;
@@ -229,6 +305,45 @@ export function slotFromLocalRect(
 	};
 }
 
+/**
+ * Translate a UMG slot without changing size.
+ * `right` / `bottom` are inverted (distance from the opposite anchored edge).
+ */
+export function translateSlot(slot: CanvasSlot, dx: number, dy: number): CanvasSlot {
+	if (!dx && !dy) return slot;
+	return {
+		...slot,
+		offsets: {
+			left: slot.offsets.left + dx,
+			right: slot.offsets.right - dx,
+			top: slot.offsets.top + dy,
+			bottom: slot.offsets.bottom - dy
+		}
+	};
+}
+
+/**
+ * Keyboard nudge along one axis.
+ * With snap: land on the next/previous grid line (if already on-grid, move one cell; Shift = two).
+ */
+export function stepAxis(
+	value: number,
+	dir: 1 | -1,
+	opts: { snap: boolean; cell: number; coarse?: boolean }
+): number {
+	const cell = opts.cell;
+	if (!opts.snap || cell <= 0) return value + dir * (opts.coarse ? 10 : 1);
+	const step = opts.coarse ? cell * 2 : cell;
+	const eps = 1e-6;
+	const onGrid = Math.abs(value - Math.round(value / cell) * cell) < eps;
+	if (dir > 0) {
+		if (onGrid) return value + step;
+		return Math.ceil((value + eps) / cell) * cell;
+	}
+	if (onGrid) return value - step;
+	return Math.floor((value - eps) / cell) * cell;
+}
+
 export function contentPadding(layer: CanvasLayer): {
 	left: number;
 	top: number;
@@ -285,7 +400,9 @@ export function computeAbsoluteRects(
 
 		const parentW = parentAbs?.w ?? rootSize.width;
 		const parentH = parentAbs?.h ?? rootSize.height;
-		const pad = parentLayer ? contentPadding(parentLayer) : { left: 0, top: 0, right: 0, bottom: 0 };
+		const pad = parentLayer
+			? contentPadding(parentLayer)
+			: { left: 0, top: 0, right: 0, bottom: 0 };
 		const originX = (parentAbs?.x ?? 0) + pad.left;
 		const originY = (parentAbs?.y ?? 0) + pad.top;
 		const contentW = Math.max(0, parentW - pad.left - pad.right);
@@ -348,10 +465,7 @@ export function computeAbsoluteRects(
 			const cols = Math.max(1, parentLayer?.columns ?? 2);
 			const cellW = Math.max(1, (contentW - gap * Math.max(0, cols - 1)) / cols);
 			const rows = Math.max(1, Math.ceil(children.length / cols));
-			const cellH = Math.max(
-				1,
-				(contentH - gap * Math.max(0, rows - 1)) / rows
-			);
+			const cellH = Math.max(1, (contentH - gap * Math.max(0, rows - 1)) / rows);
 			children.forEach((c, i) => {
 				const col = i % cols;
 				const row = Math.floor(i / cols);
@@ -582,6 +696,7 @@ export function reparentLayer(
 	);
 }
 
+/** Wrap one or more layers in a new parent (`group`, `hBox`, `border`, …). */
 export function wrapSelection(
 	doc: CanvasDocument,
 	selectedIds: string[],
@@ -597,7 +712,7 @@ export function wrapSelection(
 	selected = selected.filter(
 		(l) => !selected.some((other) => other.id !== l.id && isDescendant(layers, l.id, other.id))
 	);
-	if (selected.length < 2) return null;
+	if (!selected.length) return null;
 	const wrapIds = selected.map((l) => l.id);
 
 	// Only wrap siblings that share the same parent — otherwise lift to root first
@@ -607,7 +722,9 @@ export function wrapSelection(
 			layers = reparentLayer(layers, id, null, rootSize);
 		}
 		parentId = null;
-		selected = wrapIds.map((id) => layers.find((l) => l.id === id)).filter(Boolean) as CanvasLayer[];
+		selected = wrapIds
+			.map((id) => layers.find((l) => l.id === id))
+			.filter(Boolean) as CanvasLayer[];
 	}
 
 	const absMap = computeAbsoluteRects(layers, rootSize);
@@ -652,8 +769,7 @@ export function wrapSelection(
 		rect: wrapperLocal,
 		slot: slotFromLocalRect({ width: contentW, height: contentH }, wrapperLocal),
 		zIndex,
-		clipChildren:
-			wrapKind === 'border' || wrapKind === 'canvasPanel' || wrapKind === 'scrollBox',
+		clipChildren: wrapKind === 'border' || wrapKind === 'canvasPanel' || wrapKind === 'scrollBox',
 		fill:
 			wrapKind === 'border' || wrapKind === 'roundRect'
 				? '#ffffff'
@@ -728,18 +844,13 @@ export function duplicateSubtree(
 					? (layer.parentId ?? null)
 					: (layer.parentId ?? null);
 		let rect = { ...layer.rect };
-		let slot = layer.slot ? { ...layer.slot, anchors: { ...layer.slot.anchors }, offsets: { ...layer.slot.offsets } } : undefined;
+		let slot = layer.slot
+			? { ...layer.slot, anchors: { ...layer.slot.anchors }, offsets: { ...layer.slot.offsets } }
+			: undefined;
 		if (isRoot) {
 			rect = { ...rect, x: rect.x + offset.x, y: rect.y + offset.y };
 			if (slot) {
-				slot = {
-					...slot,
-					offsets: {
-						...slot.offsets,
-						left: slot.offsets.left + offset.x,
-						top: slot.offsets.top + offset.y
-					}
-				};
+				slot = translateSlot(slot, offset.x, offset.y);
 			}
 		}
 		return {
@@ -771,7 +882,10 @@ export function reorderSiblings(
 }
 
 /** Sync layer.rect from its slot given parent size (for editors that edit rect). */
-export function syncRectFromSlot(layer: CanvasLayer, parentSize: { width: number; height: number }): CanvasLayer {
+export function syncRectFromSlot(
+	layer: CanvasLayer,
+	parentSize: { width: number; height: number }
+): CanvasLayer {
 	if (!layer.slot) return layer;
 	return { ...layer, rect: resolveSlotRect(parentSize, layer.slot) };
 }

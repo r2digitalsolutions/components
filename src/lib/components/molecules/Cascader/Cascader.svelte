@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { on } from 'svelte/events';
+	import { popoverInvokerToggle } from '$lib/utils/popoverInvoker.js';
 
 	export interface CascaderOption {
 		value: string;
@@ -168,6 +169,7 @@
 		{disabled}
 		popovertarget={popoverId}
 		popovertargetaction="toggle"
+		{@attach popoverInvokerToggle(() => popoverEl)}
 		class={[
 			'flex h-10 w-full items-center justify-between gap-2 rounded-lg border border-border bg-surface-elevated px-3.5 text-left text-sm outline-none transition-colors',
 			'focus-visible:border-brand-500 focus-visible:ring-2 focus-visible:ring-brand-500/20',

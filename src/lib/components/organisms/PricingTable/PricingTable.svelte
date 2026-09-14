@@ -427,8 +427,8 @@
 {/snippet}
 
 {#snippet comparisonTable(withPricingHeader: boolean)}
-	<div class="w-full overflow-x-auto rounded-xl border border-border bg-surface-elevated">
-		<table class="w-full min-w-160 border-collapse text-sm" aria-label="Plan feature comparison">
+	<div class="min-w-0 w-full overflow-x-auto rounded-xl border border-border bg-surface-elevated">
+		<table class="w-full min-w-max border-collapse text-sm" aria-label="Plan feature comparison">
 			<thead class="sticky top-0 z-30">
 				{#if withPricingHeader}
 					<tr class="border-b border-border bg-surface-elevated shadow-sm">
@@ -571,7 +571,7 @@
 	</div>
 {/snippet}
 
-<div class={['w-full space-y-4', className]}>
+<div class={['min-w-0 w-full space-y-4', className]}>
 	{#if canToggleBilling}
 		<div class="flex justify-center">
 			<SegmentedControl

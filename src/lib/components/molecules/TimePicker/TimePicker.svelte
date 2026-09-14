@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { on } from 'svelte/events';
 	import { createId } from '$lib/utils/id.js';
+	import { popoverInvokerToggle } from '$lib/utils/popoverInvoker.js';
 
 	export type TimeFormat = '24h' | '12h';
 
@@ -280,6 +281,7 @@
 			{disabled}
 			popovertarget={panelId}
 			popovertargetaction="toggle"
+			{@attach popoverInvokerToggle(() => panelEl)}
 			aria-expanded={open}
 			aria-haspopup="dialog"
 			aria-controls={panelId}

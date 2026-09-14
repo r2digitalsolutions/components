@@ -2,6 +2,7 @@
 	import { on } from 'svelte/events';
 	import Chip from '$lib/components/atoms/Chip/Chip.svelte';
 	import { createId } from '$lib/utils/id.js';
+	import { popoverInvokerToggle } from '$lib/utils/popoverInvoker.js';
 
 	export interface MultiSelectOption {
 		value: string;
@@ -259,6 +260,7 @@
 			{disabled}
 			popovertarget={listboxId}
 			popovertargetaction="toggle"
+			{@attach popoverInvokerToggle(() => listboxEl)}
 			onkeydown={handleTriggerKeydown}
 			aria-expanded={open}
 			aria-haspopup="listbox"

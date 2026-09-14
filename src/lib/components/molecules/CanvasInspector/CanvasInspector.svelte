@@ -10,6 +10,7 @@
 	import Tooltip from '$lib/components/atoms/Tooltip/Tooltip.svelte';
 	import ColorPicker from '$lib/components/molecules/ColorPicker/ColorPicker.svelte';
 	import FileUploader from '$lib/components/organisms/FileUploader/FileUploader.svelte';
+	import Dialog from '$lib/components/organisms/Dialog/Dialog.svelte';
 	import {
 		alignLayerRect,
 		applyTextAutoSize,
@@ -24,10 +25,12 @@
 	} from '$lib/utils/canvasDocument.js';
 	import {
 		ANCHOR_PRESETS,
-		LAYOUT_BOX_KINDS,
+		LAYOUT_POSITION_KINDS,
+		LAYOUT_SIZE_KINDS,
 		computeAbsoluteRects,
 		contentPadding,
 		isContainerKind,
+		isEffectivelyLocked,
 		slotFromLocalRect,
 		syncSlotFromRect
 	} from '$lib/utils/canvasHierarchy.js';
@@ -47,6 +50,8 @@
 	import AlignCenterHorizontal from '@lucide/svelte/icons/align-center-horizontal';
 	import AlignEndHorizontal from '@lucide/svelte/icons/align-end-horizontal';
 	import AlignCenter from '@lucide/svelte/icons/align-center';
+	import AlignLeft from '@lucide/svelte/icons/align-left';
+	import AlignRight from '@lucide/svelte/icons/align-right';
 	import Maximize2 from '@lucide/svelte/icons/maximize-2';
 
 	type IconComp = Component<{ class?: string }>;
@@ -61,7 +66,12 @@
 		ondocumentchange?: (doc: CanvasDocument) => void;
 		onchange?: (layer: CanvasLayer) => void;
 		onalign?: (align: CanvasAlign) => void;
-		onexpose?: (payload: { layerId: string; field: string; exposed: boolean; label: string }) => void;
+		onexpose?: (payload: {
+			layerId: string;
+			field: string;
+			exposed: boolean;
+			label: string;
+		}) => void;
 		onoverride?: (payload: { propId: string; value: unknown }) => void;
 		oneditwidget?: (definitionId: string) => void;
 		onbreakwidget?: () => void;
@@ -82,10 +92,21 @@
 		onbreakwidget
 	}: CanvasInspectorProps = $props();
 
+	let contentEditorOpen = $state(false);
+	let contentEditorLayerId: string | null = null;
+
+	$effect(() => {
+		const id = layer?.id ?? null;
+		if (id !== contentEditorLayerId) {
+			contentEditorLayerId = id;
+			contentEditorOpen = false;
+		}
+	});
+
 	const exposeMode = $derived(!!widgetDefinition);
 	const instanceDef = $derived(
 		layer?.kind === 'widget' && layer.definitionId
-			? (doc?.widgets ?? []).find((w) => w.id === layer.definitionId) ?? null
+			? ((doc?.widgets ?? []).find((w) => w.id === layer.definitionId) ?? null)
 			: null
 	);
 	const exposedGroups = $derived(instanceDef ? groupExposedPropsByLayer(instanceDef) : []);
@@ -114,8 +135,16 @@
 	const parentLayoutLocked = $derived.by(() => {
 		if (!doc || !layer?.parentId) return false;
 		const parent = doc.layers.find((l) => l.id === layer.parentId);
-		return !!parent && LAYOUT_BOX_KINDS.has(parent.kind);
+		return !!parent && LAYOUT_POSITION_KINDS.has(parent.kind);
 	});
+	const parentSizeLocked = $derived.by(() => {
+		if (!doc || !layer?.parentId) return false;
+		const parent = doc.layers.find((l) => l.id === layer.parentId);
+		return !!parent && LAYOUT_SIZE_KINDS.has(parent.kind);
+	});
+	const lockInherited = $derived(
+		!!doc && !!layer && isEffectivelyLocked(doc.layers, layer.id) && !layer.locked
+	);
 
 	function exposedFlag(field: string): boolean | null {
 		if (!exposeMode || !layer || !widgetDefinition) return null;
@@ -138,11 +167,6 @@
 		{ value: '600', label: 'Semibold' },
 		{ value: '700', label: 'Bold' },
 		{ value: '800', label: 'Extra bold' }
-	];
-	const alignOptions = [
-		{ value: 'left', label: 'Left' },
-		{ value: 'center', label: 'Center' },
-		{ value: 'right', label: 'Right' }
 	];
 	const styleOptions = [
 		{ value: 'normal', label: 'Normal' },
@@ -196,13 +220,9 @@
 	];
 
 	const parentKind = $derived(
-		layer?.parentId && doc
-			? (doc.layers.find((l) => l.id === layer.parentId)?.kind ?? null)
-			: null
+		layer?.parentId && doc ? (doc.layers.find((l) => l.id === layer.parentId)?.kind ?? null) : null
 	);
-	const showChildAlignment = $derived(
-		parentKind === 'hBox' || parentKind === 'vBox'
-	);
+	const showChildAlignment = $derived(parentKind === 'hBox' || parentKind === 'vBox');
 	const showContainerPadding = $derived(
 		!!layer && (isContainerKind(layer.kind) || layer.kind === 'widget')
 	);
@@ -250,6 +270,12 @@
 		{ id: 'bottom', label: 'Align bottom', icon: AlignEndHorizontal },
 		{ id: 'center', label: 'Center on canvas', icon: AlignCenter },
 		{ id: 'full', label: 'Fill canvas', icon: Maximize2 }
+	];
+
+	const textAlignDock: { id: 'left' | 'center' | 'right'; label: string; icon: IconComp }[] = [
+		{ id: 'left', label: 'Align left', icon: AlignLeft },
+		{ id: 'center', label: 'Align center', icon: AlignCenter },
+		{ id: 'right', label: 'Align right', icon: AlignRight }
 	];
 
 	function patchDoc(partial: Partial<CanvasDocument>) {
@@ -305,11 +331,11 @@
 
 <div class={['min-w-0', className]}>
 	{#if selectionCount > 1}
-		<p class="px-3 py-6 text-center text-xs text-muted">
+		<p class="px-3 py-6 text-xs text-muted text-center">
 			{selectionCount} layers selected — use the bulk dock
 		</p>
 	{:else if !layer}
-		<p class="px-3 py-6 text-center text-xs text-muted">Select a layer to edit</p>
+		<p class="px-3 py-6 text-xs text-muted text-center">Select a layer to edit</p>
 	{:else}
 		<PropertyGroup title="Layer">
 			<PropertyField
@@ -331,11 +357,7 @@
 				onreset={() => resetField('visible')}
 				valueAlign="end"
 			>
-				<Toggle
-					checked={layer.visible}
-					onchange={(v) => patch({ visible: v })}
-					size="sm"
-				/>
+				<Toggle checked={layer.visible} onchange={(v) => patch({ visible: v })} size="sm" />
 			</PropertyField>
 			<PropertyField
 				label="Locked"
@@ -343,8 +365,18 @@
 				onreset={() => resetField('locked')}
 				valueAlign="end"
 			>
-				<Toggle checked={layer.locked} onchange={(v) => patch({ locked: v })} size="sm" />
+				<Toggle
+					checked={layer.locked || lockInherited}
+					disabled={lockInherited}
+					onchange={(v) => patch({ locked: v })}
+					size="sm"
+				/>
 			</PropertyField>
+			{#if lockInherited}
+				<p class="px-1 pb-1 leading-snug text-muted text-[10px]">
+					Locked by parent. Unlock the parent to edit this layer.
+				</p>
+			{/if}
 			<PropertyField
 				label="Opacity"
 				exposed={exposedFlag('opacity')}
@@ -369,9 +401,9 @@
 		{#if instanceDef && layer.kind === 'widget'}
 			<PropertyGroup title="Widget · {instanceDef.name}">
 				{#each exposedGroups as group (group.layerId)}
-					<div class="space-y-0.5 border-b border-border/60 py-1 last:border-b-0">
+					<div class="space-y-0.5 border-border/60 py-1 border-b last:border-b-0">
 						<p
-							class="px-2 pt-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted"
+							class="px-2 pt-0.5 font-semibold tracking-wide text-muted text-[10px] uppercase"
 							title="Blueprint layer"
 						>
 							{group.layerName}
@@ -423,21 +455,21 @@
 						{/each}
 					</div>
 				{:else}
-					<p class="px-2 py-2 text-[11px] text-muted">
+					<p class="px-2 py-2 text-muted text-[11px]">
 						No exposed properties — edit the widget and use the eye icon on fields
 					</p>
 				{/each}
-				<div class="flex flex-col gap-1 px-1 py-1">
+				<div class="gap-1 px-1 py-1 flex flex-col">
 					<button
 						type="button"
-						class="rounded-md border border-border px-2 py-1.5 text-xs hover:bg-surface-overlay"
+						class="rounded-md border-border px-2 py-1.5 text-xs hover:bg-surface-overlay border"
 						onclick={() => layer.definitionId && oneditwidget?.(layer.definitionId)}
 					>
 						Edit widget blueprint
 					</button>
 					<button
 						type="button"
-						class="rounded-md border border-border px-2 py-1.5 text-xs text-danger hover:bg-surface-overlay"
+						class="rounded-md border-border px-2 py-1.5 text-xs text-danger hover:bg-surface-overlay border"
 						onclick={() => onbreakwidget?.()}
 					>
 						Break instance
@@ -454,7 +486,10 @@
 						value={layer.slotName ?? layer.name}
 						oninput={(e) => {
 							const v = (e.currentTarget as HTMLInputElement).value;
-							patch({ slotName: v, name: layer.name === (layer.slotName ?? layer.name) ? v : layer.name });
+							patch({
+								slotName: v,
+								name: layer.name === (layer.slotName ?? layer.name) ? v : layer.name
+							});
 						}}
 					/>
 				</PropertyField>
@@ -482,9 +517,9 @@
 					onchange={(v) => setAnchorPreset(v)}
 				/>
 			</PropertyField>
-			<p class="px-1 pb-1 text-[10px] leading-snug text-muted">
-				Cómo se sujeta al padre al redimensionarlo: esquina fija, centro, o Stretch para
-				estirarse con el contenedor (como UMG).
+			<p class="px-1 pb-1 leading-snug text-muted text-[10px]">
+				Cómo se sujeta al padre al redimensionarlo: esquina fija, centro, o Stretch para estirarse
+				con el contenedor (como UMG).
 			</p>
 			<PropertyField label="Size rule">
 				<Select
@@ -504,7 +539,7 @@
 				/>
 			</PropertyField>
 			{#if showChildAlignment}
-				<div class="grid grid-cols-2 gap-2">
+				<div class="gap-2 grid grid-cols-2">
 					<PropertyField label={parentKind === 'hBox' ? 'Align Y' : 'Align X'}>
 						<Select
 							size="xs"
@@ -535,7 +570,7 @@
 				</div>
 			{/if}
 			{#if showContainerPadding}
-				<div class="grid grid-cols-2 gap-x-1 gap-y-0.5">
+				<div class="gap-x-1 gap-y-0.5 grid grid-cols-2">
 					<PropertyField label="Pad L" labelWidth="2.75rem" compact>
 						<Input
 							type="number"
@@ -656,8 +691,7 @@
 						type="number"
 						size="sm"
 						value={String(layer.gap ?? 0)}
-						oninput={(e) =>
-							patch({ gap: Number((e.currentTarget as HTMLInputElement).value) })}
+						oninput={(e) => patch({ gap: Number((e.currentTarget as HTMLInputElement).value) })}
 					/>
 				</PropertyField>
 			{/if}
@@ -673,16 +707,18 @@
 						min={1}
 						value={String(layer.columns ?? 2)}
 						oninput={(e) =>
-							patch({ columns: Math.max(1, Number((e.currentTarget as HTMLInputElement).value) || 1) })}
+							patch({
+								columns: Math.max(1, Number((e.currentTarget as HTMLInputElement).value) || 1)
+							})}
 					/>
 				</PropertyField>
 			{/if}
 		</PropertyGroup>
 
 		<PropertyGroup title="Transform">
-			<div class="mx-1 mb-1.5 flex w-full min-w-0 flex-col gap-1.5">
+			<div class="mx-1 mb-1.5 min-w-0 gap-1.5 flex w-full flex-col">
 				<div
-					class="flex w-full flex-nowrap items-center justify-between gap-0 overflow-x-auto rounded-xl border border-border bg-surface-elevated p-0.5 shadow-sm"
+					class="gap-0 rounded-xl border-border bg-surface-elevated p-0.5 shadow-sm flex w-full flex-nowrap items-center justify-between overflow-x-auto border"
 					role="toolbar"
 					aria-label="Position"
 				>
@@ -693,6 +729,7 @@
 								label={action.label}
 								size="xs"
 								variant="ghost"
+								disabled={parentLayoutLocked}
 								onclick={() => applyAlign(action.id)}
 							>
 								<Icon class="h-3.5 w-3.5" />
@@ -701,7 +738,7 @@
 					{/each}
 				</div>
 				<div
-					class="mx-auto flex w-fit flex-nowrap items-center gap-0 rounded-xl border border-border bg-surface-elevated p-0.5 shadow-sm"
+					class="gap-0 rounded-xl border-border bg-surface-elevated p-0.5 shadow-sm mx-auto flex w-fit flex-nowrap items-center border"
 					role="toolbar"
 					aria-label="Flip"
 				>
@@ -732,15 +769,14 @@
 				</div>
 			</div>
 
-			<div class="grid grid-cols-2 gap-x-1 gap-y-0.5">
+			<div class="gap-x-1 gap-y-0.5 grid grid-cols-2">
 				<PropertyField label="X" labelWidth="1.25rem" compact>
 					<Input
 						type="number"
 						size="sm"
 						disabled={parentLayoutLocked}
 						value={String(Math.round(layer.rect.x))}
-						oninput={(e) =>
-							patchRect({ x: Number((e.currentTarget as HTMLInputElement).value) })}
+						oninput={(e) => patchRect({ x: Number((e.currentTarget as HTMLInputElement).value) })}
 					/>
 				</PropertyField>
 				<PropertyField label="Y" labelWidth="1.25rem" compact>
@@ -749,36 +785,41 @@
 						size="sm"
 						disabled={parentLayoutLocked}
 						value={String(Math.round(layer.rect.y))}
-						oninput={(e) =>
-							patchRect({ y: Number((e.currentTarget as HTMLInputElement).value) })}
+						oninput={(e) => patchRect({ y: Number((e.currentTarget as HTMLInputElement).value) })}
 					/>
 				</PropertyField>
 				<PropertyField label="W" labelWidth="1.25rem" compact>
 					<Input
 						type="number"
 						size="sm"
+						disabled={parentSizeLocked}
 						value={String(Math.round(layer.rect.w))}
-						oninput={(e) =>
-							patchRect({ w: Number((e.currentTarget as HTMLInputElement).value) })}
+						oninput={(e) => patchRect({ w: Number((e.currentTarget as HTMLInputElement).value) })}
 					/>
 				</PropertyField>
 				<PropertyField label="H" labelWidth="1.25rem" compact>
 					<Input
 						type="number"
 						size="sm"
+						disabled={parentSizeLocked}
 						value={String(Math.round(layer.rect.h))}
-						oninput={(e) =>
-							patchRect({ h: Number((e.currentTarget as HTMLInputElement).value) })}
+						oninput={(e) => patchRect({ h: Number((e.currentTarget as HTMLInputElement).value) })}
 					/>
 				</PropertyField>
 			</div>
-			{#if parentLayoutLocked}
-				<p class="px-1 pb-1 text-[10px] leading-snug text-muted">
-					X/Y los controla el layout del padre (HBox, VBox, Grid…). Usa Group / Border /
-					Overlay / Canvas Panel para posición libre.
+			{#if parentLayoutLocked || parentSizeLocked}
+				<p class="px-1 pb-1 leading-snug text-muted text-[10px]">
+					{#if parentLayoutLocked && parentSizeLocked}
+						Position and size follow the parent layout (Grid / Scale Box).
+					{:else if parentLayoutLocked}
+						X/Y follow the parent layout (HBox, VBox, Wrap, Grid). Resize is still allowed. Use
+						Group / Border / Overlay for free placement.
+					{:else}
+						W/H follow the parent layout (Grid / Scale Box).
+					{/if}
 				</p>
 			{:else if layer.parentId}
-				<p class="px-1 pb-1 text-[10px] leading-snug text-muted">
+				<p class="px-1 pb-1 leading-snug text-muted text-[10px]">
 					X/Y relativos al padre (0,0 = esquina superior izquierda del contenido).
 				</p>
 			{/if}
@@ -877,7 +918,8 @@
 						size="sm"
 						value={layer.src ?? ''}
 						placeholder="https://…"
-						oninput={(e) => patch({ src: (e.currentTarget as HTMLInputElement).value || undefined })}
+						oninput={(e) =>
+							patch({ src: (e.currentTarget as HTMLInputElement).value || undefined })}
 					/>
 				</PropertyField>
 				<PropertyField
@@ -924,11 +966,27 @@
 					modified={fieldModified('text')}
 					onreset={() => resetField('text')}
 				>
-					<Textarea
-						rows={3}
-						value={layer.text ?? ''}
-						oninput={(e) => patch({ text: (e.currentTarget as HTMLTextAreaElement).value })}
-					/>
+					<div class="relative min-w-0 w-full">
+						<Textarea
+							rows={2}
+							placeholder="Write the text…"
+							class="[&_textarea]:min-h-9 [&_textarea]:resize-none [&_textarea]:py-1.5 [&_textarea]:pr-8 [&_textarea]:text-xs"
+							value={layer.text ?? ''}
+							oninput={(e) => patch({ text: (e.currentTarget as HTMLTextAreaElement).value })}
+						/>
+						<div class="absolute top-0.5 right-0.5">
+							<Tooltip content="Open large editor" side="left">
+								<IconButton
+									label="Edit content"
+									size="xs"
+									variant="ghost"
+									onclick={() => (contentEditorOpen = true)}
+								>
+									<Maximize2 class="h-3.5 w-3.5" />
+								</IconButton>
+							</Tooltip>
+						</div>
+					</div>
 				</PropertyField>
 				<PropertyField
 					label="Auto size"
@@ -981,13 +1039,33 @@
 						onchange={(v) => patch({ textDecoration: v as CanvasLayer['textDecoration'] })}
 					/>
 				</PropertyField>
-				<PropertyField label="Align">
-					<Select
-						size="xs"
-						options={alignOptions}
-						value={layer.textAlign ?? 'left'}
-						onchange={(v) => patch({ textAlign: v as CanvasLayer['textAlign'] })}
-					/>
+				<PropertyField
+					label="Align"
+					modified={fieldModified('textAlign')}
+					onreset={() => resetField('textAlign')}
+				>
+					<div
+						class="gap-0 rounded-xl border-border bg-surface-elevated p-0.5 shadow-sm flex w-full items-center justify-between border"
+						role="toolbar"
+						aria-label="Text align"
+					>
+						{#each textAlignDock as action (action.id)}
+							{@const Icon = action.icon}
+							{@const active = (layer.textAlign ?? 'left') === action.id}
+							<Tooltip content={action.label} side="top" class="min-w-0 flex-1">
+								<IconButton
+									label={action.label}
+									size="xs"
+									variant={active ? 'secondary' : 'ghost'}
+									class="w-full"
+									aria-pressed={active}
+									onclick={() => patch({ textAlign: action.id })}
+								>
+									<Icon class="h-3.5 w-3.5" />
+								</IconButton>
+							</Tooltip>
+						{/each}
+					</div>
 				</PropertyField>
 				<PropertyField
 					label="Color"
@@ -1053,6 +1131,22 @@
 					/>
 				</PropertyField>
 			</PropertyGroup>
+			<Dialog
+				bind:open={contentEditorOpen}
+				title="Edit content"
+				description="Changes apply to the canvas as you type."
+				size="lg"
+				confirmLabel="Done"
+				showCancel={false}
+			>
+				<Textarea
+					rows={12}
+					autofocus
+					placeholder="Write the text…"
+					value={layer.text ?? ''}
+					oninput={(e) => patch({ text: (e.currentTarget as HTMLTextAreaElement).value })}
+				/>
+			</Dialog>
 		{/if}
 
 		{#if shapeKinds.includes(layer.kind) && layer.kind !== 'sticky'}
@@ -1127,7 +1221,7 @@
 	{#if doc && !layer && selectionCount <= 1}
 		<PropertyGroup title={widgetDefinition ? 'Widget artboard' : 'Artboard'}>
 			{#if widgetDefinition}
-				<div class="grid grid-cols-2 gap-2 px-1">
+				<div class="gap-2 px-1 grid grid-cols-2">
 					<PropertyField label="Width">
 						<Input
 							type="number"
@@ -1152,7 +1246,7 @@
 					</PropertyField>
 				</div>
 			{:else}
-				<p class="px-1 text-[11px] text-muted">{doc.width} × {doc.height}px</p>
+				<p class="px-1 text-muted text-[11px]">{doc.width} × {doc.height}px</p>
 			{/if}
 			<PropertyField label="Background">
 				<ColorPicker
@@ -1163,7 +1257,7 @@
 				/>
 			</PropertyField>
 			{#if widgetDefinition}
-				<p class="px-1 pt-1 text-[10px] text-muted">
+				<p class="px-1 pt-1 text-muted text-[10px]">
 					Select a layer to edit it. Use the eye icon on properties to expose them on instances.
 				</p>
 			{/if}

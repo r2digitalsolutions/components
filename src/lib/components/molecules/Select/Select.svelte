@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { on } from 'svelte/events';
 	import { createId } from '$lib/utils/id.js';
+	import { popoverInvokerToggle } from '$lib/utils/popoverInvoker.js';
 
 	export interface SelectOption {
 		value: string;
@@ -192,25 +193,42 @@
 
 		const rect = triggerEl.getBoundingClientRect();
 		const gap = 6;
+		const margin = 8;
 		const maxHeight = 240;
-		const spaceBelow = window.innerHeight - rect.bottom - gap;
-		const spaceAbove = rect.top - gap;
+		const vv = window.visualViewport;
+		const viewW = vv?.width ?? window.innerWidth;
+		const viewH = vv?.height ?? window.innerHeight;
+		const viewLeft = vv?.offsetLeft ?? 0;
+		const viewTop = vv?.offsetTop ?? 0;
+
+		const spaceBelow = viewTop + viewH - rect.bottom - gap - margin;
+		const spaceAbove = rect.top - viewTop - gap - margin;
 		const openUp = spaceBelow < Math.min(maxHeight, 160) && spaceAbove > spaceBelow;
 		const available = Math.max(120, openUp ? spaceAbove : spaceBelow);
-		const maxWidth = Math.min(320, window.innerWidth - 16);
-		let left = rect.left;
-		if (left + maxWidth > window.innerWidth - 8) {
-			left = Math.max(8, window.innerWidth - maxWidth - 8);
+		const maxWidth = Math.min(320, viewW - margin * 2);
+		let measured = rect.width;
+		if (listboxEl?.matches(':popover-open')) {
+			const raw = listboxEl.getBoundingClientRect().width;
+			// UA [popover] { inset: 0 } can report nearly the viewport until CSS/layout settles.
+			if (raw > 0 && raw < viewW * 0.5) measured = raw;
 		}
+		const width = Math.min(maxWidth, Math.max(rect.width, measured));
+
+		let left = rect.left;
+		if (left + width > viewLeft + viewW - margin) {
+			left = rect.right - width;
+		}
+		left = Math.min(Math.max(left, viewLeft + margin), viewLeft + viewW - margin - width);
 
 		listboxStyle = [
-			`top: ${openUp ? 'auto' : `${rect.bottom + gap}px`}`,
-			`bottom: ${openUp ? `${window.innerHeight - rect.top + gap}px` : 'auto'}`,
-			`left: ${left}px`,
-			`min-width: ${rect.width}px`,
-			`width: max-content`,
-			`max-width: ${maxWidth}px`,
-			`max-height: ${Math.min(maxHeight, available)}px`
+			`top:${openUp ? 'auto' : `${rect.bottom + gap}px`}`,
+			`bottom:${openUp ? `${viewTop + viewH - rect.top + gap}px` : 'auto'}`,
+			`left:${left}px`,
+			'right:auto',
+			`min-width:${rect.width}px`,
+			'width:max-content',
+			`max-width:${maxWidth}px`,
+			`max-height:${Math.min(maxHeight, available)}px`
 		].join('; ');
 	}
 
@@ -244,6 +262,7 @@
 			highlightedIndex = selectedIndex >= 0 ? selectedIndex : (enabledIndexes[0] ?? -1);
 			ignoreHover = true;
 			requestAnimationFrame(() => {
+				positionListbox();
 				if (searchable) searchInputEl?.focus();
 				else listboxEl?.focus();
 				scrollHighlightedIntoView();
@@ -489,6 +508,7 @@
 			{disabled}
 			popovertarget={listboxId}
 			popovertargetaction="toggle"
+			{@attach popoverInvokerToggle(() => listboxEl)}
 			onkeydown={handleTriggerKeydown}
 			class={[
 				'gap-2 rounded-lg flex w-full items-center justify-between border bg-transparent text-left transition-colors duration-150 outline-none select-none',
@@ -710,15 +730,17 @@
 </div>
 
 <style>
-	.select-listbox {
+	.select-listbox[popover] {
 		position: fixed;
+		inset: unset;
+		margin: 0;
 	}
 
 	.select-listbox:popover-open {
 		display: flex;
+		overflow: hidden;
 	}
 
-	/* Reset UA popover centering */
 	.select-listbox:not(:popover-open) {
 		display: none;
 	}

@@ -2,6 +2,7 @@
 	import type { Component, Snippet } from 'svelte';
 	import { on } from 'svelte/events';
 	import { createId } from '$lib/utils/id.js';
+	import { popoverInvokerToggle } from '$lib/utils/popoverInvoker.js';
 
 	export interface DropdownItem {
 		id: string;
@@ -248,23 +249,6 @@
 		if (menuEl?.matches(':popover-open')) menuEl.hidePopover();
 	}
 
-	$effect(() => {
-		const btn = triggerEl;
-		if (!btn) return;
-		const onClick = (event: MouseEvent) => {
-			event.stopPropagation();
-			if (disabled) return;
-			const el = menuEl;
-			if (!el) return;
-			const isOpen = el.matches(':popover-open');
-			setTimeout(() => {
-				if (isOpen) closeMenu();
-				else openMenu();
-			}, 0);
-		};
-		btn.addEventListener('click', onClick);
-		return () => btn.removeEventListener('click', onClick);
-	});
 
 	function handleBeforeToggle(event: ToggleEvent) {
 		if (event.newState === 'open') {
@@ -445,6 +429,9 @@
 		aria-haspopup="menu"
 		aria-expanded={open}
 		aria-controls={menuId}
+		popovertarget={menuId}
+		popovertargetaction="toggle"
+		{@attach popoverInvokerToggle(() => menuEl)}
 	>
 		{#if trigger}
 			{@render trigger()}
@@ -607,8 +594,10 @@
 </div>
 
 <style>
-	.dropdown-menu {
+	.dropdown-menu[popover] {
 		position: fixed;
+		inset: unset;
+		margin: 0;
 	}
 
 	.dropdown-menu-list {

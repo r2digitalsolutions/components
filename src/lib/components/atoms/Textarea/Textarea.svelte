@@ -22,6 +22,7 @@
 		onfocus?: (e: FocusEvent) => void;
 		onblur?: (e: FocusEvent) => void;
 		onkeydown?: (e: KeyboardEvent) => void;
+		autofocus?: boolean;
 	}
 
 	let {
@@ -39,6 +40,7 @@
 		maxLength,
 		showCount = false,
 		autoResize = false,
+		autofocus = false,
 		class: className = '',
 		oninput,
 		onchange,
@@ -103,6 +105,7 @@
 	{/if}
 
 	<div class="relative w-full">
+		<!-- svelte-ignore a11y_autofocus -->
 		<textarea
 			id={textareaId}
 			{name}
@@ -111,6 +114,7 @@
 			{readonly}
 			{required}
 			{rows}
+			{autofocus}
 			maxlength={maxLength}
 			bind:value
 			aria-describedby={helperText ? helperId : undefined}

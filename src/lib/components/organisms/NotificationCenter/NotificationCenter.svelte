@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { on } from 'svelte/events';
 	import NotificationRow from '$lib/components/molecules/NotificationRow/NotificationRow.svelte';
+	import { popoverInvokerToggle } from '$lib/utils/popoverInvoker.js';
 
 	export interface NotificationItem {
 		id: string;
@@ -169,6 +170,7 @@
 		type="button"
 		popovertarget={popoverId}
 		popovertargetaction="toggle"
+		{@attach popoverInvokerToggle(() => popoverEl)}
 		aria-label="{copy.trigger}{unreadCount > 0 ? withCount(copy.unreadSuffix, unreadCount) : ''}"
 		aria-expanded={open}
 		aria-controls={popoverId}

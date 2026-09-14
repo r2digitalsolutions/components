@@ -5,6 +5,7 @@
 	import Badge from '$lib/components/atoms/Badge/Badge.svelte';
 	import StatusDot from '$lib/components/atoms/StatusDot/StatusDot.svelte';
 	import { createId } from '$lib/utils/id.js';
+	import { popoverInvokerToggle } from '$lib/utils/popoverInvoker.js';
 
 	export interface UserMenuItem {
 		id: string;
@@ -238,6 +239,7 @@
 		aria-haspopup="menu"
 		aria-expanded={open}
 		aria-controls={menuId || undefined}
+		{@attach popoverInvokerToggle(() => menuEl)}
 	>
 		<span class="shrink-0">
 			<Avatar {src} {name} size={avatarSize} {status} />
