@@ -30,18 +30,19 @@
 	import {
 		applyScrollBoxOffsets,
 		computeAbsoluteRects,
-		contentPadding,
 		enclosingGroupId,
+		fitGroupsToChildren,
 		isEffectivelyLocked,
 		isEffectivelyVisible,
 		isLayoutPositionLocked,
 		isLayoutSizeLocked,
 		isMarqueePassThroughKind,
+		layerFromAbsoluteRect,
 		paintTransformForLayer,
+		scaleSubtreeAbsolute,
 		scrollBoxOverflow,
 		scrollBarMetrics,
 		selectionAncestorIds,
-		slotFromLocalRect,
 		clipPathForLayer
 	} from '$lib/utils/canvasHierarchy.js';
 	import { flattenLayersWithWidgets } from '$lib/utils/canvasWidget.js';
@@ -312,28 +313,15 @@
 		const parentId = layer.parentId ?? null;
 		const parentAbs = parentId ? (absMap.get(parentId) ?? null) : null;
 		const parentLayer = parentId ? (workingLayers.find((l) => l.id === parentId) ?? null) : null;
-		const pad = parentLayer
-			? contentPadding(parentLayer)
-			: { left: 0, top: 0, right: 0, bottom: 0 };
-		const originX = (parentAbs?.x ?? 0) + pad.left;
-		const originY = (parentAbs?.y ?? 0) + pad.top;
-		const contentW = parentAbs ? Math.max(0, parentAbs.w - pad.left - pad.right) : doc.width;
-		const contentH = parentAbs ? Math.max(0, parentAbs.h - pad.top - pad.bottom) : doc.height;
-		const local = {
-			x: absRect.x - originX,
-			y: absRect.y - originY,
-			w: absRect.w,
-			h: absRect.h
-		};
-		const anchors = layer.slot?.anchors ?? { minX: 0, minY: 0, maxX: 0, maxY: 0 };
-		const slot = {
-			...slotFromLocalRect({ width: contentW, height: contentH }, local, anchors),
-			padding: layer.slot?.padding,
-			sizeRule: layer.slot?.sizeRule,
-			alignment: layer.slot?.alignment,
-			order: layer.slot?.order
-		};
-		return { ...layer, rect: local, slot };
+		return layerFromAbsoluteRect(layer, absRect, parentAbs, parentLayer, {
+			width: doc.width,
+			height: doc.height
+		});
+	}
+
+	function commitGroupGeometry(next: CanvasLayer[]) {
+		draftLayers = fitGroupsToChildren(next, { width: doc.width, height: doc.height });
+		if (interactCount === 0) commitDraft();
 	}
 
 	function commitDraft() {
@@ -411,27 +399,40 @@
 			(Math.abs(dx) > 0.01 || Math.abs(dy) > 0.01);
 
 		if (groupMove) {
-			draftLayers = layers.map((l) => {
-				if (!selectedSet.has(l.id) || isEffectivelyLocked(workingLayers, l.id, workingById)) {
-					return l;
-				}
-				if (isLayoutPositionLocked(workingLayers, l.id, workingById)) return l;
-				const a = absMap.get(l.id) ?? l.rect;
-				const moved = {
-					x: a.x + dx,
-					y: a.y + dy,
-					w: a.w,
-					h: a.h
-				};
-				return absToLocalUpdate(l, moved);
-			});
+			commitGroupGeometry(
+				layers.map((l) => {
+					if (!selectedSet.has(l.id) || isEffectivelyLocked(workingLayers, l.id, workingById)) {
+						return l;
+					}
+					if (isLayoutPositionLocked(workingLayers, l.id, workingById)) return l;
+					const a = absMap.get(l.id) ?? l.rect;
+					const moved = {
+						x: a.x + dx,
+						y: a.y + dy,
+						w: a.w,
+						h: a.h
+					};
+					return absToLocalUpdate(l, moved);
+				})
+			);
 			return;
 		}
 
-		const updated = applyTextAutoSize(source, absToLocalUpdate(source, nextAbs), prevAbs, nextAbs);
-		draftLayers = layers.map((l) => (l.id === updated.id ? updated : l));
-		// If somehow interact end already fired without draft, commit immediately.
-		if (interactCount === 0) commitDraft();
+		const sizeChanged = !moving;
+		const rootSize = { width: doc.width, height: doc.height };
+		let nextLayers = layers;
+		if (source.kind === 'group' && sizeChanged) {
+			nextLayers = scaleSubtreeAbsolute(layers, source.id, prevAbs, nextAbs, rootSize);
+		} else {
+			const updated = applyTextAutoSize(
+				source,
+				absToLocalUpdate(source, nextAbs),
+				prevAbs,
+				nextAbs
+			);
+			nextLayers = layers.map((l) => (l.id === updated.id ? updated : l));
+		}
+		commitGroupGeometry(nextLayers);
 	}
 
 	function groupedChildPassthrough(layer: CanvasLayer): boolean {
@@ -516,7 +517,10 @@
 		const s = scale;
 		return sorted
 			.filter((l) => {
-				if (!effectivelyVisible.has(l.id) || isEffectivelyLocked(workingLayers, l.id, workingById)) {
+				if (
+					!effectivelyVisible.has(l.id) ||
+					isEffectivelyLocked(workingLayers, l.id, workingById)
+				) {
 					return false;
 				}
 				const realId = resolveSelectableId(l.id);
@@ -798,7 +802,12 @@
 	}
 
 	function removeActivePathPoint() {
-		if (!selectedPath || isEffectivelyLocked(workingLayers, selectedPath.id, workingById) || activePathPoint == null) return;
+		if (
+			!selectedPath ||
+			isEffectivelyLocked(workingLayers, selectedPath.id, workingById) ||
+			activePathPoint == null
+		)
+			return;
 		const docs = pathAbsPoints(selectedPath);
 		if (docs.length <= 2) return;
 		docs.splice(activePathPoint, 1);
@@ -1302,7 +1311,7 @@
 								{@const outline = paintAbsMap.get(pid)}
 								{#if outline}
 									<div
-										class="pointer-events-none absolute z-[999980] outline outline-1 outline-dashed outline-[#3b82f6]/80"
+										class="pointer-events-none absolute z-[999980] outline outline-1 outline-[#3b82f6]/80 outline-dashed"
 										style:left="{outline.x}px"
 										style:top="{outline.y}px"
 										style:width="{outline.w}px"

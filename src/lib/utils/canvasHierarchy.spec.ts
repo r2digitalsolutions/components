@@ -10,6 +10,7 @@ import {
 	applyScrollBoxOffsets,
 	computeAbsoluteRects,
 	enclosingGroupId,
+	fitGroupsToChildren,
 	isEffectivelyVisible,
 	isEffectivelyLocked,
 	isLayoutPositionLocked,
@@ -17,10 +18,12 @@ import {
 	selectionAncestorIds,
 	paintTransformForLayer,
 	reparentLayer,
+	scaleSubtreeAbsolute,
 	scrollBoxOverflow,
 	scrollBarMetrics,
 	slotFromLocalRect,
 	stepAxis,
+	syncSlotFromRect,
 	translateSlot,
 	wrapSelection
 } from './canvasHierarchy.js';
@@ -412,6 +415,143 @@ describe('wrapSelection', () => {
 		const abs = computeAbsoluteRects(result!.doc.layers, { width: 400, height: 300 });
 		expect(abs.get(a.id)).toEqual({ x: 10, y: 10, w: 40, h: 40 });
 		expect(abs.get(b.id)).toEqual({ x: 80, y: 10, w: 50, h: 20 });
+	});
+});
+
+describe('fitGroupsToChildren', () => {
+	const root = { width: 400, height: 300 };
+
+	it('is a no-op when the group already wraps its children', () => {
+		const a = createCanvasLayer('rect', {
+			name: 'A',
+			rect: { x: 10, y: 10, w: 40, h: 40 },
+			zIndex: 0
+		});
+		const b = createCanvasLayer('text', {
+			name: 'B',
+			rect: { x: 80, y: 10, w: 50, h: 20 },
+			zIndex: 1
+		});
+		const wrapped = wrapSelection(
+			emptyCanvasDocument({ width: 400, height: 300, layers: [a, b] }),
+			[a.id, b.id],
+			'group'
+		)!;
+		const fitted = fitGroupsToChildren(wrapped.doc.layers, root);
+		const absBefore = computeAbsoluteRects(wrapped.doc.layers, root);
+		const absAfter = computeAbsoluteRects(fitted, root);
+		expect(absAfter.get(a.id)).toEqual(absBefore.get(a.id));
+		expect(absAfter.get(b.id)).toEqual(absBefore.get(b.id));
+		expect(absAfter.get(wrapped.wrapperId)).toEqual(absBefore.get(wrapped.wrapperId));
+	});
+
+	it('grows and rebases when a child moves outside the group box', () => {
+		const a = createCanvasLayer('rect', {
+			name: 'A',
+			rect: { x: 10, y: 10, w: 40, h: 40 },
+			zIndex: 0
+		});
+		const b = createCanvasLayer('text', {
+			name: 'B',
+			rect: { x: 80, y: 10, w: 50, h: 20 },
+			zIndex: 1
+		});
+		const wrapped = wrapSelection(
+			emptyCanvasDocument({ width: 400, height: 300, layers: [a, b] }),
+			[a.id, b.id],
+			'group'
+		)!;
+		const group = wrapped.doc.layers.find((l) => l.id === wrapped.wrapperId)!;
+		const moved = wrapped.doc.layers.map((l) => {
+			if (l.id !== b.id) return l;
+			const rect = { ...l.rect, x: l.rect.x + 40, y: l.rect.y + 30 };
+			return syncSlotFromRect({ ...l, rect }, { width: group.rect.w, height: group.rect.h });
+		});
+		const fitted = fitGroupsToChildren(moved, root);
+		const abs = computeAbsoluteRects(fitted, root);
+		expect(abs.get(a.id)).toEqual({ x: 10, y: 10, w: 40, h: 40 });
+		expect(abs.get(b.id)).toEqual({ x: 120, y: 40, w: 50, h: 20 });
+		expect(abs.get(wrapped.wrapperId)).toEqual({ x: 10, y: 10, w: 160, h: 50 });
+		const childB = fitted.find((l) => l.id === b.id);
+		expect(childB?.rect.x).toBe(110);
+		expect(childB?.rect.y).toBe(30);
+	});
+
+	it('fits nested groups innermost first', () => {
+		const innerChild = createCanvasLayer('rect', {
+			name: 'Inner',
+			rect: { x: 20, y: 20, w: 30, h: 30 },
+			zIndex: 0
+		});
+		const innerWrap = wrapSelection(
+			emptyCanvasDocument({ width: 400, height: 300, layers: [innerChild] }),
+			[innerChild.id],
+			'group'
+		)!;
+		const sibling = createCanvasLayer('ellipse', {
+			name: 'Sibling',
+			rect: { x: 80, y: 20, w: 20, h: 20 },
+			zIndex: 1
+		});
+		const outerWrap = wrapSelection(
+			{ ...innerWrap.doc, layers: [...innerWrap.doc.layers, sibling] },
+			[innerWrap.wrapperId, sibling.id],
+			'group'
+		)!;
+		const innerGroup = outerWrap.doc.layers.find((l) => l.id === innerWrap.wrapperId)!;
+		const moved = outerWrap.doc.layers.map((l) => {
+			if (l.id !== innerChild.id) return l;
+			const rect = { ...l.rect, x: l.rect.x + 50 };
+			return syncSlotFromRect(
+				{ ...l, rect },
+				{ width: innerGroup.rect.w, height: innerGroup.rect.h }
+			);
+		});
+		const fitted = fitGroupsToChildren(moved, root);
+		const abs = computeAbsoluteRects(fitted, root);
+		const innerAbs = abs.get(innerChild.id)!;
+		const innerGroupAbs = abs.get(innerWrap.wrapperId)!;
+		const outerAbs = abs.get(outerWrap.wrapperId)!;
+		expect(innerGroupAbs.x).toBe(innerAbs.x);
+		expect(innerGroupAbs.w).toBe(innerAbs.w);
+		expect(outerAbs.x).toBeLessThanOrEqual(innerAbs.x);
+		expect(outerAbs.x + outerAbs.w).toBeGreaterThanOrEqual(innerAbs.x + innerAbs.w);
+		expect(outerAbs.x + outerAbs.w).toBeGreaterThanOrEqual(
+			(abs.get(sibling.id)?.x ?? 0) + (abs.get(sibling.id)?.w ?? 0)
+		);
+	});
+});
+
+describe('scaleSubtreeAbsolute', () => {
+	it('scales group children from the new origin', () => {
+		const child = createCanvasLayer('rect', {
+			name: 'A',
+			rect: { x: 10, y: 10, w: 40, h: 20 },
+			zIndex: 0
+		});
+		const wrapped = wrapSelection(
+			emptyCanvasDocument({ width: 400, height: 300, layers: [child] }),
+			[child.id],
+			'group'
+		)!;
+		const root = { width: 400, height: 300 };
+		const prevAbs = computeAbsoluteRects(wrapped.doc.layers, root).get(wrapped.wrapperId)!;
+		const nextAbs = { x: prevAbs.x, y: prevAbs.y, w: prevAbs.w * 2, h: prevAbs.h * 2 };
+		const scaled = scaleSubtreeAbsolute(
+			wrapped.doc.layers,
+			wrapped.wrapperId,
+			prevAbs,
+			nextAbs,
+			root
+		);
+		const abs = computeAbsoluteRects(scaled, root);
+		expect(abs.get(wrapped.wrapperId)).toEqual(nextAbs);
+		expect(abs.get(child.id)).toEqual({
+			x: 10,
+			y: 10,
+			w: 80,
+			h: 40
+		});
 	});
 });
 

@@ -904,3 +904,168 @@ export function syncSlotFromRect(
 	};
 	return { ...layer, slot, rect: rectFromSlot(slot, parentSize) };
 }
+
+const GROUP_FIT_EPS = 0.5;
+
+function rectsApproxEqual(a: CanvasLayerRect, b: CanvasLayerRect, eps = GROUP_FIT_EPS): boolean {
+	return (
+		Math.abs(a.x - b.x) < eps &&
+		Math.abs(a.y - b.y) < eps &&
+		Math.abs(a.w - b.w) < eps &&
+		Math.abs(a.h - b.h) < eps
+	);
+}
+
+function rootFrame(rootSize: { width: number; height: number }): CanvasLayerRect {
+	return { x: 0, y: 0, w: rootSize.width, h: rootSize.height };
+}
+
+function ancestorDepth(
+	layers: CanvasLayer[],
+	layerId: string,
+	map: Map<string, CanvasLayer>
+): number {
+	let d = 0;
+	let cur = map.get(layerId);
+	while (cur?.parentId) {
+		d += 1;
+		cur = map.get(cur.parentId);
+		if (d > layers.length) break;
+	}
+	return d;
+}
+
+/** Write an absolute rect back to layer.rect / slot in parent-local space. */
+export function layerFromAbsoluteRect(
+	layer: CanvasLayer,
+	absRect: CanvasLayerRect,
+	parentAbs: CanvasLayerRect | null,
+	parentLayer: CanvasLayer | null,
+	rootSize: { width: number; height: number }
+): CanvasLayer {
+	const pad = parentLayer ? contentPadding(parentLayer) : { left: 0, top: 0, right: 0, bottom: 0 };
+	const frame = parentAbs ?? rootFrame(rootSize);
+	const originX = frame.x + pad.left;
+	const originY = frame.y + pad.top;
+	const contentW = Math.max(0, frame.w - pad.left - pad.right);
+	const contentH = Math.max(0, frame.h - pad.top - pad.bottom);
+	const local: CanvasLayerRect = {
+		x: absRect.x - originX,
+		y: absRect.y - originY,
+		w: absRect.w,
+		h: absRect.h
+	};
+	return syncSlotFromRect({ ...layer, rect: local }, { width: contentW, height: contentH });
+}
+
+/**
+ * Figma-style groups: origin + size is the AABB of direct children.
+ * Children keep their absolute positions (local coords are rebased).
+ * Nested groups are fitted innermost-first.
+ */
+export function fitGroupsToChildren(
+	layers: CanvasLayer[],
+	rootSize: { width: number; height: number }
+): CanvasLayer[] {
+	const byId = new Map(layers.map((l) => [l.id, l]));
+	const groups = layers
+		.filter((l) => l.kind === 'group')
+		.sort((a, b) => ancestorDepth(layers, b.id, byId) - ancestorDepth(layers, a.id, byId));
+	if (!groups.length) return layers;
+
+	let next = layers;
+	for (const group of groups) {
+		next = fitOneGroup(next, group.id, rootSize);
+	}
+	return next;
+}
+
+function fitOneGroup(
+	layers: CanvasLayer[],
+	groupId: string,
+	rootSize: { width: number; height: number }
+): CanvasLayer[] {
+	const children = getChildren(layers, groupId);
+	if (!children.length) return layers;
+
+	const absMap = computeAbsoluteRects(layers, rootSize);
+	const group = layers.find((l) => l.id === groupId);
+	if (!group) return layers;
+
+	let minX = Infinity;
+	let minY = Infinity;
+	let maxX = -Infinity;
+	let maxY = -Infinity;
+	for (const c of children) {
+		const r = absMap.get(c.id);
+		if (!r) continue;
+		minX = Math.min(minX, r.x);
+		minY = Math.min(minY, r.y);
+		maxX = Math.max(maxX, r.x + r.w);
+		maxY = Math.max(maxY, r.y + r.h);
+	}
+	if (!Number.isFinite(minX)) return layers;
+
+	const newAbs: CanvasLayerRect = {
+		x: minX,
+		y: minY,
+		w: Math.max(1, maxX - minX),
+		h: Math.max(1, maxY - minY)
+	};
+	const oldAbs = absMap.get(groupId) ?? group.rect;
+	if (rectsApproxEqual(oldAbs, newAbs)) return layers;
+
+	const byId = new Map(layers.map((l) => [l.id, l]));
+	const parent = group.parentId ? (byId.get(group.parentId) ?? null) : null;
+	const parentAbs = group.parentId ? (absMap.get(group.parentId) ?? null) : rootFrame(rootSize);
+	const updated = new Map<string, CanvasLayer>();
+	updated.set(groupId, layerFromAbsoluteRect(group, newAbs, parentAbs, parent, rootSize));
+	for (const c of children) {
+		const r = absMap.get(c.id);
+		if (!r) continue;
+		updated.set(c.id, layerFromAbsoluteRect(c, r, newAbs, group, rootSize));
+	}
+	return layers.map((l) => updated.get(l.id) ?? l);
+}
+
+/**
+ * Scale a group (or any subtree) from `prevAbs` to `nextAbs`.
+ * Descendants keep their relative placement inside the box.
+ */
+export function scaleSubtreeAbsolute(
+	layers: CanvasLayer[],
+	rootId: string,
+	prevAbs: CanvasLayerRect,
+	nextAbs: CanvasLayerRect,
+	rootSize: { width: number; height: number }
+): CanvasLayer[] {
+	const sx = prevAbs.w > 0 ? nextAbs.w / prevAbs.w : 1;
+	const sy = prevAbs.h > 0 ? nextAbs.h / prevAbs.h : 1;
+	const absMap = computeAbsoluteRects(layers, rootSize);
+	const ids = new Set(getSubtreeIds(layers, rootId));
+	const byId = new Map(layers.map((l) => [l.id, l]));
+	const nextAbsMap = new Map<string, CanvasLayerRect>();
+	for (const id of ids) {
+		const r = absMap.get(id);
+		if (!r) continue;
+		if (id === rootId) {
+			nextAbsMap.set(id, { ...nextAbs });
+			continue;
+		}
+		nextAbsMap.set(id, {
+			x: nextAbs.x + (r.x - prevAbs.x) * sx,
+			y: nextAbs.y + (r.y - prevAbs.y) * sy,
+			w: Math.max(1, r.w * sx),
+			h: Math.max(1, r.h * sy)
+		});
+	}
+	return layers.map((l) => {
+		const abs = nextAbsMap.get(l.id);
+		if (!abs) return l;
+		const parent = l.parentId ? (byId.get(l.parentId) ?? null) : null;
+		const parentAbs = l.parentId
+			? (nextAbsMap.get(l.parentId) ?? absMap.get(l.parentId) ?? null)
+			: rootFrame(rootSize);
+		return layerFromAbsoluteRect(l, abs, parentAbs, parent, rootSize);
+	});
+}

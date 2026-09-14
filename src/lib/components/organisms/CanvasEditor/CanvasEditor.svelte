@@ -36,6 +36,7 @@
 	import {
 		deleteSubtree,
 		duplicateSubtree,
+		fitGroupsToChildren,
 		getAncestors,
 		isContainerKind,
 		isEffectivelyLocked,
@@ -45,6 +46,7 @@
 		reparentLayer,
 		reorderSiblings,
 		resolveSlotRect,
+		scaleSubtreeAbsolute,
 		stepAxis,
 		syncSlotFromRect,
 		ungroupLayers,
@@ -421,10 +423,13 @@
 	}
 
 	function emitStageLayers(layers: CanvasLayer[], extra?: Partial<CanvasDocument>) {
+		const width = extra?.width ?? stageDoc.width;
+		const height = extra?.height ?? stageDoc.height;
+		const fitted = fitGroupsToChildren(layers, { width, height });
 		if (editingWidgetId) {
 			let next = updateWidgetDefinition(value, editingWidgetId, (d) => ({
 				...d,
-				layers,
+				layers: fitted,
 				width: extra?.width ?? d.width,
 				height: extra?.height ?? d.height,
 				background: extra?.background ?? d.background
@@ -436,11 +441,21 @@
 			emit(next);
 			return;
 		}
-		emit({ ...value, ...extra, layers });
+		emit({ ...value, ...extra, layers: fitted });
 	}
 
 	function patchLayer(layer: CanvasLayer) {
-		emitStageLayers(stageDoc.layers.map((l) => (l.id === layer.id ? layer : l)));
+		const rootSize = { width: stageDoc.width, height: stageDoc.height };
+		const prev = stageDoc.layers.find((l) => l.id === layer.id);
+		let layers = stageDoc.layers.map((l) => (l.id === layer.id ? layer : l));
+		if (prev && layer.kind === 'group') {
+			const prevAbs = computeAbsoluteRects(stageDoc.layers, rootSize).get(prev.id) ?? prev.rect;
+			const nextAbs = computeAbsoluteRects(layers, rootSize).get(layer.id) ?? layer.rect;
+			if (Math.abs(nextAbs.w - prevAbs.w) > 0.5 || Math.abs(nextAbs.h - prevAbs.h) > 0.5) {
+				layers = scaleSubtreeAbsolute(stageDoc.layers, layer.id, prevAbs, nextAbs, rootSize);
+			}
+		}
+		emitStageLayers(layers);
 	}
 
 	function addLayer(layer: CanvasLayer, opts?: { parentId?: string | null }) {
