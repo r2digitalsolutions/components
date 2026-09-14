@@ -72,7 +72,14 @@
 
 <div class={['w-full space-y-3', className]}>
 	{#if type === 'bar'}
-		<svg viewBox={`0 0 320 ${height}`} class="h-auto w-full" role="img" aria-label="Bar chart">
+		<svg
+			viewBox={`0 0 320 ${height}`}
+			preserveAspectRatio="none"
+			class="block w-full"
+			style:height={`${height}px`}
+			role="img"
+			aria-label="Bar chart"
+		>
 			{#each data as d, i}
 				{@const bw = Math.max(12, (320 - 32) / data.length - 8)}
 				{@const x = 16 + i * ((320 - 32) / data.length)}
@@ -93,7 +100,14 @@
 			{/each}
 		</svg>
 	{:else if type === 'line'}
-		<svg viewBox={`0 0 320 ${height}`} class="h-auto w-full" role="img" aria-label="Line chart">
+		<svg
+			viewBox={`0 0 320 ${height}`}
+			preserveAspectRatio="none"
+			class="block w-full"
+			style:height={`${height}px`}
+			role="img"
+			aria-label="Line chart"
+		>
 			<polyline
 				points={linePoints}
 				fill="none"
