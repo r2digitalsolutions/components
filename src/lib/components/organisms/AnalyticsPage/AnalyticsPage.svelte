@@ -162,7 +162,7 @@
 		emptyTitle = 'No analytics yet',
 		emptyDescription = 'Connect a data source or wait for traffic to populate this page.',
 		class: className = '',
-		actions,
+		actions: actionsProp,
 		onperiodchange,
 		onexport
 	}: AnalyticsPageProps = $props();
@@ -204,8 +204,8 @@
 						Export
 					</Button>
 				{/if}
-				{#if actions}
-					{@render actions()}
+				{#if actionsProp}
+					{@render actionsProp()}
 				{/if}
 			</div>
 		{/snippet}

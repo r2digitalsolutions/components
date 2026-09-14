@@ -67,7 +67,7 @@
 		emptyDescription = 'Try another search term or upload new files.',
 		showSelectedBar = true,
 		class: className = '',
-		actions,
+		actions: actionsProp,
 		emptyAction,
 		onconfirm,
 		oncancel,
@@ -151,8 +151,8 @@
 <div class={['mx-auto flex w-full max-w-3xl flex-col gap-5', className]}>
 	<PageHeader {title} description={subtitle}>
 		{#snippet actions()}
-			{#if actions}
-				{@render actions()}
+			{#if actionsProp}
+				{@render actionsProp()}
 			{:else if onupload}
 				<Button size="sm" variant="secondary" onclick={() => onupload?.()}>Upload</Button>
 			{/if}

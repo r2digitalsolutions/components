@@ -207,7 +207,7 @@
 		maxDate,
 		locale = 'en',
 		class: className = '',
-		actions,
+		actions: actionsProp,
 		ondatechange,
 		onrangechange,
 		ondurationchange,
@@ -431,8 +431,8 @@
 <div class={['mx-auto w-full max-w-6xl space-y-5', className]}>
 	<PageHeader {title} {description}>
 		{#snippet actions()}
-			{#if actions}
-				{@render actions()}
+			{#if actionsProp}
+				{@render actionsProp()}
 			{/if}
 		{/snippet}
 	</PageHeader>

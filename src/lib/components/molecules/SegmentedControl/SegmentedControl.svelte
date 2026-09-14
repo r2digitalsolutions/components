@@ -23,7 +23,11 @@
 		onchange
 	}: SegmentedControlProps = $props();
 
-	const active = $derived(value || items.find((i) => !i.disabled)?.id || '');
+	/** Avoid `$derived` here: SSR with async parent snippets has flaked on `$.derived` (undefined). */
+	function getActive() {
+		const list = Array.isArray(items) ? items : [];
+		return value || list.find((i) => !i.disabled)?.id || '';
+	}
 
 	const sizeClasses = {
 		sm: 'h-7 px-2.5 text-xs',
@@ -47,17 +51,18 @@
 	role="radiogroup"
 >
 	{#each items as item (item.id)}
+		{@const isActive = getActive() === item.id}
 		<button
 			type="button"
 			role="radio"
-			aria-checked={active === item.id}
+			aria-checked={isActive}
 			disabled={item.disabled}
 			onclick={() => select(item.id, item.disabled)}
 			class={[
 				'rounded-lg font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30',
 				sizeClasses[size],
 				fullWidth && 'flex-1',
-				active === item.id
+				isActive
 					? 'bg-brand-500 text-white shadow-sm'
 					: 'text-secondary hover:bg-surface-elevated/70 hover:text-primary',
 				item.disabled && 'cursor-not-allowed opacity-40'

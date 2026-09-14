@@ -59,7 +59,7 @@
 		searchPlaceholder = 'Search…',
 		framed = true,
 		class: className = '',
-		actions,
+		actions: actionsProp,
 		toolbar,
 		children,
 		emptyAction,
@@ -78,8 +78,8 @@
 <div class={['mx-auto w-full max-w-6xl space-y-6', className]}>
 	<PageHeader {title} {description} {breadcrumbs}>
 		{#snippet actions()}
-			{#if actions}
-				{@render actions()}
+			{#if actionsProp}
+				{@render actionsProp()}
 			{/if}
 		{/snippet}
 	</PageHeader>

@@ -131,7 +131,7 @@
 		emptyTasksTitle = 'No tasks yet',
 		emptyTasksDescription = 'Create work items to track progress on this project.',
 		class: className = '',
-		actions,
+		actions: actionsProp,
 		sidebar,
 		ontoggleTask,
 		onclickTask,
@@ -197,8 +197,8 @@
 			</div>
 		{/snippet}
 		{#snippet actions()}
-			{#if actions}
-				{@render actions()}
+			{#if actionsProp}
+				{@render actionsProp()}
 			{:else}
 				{#if members.length}
 					<AvatarGroup items={avatarItems} max={4} size="sm" />

@@ -57,7 +57,7 @@
 		emptyTitle = 'Nothing here yet',
 		emptyDescription = 'Connect a data source to populate this dashboard.',
 		class: className = '',
-		actions,
+		actions: actionsProp,
 		primary,
 		secondary,
 		footer,
@@ -90,8 +90,8 @@
 						onchange={(id) => onperiodchange?.(id)}
 					/>
 				{/if}
-				{#if actions}
-					{@render actions()}
+				{#if actionsProp}
+					{@render actionsProp()}
 				{/if}
 			</div>
 		{/snippet}

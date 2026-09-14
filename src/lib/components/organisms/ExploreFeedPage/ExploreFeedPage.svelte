@@ -108,7 +108,7 @@
 		emptyTitle = 'Start exploring',
 		emptyDescription = 'Search above or pick a recent query to discover content.',
 		class: className = '',
-		actions,
+		actions: actionsProp,
 		emptyAction,
 		onsearch,
 		onselect,
@@ -206,8 +206,8 @@
 <div class={['mx-auto w-full max-w-5xl space-y-5', className]}>
 	<PageHeader {title} {description} {breadcrumbs}>
 		{#snippet actions()}
-			{#if actions}
-				{@render actions()}
+			{#if actionsProp}
+				{@render actionsProp()}
 			{/if}
 		{/snippet}
 	</PageHeader>

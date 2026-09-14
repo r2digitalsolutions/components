@@ -80,7 +80,7 @@
 		query = $bindable(''),
 		showLegend = true,
 		class: className = '',
-		actions,
+		actions: actionsProp,
 		onchange,
 		onreset
 	}: PermissionsMatrixProps = $props();
@@ -172,8 +172,8 @@
 				{#if onreset}
 					<Button size="sm" variant="ghost" onclick={() => onreset?.()}>Reset</Button>
 				{/if}
-				{#if actions}
-					{@render actions()}
+				{#if actionsProp}
+					{@render actionsProp()}
 				{/if}
 			</div>
 		{/snippet}

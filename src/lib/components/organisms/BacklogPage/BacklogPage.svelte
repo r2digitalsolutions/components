@@ -119,7 +119,7 @@
 			{ id: 'delete', label: 'Delete', variant: 'destructive', confirm: true }
 		],
 		class: className = '',
-		actions,
+		actions: actionsProp,
 		toolbar,
 		sidebar,
 		emptyAction,
@@ -246,8 +246,8 @@
 <div class={['relative mx-auto w-full max-w-6xl space-y-5 pb-16', className]}>
 	<PageHeader {title} {description} {breadcrumbs}>
 		{#snippet actions()}
-			{#if actions}
-				{@render actions()}
+			{#if actionsProp}
+				{@render actionsProp()}
 			{:else}
 				<Button size="sm" variant="secondary" onclick={() => onadd?.()}>{addLabel}</Button>
 			{/if}

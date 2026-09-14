@@ -40,7 +40,7 @@
 		query = $bindable(''),
 		empty = false,
 		class: className = '',
-		actions,
+		actions: actionsProp,
 		oninvite,
 		onmember
 	}: TeamPageProps = $props();
@@ -60,8 +60,8 @@
 <div class={['w-full space-y-5', className]}>
 	<PageHeader {title} {description} {breadcrumbs}>
 		{#snippet actions()}
-			{#if actions}
-				{@render actions()}
+			{#if actionsProp}
+				{@render actionsProp()}
 			{:else}
 				<Button size="sm" onclick={() => oninvite?.()}>Invite</Button>
 			{/if}
