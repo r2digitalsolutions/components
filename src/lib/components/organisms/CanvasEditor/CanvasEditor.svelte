@@ -115,6 +115,7 @@
 	interface CanvasEditorProps {
 		value?: CanvasDocument;
 		assets?: MediaAsset[];
+		zoom?: number;
 		class?: string;
 		onchange?: (doc: CanvasDocument) => void;
 		onassetschange?: (assets: MediaAsset[]) => void;
@@ -128,6 +129,7 @@
 	let {
 		value = $bindable(emptyCanvasDocument()),
 		assets = $bindable<MediaAsset[]>([]),
+		zoom = $bindable(1),
 		class: className = '',
 		onchange,
 		onassetschange,
@@ -146,7 +148,6 @@
 	let showInspector = $state(true);
 	let assetsSize = $state(58);
 	let sidebarTab = $state<'elements' | 'uploads' | 'widgets'>('elements');
-	let zoom = $state(1);
 	let showGrid = $state(false);
 	let showGuides = $state(true);
 	let snap = $state(true);
