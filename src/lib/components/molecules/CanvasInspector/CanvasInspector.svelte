@@ -332,7 +332,7 @@
 <div class={['min-w-0', className]}>
 	{#if selectionCount > 1}
 		<p class="px-3 py-6 text-xs text-muted text-center">
-			{selectionCount} layers selected — use the bulk dock
+			{selectionCount} layers selected — resize together on the canvas, or use the bottom dock
 		</p>
 	{:else if !layer}
 		<p class="px-3 py-6 text-xs text-muted text-center">Select a layer to edit</p>
@@ -681,6 +681,20 @@
 					size="sm"
 				/>
 			</PropertyField>
+			{#if isContainerKind(layer.kind) || layer.kind === 'widget'}
+				<PropertyField
+					label="Auto size children"
+					modified={fieldModified('autoSizeChildren')}
+					onreset={() => resetField('autoSizeChildren')}
+					valueAlign="end"
+				>
+					<Toggle
+						checked={layer.autoSizeChildren ?? layer.kind === 'group'}
+						onchange={(v) => patch({ autoSizeChildren: v })}
+						size="sm"
+					/>
+				</PropertyField>
+			{/if}
 			{#if layer.kind === 'hBox' || layer.kind === 'vBox' || layer.kind === 'wrapBox' || layer.kind === 'uniformGrid'}
 				<PropertyField
 					label="Gap"

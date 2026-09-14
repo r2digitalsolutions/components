@@ -2,6 +2,7 @@
 	import { onMount, setContext } from 'svelte';
 	import MediaLayerItem from '$lib/components/molecules/MediaLayerItem/MediaLayerItem.svelte';
 	import MarqueeRect from '$lib/components/atoms/MarqueeRect/MarqueeRect.svelte';
+	import WidgetFrame from '$lib/components/molecules/WidgetFrame/WidgetFrame.svelte';
 	import {
 		WIDGET_CANVAS_CONTEXT,
 		snapToGrid,
@@ -40,6 +41,10 @@
 		layerFromAbsoluteRect,
 		paintTransformForLayer,
 		scaleSubtreeAbsolute,
+		scaleSelectionAbsolute,
+		shouldAutoSizeChildren,
+		unionAbsRect,
+		isContainerKind,
 		scrollBoxOverflow,
 		scrollBarMetrics,
 		selectionAncestorIds,
@@ -179,6 +184,15 @@
 			? (workingLayers.find((l) => l.id === selectedIds[0] && l.kind === 'path') ?? null)
 			: null
 	);
+
+	const selectionBounds = $derived.by(() => {
+		if (selectedIds.length < 2) return null;
+		return unionAbsRect(paintAbsMap, selectedIds);
+	});
+	let selectionLive = $state<{ x: number; y: number; w: number; h: number } | null>(null);
+	let selectionBaseLayers = $state<CanvasLayer[] | null>(null);
+	let selectionBaseBox = $state<{ x: number; y: number; w: number; h: number } | null>(null);
+	const selectionFrame = $derived(selectionLive ?? selectionBounds);
 
 	const fitScale = $derived.by(() => {
 		if (vw <= 0 || vh <= 0) return 1;
@@ -343,6 +357,9 @@
 	function cancelLayerDraft() {
 		draftLayers = null;
 		interactCount = 0;
+		selectionBaseLayers = null;
+		selectionBaseBox = null;
+		selectionLive = null;
 	}
 
 	function isLayoutLocked(layer: CanvasLayer): boolean {
@@ -421,8 +438,12 @@
 		const sizeChanged = !moving;
 		const rootSize = { width: doc.width, height: doc.height };
 		let nextLayers = layers;
-		if (source.kind === 'group' && sizeChanged) {
+		if (sizeChanged && shouldAutoSizeChildren(source)) {
 			nextLayers = scaleSubtreeAbsolute(layers, source.id, prevAbs, nextAbs, rootSize);
+		} else if (sizeChanged && isContainerKind(source.kind)) {
+			nextLayers = scaleSubtreeAbsolute(layers, source.id, prevAbs, nextAbs, rootSize, {
+				scaleDescendants: false
+			});
 		} else {
 			const updated = applyTextAutoSize(
 				source,
@@ -433,6 +454,33 @@
 			nextLayers = layers.map((l) => (l.id === updated.id ? updated : l));
 		}
 		commitGroupGeometry(nextLayers);
+	}
+
+	function handleSelectionInteract(active: boolean) {
+		handleLayerInteract(active);
+		if (active && selectionBounds) {
+			selectionBaseLayers = workingLayers;
+			selectionBaseBox = { ...selectionBounds };
+			selectionLive = { ...selectionBounds };
+			return;
+		}
+		selectionBaseLayers = null;
+		selectionBaseBox = null;
+		selectionLive = null;
+	}
+
+	function handleSelectionRect(rect: { x: number; y: number; w: number; h: number }) {
+		selectionLive = rect;
+		if (!selectionBaseLayers || !selectionBaseBox) return;
+		commitGroupGeometry(
+			scaleSelectionAbsolute(
+				selectionBaseLayers,
+				selectedIds,
+				selectionBaseBox,
+				rect,
+				{ width: doc.width, height: doc.height }
+			)
+		);
 	}
 
 	function groupedChildPassthrough(layer: CanvasLayer): boolean {
@@ -1289,6 +1337,7 @@
 												layerById
 											)}
 											selected={isSelected}
+											showHandles={isSelected && selectedIds.length === 1}
 											passthrough={lockedPass || groupedChildPassthrough(layer)}
 											readOnly={isSynthetic}
 											layoutPositionLocked={positionLocked || (marqueeBg && !dragOk)}
@@ -1327,6 +1376,43 @@
 									></div>
 								{/if}
 							{/each}
+
+							{#if selectedIds.length > 1}
+								{#each selectedIds as sid (sid)}
+									{@const outline = paintAbsMap.get(sid)}
+									{#if outline}
+										<div
+											class="pointer-events-none absolute z-[999985] outline outline-2 outline-[#3b82f6]"
+											style:left="{outline.x}px"
+											style:top="{outline.y}px"
+											style:width="{outline.w}px"
+											style:height="{outline.h}px"
+											aria-hidden="true"
+										></div>
+									{/if}
+								{/each}
+								{#if selectionFrame}
+									<div data-marquee-ignore class="contents">
+										<WidgetFrame
+											freeform
+											showChrome={false}
+											flush
+											handleStyle="canva"
+											handlesVisible={true}
+											raiseOnSelect={false}
+											stackIndex={999999}
+											draggable={false}
+											resizable={true}
+											rect={selectionFrame}
+											minW={16}
+											minH={16}
+											class="pointer-events-none bg-transparent"
+											onchange={handleSelectionRect}
+											oninteract={handleSelectionInteract}
+										/>
+									</div>
+								{/if}
+							{/if}
 
 							<!-- ScrollBox chrome above nested layer content -->
 							{#each displayLayers.filter((l) => l.kind === 'scrollBox') as box (box.id + ':scroll')}

@@ -6,7 +6,12 @@ import type {
 	CanvasLayerRect,
 	CanvasSlot
 } from './canvasDocument.js';
-import { createCanvasLayer, defaultSlotFromRect, rectFromSlot } from './canvasDocument.js';
+import {
+	applyTextAutoSize,
+	createCanvasLayer,
+	defaultSlotFromRect,
+	rectFromSlot
+} from './canvasDocument.js';
 import { uid } from './mediaTracks.js';
 
 export const CONTAINER_KINDS: ReadonlySet<CanvasLayerKind> = new Set([
@@ -770,6 +775,7 @@ export function wrapSelection(
 		slot: slotFromLocalRect({ width: contentW, height: contentH }, wrapperLocal),
 		zIndex,
 		clipChildren: wrapKind === 'border' || wrapKind === 'canvasPanel' || wrapKind === 'scrollBox',
+		autoSizeChildren: wrapKind === 'group',
 		fill:
 			wrapKind === 'border' || wrapKind === 'roundRect'
 				? '#ffffff'
@@ -1028,28 +1034,85 @@ function fitOneGroup(
 	return layers.map((l) => updated.get(l.id) ?? l);
 }
 
+/** Groups default on; other containers opt in via `autoSizeChildren`. */
+export function shouldAutoSizeChildren(layer: CanvasLayer): boolean {
+	if (layer.autoSizeChildren != null) return layer.autoSizeChildren;
+	return layer.kind === 'group';
+}
+
+export function topLevelSelectedIds(layers: CanvasLayer[], ids: string[]): string[] {
+	const set = new Set(ids);
+	return ids.filter((id) => !getAncestors(layers, id).some((a) => set.has(a.id)));
+}
+
+export function unionAbsRect(
+	absMap: Map<string, CanvasLayerRect>,
+	ids: string[]
+): CanvasLayerRect | null {
+	let minX = Infinity;
+	let minY = Infinity;
+	let maxX = -Infinity;
+	let maxY = -Infinity;
+	for (const id of ids) {
+		const r = absMap.get(id);
+		if (!r) continue;
+		minX = Math.min(minX, r.x);
+		minY = Math.min(minY, r.y);
+		maxX = Math.max(maxX, r.x + r.w);
+		maxY = Math.max(maxY, r.y + r.h);
+	}
+	if (!Number.isFinite(minX)) return null;
+	return { x: minX, y: minY, w: Math.max(1, maxX - minX), h: Math.max(1, maxY - minY) };
+}
+
+function applyAbsoluteRects(
+	layers: CanvasLayer[],
+	nextAbsMap: Map<string, CanvasLayerRect>,
+	prevAbsMap: Map<string, CanvasLayerRect>,
+	rootSize: { width: number; height: number }
+): CanvasLayer[] {
+	const byId = new Map(layers.map((l) => [l.id, l]));
+	return layers.map((l) => {
+		const abs = nextAbsMap.get(l.id);
+		if (!abs) return l;
+		const prev = prevAbsMap.get(l.id);
+		const parent = l.parentId ? (byId.get(l.parentId) ?? null) : null;
+		const parentAbs = l.parentId
+			? (nextAbsMap.get(l.parentId) ?? prevAbsMap.get(l.parentId) ?? null)
+			: rootFrame(rootSize);
+		const updated = layerFromAbsoluteRect(l, abs, parentAbs, parent, rootSize);
+		return prev ? applyTextAutoSize(l, updated, prev, abs) : updated;
+	});
+}
+
 /**
  * Scale a group (or any subtree) from `prevAbs` to `nextAbs`.
- * Descendants keep their relative placement inside the box.
+ * Descendants keep their relative placement inside the box unless
+ * `scaleDescendants` is false (then they keep world position).
  */
 export function scaleSubtreeAbsolute(
 	layers: CanvasLayer[],
 	rootId: string,
 	prevAbs: CanvasLayerRect,
 	nextAbs: CanvasLayerRect,
-	rootSize: { width: number; height: number }
+	rootSize: { width: number; height: number },
+	opts?: { scaleDescendants?: boolean }
 ): CanvasLayer[] {
+	const scaleDescendants = opts?.scaleDescendants ?? true;
 	const sx = prevAbs.w > 0 ? nextAbs.w / prevAbs.w : 1;
 	const sy = prevAbs.h > 0 ? nextAbs.h / prevAbs.h : 1;
 	const absMap = computeAbsoluteRects(layers, rootSize);
 	const ids = new Set(getSubtreeIds(layers, rootId));
-	const byId = new Map(layers.map((l) => [l.id, l]));
 	const nextAbsMap = new Map<string, CanvasLayerRect>();
 	for (const id of ids) {
 		const r = absMap.get(id);
 		if (!r) continue;
 		if (id === rootId) {
 			nextAbsMap.set(id, { ...nextAbs });
+			continue;
+		}
+		if (!scaleDescendants) {
+			nextAbsMap.set(id, r);
 			continue;
 		}
 		nextAbsMap.set(id, {
@@ -1059,13 +1122,45 @@ export function scaleSubtreeAbsolute(
 			h: Math.max(1, r.h * sy)
 		});
 	}
-	return layers.map((l) => {
-		const abs = nextAbsMap.get(l.id);
-		if (!abs) return l;
-		const parent = l.parentId ? (byId.get(l.parentId) ?? null) : null;
-		const parentAbs = l.parentId
-			? (nextAbsMap.get(l.parentId) ?? absMap.get(l.parentId) ?? null)
-			: rootFrame(rootSize);
-		return layerFromAbsoluteRect(l, abs, parentAbs, parent, rootSize);
+	return applyAbsoluteRects(layers, nextAbsMap, absMap, rootSize);
+}
+
+/**
+ * Scale (or move) a multi-selection as one AABB — Figma/Canva transform box.
+ * Top-level selected layers map into `nextBox`; nested children follow if the
+ * parent has auto-size children (groups default on).
+ */
+export function scaleSelectionAbsolute(
+	layers: CanvasLayer[],
+	selectedIds: string[],
+	prevBox: CanvasLayerRect,
+	nextBox: CanvasLayerRect,
+	rootSize: { width: number; height: number }
+): CanvasLayer[] {
+	const sx = prevBox.w > 0 ? nextBox.w / prevBox.w : 1;
+	const sy = prevBox.h > 0 ? nextBox.h / prevBox.h : 1;
+	const absMap = computeAbsoluteRects(layers, rootSize);
+	const byId = new Map(layers.map((l) => [l.id, l]));
+	const nextAbsMap = new Map<string, CanvasLayerRect>();
+
+	const mapRect = (r: CanvasLayerRect): CanvasLayerRect => ({
+		x: nextBox.x + (r.x - prevBox.x) * sx,
+		y: nextBox.y + (r.y - prevBox.y) * sy,
+		w: Math.max(1, r.w * sx),
+		h: Math.max(1, r.h * sy)
 	});
+
+	for (const id of topLevelSelectedIds(layers, selectedIds)) {
+		const layer = byId.get(id);
+		const r = absMap.get(id);
+		if (!layer || !r) continue;
+		nextAbsMap.set(id, mapRect(r));
+		const scaleKids = shouldAutoSizeChildren(layer);
+		for (const did of getDescendantIds(layers, id)) {
+			const dr = absMap.get(did);
+			if (!dr) continue;
+			nextAbsMap.set(did, scaleKids ? mapRect(dr) : dr);
+		}
+	}
+	return applyAbsoluteRects(layers, nextAbsMap, absMap, rootSize);
 }

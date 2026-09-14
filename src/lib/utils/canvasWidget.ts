@@ -13,6 +13,7 @@ import {
 	deleteSubtree,
 	getChildren,
 	getSubtreeIds,
+	scaleSubtreeAbsolute,
 	slotFromLocalRect
 } from './canvasHierarchy.js';
 import { uid } from './mediaTracks.js';
@@ -404,9 +405,35 @@ export function flattenLayersWithWidgets(
 				continue;
 			}
 			const resolved = resolveWidgetInstance(layer, def);
-			const nested = resolved.map((l) =>
+			let nested = resolved.map((l) =>
 				l.parentId === null ? { ...l, parentId: layer.id } : l
 			);
+
+			const defW = Math.max(1, def.width);
+			const defH = Math.max(1, def.height);
+			const instW = Math.max(1, layer.rect.w);
+			const instH = Math.max(1, layer.rect.h);
+			const sx = instW / defW;
+			const sy = instH / defH;
+			const needsScale = Math.abs(sx - 1) > 0.001 || Math.abs(sy - 1) > 0.001;
+			if (needsScale) {
+				const defHost: CanvasLayer = {
+					...layer,
+					parentId: null,
+					kind: 'group',
+					clipChildren: false,
+					rect: { x: 0, y: 0, w: defW, h: defH },
+					slot: defaultSlotFromRect({ x: 0, y: 0, w: defW, h: defH })
+				};
+				const scaled = scaleSubtreeAbsolute(
+					[defHost, ...nested],
+					layer.id,
+					{ x: 0, y: 0, w: defW, h: defH },
+					{ x: 0, y: 0, w: instW, h: instH },
+					{ width: instW, height: instH }
+				);
+				nested = scaled.filter((l) => l.id !== layer.id);
+			}
 
 			const slotByName = new Map<string, string>();
 			for (const l of nested) {
@@ -422,27 +449,49 @@ export function flattenLayersWithWidgets(
 				parentId: null,
 				kind: 'group',
 				clipChildren: false,
-				rect: { x: 0, y: 0, w: layer.rect.w, h: layer.rect.h },
-				slot: defaultSlotFromRect({ x: 0, y: 0, w: layer.rect.w, h: layer.rect.h })
+				rect: { x: 0, y: 0, w: instW, h: instH },
+				slot: defaultSlotFromRect({ x: 0, y: 0, w: instW, h: instH })
 			};
 			const layoutProbe = computeAbsoluteRects([hostLocal, ...nested], {
-				width: layer.rect.w,
-				height: layer.rect.h
+				width: instW,
+				height: instH
 			});
 			const injected = sceneKids.map((kid) => {
+				const kidRect = needsScale
+					? {
+							x: kid.rect.x * sx,
+							y: kid.rect.y * sy,
+							w: kid.rect.w * sx,
+							h: kid.rect.h * sy
+						}
+					: kid.rect;
 				const target = kid.fillSlot?.trim();
 				const slotId = target ? slotByName.get(target) : undefined;
 				if (!slotId) {
-					return { ...kid, parentId: layer.id };
+					return {
+						...kid,
+						parentId: layer.id,
+						rect: kidRect,
+						slot: kid.slot
+							? {
+									...kid.slot,
+									...slotFromLocalRect(
+										{ width: instW, height: instH },
+										kidRect,
+										kid.slot.anchors
+									)
+								}
+							: defaultSlotFromRect(kidRect)
+					};
 				}
 				// Scene stores widget-local rects (parentId = instance). Convert to
 				// slot-local so paint/hit-test match the named slot coordinate space.
 				const slotAbs = layoutProbe.get(slotId) ?? { x: 0, y: 0, w: 0, h: 0 };
 				const local = {
-					x: kid.rect.x - slotAbs.x,
-					y: kid.rect.y - slotAbs.y,
-					w: kid.rect.w,
-					h: kid.rect.h
+					x: kidRect.x - slotAbs.x,
+					y: kidRect.y - slotAbs.y,
+					w: kidRect.w,
+					h: kidRect.h
 				};
 				return {
 					...kid,
@@ -463,7 +512,7 @@ export function flattenLayersWithWidgets(
 
 			out.push({
 				...layer,
-				clipChildren: true,
+				clipChildren: !!layer.clipChildren,
 				kind: 'group',
 				name: layer.name
 			});

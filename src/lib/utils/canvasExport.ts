@@ -1,6 +1,7 @@
 import type { CanvasDocument, CanvasLayer } from './canvasDocument.js';
 import { computeAbsoluteRects, isEffectivelyVisible } from './canvasHierarchy.js';
 import { flattenLayersWithWidgets } from './canvasWidget.js';
+import { CANVAS_SVG_SHAPES, drawCanvasSvgShape } from './canvasShapes.js';
 
 export type CanvasExportFormat = 'png' | 'jpeg' | 'json';
 
@@ -72,69 +73,24 @@ function drawShapePath(ctx: CanvasRenderingContext2D, layer: CanvasLayer) {
 			ctx.ellipse(x + w / 2, y + h / 2, w / 2, h / 2, 0, 0, Math.PI * 2);
 			break;
 		case 'triangle':
-			ctx.moveTo(x + w / 2, y);
-			ctx.lineTo(x + w, y + h);
-			ctx.lineTo(x, y + h);
-			ctx.closePath();
-			break;
 		case 'diamond':
-			ctx.moveTo(x + w / 2, y);
-			ctx.lineTo(x + w, y + h / 2);
-			ctx.lineTo(x + w / 2, y + h);
-			ctx.lineTo(x, y + h / 2);
-			ctx.closePath();
-			break;
-		case 'star': {
-			const cx = x + w / 2;
-			const cy = y + h / 2;
-			const spikes = 5;
-			const outer = Math.min(w, h) / 2;
-			const inner = outer * 0.4;
-			for (let i = 0; i < spikes * 2; i++) {
-				const radius = i % 2 === 0 ? outer : inner;
-				const angle = (i * Math.PI) / spikes - Math.PI / 2;
-				const px = cx + Math.cos(angle) * radius;
-				const py = cy + Math.sin(angle) * radius;
-				if (i === 0) ctx.moveTo(px, py);
-				else ctx.lineTo(px, py);
-			}
-			ctx.closePath();
-			break;
-		}
-		case 'hexagon': {
-			const cx = x + w / 2;
-			const cy = y + h / 2;
-			for (let i = 0; i < 6; i++) {
-				const angle = (Math.PI / 3) * i - Math.PI / 6;
-				const px = cx + (w / 2) * Math.cos(angle);
-				const py = cy + (h / 2) * Math.sin(angle);
-				if (i === 0) ctx.moveTo(px, py);
-				else ctx.lineTo(px, py);
-			}
-			ctx.closePath();
-			break;
-		}
-		case 'pentagon': {
-			const cx = x + w / 2;
-			const cy = y + h / 2;
-			const r = Math.min(w, h) / 2;
-			for (let i = 0; i < 5; i++) {
-				const angle = (i * 2 * Math.PI) / 5 - Math.PI / 2;
-				const px = cx + r * Math.cos(angle);
-				const py = cy + r * Math.sin(angle);
-				if (i === 0) ctx.moveTo(px, py);
-				else ctx.lineTo(px, py);
-			}
-			ctx.closePath();
-			break;
-		}
+		case 'star':
+		case 'hexagon':
+		case 'pentagon':
 		case 'heart': {
-			const cx = x + w / 2;
-			const top = y + h * 0.3;
-			ctx.moveTo(cx, y + h * 0.9);
-			ctx.bezierCurveTo(x, y + h * 0.6, x, top, cx, y + h * 0.35);
-			ctx.bezierCurveTo(x + w, top, x + w, y + h * 0.6, cx, y + h * 0.9);
-			ctx.closePath();
+			const svg = CANVAS_SVG_SHAPES[layer.kind];
+			if (svg) {
+				drawCanvasSvgShape(
+					ctx,
+					{ x, y, w, h },
+					svg,
+					layer.fill ?? svg.fill,
+					layer.stroke,
+					layer.strokeWidth
+				);
+				return;
+			}
+			ctx.rect(x, y, w, h);
 			break;
 		}
 		case 'line': {

@@ -448,7 +448,7 @@
 	const edgeAccent = $derived.by(() => {
 		if (isCanva) {
 			const visible =
-				mode === 'resize'
+				mode === 'resize' || handlesVisible === true
 					? 'pointer-events-auto opacity-100'
 					: handlesVisible === false
 						? 'pointer-events-none opacity-0'

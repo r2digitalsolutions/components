@@ -10,6 +10,8 @@
 	import ContextMenu from '$lib/components/molecules/ContextMenu/ContextMenu.svelte';
 	import type { ContextMenuItem } from '$lib/components/molecules/ContextMenu/ContextMenu.svelte';
 	import BulkActionBar from '$lib/components/molecules/BulkActionBar/BulkActionBar.svelte';
+	import Dock from '$lib/components/molecules/Dock/Dock.svelte';
+	import DockItem from '$lib/components/molecules/Dock/DockItem.svelte';
 	import Panel from '$lib/components/molecules/Panel/Panel.svelte';
 	import SplitPane from '$lib/components/molecules/SplitPane/SplitPane.svelte';
 	import IconButton from '$lib/components/atoms/IconButton/IconButton.svelte';
@@ -47,6 +49,7 @@
 		reorderSiblings,
 		resolveSlotRect,
 		scaleSubtreeAbsolute,
+		shouldAutoSizeChildren,
 		stepAxis,
 		syncSlotFromRect,
 		ungroupLayers,
@@ -293,6 +296,11 @@
 		{ id: 'full', label: 'Fill canvas', icon: Maximize2 }
 	];
 
+	const selectionAlignDock = alignItems.filter(
+		(item): item is DropdownItem & { icon: typeof AlignStartVertical } =>
+			!item.separator && Boolean(item.icon) && item.id !== 'full'
+	);
+
 	const exportItems: DropdownItem[] = [
 		{ id: 'png', label: 'PNG image', icon: ImageIcon, description: 'Lossless · transparent ok' },
 		{ id: 'jpeg', label: 'JPEG image', icon: FileImage, description: 'Smaller file size' },
@@ -448,11 +456,16 @@
 		const rootSize = { width: stageDoc.width, height: stageDoc.height };
 		const prev = stageDoc.layers.find((l) => l.id === layer.id);
 		let layers = stageDoc.layers.map((l) => (l.id === layer.id ? layer : l));
-		if (prev && layer.kind === 'group') {
+		if (
+			prev &&
+			(shouldAutoSizeChildren(layer) || isContainerKind(layer.kind))
+		) {
 			const prevAbs = computeAbsoluteRects(stageDoc.layers, rootSize).get(prev.id) ?? prev.rect;
 			const nextAbs = computeAbsoluteRects(layers, rootSize).get(layer.id) ?? layer.rect;
 			if (Math.abs(nextAbs.w - prevAbs.w) > 0.5 || Math.abs(nextAbs.h - prevAbs.h) > 0.5) {
-				layers = scaleSubtreeAbsolute(stageDoc.layers, layer.id, prevAbs, nextAbs, rootSize);
+				layers = scaleSubtreeAbsolute(stageDoc.layers, layer.id, prevAbs, nextAbs, rootSize, {
+					scaleDescendants: shouldAutoSizeChildren(layer)
+				});
 			}
 		}
 		emitStageLayers(layers);
@@ -1659,7 +1672,9 @@
 						compact
 						showSelectAll={false}
 						maxPrimary={5}
+						hint="⌘G group · Shift+click add · Esc clears"
 						actions={[
+							{ id: 'group', label: 'Group', icon: Group, variant: 'ghost' },
 							{ id: 'duplicate', label: 'Duplicate', icon: Copy, variant: 'ghost' },
 							{ id: 'front', label: 'Bring to front', icon: BringToFront, variant: 'ghost' },
 							{ id: 'back', label: 'Send to back', icon: ArrowDownToLine, variant: 'ghost' },
@@ -1679,6 +1694,20 @@
 						onclear={() => (selectedIds = [])}
 					>
 						{#snippet extra()}
+							<Dock size="mini">
+								{#each selectionAlignDock as action (action.id)}
+									{@const Icon = action.icon}
+									<Tooltip content={action.label} side="top">
+										<DockItem
+											size="mini"
+											ariaLabel={action.label}
+											onclick={() => alignSelected(action.id as CanvasAlign)}
+										>
+											<Icon class="h-3.5 w-3.5" />
+										</DockItem>
+									</Tooltip>
+								{/each}
+							</Dock>
 							<DropdownMenu
 								size="sm"
 								align="start"

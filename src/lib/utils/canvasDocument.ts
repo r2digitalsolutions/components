@@ -118,6 +118,11 @@ export interface CanvasLayer {
 	 * (geometric mean of width/height scale — Unreal/Canva-style).
 	 */
 	autoSize?: boolean;
+	/**
+	 * When true, resizing this container scales children (position + size + text)
+	 * relative to the parent — same idea as text `autoSize`. Groups default on.
+	 */
+	autoSizeChildren?: boolean;
 	color?: string;
 	/** Text box background */
 	textBackground?: string;
@@ -238,6 +243,7 @@ const LAYER_DEFAULTS: Record<
 		borderRadius?: number;
 		color?: string;
 		clipChildren?: boolean;
+		autoSizeChildren?: boolean;
 		gap?: number;
 	}
 > = {
@@ -274,7 +280,7 @@ const LAYER_DEFAULTS: Record<
 	vBox: { w: 200, h: 240, name: 'Vertical Box', fill: 'transparent', gap: 8 },
 	sizeBox: { w: 200, h: 200, name: 'Size Box', fill: 'transparent', clipChildren: true },
 	scaleBox: { w: 240, h: 240, name: 'Scale Box', fill: 'transparent', clipChildren: true },
-	group: { w: 280, h: 200, name: 'Group', fill: 'transparent' },
+	group: { w: 280, h: 200, name: 'Group', fill: 'transparent', autoSizeChildren: true },
 	widget: { w: 280, h: 160, name: 'Widget' },
 	namedSlot: { w: 200, h: 120, name: 'Named Slot', fill: 'rgba(59,130,246,0.08)' },
 	scrollBox: { w: 280, h: 320, name: 'Scroll Box', fill: 'transparent', clipChildren: true },
@@ -397,6 +403,8 @@ export function createCanvasLayer(
 		parentId: partial?.parentId ?? null,
 		slot: partial?.slot,
 		clipChildren: partial?.clipChildren ?? d.clipChildren ?? false,
+		autoSizeChildren:
+			partial?.autoSizeChildren ?? d.autoSizeChildren ?? (kind === 'group' ? true : undefined),
 		gap: partial?.gap ?? d.gap,
 		slotName: partial?.slotName ?? (kind === 'namedSlot' ? partial?.name ?? d.name : undefined),
 		fillSlot: partial?.fillSlot,
@@ -441,6 +449,7 @@ export type CanvasResettableField =
 	| 'gap'
 	| 'columns'
 	| 'clipChildren'
+	| 'autoSizeChildren'
 	| 'text'
 	| 'name';
 
@@ -508,6 +517,8 @@ export function canvasLayerFieldDefault(
 			return kind === 'uniformGrid' ? 2 : undefined;
 		case 'clipChildren':
 			return d.clipChildren ?? false;
+		case 'autoSizeChildren':
+			return d.autoSizeChildren ?? kind === 'group';
 		case 'text':
 			return d.text;
 		case 'name':
@@ -523,8 +534,9 @@ export function isCanvasFieldModified(
 ): boolean {
 	const def = canvasLayerFieldDefault(layer.kind, field);
 	const raw = layer[field as keyof CanvasLayer];
-	// Missing autoSize on older docs → treat as the kind default (text=true).
-	const cur = field === 'autoSize' && raw === undefined ? def : raw;
+	// Missing autoSize / autoSizeChildren on older docs → kind default.
+	const cur =
+		(field === 'autoSize' || field === 'autoSizeChildren') && raw === undefined ? def : raw;
 	return !canvasValuesEqual(cur, def);
 }
 

@@ -4,6 +4,7 @@
 	import type { CanvasLayer, CanvasLayerRect } from '$lib/utils/canvasDocument.js';
 	import type { WidgetRect } from '$lib/components/molecules/WidgetCanvas/widgetCanvasContext.js';
 	import { isContainerKind } from '$lib/utils/canvasHierarchy.js';
+	import { CANVAS_SVG_SHAPES } from '$lib/utils/canvasShapes.js';
 
 	interface MediaLayerItemProps {
 		layer: CanvasLayer;
@@ -20,6 +21,8 @@
 		/** Composed CSS transform (own + ancestor rotations) for flat-stage paint. */
 		paintTransform?: string;
 		selected?: boolean;
+		/** When false, hide resize handles (multi-select uses a shared AABB). */
+		showHandles?: boolean;
 		/** Let clicks pass through (layer sits above the selection). */
 		passthrough?: boolean;
 		/** Synthetic resolved widget child — not directly editable. */
@@ -45,6 +48,7 @@
 		stackIndex,
 		paintTransform,
 		selected = false,
+		showHandles,
 		passthrough = false,
 		readOnly = false,
 		layoutPositionLocked = false,
@@ -96,9 +100,11 @@
 			: undefined
 	);
 
+	const handlesOn = $derived((showHandles ?? selected) && !readOnly);
+	const svgShape = $derived(CANVAS_SVG_SHAPES[layer.kind]);
 	const isPanel = $derived(isContainerKind(layer.kind) || layer.kind === 'widget');
 	const clip = $derived(
-		layer.clipChildren ||
+		!!layer.clipChildren ||
 			layer.kind === 'image' ||
 			layer.kind === 'video' ||
 			layer.kind === 'sticky' ||
@@ -107,6 +113,9 @@
 			layer.kind === 'overlay' ||
 			layer.kind === 'scrollBox' ||
 			layer.kind === 'namedSlot'
+	);
+	const panelClip = $derived(
+		!!layer.clipChildren || layer.kind === 'scrollBox' || layer.kind === 'namedSlot'
 	);
 </script>
 
@@ -132,12 +141,12 @@
 			showChrome={false}
 			flush
 			handleStyle="canva"
-			handlesVisible={selected && !readOnly}
+			handlesVisible={handlesOn}
 			raiseOnSelect={false}
 			stackIndex={stackIndex ?? layer.zIndex}
 			transform={paintTransform}
 			draggable={!layer.locked && !readOnly && !noDrag}
-			resizable={!layer.locked && !readOnly && !noResize}
+			resizable={!layer.locked && !readOnly && !noResize && handlesOn}
 			bind:rect
 			minW={layer.kind === 'line' || layer.kind === 'arrow' || layer.kind === 'path' ? 16 : 40}
 			minH={layer.kind === 'line' ? 4 : layer.kind === 'arrow' || layer.kind === 'path' ? 16 : 24}
@@ -220,56 +229,17 @@
 							? `${layer.strokeWidth ?? 2}px solid ${layer.stroke}`
 							: undefined}
 					></div>
-				{:else if layer.kind === 'triangle'}
-					<svg class="h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-						<polygon
-							points="50,4 96,96 4,96"
-							fill={layer.fill ?? '#f59e0b'}
-							stroke={layer.stroke}
-							stroke-width={layer.strokeWidth ?? 0}
-						/>
-					</svg>
-				{:else if layer.kind === 'star'}
-					<svg class="h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
-						<polygon
-							points="50,5 61,38 96,38 68,59 79,92 50,72 21,92 32,59 4,38 39,38"
-							fill={layer.fill ?? '#ef4444'}
-							stroke={layer.stroke}
-							stroke-width={layer.strokeWidth ?? 0}
-						/>
-					</svg>
-				{:else if layer.kind === 'hexagon'}
-					<svg class="h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-						<polygon
-							points="25,5 75,5 95,50 75,95 25,95 5,50"
-							fill={layer.fill ?? '#06b6d4'}
-							stroke={layer.stroke}
-							stroke-width={layer.strokeWidth ?? 0}
-						/>
-					</svg>
-				{:else if layer.kind === 'pentagon'}
-					<svg class="h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
-						<polygon
-							points="50,5 95,38 78,95 22,95 5,38"
-							fill={layer.fill ?? '#a855f7'}
-							stroke={layer.stroke}
-							stroke-width={layer.strokeWidth ?? 0}
-						/>
-					</svg>
-				{:else if layer.kind === 'diamond'}
-					<svg class="h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-						<polygon
-							points="50,4 96,50 50,96 4,50"
-							fill={layer.fill ?? '#f43f5e'}
-							stroke={layer.stroke}
-							stroke-width={layer.strokeWidth ?? 0}
-						/>
-					</svg>
-				{:else if layer.kind === 'heart'}
-					<svg class="h-full w-full" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet">
+				{:else if svgShape}
+					<svg
+						class="h-full w-full"
+						viewBox={`0 0 ${svgShape.viewBox.w} ${svgShape.viewBox.h}`}
+						preserveAspectRatio={svgShape.meet ? 'xMidYMid meet' : 'none'}
+					>
 						<path
-							fill={layer.fill ?? '#ec4899'}
-							d="M12 21s-6.7-4.35-9.33-7.6C.5 10.8 1.1 7.1 3.9 5.5 6.1 4.25 8.55 5 12 8.1c3.45-3.1 5.9-3.85 8.1-2.6 2.8 1.6 3.4 5.3 1.23 7.9C18.7 16.65 12 21 12 21z"
+							d={svgShape.d}
+							fill={layer.fill ?? svgShape.fill}
+							stroke={layer.stroke}
+							stroke-width={layer.strokeWidth ?? 0}
 						/>
 					</svg>
 				{:else if layer.kind === 'line'}
@@ -346,7 +316,8 @@
 					</svg>
 				{:else if isPanel}
 					<div
-						class="relative h-full w-full overflow-hidden"
+						class="relative h-full w-full"
+						style:overflow={panelClip ? 'hidden' : 'visible'}
 						style:background={layer.fill && layer.fill !== 'transparent' ? layer.fill : 'transparent'}
 						style:border={layer.kind === 'namedSlot'
 							? '1px dashed color-mix(in oklab, #3b82f6 50%, transparent)'

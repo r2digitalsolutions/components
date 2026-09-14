@@ -1668,6 +1668,10 @@ export {
 	layerFromAbsoluteRect,
 	fitGroupsToChildren,
 	scaleSubtreeAbsolute,
+	scaleSelectionAbsolute,
+	shouldAutoSizeChildren,
+	topLevelSelectedIds,
+	unionAbsRect,
 	deleteSubtree,
 	duplicateSubtree,
 	reorderSiblings,
@@ -1714,6 +1718,12 @@ export {
 	backgroundAlpha
 } from './utils/canvasExport.js';
 export type { CanvasExportFormat } from './utils/canvasExport.js';
+export {
+	CANVAS_SVG_SHAPES,
+	svgShapeFit,
+	drawCanvasSvgShape
+} from './utils/canvasShapes.js';
+export type { CanvasSvgShape } from './utils/canvasShapes.js';
 export { emptyVideoSequence, createDemoVideoSequence } from './utils/videoSequence.js';
 export type { VideoSequence } from './utils/videoSequence.js';
 export { emptyAudioProject, createDemoAudioProject } from './utils/audioProject.js';

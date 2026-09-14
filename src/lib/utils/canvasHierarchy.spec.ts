@@ -8,6 +8,7 @@ import {
 import {
 	ANCHOR_PRESETS,
 	applyScrollBoxOffsets,
+	clipPathForLayer,
 	computeAbsoluteRects,
 	enclosingGroupId,
 	fitGroupsToChildren,
@@ -19,6 +20,7 @@ import {
 	paintTransformForLayer,
 	reparentLayer,
 	scaleSubtreeAbsolute,
+	scaleSelectionAbsolute,
 	scrollBoxOverflow,
 	scrollBarMetrics,
 	slotFromLocalRect,
@@ -321,6 +323,60 @@ describe('flattenLayersWithWidgets / named slots', () => {
 		// Instance (40,40) + slot (0,100) + local (8,4) → (48,144)
 		expect(abs.get(injected.id)).toEqual({ x: 48, y: 144, w: 120, h: 24 });
 	});
+
+	it('keeps clipChildren off when the instance does not clip', () => {
+		const child = createCanvasLayer('ellipse', {
+			name: 'Dot',
+			rect: { x: -20, y: -20, w: 80, h: 80 },
+			slot: defaultSlotFromRect({ x: -20, y: -20, w: 80, h: 80 }),
+			zIndex: 0
+		});
+		const def = createWidgetDefinition({
+			name: 'W',
+			width: 100,
+			height: 80,
+			layers: [child]
+		});
+		const instance = createCanvasLayer('widget', {
+			name: 'Inst',
+			definitionId: def.id,
+			clipChildren: false,
+			rect: { x: 10, y: 10, w: 100, h: 80 },
+			slot: defaultSlotFromRect({ x: 10, y: 10, w: 100, h: 80 }),
+			zIndex: 0
+		});
+		const flat = flattenLayersWithWidgets([instance], [def]);
+		const host = flat.find((l) => l.id === instance.id);
+		expect(host?.clipChildren).toBe(false);
+		const abs = computeAbsoluteRects(flat, { width: 400, height: 300 });
+		expect(clipPathForLayer(`${instance.id}::${child.id}`, flat, abs)).toBeUndefined();
+	});
+
+	it('scales widget children when the instance size differs from the definition', () => {
+		const child = createCanvasLayer('rect', {
+			name: 'Box',
+			rect: { x: 0, y: 0, w: 100, h: 80 },
+			slot: defaultSlotFromRect({ x: 0, y: 0, w: 100, h: 80 }),
+			zIndex: 0
+		});
+		const def = createWidgetDefinition({
+			name: 'W',
+			width: 100,
+			height: 80,
+			layers: [child]
+		});
+		const instance = createCanvasLayer('widget', {
+			name: 'Inst',
+			definitionId: def.id,
+			rect: { x: 10, y: 10, w: 200, h: 160 },
+			slot: defaultSlotFromRect({ x: 10, y: 10, w: 200, h: 160 }),
+			zIndex: 0
+		});
+		const flat = flattenLayersWithWidgets([instance], [def]);
+		const abs = computeAbsoluteRects(flat, { width: 400, height: 300 });
+		expect(abs.get(instance.id)).toEqual({ x: 10, y: 10, w: 200, h: 160 });
+		expect(abs.get(`${instance.id}::${child.id}`)).toEqual({ x: 10, y: 10, w: 200, h: 160 });
+	});
 });
 
 describe('widgets place / create', () => {
@@ -552,6 +608,48 @@ describe('scaleSubtreeAbsolute', () => {
 			w: 80,
 			h: 40
 		});
+	});
+
+	it('keeps children in world space when scaleDescendants is false', () => {
+		const child = createCanvasLayer('rect', {
+			name: 'A',
+			rect: { x: 10, y: 10, w: 40, h: 20 },
+			zIndex: 0
+		});
+		const wrapped = wrapSelection(
+			emptyCanvasDocument({ width: 400, height: 300, layers: [child] }),
+			[child.id],
+			'group'
+		)!;
+		const root = { width: 400, height: 300 };
+		const prevAbs = computeAbsoluteRects(wrapped.doc.layers, root).get(wrapped.wrapperId)!;
+		const nextAbs = { x: prevAbs.x, y: prevAbs.y, w: prevAbs.w * 2, h: prevAbs.h * 2 };
+		const scaled = scaleSubtreeAbsolute(
+			wrapped.doc.layers,
+			wrapped.wrapperId,
+			prevAbs,
+			nextAbs,
+			root,
+			{ scaleDescendants: false }
+		);
+		const abs = computeAbsoluteRects(scaled, root);
+		expect(abs.get(wrapped.wrapperId)).toEqual(nextAbs);
+		expect(abs.get(child.id)).toEqual({ x: 10, y: 10, w: 40, h: 20 });
+	});
+});
+
+describe('scaleSelectionAbsolute', () => {
+	it('scales several siblings from the selection AABB', () => {
+		const a = createCanvasLayer('rect', { name: 'A', rect: { x: 10, y: 10, w: 40, h: 20 } });
+		const b = createCanvasLayer('rect', { name: 'B', rect: { x: 60, y: 10, w: 40, h: 20 } });
+		const layers = [a, b];
+		const root = { width: 400, height: 300 };
+		const prev = { x: 10, y: 10, w: 90, h: 20 };
+		const next = { x: 10, y: 10, w: 180, h: 40 };
+		const scaled = scaleSelectionAbsolute(layers, [a.id, b.id], prev, next, root);
+		const abs = computeAbsoluteRects(scaled, root);
+		expect(abs.get(a.id)).toEqual({ x: 10, y: 10, w: 80, h: 40 });
+		expect(abs.get(b.id)).toEqual({ x: 110, y: 10, w: 80, h: 40 });
 	});
 });
 
