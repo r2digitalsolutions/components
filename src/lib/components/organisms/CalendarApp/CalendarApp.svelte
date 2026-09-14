@@ -13,6 +13,7 @@
 	import Plus from '@lucide/svelte/icons/plus';
 	import MapPin from '@lucide/svelte/icons/map-pin';
 	import Clock from '@lucide/svelte/icons/clock';
+	import User from '@lucide/svelte/icons/user';
 	import X from '@lucide/svelte/icons/x';
 
 	export type CalendarView = 'month' | 'week' | 'day' | 'agenda';
@@ -38,6 +39,8 @@
 		calendarId?: string;
 		color?: CalendarTone;
 		location?: string;
+		/** Person / client linked to the event (shown in detail). */
+		people?: string;
 		description?: string;
 	}
 
@@ -368,6 +371,7 @@
 			calendarId: e.calendarId,
 			color: e.color,
 			location: e.location,
+			people: e.people,
 			description: e.description
 		};
 		selectedEventId = e.id;
@@ -1214,6 +1218,12 @@
 										<Clock class="h-4 w-4 shrink-0 text-muted" />
 										<span>{timeLabel(selectedEvent)}</span>
 									</div>
+									{#if selectedEvent.people}
+										<div class="flex items-center gap-2 text-sm text-secondary">
+											<User class="h-4 w-4 shrink-0 text-muted" />
+											<span class="min-w-0 truncate">{selectedEvent.people}</span>
+										</div>
+									{/if}
 									{#if selectedEvent.location}
 										<div class="flex items-center gap-2 text-sm text-secondary">
 											<MapPin class="h-4 w-4 shrink-0 text-muted" />
@@ -1227,6 +1237,14 @@
 												aria-hidden="true"
 											></span>
 											<Badge size="sm" variant="secondary">{cal.label}</Badge>
+										</div>
+									{:else if selectedEvent.calendarId}
+										<div class="flex items-center gap-2">
+											<span
+												class={['h-2.5 w-2.5 shrink-0 rounded-full', toneClass[tone]]}
+												aria-hidden="true"
+											></span>
+											<Badge size="sm" variant="secondary">{selectedEvent.calendarId}</Badge>
 										</div>
 									{/if}
 									{#if selectedEvent.description}
