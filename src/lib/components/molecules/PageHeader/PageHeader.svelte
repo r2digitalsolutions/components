@@ -84,8 +84,9 @@
 	class={[
 		'w-full',
 		spacing[resolvedSize],
+		!sticky && 'mb-6',
 		sticky && 'sticky top-0 z-10 bg-surface/90 backdrop-blur-md',
-		sticky && 'border-b border-border pb-3',
+		sticky && 'border-b border-border pb-3 mb-6',
 		className
 	]}
 >
