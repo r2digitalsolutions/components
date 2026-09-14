@@ -476,7 +476,7 @@
 		ontoggle={handleToggle}
 		onbeforetoggle={handleBeforeToggle}
 		onkeydown={onMenuKeydown}
-		class="dropdown-menu m-0 rounded-xl border-border bg-surface-elevated p-1.5 shadow-xl inset-auto flex-col overflow-hidden border text-left outline-none"
+		class="dropdown-menu m-0 rounded-xl border-border bg-surface-elevated p-1.5 shadow-xl inset-auto flex-col border text-left outline-none"
 	>
 		{#if canGoBack}
 			<button
@@ -612,12 +612,14 @@
 	}
 
 	.dropdown-menu-list {
-		overflow-x: hidden;
-		overflow-y: var(--dropdown-scroll, visible);
+		/* One axis hidden + the other visible computes to auto (nested scrollbar). */
+		overflow: var(--dropdown-scroll, visible);
 		overscroll-behavior: contain;
 	}
 
 	.dropdown-menu:popover-open {
 		display: flex;
+		/* UA popover is overflow:auto — that paints a nested scrollbar. */
+		overflow: hidden;
 	}
 </style>

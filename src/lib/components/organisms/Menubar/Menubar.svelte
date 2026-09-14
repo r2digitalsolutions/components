@@ -1,4 +1,6 @@
 <script lang="ts">
+	import type { Attachment } from 'svelte/attachments';
+
 	export interface MenubarSubItem {
 		id: string;
 		label: string;
@@ -21,17 +23,16 @@
 	interface MenubarProps {
 		items?: MenubarItem[];
 		class?: string;
-		onselect?: (itemId: string, parentId: string) => void;
+		onselect?: (itemId: string, parentId: string, checked?: boolean) => void;
 	}
 
-	let {
-		items = [],
-		class: className = '',
-		onselect
-	}: MenubarProps = $props();
+	let { items = [], class: className = '', onselect }: MenubarProps = $props();
 
 	let openId = $state<string | null>(null);
-	let flyoutId = $state<string | null>(null);
+	/** Local toggle overlay so checks flip even if the parent keeps `checked` static. */
+	let localChecked = $state<Record<string, boolean>>({});
+	/** Open submenu ids from the root menu down (Export → …). */
+	let flyoutPath = $state<string[]>([]);
 	let menubarEl = $state<HTMLElement | null>(null);
 	let menuEl = $state<HTMLDivElement | null>(null);
 	let menuStyle = $state('');
@@ -39,6 +40,10 @@
 
 	function menuDomId(id: string) {
 		return `menubar-menu-${id}`;
+	}
+
+	function flyoutDomId(id: string) {
+		return `menubar-flyout-${id}`;
 	}
 
 	function close() {
@@ -50,15 +55,13 @@
 			}
 		}
 		openId = null;
-		flyoutId = null;
+		flyoutPath = [];
 		highlightedId = null;
 		menuStyle = '';
 	}
 
 	function positionMenu(id: string) {
-		const btn = menubarEl?.querySelector(
-			`[data-menubar-trigger="${id}"]`
-		) as HTMLElement | null;
+		const btn = menubarEl?.querySelector(`[data-menubar-trigger="${id}"]`) as HTMLElement | null;
 		if (!btn || !menuEl) return;
 		const rect = btn.getBoundingClientRect();
 		const pad = 8;
@@ -78,9 +81,49 @@
 		}
 	}
 
+	function positionFlyout(id: string, flyoutEl?: HTMLElement | null) {
+		const trigger = (menuEl?.querySelector(`[data-menubar-item="${CSS.escape(id)}"]`) ??
+			document.querySelector(`[data-menubar-item="${CSS.escape(id)}"]`)) as HTMLElement | null;
+		const el = flyoutEl ?? (document.getElementById(flyoutDomId(id)) as HTMLElement | null);
+		if (!trigger || !el) return;
+		const rect = trigger.getBoundingClientRect();
+		const pad = 8;
+		const w = Math.max(180, el.offsetWidth || 180);
+		const h = el.offsetHeight || 80;
+		let left = rect.right - 4;
+		if (left + w > window.innerWidth - pad) {
+			left = Math.max(pad, rect.left - w + 4);
+		}
+		let top = rect.top - 4;
+		if (top + h > window.innerHeight - pad) {
+			top = Math.max(pad, window.innerHeight - h - pad);
+		}
+		el.style.cssText = `position:fixed;margin:0;inset:auto;top:${Math.round(top)}px;left:${Math.round(left)}px;`;
+	}
+
+	function flyoutAttach(id: string): Attachment<HTMLElement> {
+		return (el) => {
+			try {
+				if (!el.matches(':popover-open')) el.showPopover();
+			} catch {
+				/* ignore */
+			}
+			positionFlyout(id, el);
+			const frame = requestAnimationFrame(() => positionFlyout(id, el));
+			return () => {
+				cancelAnimationFrame(frame);
+				try {
+					if (el.matches(':popover-open')) el.hidePopover();
+				} catch {
+					/* ignore */
+				}
+			};
+		};
+	}
+
 	function open(id: string) {
 		openId = id;
-		flyoutId = null;
+		flyoutPath = [];
 		highlightedId = null;
 		queueMicrotask(() => {
 			if (!menuEl) return;
@@ -99,9 +142,20 @@
 		else open(id);
 	}
 
+	function isChecked(item: MenubarSubItem): boolean | undefined {
+		if (item.checked === undefined) return undefined;
+		return localChecked[item.id] ?? item.checked;
+	}
+
 	function select(subItem: MenubarSubItem, parentId: string) {
 		if (subItem.disabled || subItem.separator) return;
 		if (subItem.children?.length) return;
+		if (subItem.checked !== undefined) {
+			const next = !isChecked(subItem);
+			localChecked[subItem.id] = next;
+			onselect?.(subItem.id, parentId, next);
+			return;
+		}
 		onselect?.(subItem.id, parentId);
 		close();
 	}
@@ -129,7 +183,7 @@
 	function onToggle(e: ToggleEvent) {
 		if (e.newState === 'closed') {
 			openId = null;
-			flyoutId = null;
+			flyoutPath = [];
 			highlightedId = null;
 			menuStyle = '';
 		}
@@ -141,8 +195,13 @@
 
 	$effect(() => {
 		if (!openId) return;
+		const path = flyoutPath;
 		const onWin = () => {
 			if (openId) positionMenu(openId);
+			for (const id of path) {
+				const el = document.getElementById(flyoutDomId(id));
+				if (el) positionFlyout(id, el);
+			}
 		};
 		window.addEventListener('resize', onWin);
 		window.addEventListener('scroll', onWin, true);
@@ -155,31 +214,35 @@
 	const openItem = $derived(items.find((i) => i.id === openId) ?? null);
 </script>
 
-{#snippet menuRows(list: MenubarSubItem[], parentId: string)}
+{#snippet menuRows(list: MenubarSubItem[], parentId: string, ancestors: string[])}
 	{@const checks = levelHasChecks(list)}
 	{#each list as sub (sub.id)}
 		{#if sub.separator}
 			<div class="menubar-sep" role="separator"></div>
 		{:else}
+			{@const checked = isChecked(sub)}
 			{@const hasChildren = Boolean(sub.children?.length)}
-			{@const isHot = highlightedId === sub.id || flyoutId === sub.id}
+			{@const flyoutOpen = flyoutPath[ancestors.length] === sub.id}
+			{@const isHot = highlightedId === sub.id || flyoutPath.includes(sub.id)}
 			<div
 				class="relative"
 				role="presentation"
 				onmouseenter={() => {
 					if (sub.disabled) return;
 					highlightedId = sub.id;
-					flyoutId = hasChildren ? sub.id : null;
+					flyoutPath = hasChildren ? [...ancestors, sub.id] : ancestors;
 				}}
 			>
 				<button
 					type="button"
-					role={sub.checked !== undefined ? 'menuitemcheckbox' : 'menuitem'}
+					data-menubar-item={sub.id}
+					role={checked !== undefined ? 'menuitemcheckbox' : 'menuitem'}
 					disabled={sub.disabled}
 					aria-disabled={sub.disabled || undefined}
-					aria-checked={sub.checked !== undefined ? sub.checked : undefined}
+					aria-checked={checked}
 					aria-haspopup={hasChildren ? 'menu' : undefined}
-					aria-expanded={hasChildren ? flyoutId === sub.id : undefined}
+					aria-expanded={hasChildren ? flyoutOpen : undefined}
+					aria-controls={hasChildren ? flyoutDomId(sub.id) : undefined}
 					onclick={() => select(sub, parentId)}
 					class={[
 						'menubar-item',
@@ -191,8 +254,15 @@
 				>
 					{#if checks}
 						<span class="menubar-check" aria-hidden="true">
-							{#if sub.checked}
-								<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75">
+							{#if checked}
+								<svg
+									width="12"
+									height="12"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2.75"
+								>
 									<path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
 								</svg>
 							{/if}
@@ -217,17 +287,20 @@
 					{/if}
 				</button>
 
-				{#if hasChildren && flyoutId === sub.id && sub.children?.length}
+				{#if hasChildren && flyoutOpen && sub.children?.length}
 					<div
-						class="menubar-panel menubar-flyout"
+						id={flyoutDomId(sub.id)}
+						class="menubar-popover menubar-panel menubar-flyout m-0 outline-none"
+						popover="manual"
 						role="menu"
 						tabindex="-1"
+						{@attach flyoutAttach(sub.id)}
 						onmouseenter={() => {
-							flyoutId = sub.id;
+							flyoutPath = [...ancestors, sub.id];
 							highlightedId = sub.id;
 						}}
 					>
-						{@render menuRows(sub.children, parentId)}
+						{@render menuRows(sub.children, parentId, [...ancestors, sub.id])}
 					</div>
 				{/if}
 			</div>
@@ -235,7 +308,11 @@
 	{/each}
 {/snippet}
 
-<div bind:this={menubarEl} class={['menubar-bar flex items-center gap-px', className]} role="menubar">
+<div
+	bind:this={menubarEl}
+	class={['menubar-bar flex items-center gap-px', className]}
+	role="menubar"
+>
 	{#each items as item (item.id)}
 		{@const isOpen = openId === item.id}
 		<button
@@ -250,17 +327,14 @@
 				if (openId !== null && openId !== item.id) open(item.id);
 			}}
 			onkeydown={(e) => handleMenuKeydown(e, item)}
-			class={[
-				'menubar-trigger',
-				isOpen ? 'menubar-trigger-open' : 'menubar-trigger-idle'
-			]}
+			class={['menubar-trigger', isOpen ? 'menubar-trigger-open' : 'menubar-trigger-idle']}
 		>
 			{item.label}
 		</button>
 	{/each}
 </div>
 
-<!-- Single shared menu in the top layer (native Popover) -->
+<!-- Native Popover — overflow visible so UA `overflow:auto` never paints a nested scrollbar -->
 <div
 	bind:this={menuEl}
 	id={openId ? menuDomId(openId) : 'menubar-menu'}
@@ -272,14 +346,17 @@
 	class="menubar-popover menubar-panel m-0 outline-none"
 >
 	{#if openItem?.items?.length}
-		{@render menuRows(openItem.items, openItem.id)}
+		{@render menuRows(openItem.items, openItem.id, [])}
 	{/if}
 </div>
 
 <style>
-	/* UA popover defaults to inset:0 — force anchor via inline style */
+	/* UA popover: inset:0 + overflow:auto — both cause the nested scrollbar */
 	.menubar-popover:popover-open {
 		inset: unset;
+		overflow: visible;
+		height: fit-content;
+		width: max-content;
 	}
 
 	.menubar-trigger {
@@ -293,7 +370,9 @@
 		font-weight: 400;
 		letter-spacing: -0.01em;
 		outline: none;
-		transition: background-color 80ms ease, color 80ms ease;
+		transition:
+			background-color 80ms ease,
+			color 80ms ease;
 	}
 
 	.menubar-trigger:focus-visible {
@@ -306,7 +385,11 @@
 
 	.menubar-trigger-idle:hover {
 		/* text-primary is light in dark mode → soft white wash (never surface-overlay #171717) */
-		background: color-mix(in oklab, var(--text-primary, var(--color-text-primary, CanvasText)) 14%, transparent);
+		background: color-mix(
+			in oklab,
+			var(--text-primary, var(--color-text-primary, CanvasText)) 14%,
+			transparent
+		);
 		color: var(--text-primary, var(--color-text-primary, CanvasText));
 	}
 
@@ -353,13 +436,6 @@
 			0 4px 16px -4px color-mix(in oklab, #000 40%, transparent);
 	}
 
-	:global(.menubar-flyout) {
-		position: absolute;
-		left: calc(100% - 2px);
-		top: -0.25rem;
-		z-index: 2;
-	}
-
 	:global(.menubar-sep) {
 		height: 1px;
 		margin: 0.25rem 0.5rem;
@@ -383,7 +459,9 @@
 		letter-spacing: -0.01em;
 		text-align: left;
 		outline: none;
-		transition: background-color 60ms ease, color 60ms ease;
+		transition:
+			background-color 60ms ease,
+			color 60ms ease;
 	}
 
 	:global(.menubar-item-default) {
