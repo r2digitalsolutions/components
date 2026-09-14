@@ -1076,6 +1076,30 @@ export function unionAbsRect(
 	return { x: minX, y: minY, w: Math.max(1, maxX - minX), h: Math.max(1, maxY - minY) };
 }
 
+/** Clamp a rigid-body delta so `union` stays on the artboard (snap-to-bounds). */
+export function clampDeltaToKeepUnion(
+	union: CanvasLayerRect,
+	dx: number,
+	dy: number,
+	bounds: { width: number; height: number }
+): { dx: number; dy: number } {
+	let x = union.x + dx;
+	let y = union.y + dy;
+	if (union.w < bounds.width) x = Math.min(Math.max(0, x), bounds.width - union.w);
+	if (union.h < bounds.height) y = Math.min(Math.max(0, y), bounds.height - union.h);
+	return { dx: x - union.x, dy: y - union.y };
+}
+
+/** Selected group/container that contains `layerId`, if any. */
+export function selectedAncestorId(
+	layers: CanvasLayer[],
+	layerId: string,
+	selectedIds: Iterable<string>
+): string | null {
+	const set = selectedIds instanceof Set ? selectedIds : new Set(selectedIds);
+	return getAncestors(layers, layerId).find((a) => set.has(a.id))?.id ?? null;
+}
+
 function applyAbsoluteRects(
 	layers: CanvasLayer[],
 	nextAbsMap: Map<string, CanvasLayerRect>,

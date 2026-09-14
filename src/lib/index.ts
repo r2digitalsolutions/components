@@ -1674,6 +1674,8 @@ export {
 	topLevelSelectedIds,
 	translateSelectionAbsolute,
 	unionAbsRect,
+	clampDeltaToKeepUnion,
+	selectedAncestorId,
 	deleteSubtree,
 	duplicateSubtree,
 	reorderSiblings,

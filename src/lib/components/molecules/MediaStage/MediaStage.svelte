@@ -50,6 +50,9 @@
 		scrollBarMetrics,
 		selectionAncestorIds,
 		clipPathForLayer,
+		clampDeltaToKeepUnion,
+		getAncestors,
+		selectedAncestorId,
 		topLevelSelectedIds,
 		translateSelectionAbsolute
 	} from '$lib/utils/canvasHierarchy.js';
@@ -369,22 +372,10 @@
 		moveBaseAbs = null;
 	}
 
-	function clampDeltaToKeepUnion(
-		union: { x: number; y: number; w: number; h: number },
-		dx: number,
-		dy: number
-	) {
-		let x = union.x + dx;
-		let y = union.y + dy;
-		if (union.w < doc.width) x = Math.min(Math.max(0, x), doc.width - union.w);
-		if (union.h < doc.height) y = Math.min(Math.max(0, y), doc.height - union.h);
-		return { dx: x - union.x, dy: y - union.y };
-	}
-
 	function handleLayerInteract(active: boolean) {
 		if (active) {
 			interactCount += 1;
-			if (selectedIds.length > 1 && !moveBaseLayers) {
+			if (!moveBaseLayers) {
 				moveBaseLayers = workingLayers;
 				moveBaseAbs = new Map(absMap);
 			}
@@ -454,11 +445,12 @@
 		const dy = nextAbs.y - prevAbs.y;
 		const moving = Math.abs(nextAbs.w - prevAbs.w) < 0.5 && Math.abs(nextAbs.h - prevAbs.h) < 0.5;
 		if (moving && Math.abs(dx) < 0.01 && Math.abs(dy) < 0.01) return;
+		const ancestorSelected = selectedAncestorId(workingLayers, source.id, selectedSet);
 		const groupMove =
 			moving &&
 			!positionLocked &&
-			selectedIds.length > 1 &&
-			selectedSet.has(source.id) &&
+			(selectedIds.length > 1 || !!ancestorSelected) &&
+			(selectedSet.has(source.id) || !!ancestorSelected) &&
 			(Math.abs(dx) > 0.01 || Math.abs(dy) > 0.01);
 
 		if (groupMove) {
@@ -476,7 +468,10 @@
 				const top = topLevelSelectedIds(baseLayers, movableIds);
 				const union = unionAbsRect(baseAbs, top);
 				if (union) {
-					const clamped = clampDeltaToKeepUnion(union, moveDx, moveDy);
+					const clamped = clampDeltaToKeepUnion(union, moveDx, moveDy, {
+						width: doc.width,
+						height: doc.height
+					});
 					moveDx = clamped.dx;
 					moveDy = clamped.dy;
 				}
@@ -540,6 +535,7 @@
 	}
 
 	function groupedChildPassthrough(layer: CanvasLayer): boolean {
+		if (getAncestors(workingLayers, layer.id).some((a) => selectedSet.has(a.id))) return true;
 		if (selectedSet.has(layer.id)) return false;
 		return !!enclosingGroupId(workingLayers, layer.id);
 	}
@@ -1393,6 +1389,8 @@
 											selected={isSelected}
 											showHandles={isSelected && selectedIds.length === 1}
 											passthrough={lockedPass || groupedChildPassthrough(layer)}
+											followStageRect={selectedIds.length > 1 ||
+												!!selectedAncestorId(workingLayers, realId, selectedSet)}
 											readOnly={isSynthetic}
 											layoutPositionLocked={positionLocked || (marqueeBg && !dragOk)}
 											layoutSizeLocked={sizeLocked}

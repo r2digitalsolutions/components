@@ -87,6 +87,11 @@
 		onreload?: () => void | Promise<void>;
 		oncollapse?: (collapsed: boolean) => void;
 		onchange?: (rect: WidgetRect) => void;
+		/**
+		 * When false, `onchange` still fires but this frame does not write `rect`.
+		 * Use when a parent owns live position (rigid multi-select / group move).
+		 */
+		applyRect?: boolean;
 		/** Fired when freeform drag/resize starts (after move threshold) or ends. */
 		oninteract?: (active: boolean) => void;
 	}
@@ -130,6 +135,7 @@
 		onreload,
 		oncollapse,
 		onchange,
+		applyRect = true,
 		oninteract
 	}: WidgetFrameProps = $props();
 
@@ -212,7 +218,7 @@
 
 	function emitRect(next: WidgetRect) {
 		const r = finalizeRect(next);
-		rect = r;
+		if (applyRect) rect = r;
 		onchange?.(r);
 	}
 
@@ -353,7 +359,7 @@
 		}
 		if (mode === 'move' && freeform) {
 			mode = null;
-			emitRect({ ...rect });
+			if (applyRect) emitRect({ ...rect });
 			oninteract?.(false);
 			return;
 		}

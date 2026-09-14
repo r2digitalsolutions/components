@@ -39,6 +39,11 @@
 		onchange?: (rect: WidgetRect) => void;
 		/** True while this frame is being dragged/resized. */
 		oninteract?: (active: boolean) => void;
+		/**
+		 * Parent owns live position (multi-select / selected group). The frame
+		 * still reports pointer deltas; it must not visually detach from the group.
+		 */
+		followStageRect?: boolean;
 	}
 
 	let {
@@ -58,7 +63,8 @@
 		onclick,
 		ondblclick,
 		onchange,
-		oninteract
+		oninteract,
+		followStageRect = false
 	}: MediaLayerItemProps = $props();
 
 	const pos = $derived(displayRect ?? layer.rect);
@@ -68,8 +74,9 @@
 	let interacting = $state(false);
 
 	$effect(() => {
-		// Don't fight the local drag/resize rect while the user is interacting.
-		if (interacting) return;
+		// Single-item drag/resize: WidgetFrame owns the live rect.
+		// Group / multi-select: follow the stage so the grabbed object cannot detach.
+		if (interacting && !followStageRect) return;
 		rect = { x: pos.x, y: pos.y, w: pos.w, h: pos.h };
 	});
 
@@ -148,13 +155,14 @@
 			draggable={!layer.locked && !readOnly && !noDrag}
 			resizable={!layer.locked && !readOnly && !noResize && handlesOn}
 			bind:rect
+			applyRect={!followStageRect}
 			minW={layer.kind === 'line' || layer.kind === 'arrow' || layer.kind === 'path' ? 16 : 40}
 			minH={layer.kind === 'line' ? 4 : layer.kind === 'arrow' || layer.kind === 'path' ? 16 : 24}
 			class={['bg-transparent', passthrough || readOnly ? 'pointer-events-none' : '']
 				.filter(Boolean)
 				.join(' ')}
 			onchange={(r) => {
-				rect = r;
+				if (!followStageRect) rect = r;
 				onchange?.(r);
 			}}
 			oninteract={(active) => {

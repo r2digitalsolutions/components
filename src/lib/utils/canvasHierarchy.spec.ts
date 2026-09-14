@@ -29,7 +29,9 @@ import {
 	translateSelectionAbsolute,
 	translateSlot,
 	wrapSelection,
-	isMarqueePassThroughKind
+	isMarqueePassThroughKind,
+	clampDeltaToKeepUnion,
+	selectedAncestorId
 } from './canvasHierarchy.js';
 import {
 	createWidgetDefinition,
@@ -827,5 +829,68 @@ describe('translateSelectionAbsolute', () => {
 		const abs = computeAbsoluteRects(next, root);
 		expect(abs.get(a.id)?.x).toBe(20);
 		expect(abs.get(b.id)?.x).toBe(90);
+	});
+
+	it('keeps children glued when only the enclosing group is translated', () => {
+		const a = createCanvasLayer('rect', {
+			name: 'A',
+			rect: { x: 10, y: 10, w: 40, h: 40 },
+			zIndex: 0
+		});
+		const b = createCanvasLayer('text', {
+			name: 'B',
+			rect: { x: 80, y: 10, w: 50, h: 20 },
+			zIndex: 1
+		});
+		const wrapped = wrapSelection(
+			emptyCanvasDocument({ width: 400, height: 300, layers: [a, b] }),
+			[a.id, b.id],
+			'group'
+		);
+		expect(wrapped).not.toBeNull();
+		const groupId = wrapped!.wrapperId;
+		const before = computeAbsoluteRects(wrapped!.doc.layers, root);
+		const gap = (before.get(b.id)?.x ?? 0) - (before.get(a.id)?.x ?? 0);
+		const next = translateSelectionAbsolute(wrapped!.doc.layers, [groupId], 40, 25, root);
+		const abs = computeAbsoluteRects(next, root);
+		expect((abs.get(b.id)?.x ?? 0) - (abs.get(a.id)?.x ?? 0)).toBe(gap);
+		expect(abs.get(a.id)?.y).toBe((before.get(a.id)?.y ?? 0) + 25);
+		expect(abs.get(b.id)?.y).toBe((before.get(b.id)?.y ?? 0) + 25);
+	});
+});
+
+describe('clampDeltaToKeepUnion', () => {
+	const bounds = { width: 200, height: 100 };
+
+	it('stops the union at a corner instead of letting one item slide further', () => {
+		const union = { x: 150, y: 60, w: 80, h: 50 };
+		const next = clampDeltaToKeepUnion(union, 100, 80, bounds);
+		expect(union.x + next.dx).toBe(120);
+		expect(union.y + next.dy).toBe(50);
+		expect(union.x + next.dx + union.w).toBe(200);
+		expect(union.y + next.dy + union.h).toBe(100);
+	});
+
+	it('does not clamp an axis when the union is larger than the artboard', () => {
+		const union = { x: -10, y: 0, w: 250, h: 40 };
+		const next = clampDeltaToKeepUnion(union, 5, 20, bounds);
+		expect(next.dx).toBe(5);
+		expect(union.y + next.dy).toBe(20);
+	});
+});
+
+describe('selectedAncestorId', () => {
+	it('returns the selected group that contains the grabbed child', () => {
+		const a = createCanvasLayer('rect', { name: 'A', rect: { x: 10, y: 10, w: 40, h: 40 } });
+		const b = createCanvasLayer('text', { name: 'B', rect: { x: 80, y: 10, w: 50, h: 20 } });
+		const wrapped = wrapSelection(
+			emptyCanvasDocument({ width: 400, height: 300, layers: [a, b] }),
+			[a.id, b.id],
+			'group'
+		);
+		expect(wrapped).not.toBeNull();
+		const groupId = wrapped!.wrapperId;
+		expect(selectedAncestorId(wrapped!.doc.layers, a.id, [groupId])).toBe(groupId);
+		expect(selectedAncestorId(wrapped!.doc.layers, a.id, [a.id])).toBeNull();
 	});
 });
