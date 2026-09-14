@@ -58,10 +58,13 @@ export const LAYOUT_SIZE_KINDS: ReadonlySet<CanvasLayerKind> = new Set(['uniform
  * Structural shells whose empty area should start a marquee (not a layer drag),
  * matching Figma-style select-drag on the canvas / inside frames.
  * Groups are omitted: they behave like a single object (click/drag the group).
+ * Widgets pass when unselected so flattened instance bounds don't eat rubber-band;
+ * a selected widget still drag-moves.
  */
 export const MARQUEE_PASS_KINDS: ReadonlySet<CanvasLayerKind> = new Set([
 	'canvasPanel',
 	'overlay',
+	'widget',
 	...LAYOUT_BOX_KINDS
 ]);
 

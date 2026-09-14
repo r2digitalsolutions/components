@@ -13,6 +13,7 @@
 	} from '$lib/components/molecules/WidgetCanvas/widgetCanvasContext.js';
 	import {
 		attachMarqueeSelect,
+		mergeMarqueeItemsById,
 		resolveMarqueeSelection,
 		type MarqueeRect as MarqueeBox
 	} from '$lib/utils/marqueeSelect.js';
@@ -473,13 +474,10 @@
 		selectionLive = rect;
 		if (!selectionBaseLayers || !selectionBaseBox) return;
 		commitGroupGeometry(
-			scaleSelectionAbsolute(
-				selectionBaseLayers,
-				selectedIds,
-				selectionBaseBox,
-				rect,
-				{ width: doc.width, height: doc.height }
-			)
+			scaleSelectionAbsolute(selectionBaseLayers, selectedIds, selectionBaseBox, rect, {
+				width: doc.width,
+				height: doc.height
+			})
 		);
 	}
 
@@ -563,16 +561,12 @@
 		const originX = aRect.left - vRect.left + viewportEl.scrollLeft;
 		const originY = aRect.top - vRect.top + viewportEl.scrollTop;
 		const s = scale;
-		return sorted
+		const items = sorted
 			.filter((l) => {
-				if (
-					!effectivelyVisible.has(l.id) ||
-					isEffectivelyLocked(workingLayers, l.id, workingById)
-				) {
-					return false;
-				}
+				if (!effectivelyVisible.has(l.id)) return false;
 				const realId = resolveSelectableId(l.id);
 				if (!sceneLayerIds.has(realId)) return false;
+				if (isEffectivelyLocked(workingLayers, realId, workingById)) return false;
 				// Don't always rubber-band-select the full-bleed root panel.
 				const scene = workingLayers.find((x) => x.id === realId);
 				if (scene?.kind === 'canvasPanel') return false;
@@ -588,6 +582,8 @@
 					height: r.h * s
 				};
 			});
+		// Flattened widgets emit host + synthetic children with the same selectable id.
+		return mergeMarqueeItemsById(items);
 	}
 
 	function clientToDoc(clientX: number, clientY: number) {

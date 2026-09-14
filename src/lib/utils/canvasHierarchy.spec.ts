@@ -27,7 +27,8 @@ import {
 	stepAxis,
 	syncSlotFromRect,
 	translateSlot,
-	wrapSelection
+	wrapSelection,
+	isMarqueePassThroughKind
 } from './canvasHierarchy.js';
 import {
 	createWidgetDefinition,
@@ -391,6 +392,35 @@ describe('flattenLayersWithWidgets / named slots', () => {
 		const abs = computeAbsoluteRects(flat, { width: 400, height: 300 });
 		expect(abs.get(instance.id)).toEqual({ x: 10, y: 10, w: 200, h: 160 });
 		expect(abs.get(`${instance.id}::${child.id}`)).toEqual({ x: 10, y: 10, w: 200, h: 160 });
+	});
+
+	it('lets unselected widgets pass marquee and collapses synthetic children to one id', () => {
+		expect(isMarqueePassThroughKind('widget')).toBe(true);
+		expect(isMarqueePassThroughKind('group')).toBe(false);
+
+		const child = createCanvasLayer('ellipse', {
+			name: 'Dot',
+			rect: { x: 0, y: 0, w: 40, h: 40 },
+			slot: defaultSlotFromRect({ x: 0, y: 0, w: 40, h: 40 }),
+			zIndex: 0
+		});
+		const def = createWidgetDefinition({
+			name: 'W',
+			width: 40,
+			height: 40,
+			layers: [child]
+		});
+		const instance = createCanvasLayer('widget', {
+			name: 'Inst',
+			definitionId: def.id,
+			rect: { x: 8, y: 12, w: 40, h: 40 },
+			slot: defaultSlotFromRect({ x: 8, y: 12, w: 40, h: 40 }),
+			zIndex: 0
+		});
+		const flat = flattenLayersWithWidgets([instance], [def]);
+		expect(flat.length).toBeGreaterThan(1);
+		const selectable = flat.map((l) => (l.id.includes('::') ? l.id.split('::')[0] : l.id));
+		expect(new Set(selectable)).toEqual(new Set([instance.id]));
 	});
 });
 

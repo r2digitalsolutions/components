@@ -1409,6 +1409,7 @@ export {
 	defaultMarqueeIgnore,
 	getMarqueeModifier,
 	hitTestIds,
+	mergeMarqueeItemsById,
 	normalizeRect,
 	rectsIntersect,
 	resolveMarqueeSelection
@@ -1718,11 +1719,7 @@ export {
 	backgroundAlpha
 } from './utils/canvasExport.js';
 export type { CanvasExportFormat } from './utils/canvasExport.js';
-export {
-	CANVAS_SVG_SHAPES,
-	svgShapeFit,
-	drawCanvasSvgShape
-} from './utils/canvasShapes.js';
+export { CANVAS_SVG_SHAPES, svgShapeFit, drawCanvasSvgShape } from './utils/canvasShapes.js';
 export type { CanvasSvgShape } from './utils/canvasShapes.js';
 export { emptyVideoSequence, createDemoVideoSequence } from './utils/videoSequence.js';
 export type { VideoSequence } from './utils/videoSequence.js';

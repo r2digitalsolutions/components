@@ -50,23 +50,48 @@ export function normalizeRect(x0: number, y0: number, x1: number, y1: number): M
 }
 
 export function rectsIntersect(a: MarqueeRect, b: MarqueeRect): boolean {
-	return (
-		a.x < b.x + b.width &&
-		a.x + a.width > b.x &&
-		a.y < b.y + b.height &&
-		a.y + a.height > b.y
-	);
+	return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
 }
 
 export function hitTestIds(marquee: MarqueeRect, items: MarqueeItemRect[]): string[] {
 	const ids: string[] = [];
+	const seen = new Set<string>();
 	for (const item of items) {
-		if (rectsIntersect(marquee, item)) ids.push(item.id);
+		if (!rectsIntersect(marquee, item)) continue;
+		if (seen.has(item.id)) continue;
+		seen.add(item.id);
+		ids.push(item.id);
 	}
 	return ids;
 }
 
-export function getMarqueeModifier(e: Pick<PointerEvent, 'shiftKey' | 'metaKey' | 'ctrlKey'>): MarqueeModifier {
+/** Collapse duplicate ids (e.g. widget host + synthetic children) into one union box. */
+export function mergeMarqueeItemsById(items: MarqueeItemRect[]): MarqueeItemRect[] {
+	const map = new Map<string, MarqueeItemRect>();
+	for (const item of items) {
+		const prev = map.get(item.id);
+		if (!prev) {
+			map.set(item.id, item);
+			continue;
+		}
+		const left = Math.min(prev.x, item.x);
+		const top = Math.min(prev.y, item.y);
+		const right = Math.max(prev.x + prev.width, item.x + item.width);
+		const bottom = Math.max(prev.y + prev.height, item.y + item.height);
+		map.set(item.id, {
+			id: item.id,
+			x: left,
+			y: top,
+			width: right - left,
+			height: bottom - top
+		});
+	}
+	return [...map.values()];
+}
+
+export function getMarqueeModifier(
+	e: Pick<PointerEvent, 'shiftKey' | 'metaKey' | 'ctrlKey'>
+): MarqueeModifier {
 	if (e.metaKey || e.ctrlKey) return 'toggle';
 	if (e.shiftKey) return 'add';
 	return 'replace';
@@ -77,7 +102,7 @@ export function resolveMarqueeSelection(
 	previousIds: string[],
 	modifier: MarqueeModifier
 ): string[] {
-	if (modifier === 'replace') return [...hitIds];
+	if (modifier === 'replace') return [...new Set(hitIds)];
 	if (modifier === 'add') return [...new Set([...previousIds, ...hitIds])];
 	const set = new Set(previousIds);
 	for (const id of hitIds) {
