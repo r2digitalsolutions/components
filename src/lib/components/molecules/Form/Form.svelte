@@ -166,7 +166,17 @@
 	}
 
 	function handleSubmit(e: SubmitEvent) {
-		if (isRemote) {
+		e.preventDefault();
+		submitted = true;
+		onsubmit?.(e);
+	}
+
+	let formEl = $state<HTMLFormElement | null>(null);
+
+	$effect(() => {
+		const el = formEl;
+		if (!el || !isRemote) return;
+		const onSubmit = () => {
 			submitted = true;
 			queueMicrotask(() => {
 				const check = () => {
@@ -178,22 +188,13 @@
 				};
 				check();
 			});
-			// Do not preventDefault — Kit remote attachment owns progressive enhancement.
-			return;
-		}
-		e.preventDefault();
-		submitted = true;
-		onsubmit?.(e);
-	}
+		};
+		el.addEventListener('submit', onSubmit);
+		return () => el.removeEventListener('submit', onSubmit);
+	});
 </script>
 
-<form
-	{...(remote as object | null)}
-	class={['w-full', gaps[gap], className]}
-	onsubmit={handleSubmit}
-	novalidate
-	aria-busy={busy || undefined}
->
+{#snippet fields()}
 	{#if header}
 		{@render header()}
 	{:else if title || description}
@@ -230,4 +231,25 @@
 			{@render footer()}
 		</div>
 	{/if}
-</form>
+{/snippet}
+
+{#if isRemote}
+	<form
+		bind:this={formEl}
+		{...(remote as object)}
+		class={['w-full', gaps[gap], className]}
+		novalidate
+		aria-busy={busy || undefined}
+	>
+		{@render fields()}
+	</form>
+{:else}
+	<form
+		class={['w-full', gaps[gap], className]}
+		onsubmit={handleSubmit}
+		novalidate
+		aria-busy={busy || undefined}
+	>
+		{@render fields()}
+	</form>
+{/if}
