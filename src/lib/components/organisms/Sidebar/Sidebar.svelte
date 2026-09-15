@@ -15,7 +15,7 @@
 		href?: string;
 		icon?: SidebarIcon;
 		disabled?: boolean;
-		/** Completed step (wizard / stepper). Shows a check when not active. */
+		/** Completed step (wizard). Kept for a11y; no check glyph in the UI. */
 		done?: boolean;
 		/** Optional short hint (e.g. warning). */
 		hint?: string;
@@ -61,45 +61,25 @@
 	function itemClass(item: SidebarItem) {
 		const active = value === item.id;
 		return [
-			'relative flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-sm transition-colors',
+			'relative flex w-full items-center justify-start gap-2 rounded-lg px-2.5 py-2 text-left text-sm transition-colors',
 			'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30',
 			active
 				? 'bg-surface-overlay font-medium text-primary'
-				: item.done
-					? 'text-secondary hover:bg-surface-overlay hover:text-primary'
-					: 'text-secondary hover:bg-surface-overlay hover:text-primary',
+				: 'text-secondary hover:bg-surface-overlay hover:text-primary',
 			item.disabled && 'pointer-events-none cursor-not-allowed opacity-40',
 			collapsed && 'justify-center'
 		];
 	}
 </script>
 
-{#snippet checkIcon()}
-	<svg
-		class="text-brand-600 dark:text-brand-400 h-4 w-4 shrink-0"
-		viewBox="0 0 24 24"
-		fill="none"
-		stroke="currentColor"
-		stroke-width="2.25"
-		aria-hidden="true"
-	>
-		<path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-	</svg>
-{/snippet}
-
 {#snippet itemGlyph(item: SidebarItem)}
-	{#if item.done && value !== item.id}
-		{@render checkIcon()}
-	{:else if item.icon}
+	{#if item.icon}
 		<item.icon class="h-4 w-4 shrink-0" strokeWidth={1.75} />
+	{:else if !collapsed}
+		<!-- No letter tile / check — labels stay flush left like the primary nav -->
 	{:else}
 		<span
-			class={[
-				'h-6 w-6 rounded-md font-semibold flex shrink-0 items-center justify-center text-[11px]',
-				item.done
-					? 'bg-brand-500/15 text-brand-700 dark:text-brand-300'
-					: 'bg-surface-overlay'
-			]}
+			class="bg-surface-overlay h-6 w-6 rounded-md font-semibold flex shrink-0 items-center justify-center text-[11px]"
 		>
 			{item.label.slice(0, 1)}
 		</span>
@@ -118,7 +98,7 @@
 			<RailMark active={value === item.id} side="right" length="short" inset="sm" />
 			{@render itemGlyph(item)}
 			{#if !collapsed}
-				<span class="min-w-0 flex-1 truncate">{item.label}</span>
+				<span class="min-w-0 flex-1 truncate text-left">{item.label}</span>
 				{#if item.hint}
 					<span class="text-amber-600 dark:text-amber-400 shrink-0 text-[10px]">{item.hint}</span>
 				{/if}
@@ -137,7 +117,7 @@
 			<RailMark active={value === item.id} side="right" length="short" inset="sm" />
 			{@render itemGlyph(item)}
 			{#if !collapsed}
-				<span class="min-w-0 flex-1 truncate">{item.label}</span>
+				<span class="min-w-0 flex-1 truncate text-left">{item.label}</span>
 				{#if item.hint}
 					<span class="text-amber-600 dark:text-amber-400 shrink-0 text-[10px]">{item.hint}</span>
 				{/if}

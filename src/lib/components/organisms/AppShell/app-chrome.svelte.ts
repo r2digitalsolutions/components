@@ -17,12 +17,38 @@ export interface AppShellContextual {
 export type AppChromeClear = () => void;
 
 const GLOBAL_KEY = '__r2_app_chrome__';
+const EPOCH_KEY = '__r2_app_chrome_epoch__';
+
+type ChromeGlobal = typeof globalThis & {
+	[GLOBAL_KEY]?: AppChrome;
+	[EPOCH_KEY]?: { value: number };
+};
+
+function epochBox(): { value: number } {
+	const g = globalThis as ChromeGlobal;
+	if (!g[EPOCH_KEY]) g[EPOCH_KEY] = { value: 0 };
+	return g[EPOCH_KEY]!;
+}
+
+/** Reactive epoch — always read via this so AppShell tracks updates across module copies. */
+let chromeEpoch = $state(0);
+
+export function getAppChromeEpoch(): number {
+	// Prefer module signal; sync from global so duplicate graphs still move.
+	const box = epochBox();
+	if (box.value !== chromeEpoch) chromeEpoch = box.value;
+	return chromeEpoch;
+}
+
+function bumpEpoch() {
+	const box = epochBox();
+	box.value += 1;
+	chromeEpoch = box.value;
+}
 
 export class AppChrome {
 	/** Live reader so nested layouts stay reactive when `[id]` is reused. */
 	source = $state.raw<(() => AppShellContextual | null) | null>(null);
-	/** Bumped on every `setContextual` so AppShell `$derived` re-runs. */
-	revision = $state(0);
 	/** Identity of the active source — cleanup no-ops if another layout already replaced it. */
 	#owner: (() => AppShellContextual | null) | null = null;
 
@@ -40,26 +66,26 @@ export class AppChrome {
 		if (nav === null) {
 			this.source = null;
 			this.#owner = null;
-			this.revision += 1;
+			bumpEpoch();
 			return () => {};
 		}
 
 		const reader = typeof nav === 'function' ? nav : () => nav;
 		this.source = reader;
 		this.#owner = reader;
-		this.revision += 1;
+		bumpEpoch();
 
 		return () => {
 			if (this.#owner !== reader) return;
 			this.source = null;
 			this.#owner = null;
-			this.revision += 1;
+			bumpEpoch();
 		};
 	}
 }
 
 export function getSharedAppChrome(): AppChrome {
-	const g = globalThis as typeof globalThis & { [GLOBAL_KEY]?: AppChrome };
+	const g = globalThis as ChromeGlobal;
 	if (!g[GLOBAL_KEY]) g[GLOBAL_KEY] = new AppChrome();
 	return g[GLOBAL_KEY]!;
 }
@@ -72,7 +98,7 @@ export function getAppChrome(): AppChrome {
 
 /** Sets Svelte context and keeps `globalThis` in sync for duplicate module graphs. */
 export function setAppChrome(chrome: AppChrome) {
-	const g = globalThis as typeof globalThis & { [GLOBAL_KEY]?: AppChrome };
+	const g = globalThis as ChromeGlobal;
 	g[GLOBAL_KEY] = chrome;
 	setAppChromeContext(chrome);
 }

@@ -7,6 +7,7 @@
 	import Badge from '$lib/components/atoms/Badge/Badge.svelte';
 	import {
 		getAppChrome,
+		getAppChromeEpoch,
 		getSharedAppChrome,
 		setAppChrome,
 		type AppShellContextual
@@ -96,13 +97,13 @@
 		} catch {
 			setAppChrome(chrome);
 		}
-		void chrome.revision;
+		void getAppChromeEpoch();
 		return chrome.source?.() ?? propContextual;
 	});
 	const contextualKey = $derived(
 		resolvedContextual
-			? `${resolvedContextual.parentHref ?? ''}:${resolvedContextual.brand ?? ''}:${resolvedContextual.description ?? ''}:${resolvedContextual.groups?.map((g) => g.id).join(',') ?? ''}`
-			: 'none'
+			? `${getAppChromeEpoch()}:${resolvedContextual.parentHref ?? ''}:${resolvedContextual.brand ?? ''}:${resolvedContextual.groups?.map((g) => g.id).join(',') ?? ''}`
+			: `none:${getAppChromeEpoch()}`
 	);
 	const showRail = $derived(rail.length > 0 || railFooter.length > 0);
 	let mobileOpen = $state(false);
