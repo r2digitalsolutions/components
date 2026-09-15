@@ -6,7 +6,7 @@
 	import type { Snippet } from 'svelte';
 	import Button from '$lib/components/atoms/Button/Button.svelte';
 
-	type DialogSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'full';
+	type DialogSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | 'full';
 	type DialogTone = 'default' | 'info' | 'success' | 'warning' | 'danger';
 	type FooterAlign = 'start' | 'center' | 'end' | 'between';
 	type DialogPosition = 'center' | 'top';
@@ -87,6 +87,8 @@
 		md: 'max-w-md',
 		lg: 'max-w-lg',
 		xl: 'max-w-2xl',
+		'2xl': 'max-w-4xl',
+		'3xl': 'max-w-5xl',
 		full: ''
 	};
 
@@ -284,9 +286,11 @@
 					scrollable &&
 						(size === 'full'
 							? 'overflow-auto'
-							: size === 'xl'
-								? 'max-h-[min(70vh,36rem)] overflow-y-auto'
-								: 'max-h-[min(60vh,28rem)] overflow-y-auto')
+							: size === '3xl' || size === '2xl'
+								? 'max-h-[min(75vh,40rem)] overflow-y-auto'
+								: size === 'xl'
+									? 'max-h-[min(70vh,36rem)] overflow-y-auto'
+									: 'max-h-[min(60vh,28rem)] overflow-y-auto')
 				]}
 			>
 				{@render children()}

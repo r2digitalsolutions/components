@@ -8,7 +8,7 @@ const meta = {
 	argTypes: {
 		title: { control: 'text' },
 		description: { control: 'text' },
-		size: { control: 'select', options: ['xs', 'sm', 'md', 'lg', 'xl', 'full'] },
+		size: { control: 'select', options: ['xs', 'sm', 'md', 'lg', 'xl', '2xl', '3xl', 'full'] },
 		tone: { control: 'select', options: ['default', 'info', 'success', 'warning', 'danger'] },
 		position: { control: 'select', options: ['center', 'top'] },
 		closeOnBackdrop: { control: 'boolean' },

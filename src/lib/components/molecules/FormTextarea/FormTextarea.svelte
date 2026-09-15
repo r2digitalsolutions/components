@@ -45,7 +45,7 @@
 		required = false,
 		rows = 3,
 		maxLength,
-		showCount = false,
+		showCount = maxLength != null,
 		autoResize = false,
 		bindData = false,
 		class: className = '',

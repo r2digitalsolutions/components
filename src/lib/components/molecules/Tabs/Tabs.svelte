@@ -63,7 +63,7 @@
 </script>
 
 <div
-	class={['w-full', className]}
+	class={[fullWidth || variant === 'underline' ? 'w-full' : 'w-auto', className]}
 	role="tablist"
 	aria-orientation="horizontal"
 >

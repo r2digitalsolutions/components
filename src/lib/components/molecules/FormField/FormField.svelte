@@ -52,6 +52,8 @@
 		required?: boolean;
 		clearable?: boolean;
 		size?: 'sm' | 'md' | 'lg';
+		maxLength?: number;
+		showCount?: boolean;
 		/**
 		 * When true and inside `<Form>`, keep `value` in sync with `form.data[name]`.
 		 * Uses the logical field name (strips Kit `/formId` when present).
@@ -90,6 +92,8 @@
 		required = false,
 		clearable = false,
 		size = 'md',
+		maxLength,
+		showCount = maxLength != null,
 		bindData = false,
 		inputName,
 		leadIcon,
@@ -184,6 +188,8 @@
 			{required}
 			{clearable}
 			{size}
+			{maxLength}
+			{showCount}
 			{leadIcon}
 			{trailIcon}
 			oninput={handleInput}

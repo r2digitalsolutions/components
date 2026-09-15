@@ -26,6 +26,9 @@
 		min?: number;
 		max?: number;
 		step?: number;
+		maxLength?: number;
+		/** Show `n/max` counter (defaults on when `maxLength` is set). */
+		showCount?: boolean;
 		oninput?: (e: Event) => void;
 		onchange?: (e: Event) => void;
 		onfocus?: (e: FocusEvent) => void;
@@ -53,6 +56,8 @@
 		min,
 		max,
 		step,
+		maxLength,
+		showCount = maxLength != null,
 		size = 'md',
 		leadIcon,
 		trailIcon,
@@ -157,6 +162,7 @@
 					{min}
 					{max}
 					{step}
+					maxlength={maxLength}
 					{autocomplete}
 					aria-describedby={helperText ? helperId : undefined}
 					aria-invalid={status === 'error'}
@@ -184,6 +190,7 @@
 					{min}
 					{max}
 					{step}
+					maxlength={maxLength}
 					{autocomplete}
 					bind:value
 					aria-describedby={helperText ? helperId : undefined}
@@ -246,9 +253,25 @@
 		{/if}
 	</div>
 
-	{#if helperText}
-		<p id={helperId} class={['text-xs leading-relaxed', statusTextClasses[status]]}>
-			{helperText}
-		</p>
+	{#if helperText || (showCount && maxLength != null)}
+		<div class="flex items-center justify-between gap-2 text-xs">
+			{#if helperText}
+				<p id={helperId} class={['leading-relaxed', statusTextClasses[status]]}>
+					{helperText}
+				</p>
+			{:else}
+				<span></span>
+			{/if}
+			{#if showCount && maxLength != null}
+				<span
+					class={[
+						'font-mono shrink-0 ml-auto tabular-nums',
+						value.length >= maxLength ? 'font-semibold text-amber-600 dark:text-amber-400' : 'text-muted'
+					]}
+				>
+					{value.length}/{maxLength}
+				</span>
+			{/if}
+		</div>
 	{/if}
 </div>
