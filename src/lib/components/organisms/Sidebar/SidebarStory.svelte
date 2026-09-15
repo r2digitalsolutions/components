@@ -4,9 +4,10 @@
 
 	let props = $props<{
 		collapsed?: boolean;
+		wizard?: boolean;
 	}>();
 
-	const groups: SidebarGroup[] = [
+	const defaultGroups: SidebarGroup[] = [
 		{
 			id: 'main',
 			label: 'Workspace',
@@ -26,7 +27,30 @@
 		}
 	];
 
-	let value = $state('projects');
+	const wizardGroups: SidebarGroup[] = [
+		{
+			id: 'business',
+			label: 'Onboarding',
+			items: [{ id: 'business', label: 'Empresa', done: true }]
+		},
+		{
+			id: 'campaign',
+			label: 'Crea tu campaña',
+			items: [
+				{ id: 'themes', label: 'Temas de búsqueda', done: true },
+				{ id: 'ads', label: 'Crear anuncios' },
+				{ id: 'bidding', label: 'Estrategia de puja' },
+				{ id: 'budget', label: 'Presupuesto' }
+			]
+		},
+		{
+			id: 'payment',
+			items: [{ id: 'payment', label: 'Detalles del pago' }]
+		}
+	];
+
+	const groups = $derived(props.wizard ? wizardGroups : defaultGroups);
+	let value = $state(props.wizard ? 'ads' : 'projects');
 	let collapsed = $state(props.collapsed ?? false);
 </script>
 

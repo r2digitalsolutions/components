@@ -16,3 +16,4 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
 export const Collapsed: Story = { args: { collapsed: true } };
+export const WizardStepper: Story = { args: { wizard: true } };
