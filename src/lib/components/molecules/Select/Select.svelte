@@ -642,9 +642,9 @@
 								'transition-[background-color,color,box-shadow] duration-75',
 								option.disabled ? 'cursor-not-allowed opacity-40' : 'cursor-pointer',
 								isHighlighted && !option.disabled
-									? 'bg-brand-500 text-white shadow-sm'
+									? 'bg-neutral-800 text-white shadow-sm dark:bg-neutral-200 dark:text-neutral-900'
 									: isSelected && !option.disabled
-										? 'bg-brand-500/10 text-primary font-medium'
+										? 'bg-neutral-100 font-medium text-primary dark:bg-neutral-800/70'
 										: 'text-primary hover:bg-surface-overlay'
 							]}
 						>
@@ -654,10 +654,10 @@
 										'h-4 w-4 flex shrink-0 items-center justify-center rounded-full border transition-colors duration-75',
 										isHighlighted && !option.disabled
 											? isSelected
-												? 'border-white bg-white'
-												: 'border-white/60 bg-transparent'
+												? 'border-white bg-white dark:border-neutral-900 dark:bg-neutral-900'
+												: 'border-white/60 bg-transparent dark:border-neutral-900/50'
 											: isSelected && !option.disabled
-												? 'border-brand-500 bg-brand-500'
+												? 'border-neutral-800 bg-neutral-800 dark:border-neutral-200 dark:bg-neutral-200'
 												: 'border-border-strong bg-transparent'
 									]}
 									aria-hidden="true"
@@ -666,7 +666,9 @@
 										<svg
 											class={[
 												'h-2.5 w-2.5',
-												isHighlighted ? 'text-brand-600' : 'text-white'
+												isHighlighted
+													? 'text-neutral-800 dark:text-neutral-100'
+													: 'text-white dark:text-neutral-900'
 											]}
 											viewBox="0 0 24 24"
 											fill="none"

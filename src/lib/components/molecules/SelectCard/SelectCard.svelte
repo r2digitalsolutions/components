@@ -19,7 +19,7 @@
 		layout?: SelectCardLayout;
 		/** box = SelectionBox · badge = check pill · none = border only */
 		check?: SelectCardCheck;
-		/** Accent when selected (default brand) */
+		/** Accent when selected (default neutral — works with data-theme="neutral") */
 		tone?: SelectCardTone;
 		class?: string;
 		leading?: Snippet;
@@ -39,7 +39,7 @@
 		disabled = false,
 		layout = 'media',
 		check = 'box',
-		tone = 'brand',
+		tone = 'neutral',
 		class: className = '',
 		leading,
 		children,
@@ -50,7 +50,8 @@
 
 	const selectedTone: Record<SelectCardTone, string> = {
 		brand: 'border-brand-500 bg-brand-50/50 ring-2 ring-brand-500/20 dark:bg-brand-950/30',
-		neutral: 'border-border-strong bg-surface-overlay ring-2 ring-border dark:bg-surface-overlay/80',
+		neutral:
+			'border-neutral-400 bg-neutral-100/80 ring-2 ring-neutral-400/25 dark:border-neutral-500 dark:bg-neutral-800/60 dark:ring-neutral-500/30',
 		success:
 			'border-emerald-500 bg-emerald-50/70 ring-2 ring-emerald-500/20 dark:border-emerald-400 dark:bg-emerald-950/35',
 		error: 'border-red-500 bg-red-50/70 ring-2 ring-red-500/20 dark:border-red-400 dark:bg-red-950/35',
@@ -61,7 +62,7 @@
 
 	const hoverTone: Record<SelectCardTone, string> = {
 		brand: 'hover:border-brand-300 dark:hover:border-brand-700',
-		neutral: 'hover:border-border-strong',
+		neutral: 'hover:border-neutral-400 dark:hover:border-neutral-500',
 		success: 'hover:border-emerald-300 dark:hover:border-emerald-700',
 		error: 'hover:border-red-300 dark:hover:border-red-700',
 		warning: 'hover:border-amber-300 dark:hover:border-amber-700',
@@ -70,7 +71,8 @@
 
 	const badgeTone: Record<SelectCardTone, string> = {
 		brand: 'border-brand-500 bg-brand-500 text-white',
-		neutral: 'border-border-strong bg-surface-overlay text-primary',
+		neutral:
+			'border-neutral-700 bg-neutral-800 text-white dark:border-neutral-300 dark:bg-neutral-200 dark:text-neutral-900',
 		success: 'border-emerald-500 bg-emerald-500 text-white',
 		error: 'border-red-500 bg-red-500 text-white',
 		warning: 'border-amber-500 bg-amber-500 text-white',
@@ -79,12 +81,16 @@
 
 	const focusTone: Record<SelectCardTone, string> = {
 		brand: 'focus-visible:ring-brand-500/30',
-		neutral: 'focus-visible:ring-border',
+		neutral: 'focus-visible:ring-neutral-400/40 dark:focus-visible:ring-neutral-500/40',
 		success: 'focus-visible:ring-emerald-500/30',
 		error: 'focus-visible:ring-red-500/30',
 		warning: 'focus-visible:ring-amber-500/30',
 		info: 'focus-visible:ring-sky-500/30'
 	};
+
+	const selectionBoxTone = $derived(
+		tone === 'brand' ? 'brand' : tone === 'success' ? 'success' : 'neutral'
+	);
 
 	const rootClass = $derived(
 		[
@@ -170,6 +176,7 @@
 						<SelectionBox
 							checked={selected}
 							size="sm"
+							tone={selectionBoxTone}
 							{disabled}
 							label={title ? `Select ${title}` : 'Select'}
 							onchange={handleCheck}
@@ -202,6 +209,7 @@
 				<SelectionBox
 					checked={selected}
 					size="md"
+					tone={selectionBoxTone}
 					{disabled}
 					label={title ? `Select ${title}` : 'Select'}
 					onchange={handleCheck}

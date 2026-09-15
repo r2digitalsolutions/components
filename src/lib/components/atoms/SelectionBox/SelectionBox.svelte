@@ -1,6 +1,6 @@
 <script lang="ts">
 	export type SelectionBoxSize = 'sm' | 'md' | 'lg';
-	export type SelectionBoxTone = 'brand' | 'primary' | 'success';
+	export type SelectionBoxTone = 'brand' | 'primary' | 'success' | 'neutral';
 	export type SelectionBoxRadius = 'sm' | 'md' | 'none';
 
 	interface SelectionBoxProps {
@@ -61,7 +61,9 @@
 		primary:
 			'checked:bg-primary checked:border-primary indeterminate:bg-primary indeterminate:border-primary hover:border-primary/60 focus-visible:ring-primary',
 		success:
-			'checked:bg-green-500 checked:border-green-500 indeterminate:bg-green-500 indeterminate:border-green-500 hover:border-green-400 focus-visible:ring-green-500'
+			'checked:bg-green-500 checked:border-green-500 indeterminate:bg-green-500 indeterminate:border-green-500 hover:border-green-400 focus-visible:ring-green-500',
+		neutral:
+			'checked:bg-neutral-800 checked:border-neutral-800 indeterminate:bg-neutral-800 indeterminate:border-neutral-800 hover:border-neutral-500 focus-visible:ring-neutral-500 dark:checked:bg-neutral-200 dark:checked:border-neutral-200 dark:indeterminate:bg-neutral-200 dark:indeterminate:border-neutral-200 dark:hover:border-neutral-400 dark:focus-visible:ring-neutral-400'
 	};
 
 	function handleChange(e: Event) {

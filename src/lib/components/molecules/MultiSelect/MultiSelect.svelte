@@ -368,7 +368,7 @@
 							!option.disabled &&
 								!blocked &&
 								(highlighted === index || isSelected
-									? 'bg-brand-500 text-white'
+									? 'bg-neutral-800 text-white dark:bg-neutral-200 dark:text-neutral-900'
 									: 'text-primary hover:bg-surface-overlay')
 						]}
 					>
@@ -376,18 +376,16 @@
 							class={[
 								'flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors',
 								isSelected
-									? highlighted === index || isSelected
-										? 'border-white bg-white'
-										: 'border-brand-500 bg-brand-500'
+									? 'border-white bg-white dark:border-neutral-900 dark:bg-neutral-900'
 									: highlighted === index
-										? 'border-white/60'
+										? 'border-white/60 dark:border-neutral-900/50'
 										: 'border-border-strong'
 							]}
 							aria-hidden="true"
 						>
 							{#if isSelected}
 								<svg
-									class="h-2.5 w-2.5 text-brand-600"
+									class="h-2.5 w-2.5 text-neutral-800 dark:text-neutral-100"
 									viewBox="0 0 24 24"
 									fill="none"
 									stroke="currentColor"
