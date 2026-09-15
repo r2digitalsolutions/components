@@ -6,8 +6,8 @@
 	import IconButton from '$lib/components/atoms/IconButton/IconButton.svelte';
 	import Badge from '$lib/components/atoms/Badge/Badge.svelte';
 	import {
-		AppChrome,
 		getAppChrome,
+		getSharedAppChrome,
 		setAppChrome,
 		type AppShellContextual
 	} from '$lib/components/organisms/AppShell/app-chrome.svelte.js';
@@ -77,16 +77,7 @@
 		children
 	}: AppShellProps = $props();
 
-	const chrome = (() => {
-		try {
-			return getAppChrome();
-		} catch {
-			const created = new AppChrome();
-			setAppChrome(created);
-			return created;
-		}
-	})();
-
+	// Resolve via singleton inside deriveds so HMR / duplicate graphs stay aligned.
 	const propContextual = $derived.by((): AppShellContextual | null => {
 		if (contextualGroups.length === 0) return null;
 		return {
@@ -98,11 +89,20 @@
 		};
 	});
 
-	const resolvedContextual = $derived(chrome.source?.() ?? propContextual);
+	const resolvedContextual = $derived.by(() => {
+		const chrome = getSharedAppChrome();
+		try {
+			getAppChrome();
+		} catch {
+			setAppChrome(chrome);
+		}
+		void chrome.revision;
+		return chrome.source?.() ?? propContextual;
+	});
 	const contextualKey = $derived(
 		resolvedContextual
-			? `${resolvedContextual.parentHref ?? ''}:${resolvedContextual.brand ?? ''}:${resolvedContextual.description ?? ''}`
-			: ''
+			? `${resolvedContextual.parentHref ?? ''}:${resolvedContextual.brand ?? ''}:${resolvedContextual.description ?? ''}:${resolvedContextual.groups?.map((g) => g.id).join(',') ?? ''}`
+			: 'none'
 	);
 	const showRail = $derived(rail.length > 0 || railFooter.length > 0);
 	let mobileOpen = $state(false);

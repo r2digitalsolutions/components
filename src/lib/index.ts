@@ -1034,6 +1034,7 @@ export type {
 export { default as AppShell } from './components/organisms/AppShell/AppShell.svelte';
 export {
 	getAppChrome,
+	getSharedAppChrome,
 	setAppChrome,
 	AppChrome
 } from './components/organisms/AppShell/app-chrome.svelte.js';
