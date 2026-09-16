@@ -28,6 +28,10 @@
 		label?: string;
 		showLabel?: boolean;
 		showFlags?: boolean;
+		/**
+		 * Compact header style: language name on top, code underneath (no code badge on the right).
+		 */
+		stacked?: boolean;
 		align?: 'start' | 'end';
 		class?: string;
 		onchange?: (code: string, locale: LocaleOption) => void;
@@ -55,6 +59,7 @@
 		label = 'Language',
 		showLabel = false,
 		showFlags = true,
+		stacked = false,
 		align = 'end',
 		class: className = '',
 		onchange
@@ -67,7 +72,17 @@
 	const shortCode = $derived((current?.code ?? value).split('-')[0]?.toUpperCase() ?? '—');
 
 	const triggerSize = $derived(
-		size === 'sm' ? 'h-8 gap-1.5 px-2.5 text-xs' : size === 'lg' ? 'h-11 gap-2.5 px-3.5 text-sm' : 'h-9 gap-2 px-3 text-sm'
+		stacked
+			? size === 'sm'
+				? 'min-h-9 gap-1.5 px-2.5 py-1'
+				: size === 'lg'
+					? 'min-h-11 gap-2.5 px-3.5 py-1.5'
+					: 'min-h-10 gap-2 px-3 py-1'
+			: size === 'sm'
+				? 'h-8 gap-1.5 px-2.5 text-xs'
+				: size === 'lg'
+					? 'h-11 gap-2.5 px-3.5 text-sm'
+					: 'h-9 gap-2 px-3 text-sm'
 	);
 
 	const segmentSize = $derived(
@@ -194,15 +209,32 @@
 			onclick={() => (open = !open)}
 		>
 			{#if showFlags && current?.flag}
-				<span class="text-base leading-none" aria-hidden="true">{current.flag}</span>
+				<span class={['leading-none', stacked ? 'text-sm' : 'text-base']} aria-hidden="true"
+					>{current.flag}</span
+				>
 			{:else}
-				<Globe class="h-4 w-4 text-muted" />
+				<Globe class="h-4 w-4 shrink-0 text-muted" />
 			{/if}
-			<span class="max-w-36 truncate" dir={current?.dir ?? 'ltr'}>{current?.label ?? value}</span>
-			<span class="rounded-md bg-surface-overlay px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-muted">
-				{shortCode}
-			</span>
-			<ChevronDown class={['h-3.5 w-3.5 text-muted transition', open && 'rotate-180']} />
+			{#if stacked}
+				<span class="min-w-0 max-w-28 flex-1 text-left leading-tight" dir={current?.dir ?? 'ltr'}>
+					<span class="text-primary block truncate text-xs font-medium"
+						>{current?.label ?? value}</span
+					>
+					<span class="text-secondary block truncate text-[10px] font-semibold tracking-wide"
+						>{shortCode}</span
+					>
+				</span>
+			{:else}
+				<span class="max-w-36 truncate text-xs" dir={current?.dir ?? 'ltr'}
+					>{current?.label ?? value}</span
+				>
+				<span
+					class="rounded-md bg-surface-overlay px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-muted"
+				>
+					{shortCode}
+				</span>
+			{/if}
+			<ChevronDown class={['h-3.5 w-3.5 shrink-0 text-muted transition', open && 'rotate-180']} />
 		</button>
 
 		{#if open}
