@@ -345,7 +345,7 @@
 				/>
 			</div>
 		{/if}
-		<div class="min-h-0 flex-1 overflow-y-auto p-1.5">
+		<div class="min-h-0 overflow-y-auto overscroll-contain p-1.5">
 			{#if filtered.length === 0}
 				<div class="px-3 py-2.5 text-center text-xs text-muted">{emptyText}</div>
 			{:else}
@@ -367,25 +367,23 @@
 							(option.disabled || blocked) && 'cursor-not-allowed opacity-40',
 							!option.disabled &&
 								!blocked &&
-								(highlighted === index || isSelected
-									? 'bg-neutral-800 text-white dark:bg-neutral-200 dark:text-neutral-900'
-									: 'text-primary hover:bg-surface-overlay')
+								(highlighted === index
+									? 'bg-surface-overlay text-primary'
+									: isSelected
+										? 'bg-brand-500/10 font-medium text-primary'
+										: 'text-primary hover:bg-surface-overlay')
 						]}
 					>
 						<span
 							class={[
 								'flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors',
-								isSelected
-									? 'border-white bg-white dark:border-neutral-900 dark:bg-neutral-900'
-									: highlighted === index
-										? 'border-white/60 dark:border-neutral-900/50'
-										: 'border-border-strong'
+								isSelected ? 'border-brand-500 bg-brand-500' : 'border-border-strong'
 							]}
 							aria-hidden="true"
 						>
 							{#if isSelected}
 								<svg
-									class="h-2.5 w-2.5 text-neutral-800 dark:text-neutral-100"
+									class="h-2.5 w-2.5 text-white"
 									viewBox="0 0 24 24"
 									fill="none"
 									stroke="currentColor"

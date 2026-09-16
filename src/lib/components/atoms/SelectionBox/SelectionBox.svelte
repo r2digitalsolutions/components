@@ -72,14 +72,14 @@
 		success:
 			'checked:bg-green-500 checked:border-green-500 indeterminate:bg-green-500 indeterminate:border-green-500 hover:border-green-400 focus-visible:ring-green-500',
 		neutral:
-			'checked:bg-neutral-800 checked:border-neutral-800 indeterminate:bg-neutral-800 indeterminate:border-neutral-800 hover:border-neutral-500 focus-visible:ring-neutral-500 dark:checked:bg-neutral-200 dark:checked:border-neutral-200 dark:indeterminate:bg-neutral-200 dark:indeterminate:border-neutral-200 dark:hover:border-neutral-400 dark:focus-visible:ring-neutral-400'
+			'checked:bg-neutral-800 checked:border-neutral-800 indeterminate:bg-neutral-800 indeterminate:border-neutral-800 hover:border-neutral-500 focus-visible:ring-neutral-500 dark:checked:bg-neutral-600 dark:checked:border-neutral-500 dark:indeterminate:bg-neutral-600 dark:indeterminate:border-neutral-500 dark:hover:border-neutral-400 dark:focus-visible:ring-neutral-400'
 	};
 
 	const toneIconColors: Record<SelectionBoxTone, string> = {
 		brand: 'text-white',
 		success: 'text-white',
 		primary: 'text-white dark:text-neutral-900',
-		neutral: 'text-white dark:text-neutral-900'
+		neutral: 'text-white'
 	};
 
 	function handleChange(e: Event) {
@@ -113,7 +113,7 @@
 			{@attach setIndeterminate}
 			class={[
 				'absolute inset-0 cursor-pointer border-2 border-border bg-surface-elevated appearance-none transition-all duration-150',
-				'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
+				'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
 				'disabled:cursor-not-allowed disabled:opacity-50',
 				radiusClasses[radius],
 				toneChecked[tone]

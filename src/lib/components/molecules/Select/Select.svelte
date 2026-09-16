@@ -61,6 +61,8 @@
 	let searchInputEl = $state<HTMLInputElement | null>(null);
 	let optionsContainerEl = $state<HTMLDivElement | null>(null);
 	let listboxStyle = $state('');
+	let listOverflow = $state(false);
+	let listHeightCeiling = $state(240);
 	/** After keyboard nav, ignore hover until the mouse actually moves */
 	let ignoreHover = $state(false);
 
@@ -188,6 +190,18 @@
 		}
 	}
 
+	function syncListOverflow(ceiling: number) {
+		if (!listboxEl) {
+			listOverflow = false;
+			return;
+		}
+		const fits = listboxEl.scrollHeight <= ceiling;
+		listOverflow = !fits;
+		if (fits) {
+			listboxStyle = listboxStyle.replace(/max-height:[^;]+/, 'max-height:none');
+		}
+	}
+
 	function positionListbox() {
 		if (!triggerEl) return;
 
@@ -205,6 +219,8 @@
 		const spaceAbove = rect.top - viewTop - gap - margin;
 		const openUp = spaceBelow < Math.min(maxHeight, 160) && spaceAbove > spaceBelow;
 		const available = Math.max(120, openUp ? spaceAbove : spaceBelow);
+		const ceiling = Math.min(maxHeight, available);
+		listHeightCeiling = ceiling;
 		const maxWidth = Math.min(320, viewW - margin * 2);
 		let measured = rect.width;
 		if (listboxEl?.matches(':popover-open')) {
@@ -225,11 +241,13 @@
 			`bottom:${openUp ? `${viewTop + viewH - rect.top + gap}px` : 'auto'}`,
 			`left:${left}px`,
 			'right:auto',
-			`min-width:${rect.width}px`,
-			'width:max-content',
+			`width:${width}px`,
+			`min-width:${Math.min(rect.width, maxWidth)}px`,
 			`max-width:${maxWidth}px`,
-			`max-height:${Math.min(maxHeight, available)}px`
+			`max-height:${ceiling}px`
 		].join('; ');
+
+		syncListOverflow(ceiling);
 	}
 
 	function openListbox() {
@@ -263,6 +281,7 @@
 			ignoreHover = true;
 			requestAnimationFrame(() => {
 				positionListbox();
+				syncListOverflow(listHeightCeiling);
 				if (searchable) searchInputEl?.focus();
 				else listboxEl?.focus();
 				scrollHighlightedIntoView();
@@ -566,7 +585,7 @@
 			aria-activedescendant={isOpen ? activeOptionId : undefined}
 			style={listboxStyle}
 			class={[
-				'select-listbox m-0 p-0 inset-auto overflow-hidden',
+				'select-listbox m-0 p-0 inset-auto overflow-x-hidden overflow-y-hidden',
 				'bg-surface-elevated border-border rounded-xl shadow-xl border',
 				'flex flex-col outline-none'
 			]}
@@ -610,7 +629,13 @@
 				<div class="border-border mx-1.5 mb-0.5 h-px border-b" role="separator"></div>
 			{/if}
 
-			<div bind:this={optionsContainerEl} class="p-1.5 min-h-0 overflow-y-auto">
+			<div
+				bind:this={optionsContainerEl}
+				class={[
+					'p-1.5 min-h-0 overflow-x-hidden overscroll-contain',
+					listOverflow ? 'overflow-y-auto' : 'overflow-y-hidden'
+				]}
+			>
 				{#if visibleOptions.length === 0}
 					<div class="px-3 py-2.5 text-xs text-muted text-center">No options found</div>
 				{:else}
@@ -642,9 +667,9 @@
 								'transition-[background-color,color,box-shadow] duration-75',
 								option.disabled ? 'cursor-not-allowed opacity-40' : 'cursor-pointer',
 								isHighlighted && !option.disabled
-									? 'bg-neutral-800 text-white shadow-sm dark:bg-neutral-200 dark:text-neutral-900'
+									? 'bg-surface-overlay text-primary shadow-sm'
 									: isSelected && !option.disabled
-										? 'bg-neutral-100 font-medium text-primary dark:bg-neutral-800/70'
+										? 'bg-brand-500/10 font-medium text-primary'
 										: 'text-primary hover:bg-surface-overlay'
 							]}
 						>
@@ -652,24 +677,15 @@
 								<span
 									class={[
 										'h-4 w-4 flex shrink-0 items-center justify-center rounded-full border transition-colors duration-75',
-										isHighlighted && !option.disabled
-											? isSelected
-												? 'border-white bg-white dark:border-neutral-900 dark:bg-neutral-900'
-												: 'border-white/60 bg-transparent dark:border-neutral-900/50'
-											: isSelected && !option.disabled
-												? 'border-neutral-800 bg-neutral-800 dark:border-neutral-200 dark:bg-neutral-200'
-												: 'border-border-strong bg-transparent'
+										isSelected && !option.disabled
+											? 'border-brand-500 bg-brand-500'
+											: 'border-border-strong bg-transparent'
 									]}
 									aria-hidden="true"
 								>
 									{#if isSelected}
 										<svg
-											class={[
-												'h-2.5 w-2.5',
-												isHighlighted
-													? 'text-neutral-800 dark:text-neutral-100'
-													: 'text-white dark:text-neutral-900'
-											]}
+											class="h-2.5 w-2.5 text-white"
 											viewBox="0 0 24 24"
 											fill="none"
 											stroke="currentColor"
@@ -682,16 +698,9 @@
 							{/if}
 
 							<span class="min-w-0 flex-1">
-								<span class="block whitespace-nowrap">{option.label}</span>
+								<span class="block break-words">{option.label}</span>
 								{#if secondary}
-									<span
-										class={[
-											'mt-0.5 block text-[11px] whitespace-nowrap',
-											isHighlighted && !option.disabled
-												? 'text-white/75'
-												: 'text-secondary'
-										]}
-									>
+									<span class="mt-0.5 block text-[11px] break-words text-secondary">
 										{secondary}
 									</span>
 								{/if}
@@ -699,12 +708,7 @@
 
 							{#if hasChildren}
 								<svg
-									class={[
-										'h-4 w-4 shrink-0',
-										isHighlighted && !option.disabled
-											? 'text-white/80'
-											: 'text-secondary'
-									]}
+									class="h-4 w-4 shrink-0 text-secondary"
 									viewBox="0 0 24 24"
 									fill="none"
 									stroke="currentColor"
@@ -740,7 +744,8 @@
 
 	.select-listbox:popover-open {
 		display: flex;
-		overflow: hidden;
+		overflow-x: hidden;
+		overflow-y: hidden;
 	}
 
 	.select-listbox:not(:popover-open) {
