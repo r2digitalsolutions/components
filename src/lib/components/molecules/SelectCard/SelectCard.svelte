@@ -205,7 +205,7 @@
 	{:else}
 		{#if check === 'box'}
 			<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-			<div class="shrink-0" onclick={(e) => e.stopPropagation()}>
+			<div class="flex shrink-0 items-center" onclick={(e) => e.stopPropagation()}>
 				<SelectionBox
 					checked={selected}
 					size="md"
@@ -228,7 +228,7 @@
 		{/if}
 
 		{#if image || leading}
-			<div class="shrink-0">
+			<div class="flex shrink-0 items-center">
 				{#if image}
 					<img src={image} alt={imageAlt} class="h-11 w-11 rounded-lg object-cover" />
 				{:else if leading}
@@ -237,15 +237,22 @@
 			</div>
 		{/if}
 
-		<div class="min-w-0 flex-1">
+		<div class="flex min-w-0 flex-1 flex-col justify-center">
 			{#if children}
 				{@render children()}
 			{:else}
 				{#if title}
-					<p class="truncate text-sm font-medium text-primary">{title}</p>
+					<p
+						class={[
+							'truncate text-sm font-medium text-primary',
+							!description && 'leading-none'
+						]}
+					>
+						{title}
+					</p>
 				{/if}
 				{#if description}
-					<p class="mt-0.5 truncate text-xs text-muted">{description}</p>
+					<p class="mt-0.5 truncate text-xs leading-snug text-muted">{description}</p>
 				{/if}
 			{/if}
 		</div>

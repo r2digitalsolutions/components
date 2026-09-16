@@ -25,14 +25,16 @@
 
 	function addMany(raw: string) {
 		if (disabled) return;
+		// Comma / semicolon / newline — keep spaces so multi-word tags work (e.g. keywords).
 		const parts = raw
-			.split(/[\s,;]+/)
+			.split(/[,;\n]+/)
 			.map((p) => p.trim())
 			.filter(Boolean);
 		if (!parts.length) return;
 		let next = [...value];
 		for (const part of parts) {
-			if (next.includes(part)) continue;
+			const exists = next.some((t) => t.toLowerCase() === part.toLowerCase());
+			if (exists) continue;
 			if (max !== undefined && next.length >= max) break;
 			next.push(part);
 		}
@@ -61,9 +63,10 @@
 
 	function onPaste(e: ClipboardEvent) {
 		const text = e.clipboardData?.getData('text') ?? '';
-		if (!/[,;\s]/.test(text)) return;
+		if (!/[,;\n]/.test(text)) return;
 		e.preventDefault();
-		addMany(`${draft} ${text}`);
+		const prefix = draft.trim() ? `${draft.trim()}, ` : '';
+		addMany(`${prefix}${text}`);
 	}
 </script>
 

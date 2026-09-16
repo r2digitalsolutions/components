@@ -139,7 +139,5 @@
 	</span>
 	{#if label && showLabel}
 		<span class={['font-medium text-primary', labelSizeClasses[size]]}>{label}</span>
-	{:else if label}
-		<span class="sr-only">{label}</span>
 	{/if}
 </label>
