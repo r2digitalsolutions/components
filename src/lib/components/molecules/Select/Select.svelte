@@ -221,14 +221,9 @@
 		const available = Math.max(120, openUp ? spaceAbove : spaceBelow);
 		const ceiling = Math.min(maxHeight, available);
 		listHeightCeiling = ceiling;
-		const maxWidth = Math.min(320, viewW - margin * 2);
-		let measured = rect.width;
-		if (listboxEl?.matches(':popover-open')) {
-			const raw = listboxEl.getBoundingClientRect().width;
-			// UA [popover] { inset: 0 } can report nearly the viewport until CSS/layout settles.
-			if (raw > 0 && raw < viewW * 0.5) measured = raw;
-		}
-		const width = Math.min(maxWidth, Math.max(rect.width, measured));
+
+		// Match the trigger: never narrower, never capped at an arbitrary px (was 320).
+		const width = Math.min(Math.max(rect.width, 0), viewW - margin * 2);
 
 		let left = rect.left;
 		if (left + width > viewLeft + viewW - margin) {
@@ -242,8 +237,8 @@
 			`left:${left}px`,
 			'right:auto',
 			`width:${width}px`,
-			`min-width:${Math.min(rect.width, maxWidth)}px`,
-			`max-width:${maxWidth}px`,
+			`min-width:${width}px`,
+			`max-width:${width}px`,
 			`max-height:${ceiling}px`
 		].join('; ');
 
@@ -667,7 +662,7 @@
 								'transition-[background-color,color,box-shadow] duration-75',
 								option.disabled ? 'cursor-not-allowed opacity-40' : 'cursor-pointer',
 								isHighlighted && !option.disabled
-									? 'bg-surface-overlay text-primary shadow-sm'
+									? 'bg-brand-500 text-white shadow-sm'
 									: isSelected && !option.disabled
 										? 'bg-brand-500/10 font-medium text-primary'
 										: 'text-primary hover:bg-surface-overlay'
@@ -678,14 +673,21 @@
 									class={[
 										'h-4 w-4 flex shrink-0 items-center justify-center rounded-full border transition-colors duration-75',
 										isSelected && !option.disabled
-											? 'border-brand-500 bg-brand-500'
-											: 'border-border-strong bg-transparent'
+											? isHighlighted
+												? 'border-white bg-white'
+												: 'border-brand-500 bg-brand-500'
+											: isHighlighted && !option.disabled
+												? 'border-white/80 bg-transparent'
+												: 'border-border-strong bg-transparent'
 									]}
 									aria-hidden="true"
 								>
 									{#if isSelected}
 										<svg
-											class="h-2.5 w-2.5 text-white"
+											class={[
+												'h-2.5 w-2.5',
+												isHighlighted && !option.disabled ? 'text-brand-500' : 'text-white'
+											]}
 											viewBox="0 0 24 24"
 											fill="none"
 											stroke="currentColor"
@@ -700,7 +702,12 @@
 							<span class="min-w-0 flex-1">
 								<span class="block break-words">{option.label}</span>
 								{#if secondary}
-									<span class="mt-0.5 block text-[11px] break-words text-secondary">
+									<span
+										class={[
+											'mt-0.5 block text-[11px] break-words',
+											isHighlighted && !option.disabled ? 'text-white/80' : 'text-secondary'
+										]}
+									>
 										{secondary}
 									</span>
 								{/if}
@@ -708,7 +715,10 @@
 
 							{#if hasChildren}
 								<svg
-									class="h-4 w-4 shrink-0 text-secondary"
+									class={[
+										'h-4 w-4 shrink-0',
+										isHighlighted && !option.disabled ? 'text-white/80' : 'text-secondary'
+									]}
 									viewBox="0 0 24 24"
 									fill="none"
 									stroke="currentColor"
