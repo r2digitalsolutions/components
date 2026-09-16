@@ -370,7 +370,7 @@
 								(highlighted === index
 									? 'bg-surface-overlay text-primary'
 									: isSelected
-										? 'bg-brand-500/10 font-medium text-primary'
+										? 'font-medium text-primary'
 										: 'text-primary hover:bg-surface-overlay')
 						]}
 					>

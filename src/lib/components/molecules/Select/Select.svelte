@@ -664,7 +664,7 @@
 								isHighlighted && !option.disabled
 									? 'bg-brand-500 text-white shadow-sm'
 									: isSelected && !option.disabled
-										? 'bg-brand-500/10 font-medium text-primary'
+										? 'font-medium text-primary'
 										: 'text-primary hover:bg-surface-overlay'
 							]}
 						>
