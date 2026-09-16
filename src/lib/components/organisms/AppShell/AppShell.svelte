@@ -78,6 +78,15 @@
 		children
 	}: AppShellProps = $props();
 
+	// Context must be set during component init — never inside $derived (async SSR
+	// re-entry / first read would call setContext outside init → 500).
+	const sharedChrome = getSharedAppChrome();
+	try {
+		getAppChrome();
+	} catch {
+		setAppChrome(sharedChrome);
+	}
+
 	// Resolve via singleton inside deriveds so HMR / duplicate graphs stay aligned.
 	const propContextual = $derived.by((): AppShellContextual | null => {
 		if (contextualGroups.length === 0) return null;
@@ -91,14 +100,8 @@
 	});
 
 	const resolvedContextual = $derived.by(() => {
-		const chrome = getSharedAppChrome();
-		try {
-			getAppChrome();
-		} catch {
-			setAppChrome(chrome);
-		}
 		void getAppChromeEpoch();
-		return chrome.source?.() ?? propContextual;
+		return getSharedAppChrome().source?.() ?? propContextual;
 	});
 	const contextualKey = $derived(
 		resolvedContextual
