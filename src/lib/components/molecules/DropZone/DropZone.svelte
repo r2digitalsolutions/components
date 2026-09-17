@@ -263,7 +263,7 @@
 		<input
 			bind:this={inputEl}
 			id={inputId}
-			{name}
+			name={name || undefined}
 			type="file"
 			class="sr-only"
 			aria-label={label}
