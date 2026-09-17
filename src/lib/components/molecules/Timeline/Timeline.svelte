@@ -1,4 +1,6 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
+
 	export interface TimelineItem {
 		id: string;
 		title: string;
@@ -12,6 +14,8 @@
 		size?: 'sm' | 'md' | 'lg';
 		/** Connect dots with a continuous vertical line */
 		showConnectors?: boolean;
+		/** Optional extra content under each item (thumbnails, badges, …). */
+		content?: Snippet<[TimelineItem, number]>;
 		class?: string;
 	}
 
@@ -19,6 +23,7 @@
 		items = [],
 		size = 'md',
 		showConnectors = true,
+		content,
 		class: className = ''
 	}: TimelineProps = $props();
 
@@ -113,6 +118,11 @@
 				</div>
 				{#if item.description}
 					<p class={['mt-0.5 text-secondary', sizeClasses.desc]}>{item.description}</p>
+				{/if}
+				{#if content}
+					<div class="mt-1.5">
+						{@render content(item, index)}
+					</div>
 				{/if}
 			</div>
 		</li>

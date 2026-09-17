@@ -112,7 +112,9 @@
 <div class={['relative w-full select-none', className]}>
 	<svg
 		viewBox={`0 0 ${W} ${height}`}
-		class="h-auto w-full overflow-visible"
+		preserveAspectRatio="none"
+		class="block w-full overflow-visible"
+		style:height={`${height}px`}
 		role="img"
 		aria-label="Multi-line chart"
 	>

@@ -65,7 +65,9 @@
 <div class={['relative w-full select-none', className]}>
 	<svg
 		viewBox={`0 0 ${W} ${H}`}
-		class="h-auto w-full overflow-visible"
+		preserveAspectRatio="none"
+		class="block w-full overflow-visible"
+		style:height={`${H}px`}
 		role="img"
 		aria-label="Horizontal bar chart"
 	>
