@@ -17,6 +17,8 @@
 		label?: string;
 		hint?: string;
 		accept?: string;
+		/** Form field name for the hidden file input (default `'files'`). */
+		name?: string;
 		/** Allow selecting more than one file (default true). */
 		multiple?: boolean;
 		/** Cap on how many files can be kept when multiple. */
@@ -38,6 +40,7 @@
 		label = 'Drop files here',
 		hint = 'or click to browse',
 		accept,
+		name = 'files',
 		multiple = true,
 		maxFiles,
 		disabled = false,
@@ -49,6 +52,8 @@
 		onchange,
 		onremove
 	}: DropZoneProps = $props();
+
+	const inputId = $props.id();
 
 	let dragging = $state(false);
 	let error = $state('');
@@ -257,8 +262,11 @@
 		</div>
 		<input
 			bind:this={inputEl}
+			id={inputId}
+			{name}
 			type="file"
 			class="sr-only"
+			aria-label={label}
 			{accept}
 			{multiple}
 			{disabled}
