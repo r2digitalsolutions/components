@@ -120,9 +120,7 @@
 					<p class={['mt-0.5 text-secondary', sizeClasses.desc]}>{item.description}</p>
 				{/if}
 				{#if content}
-					<div class="mt-1.5">
-						{@render content(item, index)}
-					</div>
+					{@render content(item, index)}
 				{/if}
 			</div>
 		</li>
