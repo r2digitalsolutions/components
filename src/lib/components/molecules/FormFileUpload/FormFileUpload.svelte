@@ -77,6 +77,7 @@
 
 <div class={['w-full space-y-1', className]}>
 	<DropZone
+		{name}
 		{label}
 		{hint}
 		{accept}

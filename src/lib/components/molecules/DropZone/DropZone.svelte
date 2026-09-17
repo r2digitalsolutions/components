@@ -17,7 +17,12 @@
 		label?: string;
 		hint?: string;
 		accept?: string;
-		/** Form field name for the hidden file input (default `'files'`). */
+		/**
+		 * Form field name for the file input.
+		 * Leave unset for picker-only usage (`bind:files` / `onchange`) so the input is
+		 * ignored by parent remote forms. When set with `multiple`, a `[]` suffix is
+		 * added automatically unless the name already ends with `[]`.
+		 */
 		name?: string;
 		/** Allow selecting more than one file (default true). */
 		multiple?: boolean;
@@ -40,7 +45,7 @@
 		label = 'Drop files here',
 		hint = 'or click to browse',
 		accept,
-		name = 'files',
+		name,
 		multiple = true,
 		maxFiles,
 		disabled = false,
@@ -63,6 +68,13 @@
 	const previewUrls = new Set<string>();
 
 	const maxBytes = $derived(maxSizeMb * 1024 * 1024);
+	const inputName = $derived(
+		!name
+			? undefined
+			: multiple && !name.endsWith('[]')
+				? `${name}[]`
+				: name
+	);
 
 	function formatBytes(bytes: number): string {
 		if (bytes === 0) return '0 B';
@@ -263,7 +275,7 @@
 		<input
 			bind:this={inputEl}
 			id={inputId}
-			name={name || undefined}
+			name={inputName}
 			type="file"
 			class="sr-only"
 			aria-label={label}
