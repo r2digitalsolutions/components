@@ -64,16 +64,33 @@
 			const iy1 = cy + innerR * Math.sin(angle);
 			const ix2 = cx + innerR * Math.cos(start);
 			const iy2 = cy + innerR * Math.sin(start);
+			// Full circle: start===end so a single arc is invisible — use two semicircles.
+			const full = slice >= Math.PI * 2 - 1e-6;
+			const mid = start + Math.PI;
+			const oxMid = cx + r * Math.cos(mid);
+			const oyMid = cy + r * Math.sin(mid);
+			const ixMid = cx + innerR * Math.cos(mid);
+			const iyMid = cy + innerR * Math.sin(mid);
 			const path =
 				slice <= 0
 					? ''
-					: [
-							`M ${x1} ${y1}`,
-							`A ${r} ${r} 0 ${large} 1 ${x2} ${y2}`,
-							`L ${ix1} ${iy1}`,
-							`A ${innerR} ${innerR} 0 ${large} 0 ${ix2} ${iy2}`,
-							'Z'
-						].join(' ');
+					: full
+						? [
+								`M ${x1} ${y1}`,
+								`A ${r} ${r} 0 1 1 ${oxMid} ${oyMid}`,
+								`A ${r} ${r} 0 1 1 ${x1} ${y1}`,
+								`L ${ix2} ${iy2}`,
+								`A ${innerR} ${innerR} 0 1 0 ${ixMid} ${iyMid}`,
+								`A ${innerR} ${innerR} 0 1 0 ${ix2} ${iy2}`,
+								'Z'
+							].join(' ')
+						: [
+								`M ${x1} ${y1}`,
+								`A ${r} ${r} 0 ${large} 1 ${x2} ${y2}`,
+								`L ${ix1} ${iy1}`,
+								`A ${innerR} ${innerR} 0 ${large} 0 ${ix2} ${iy2}`,
+								'Z'
+							].join(' ');
 			return {
 				...d,
 				value,

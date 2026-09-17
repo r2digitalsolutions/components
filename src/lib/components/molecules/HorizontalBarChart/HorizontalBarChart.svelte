@@ -11,6 +11,8 @@
 		data?: HBarPoint[];
 		/** Bar track width in viewBox units */
 		barWidth?: number;
+		/** Left label column width in viewBox units */
+		labelWidth?: number;
 		rowHeight?: number;
 		interactive?: boolean;
 		showValues?: boolean;
@@ -21,6 +23,7 @@
 	const {
 		data = [],
 		barWidth = 280,
+		labelWidth = 88,
 		rowHeight = 36,
 		interactive = true,
 		showValues = true,
@@ -29,10 +32,10 @@
 	}: HorizontalBarChartProps = $props();
 
 	const color = 'var(--color-brand-500, #6366f1)';
-	const labelW = 88;
 	const padR = 48;
-	const W = $derived(labelW + barWidth + padR);
+	const W = $derived(labelWidth + barWidth + padR);
 	const H = $derived(Math.max(data.length, 1) * rowHeight + 8);
+	const maxLabelChars = $derived(Math.floor(labelWidth / 6.5));
 
 	let tipIndex = $state<number | null>(null);
 
@@ -47,6 +50,12 @@
 		})
 	);
 
+	function displayLabel(label: string): string {
+		const maxChars = maxLabelChars;
+		if (label.length <= maxChars) return label;
+		return `${label.slice(0, Math.max(0, maxChars - 1))}…`;
+	}
+
 	function select(i: number) {
 		if (!interactive) return;
 		tipIndex = tipIndex === i ? null : i;
@@ -60,18 +69,18 @@
 		role="img"
 		aria-label="Horizontal bar chart"
 	>
-		{#each rows as r, i}
+		{#each rows as r, i (i)}
 			<text
-				x={labelW - 8}
+				x={labelWidth - 8}
 				y={r.midY + 4}
 				text-anchor="end"
 				class="fill-secondary"
 				font-size="11"
 			>
-				{r.label}
+				{displayLabel(r.label)}
 			</text>
 			<rect
-				x={labelW}
+				x={labelWidth}
 				y={r.y + 4}
 				width={barWidth}
 				height={rowHeight - 14}
@@ -80,7 +89,7 @@
 				opacity="0.6"
 			/>
 			<rect
-				x={labelW}
+				x={labelWidth}
 				y={r.y + 4}
 				width={r.bw}
 				height={rowHeight - 14}
@@ -91,7 +100,7 @@
 			/>
 			{#if showValues}
 				<text
-					x={labelW + r.bw + 6}
+					x={labelWidth + r.bw + 6}
 					y={r.midY + 4}
 					class="fill-muted"
 					font-size="10"
@@ -102,6 +111,7 @@
 			{/if}
 			{#if interactive}
 				<!-- svelte-ignore a11y_no_static_element_interactions -->
+				<!-- svelte-ignore a11y_click_events_have_key_events -->
 				<rect
 					x={0}
 					y={r.y}
@@ -119,7 +129,7 @@
 		{@const t = rows[tipIndex]}
 		<div
 			class="pointer-events-none absolute z-10 rounded-lg border border-border bg-surface-elevated px-2.5 py-1.5 shadow-lg"
-			style:left={`${((labelW + t.bw) / W) * 100}%`}
+			style:left={`${((labelWidth + t.bw) / W) * 100}%`}
 			style:top={`${(t.y / H) * 100}%`}
 			role="status"
 		>

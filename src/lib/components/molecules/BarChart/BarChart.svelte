@@ -29,7 +29,7 @@
 	}: BarChartProps = $props();
 
 	const W = 420;
-	const pad = { t: 24, r: 12, b: 32, l: 12 };
+	const pad = { t: 24, r: 12, b: 40, l: 12 };
 	const uid = `bc-${Math.random().toString(36).slice(2, 8)}`;
 	const color = 'var(--color-brand-500, #6366f1)';
 
@@ -65,6 +65,10 @@
 			align: tipAlign(leftPct)
 		};
 	});
+
+	function axisLabel(label: string): string {
+		return label.length > 14 ? `${label.slice(0, 14)}…` : label;
+	}
 
 	function select(i: number) {
 		if (!interactive) return;
@@ -109,8 +113,8 @@
 					{formatTick(b.value, 0)}{unit}
 				</text>
 			{/if}
-			<text x={b.cx} y={height - 8} text-anchor="middle" class="fill-muted" font-size="10">
-				{b.label}
+			<text x={b.cx} y={height - 8} text-anchor="middle" class="fill-muted" font-size="12">
+				{axisLabel(b.label)}
 			</text>
 			{#if interactive}
 				<!-- svelte-ignore a11y_no_static_element_interactions -->
