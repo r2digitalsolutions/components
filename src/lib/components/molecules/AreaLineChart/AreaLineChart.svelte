@@ -56,21 +56,34 @@
 	let tipIndex = $state<number | null>(null);
 
 	const values = $derived(data.map((d) => d.value));
-	const domain = $derived(
-		yMin !== undefined && yMax !== undefined
-			? { min: yMin, max: yMax }
-			: scaleDomain(values)
-	);
+	const domain = $derived.by(() => {
+		if (yMin !== undefined && yMax !== undefined) return { min: yMin, max: yMax };
+		const auto = scaleDomain(values);
+		/** Counts never go below zero unless the caller sets an explicit floor. */
+		if (yMin !== undefined) return { min: yMin, max: Math.max(auto.max, yMin + 1) };
+		if (values.length > 0 && Math.min(...values) >= 0 && auto.min < 0) {
+			return { min: 0, max: auto.max };
+		}
+		return auto;
+	});
 	const points = $derived(mapPoints(values, W, height, pad, domain));
 	const line = $derived(smooth ? smoothLinePath(points) : linearLinePath(points));
 	const area = $derived(areaPath(line, points, height, pad));
 
+	const integerValues = $derived(values.every((v) => Number.isInteger(v)));
+
 	const gridYs = $derived.by(() => {
 		const { min, max } = domain;
-		return [0, 0.5, 1].map((t) => ({
-			y: pad.t + (1 - t) * (height - pad.t - pad.b),
-			label: formatTick(min + t * (max - min))
-		}));
+		return [0, 0.5, 1].map((t) => {
+			const raw = min + t * (max - min);
+			const label = integerValues
+				? String(Math.round(raw))
+				: formatTick(raw);
+			return {
+				y: pad.t + (1 - t) * (height - pad.t - pad.b),
+				label
+			};
+		});
 	});
 
 	const tip = $derived.by(() => {

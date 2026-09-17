@@ -20,13 +20,20 @@ export function scaleDomain(values: number[], padRatio = 0.08): { min: number; m
 	if (values.length === 0) return { min: 0, max: 1 };
 	let min = Math.min(...values);
 	let max = Math.max(...values);
+	const nonNegative = min >= 0;
 	if (min === max) {
-		const bump = min === 0 ? 1 : Math.abs(min) * 0.05 || 1;
+		if (min === 0) return { min: 0, max: 1 };
+		const bump = Math.abs(min) * 0.05 || 1;
 		min -= bump;
 		max += bump;
+	} else {
+		const span = max - min;
+		min -= span * padRatio;
+		max += span * padRatio;
 	}
-	const span = max - min;
-	return { min: min - span * padRatio, max: max + span * padRatio };
+	/** Counts / rates ≥ 0 should never show a negative floor (e.g. visits → -2.7). */
+	if (nonNegative && min < 0) min = 0;
+	return { min, max };
 }
 
 export function mapPoints(
@@ -83,6 +90,8 @@ export function tipAlign(leftPct: number): 'start' | 'center' | 'end' {
 }
 
 export function formatTick(n: number, digits = 1): string {
-	if (Math.abs(n) >= 100) return String(Math.round(n));
-	return n.toFixed(digits).replace(/\.0$/, '');
+	if (!Number.isFinite(n)) return '0';
+	if (Math.abs(n) >= 100 || Number.isInteger(n)) return String(Math.round(n));
+	const fixed = n.toFixed(digits).replace(/\.0+$/, '').replace(/(\.\d*?)0+$/, '$1');
+	return fixed;
 }

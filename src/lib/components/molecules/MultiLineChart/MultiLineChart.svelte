@@ -55,11 +55,15 @@
 	let tipIndex = $state<number | null>(null);
 
 	const allValues = $derived(series.flatMap((s) => s.values));
-	const domain = $derived(
-		yMin !== undefined && yMax !== undefined
-			? { min: yMin, max: yMax }
-			: scaleDomain(allValues)
-	);
+	const domain = $derived.by(() => {
+		if (yMin !== undefined && yMax !== undefined) return { min: yMin, max: yMax };
+		const auto = scaleDomain(allValues);
+		if (yMin !== undefined) return { min: yMin, max: Math.max(auto.max, yMin + 1) };
+		if (allValues.length > 0 && Math.min(...allValues) >= 0 && auto.min < 0) {
+			return { min: 0, max: auto.max };
+		}
+		return auto;
+	});
 
 	const plotted = $derived(
 		series.map((s, si) => {
@@ -74,12 +78,17 @@
 		})
 	);
 
+	const integerValues = $derived(allValues.every((v) => Number.isInteger(v)));
+
 	const gridYs = $derived.by(() => {
 		const { min, max } = domain;
-		return [0, 0.5, 1].map((t) => ({
-			y: pad.t + (1 - t) * (height - pad.t - pad.b),
-			label: formatTick(min + t * (max - min))
-		}));
+		return [0, 0.5, 1].map((t) => {
+			const raw = min + t * (max - min);
+			return {
+				y: pad.t + (1 - t) * (height - pad.t - pad.b),
+				label: integerValues ? String(Math.round(raw)) : formatTick(raw)
+			};
+		});
 	});
 
 	const tip = $derived.by(() => {
