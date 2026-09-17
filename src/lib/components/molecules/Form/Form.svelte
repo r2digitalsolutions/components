@@ -4,7 +4,8 @@
 >
 	import type { Snippet } from 'svelte';
 	import { setContext, untrack } from 'svelte';
-	import type { RemoteFormInput } from '@sveltejs/kit';
+	import type { ClassValue } from 'svelte/elements';
+	import type { RemoteFormInput, RemoteQueryUpdate } from '@sveltejs/kit';
 	import Alert from '$lib/components/molecules/Alert/Alert.svelte';
 	import {
 		FORM_CONTEXT_KEY,
@@ -35,6 +36,24 @@
 		 * @default true
 		 */
 		syncRemoteIssues?: boolean;
+		/**
+		 * When `false`, skip Kit's default `invalidateAll()` after a successful remote form
+		 * (via `submit().updates()`). Prefer {@link updates} to refresh specific queries.
+		 * @default true
+		 */
+		invalidateAll?: boolean;
+		/**
+		 * Single-flight query refreshes. Passing this (even `[]`) opts out of `invalidateAll`.
+		 * @see https://svelte.dev/docs/kit/remote-functions#Single-flight-mutations
+		 */
+		updates?: RemoteQueryUpdate[];
+		onSuccess?: (result?: any) => void | Promise<void>;
+		onError?: (error: string) => void;
+		beforeSubmit?: () => void | Promise<void>;
+		/** Bind the underlying `<form>` (e.g. Dialog footer `formRef.requestSubmit()`). */
+		formRef?: HTMLFormElement | null;
+		id?: string;
+		enctype?: 'application/x-www-form-urlencoded' | 'multipart/form-data' | 'text/plain';
 		/** Optional bag for submit/remote result exposed in context */
 		result?: TOutput;
 		title?: string;
@@ -43,7 +62,7 @@
 		showErrorSummary?: boolean;
 		errorSummaryTitle?: string;
 		gap?: 'sm' | 'md' | 'lg';
-		class?: string;
+		class?: ClassValue;
 		children?: Snippet;
 		header?: Snippet;
 		footer?: Snippet;
@@ -54,10 +73,18 @@
 	let {
 		data = $bindable<TData>({} as TData),
 		errors = $bindable<FormErrors>({}),
-		loading = false,
+		loading = $bindable(false),
 		disabled = false,
 		remote = null,
 		syncRemoteIssues = true,
+		invalidateAll = true,
+		updates,
+		onSuccess,
+		onError,
+		beforeSubmit,
+		formRef = $bindable<HTMLFormElement | null>(null),
+		id,
+		enctype,
 		result = $bindable<TOutput | undefined>(undefined),
 		title,
 		description,
@@ -92,6 +119,9 @@
 		md: 'space-y-4',
 		lg: 'space-y-6'
 	} as const;
+
+	/** Client-side ceiling so a hung remote cannot leave Save spinning forever. */
+	const SUBMIT_TIMEOUT_MS = 90_000;
 
 	function setError(name: string, message: string) {
 		errors = { ...errors, [name]: message };
@@ -153,10 +183,12 @@
 		getData
 	} satisfies FormContext<TData, TOutput>);
 
-	if (kitForm && !didInitRemoteFormId) {
+	$effect(() => {
+		const form = kitForm;
+		if (!form || didInitRemoteFormId) return;
 		didInitRemoteFormId = true;
-		remoteFormId = untrack(() => getRemoteFormId(kitForm.action));
-	}
+		remoteFormId = untrack(() => getRemoteFormId(form.action));
+	});
 
 	function syncRemoteIssuesNow() {
 		if (!kitForm || !syncRemoteIssues) return;
@@ -172,6 +204,10 @@
 	}
 
 	let formEl = $state<HTMLFormElement | null>(null);
+
+	$effect(() => {
+		formRef = formEl;
+	});
 
 	$effect(() => {
 		const el = formEl;
@@ -192,6 +228,130 @@
 		el.addEventListener('submit', onSubmit);
 		return () => el.removeEventListener('submit', onSubmit);
 	});
+
+	function isKitRedirect(err: unknown): boolean {
+		return Boolean(err && typeof err === 'object' && 'location' in err && 'status' in err);
+	}
+
+	function formatValidationIssues(): string {
+		if (!kitForm) return '';
+		const issues = kitForm.fields.allIssues?.();
+		if (!issues?.length) return '';
+		return issues
+			.map((issue) => {
+				const path = issue.path?.length ? issue.path.join('.') : 'formulario';
+				return `${path}: ${issue.message}`;
+			})
+			.join(' · ');
+	}
+
+	function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
+		return new Promise<T>((resolve, reject) => {
+			const timer = setTimeout(() => reject(new Error(message)), ms);
+			promise.then(
+				(value) => {
+					clearTimeout(timer);
+					resolve(value);
+				},
+				(err) => {
+					clearTimeout(timer);
+					reject(err);
+				}
+			);
+		});
+	}
+
+	/** Kit: `submit().updates(...)` (even empty) prevents the default invalidateAll waterfall. */
+	function runSubmit(
+		submit: () => Promise<boolean> & {
+			updates: (...args: RemoteQueryUpdate[]) => Promise<boolean>;
+		}
+	) {
+		if (updates) return submit().updates(...updates);
+		if (!invalidateAll) return submit().updates();
+		return submit();
+	}
+
+	function reportError(message: string) {
+		submitted = true;
+		setError('_form', message);
+		onError?.(message);
+	}
+
+	async function handleRemoteEnhance(submit: () => Promise<boolean> & {
+		updates: (...args: RemoteQueryUpdate[]) => Promise<boolean>;
+	}) {
+		if (!kitForm) return;
+		try {
+			loading = true;
+			clearErrors();
+			await beforeSubmit?.();
+			const ok = await withTimeout(
+				runSubmit(submit),
+				SUBMIT_TIMEOUT_MS,
+				'La operación ha tardado demasiado. Comprueba la conexión e inténtalo de nuevo.'
+			);
+			const results = kitForm.result;
+			result = results as TOutput | undefined;
+			if (!ok) {
+				syncRemoteIssuesNow();
+				const issueSummary = formatValidationIssues();
+				const message = issueSummary || 'Revisa los errores del formulario.';
+				submitted = true;
+				// Field issues already land in `errors`; only use `_form` when none were mapped.
+				if (!issueSummary) setError('_form', message);
+				onError?.(message);
+			} else if (results && typeof results === 'object' && 'error' in results && results.error) {
+				const err = results.error;
+				const message =
+					typeof err === 'string'
+						? err
+						: err instanceof Error
+							? err.message
+							: typeof err === 'object' && err !== null && 'message' in err
+								? String((err as { message?: unknown }).message)
+								: 'Ha ocurrido un error al guardar.';
+				reportError(message);
+			} else {
+				// Clear busy UI before onSuccess — invalidateAll/refresh must not leave Save spinning.
+				loading = false;
+				try {
+					await onSuccess?.(results);
+				} catch (successErr) {
+					console.error('[Form] onSuccess failed', successErr);
+				}
+			}
+		} catch (e) {
+			if (isKitRedirect(e)) throw e;
+			const raw = e instanceof Error ? e.message : '';
+			let message: string;
+			if (/413|Payload Too Large|BODY_SIZE_LIMIT|exceeds limit|Content-length/i.test(raw)) {
+				message = 'El archivo es demasiado grande. Prueba con una imagen de menos de 8 MB.';
+			} else if (/502|504|Bad Gateway|Gateway Timeout|Failed to fetch|NetworkError/i.test(raw)) {
+				message =
+					'No se pudo completar la subida (error de red o servidor). Prueba de nuevo en unos segundos.';
+			} else if (!raw || /unexpected error/i.test(raw)) {
+				message = 'Ha ocurrido un error inesperado. Inténtalo de nuevo.';
+			} else {
+				message = raw;
+			}
+			reportError(message);
+		} finally {
+			loading = false;
+		}
+	}
+
+	/**
+	 * Full Kit `RemoteForm` → own `.enhance` (invalidateAll / updates / callbacks).
+	 * Already-enhanced spread → caller owns enhance; pass through unchanged.
+	 */
+	function remoteFormAttrs(): object {
+		if (!remote) return {};
+		if (!kitForm) return remote as object;
+		return kitForm.enhance(async ({ submit }) => {
+			await handleRemoteEnhance(submit);
+		}) as object;
+	}
 </script>
 
 {#snippet fields()}
@@ -236,7 +396,9 @@
 {#if isRemote}
 	<form
 		bind:this={formEl}
-		{...(remote as object)}
+		{...remoteFormAttrs()}
+		{id}
+		{enctype}
 		class={['w-full', gaps[gap], className]}
 		novalidate
 		aria-busy={busy || undefined}
@@ -245,6 +407,9 @@
 	</form>
 {:else}
 	<form
+		bind:this={formEl}
+		{id}
+		{enctype}
 		class={['w-full', gaps[gap], className]}
 		onsubmit={handleSubmit}
 		novalidate
