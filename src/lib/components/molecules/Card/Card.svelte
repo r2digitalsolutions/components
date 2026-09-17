@@ -44,7 +44,13 @@
 		lg: 'px-5 py-5 sm:px-6 sm:py-6'
 	};
 
-	const isClickable = $derived(!!onclick || hoverable);
+	function handleKeydown(e: KeyboardEvent) {
+		if (!onclick) return;
+		if (e.key === 'Enter' || e.key === ' ') {
+			e.preventDefault();
+			onclick(e as unknown as MouseEvent);
+		}
+	}
 </script>
 
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
@@ -60,10 +66,8 @@
 	]}
 	role={onclick ? 'button' : undefined}
 	tabindex={onclick ? 0 : undefined}
-	{onclick}
-	onkeydown={onclick
-		? (e) => e.key === 'Enter' && onclick?.(e as unknown as MouseEvent)
-		: undefined}
+	onclick={onclick}
+	onkeydown={onclick ? handleKeydown : undefined}
 >
 	{#if header}
 		<div
