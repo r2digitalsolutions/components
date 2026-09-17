@@ -12,7 +12,8 @@
 		LoaderCircle,
 		RotateCcw,
 		Copy,
-		Check
+		Check,
+		ChevronLeft
 	} from '@lucide/svelte';
 
 	export interface AssistantMessage {
@@ -52,12 +53,16 @@
 		voiceOffLabel?: string;
 		copyChatLabel?: string;
 		copiedChatLabel?: string;
+		/** Optional back control (e.g. return to conversation list). */
+		backLabel?: string;
+		subtitle?: string;
 		class?: string;
 		result?: Snippet<[AssistantMessage]>;
 		footerExtra?: Snippet;
 		onsend?: () => void;
 		onclose?: () => void;
 		onnewchat?: () => void;
+		onback?: () => void;
 		oncopychat?: () => void | Promise<void>;
 		onmicclick?: () => void;
 		onvoiceoutputchange?: (on: boolean) => void;
@@ -92,12 +97,15 @@
 		voiceOffLabel = 'Voz desactivada',
 		copyChatLabel = 'Copiar chat',
 		copiedChatLabel = 'Copiado',
+		backLabel = 'Volver',
+		subtitle = '',
 		class: className = '',
 		result,
 		footerExtra,
 		onsend,
 		onclose,
 		onnewchat,
+		onback,
 		oncopychat,
 		onmicclick,
 		onvoiceoutputchange,
@@ -201,16 +209,24 @@
 >
 	<!-- Header -->
 	<header class="gap-2 border-border px-3 py-2.5 flex shrink-0 items-center border-b">
-		<span
-			class="h-7 w-7 rounded-lg bg-brand-100 text-brand-600 dark:bg-brand-900/40 dark:text-brand-400 flex shrink-0 items-center justify-center"
-			aria-hidden="true"
-		>
-			<Sparkles size={15} strokeWidth={2} />
-		</span>
+		{#if onback}
+			<IconButton variant="ghost" size="xs" label={backLabel} onclick={() => onback()}>
+				<ChevronLeft size={16} strokeWidth={2} />
+			</IconButton>
+		{:else}
+			<span
+				class="h-7 w-7 rounded-lg bg-brand-100 text-brand-600 dark:bg-brand-900/40 dark:text-brand-400 flex shrink-0 items-center justify-center"
+				aria-hidden="true"
+			>
+				<Sparkles size={15} strokeWidth={2} />
+			</span>
+		{/if}
 		<div class="min-w-0 flex-1">
 			<p class="text-sm font-semibold text-primary truncate">{title}</p>
 			{#if statusLabel}
 				<p class="text-xs text-muted truncate">{statusLabel}</p>
+			{:else if subtitle}
+				<p class="text-xs text-muted truncate">{subtitle}</p>
 			{/if}
 		</div>
 		<IconButton
