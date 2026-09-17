@@ -97,7 +97,16 @@
 		return rules.some((rule) => {
 			if (rule.startsWith('.')) return name.endsWith(rule);
 			if (rule.endsWith('/*')) return type.startsWith(rule.slice(0, -1));
-			return type === rule || name.endsWith(`.${rule}`);
+			if (type && type === rule) return true;
+			// image/png → also match *.png when browser leaves type empty
+			const slash = rule.lastIndexOf('/');
+			if (slash > 0) {
+				const subtype = rule.slice(slash + 1);
+				if (subtype && subtype !== '*' && name.endsWith(`.${subtype}`)) return true;
+				if (subtype === 'jpeg' && name.endsWith('.jpg')) return true;
+				if (subtype === 'svg+xml' && name.endsWith('.svg')) return true;
+			}
+			return false;
 		});
 	}
 
