@@ -108,18 +108,24 @@
 	{:else if children}
 		{@render children()}
 	{:else if hasBody}
-		<div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_22rem]">
+		{#if secondary}
+			<div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_22rem]">
+				<div class="min-w-0 space-y-4">
+					{#if primary}
+						{@render primary()}
+					{/if}
+				</div>
+				<aside class="min-w-0 space-y-4">
+					{@render secondary()}
+				</aside>
+			</div>
+		{:else}
 			<div class="min-w-0 space-y-4">
 				{#if primary}
 					{@render primary()}
 				{/if}
 			</div>
-			{#if secondary}
-				<aside class="min-w-0 space-y-4">
-					{@render secondary()}
-				</aside>
-			{/if}
-		</div>
+		{/if}
 		{#if footer}
 			<div class="space-y-4">
 				{@render footer()}
