@@ -38,6 +38,8 @@
 		draft?: string;
 		loading?: boolean;
 		loadingLabel?: string;
+		/** Atom-style progress lines inside the pending assistant bubble. */
+		statusSteps?: string[];
 		/** When false, the spinner bubble is hidden (parent paints status in a message). */
 		showLoadingBubble?: boolean;
 		error?: string | null;
@@ -83,6 +85,7 @@
 		draft = $bindable(''),
 		loading = false,
 		loadingLabel = 'Procesando…',
+		statusSteps = [],
 		showLoadingBubble = true,
 		error = null,
 		voiceEnabled = true,
@@ -309,10 +312,21 @@
 									class="rounded-2xl rounded-bl-sm bg-surface-overlay px-3.5 py-2.5 text-sm leading-relaxed text-primary max-w-[calc(100%-2rem)] whitespace-pre-wrap"
 								>
 									{#if message.id === pendingAssistantId}
-										<span class="gap-2 text-muted flex items-center">
-											<LoaderCircle size={14} strokeWidth={2} class="animate-spin shrink-0" />
-											<span class="text-xs">{loadingLabel}</span>
-										</span>
+										<div class="gap-1.5 flex flex-col">
+											<span class="gap-2 text-muted flex items-center">
+												<LoaderCircle size={14} strokeWidth={2} class="animate-spin shrink-0" />
+												{#if statusSteps.length === 0}
+													<span class="text-xs">{loadingLabel}</span>
+												{/if}
+											</span>
+											{#if statusSteps.length}
+												{#each statusSteps as step, i (i)}
+													<p class="text-[11px] text-muted">→ {step}</p>
+												{/each}
+											{/if}
+										</div>
+									{:else if loading && message === messages[messages.length - 1] && message.content}
+										{message.content}<span class="animate-pulse">▍</span>
 									{:else}
 										{message.content}
 									{/if}
