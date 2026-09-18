@@ -9,9 +9,9 @@
 
 	interface HorizontalBarChartProps {
 		data?: HBarPoint[];
-		/** Bar track width in viewBox units */
+		/** Kept for API compat — layout is CSS, not SVG viewBox */
 		barWidth?: number;
-		/** Left label column width in viewBox units */
+		/** Kept for API compat — label column uses CSS */
 		labelWidth?: number;
 		rowHeight?: number;
 		interactive?: boolean;
@@ -22,7 +22,6 @@
 
 	const {
 		data = [],
-		barWidth = 280,
 		labelWidth = 88,
 		rowHeight = 36,
 		interactive = true,
@@ -32,29 +31,10 @@
 	}: HorizontalBarChartProps = $props();
 
 	const color = 'var(--color-brand-500, #6366f1)';
-	const padR = 48;
-	const W = $derived(labelWidth + barWidth + padR);
-	const H = $derived(Math.max(data.length, 1) * rowHeight + 8);
-	const maxLabelChars = $derived(Math.floor(labelWidth / 6.5));
 
 	let tipIndex = $state<number | null>(null);
 
 	const max = $derived(Math.max(...data.map((d) => d.value), 1));
-
-	const rows = $derived(
-		data.map((d, i) => {
-			const ratio = Math.max(0, d.value) / max;
-			const bw = Math.max(d.value > 0 ? 4 : 0, ratio * barWidth);
-			const y = 4 + i * rowHeight;
-			return { ...d, bw, y, midY: y + (rowHeight - 10) / 2 };
-		})
-	);
-
-	function displayLabel(label: string): string {
-		const maxChars = maxLabelChars;
-		if (label.length <= maxChars) return label;
-		return `${label.slice(0, Math.max(0, maxChars - 1))}…`;
-	}
 
 	function select(i: number) {
 		if (!interactive) return;
@@ -62,77 +42,56 @@
 	}
 </script>
 
-<div class={['relative w-full select-none', className]}>
-	<svg
-		viewBox={`0 0 ${W} ${H}`}
-		preserveAspectRatio="none"
-		class="block w-full overflow-visible"
-		style:height={`${H}px`}
-		role="img"
-		aria-label="Horizontal bar chart"
-	>
-		{#each rows as r, i (i)}
-			<text
-				x={labelWidth - 8}
-				y={r.midY + 4}
-				text-anchor="end"
-				class="fill-secondary"
-				font-size="11"
-			>
-				{displayLabel(r.label)}
-			</text>
-			<rect
-				x={labelWidth}
-				y={r.y + 4}
-				width={barWidth}
-				height={rowHeight - 14}
-				rx="5"
-				class="fill-surface-muted"
-				opacity="0.6"
-			/>
-			<rect
-				x={labelWidth}
-				y={r.y + 4}
-				width={r.bw}
-				height={rowHeight - 14}
-				rx="5"
-				fill={r.color ?? color}
-				opacity={tipIndex == null || tipIndex === i ? 1 : 0.35}
-				class="transition-opacity"
-			/>
-			{#if showValues}
-				<text
-					x={labelWidth + r.bw + 6}
-					y={r.midY + 4}
-					class="fill-muted"
-					font-size="10"
-					font-weight="600"
-				>
-					{formatTick(r.value, 0)}{unit}
-				</text>
-			{/if}
-			{#if interactive}
-				<!-- svelte-ignore a11y_no_static_element_interactions -->
-				<!-- svelte-ignore a11y_click_events_have_key_events -->
-				<rect
-					x={0}
-					y={r.y}
-					width={W}
-					height={rowHeight}
-					fill="transparent"
-					class="cursor-pointer"
+<div
+	class={['relative w-full select-none', className]}
+	role="img"
+	aria-label="Horizontal bar chart"
+>
+	<ul class="flex flex-col" style:gap="2px">
+		{#each data as r, i (r.label + i)}
+			{@const ratio = Math.max(0, r.value) / max}
+			{@const pct = Math.max(r.value > 0 ? 1.5 : 0, ratio * 100)}
+			<li>
+				<button
+					type="button"
+					class={[
+						'grid w-full items-center gap-2 rounded-lg px-0.5 py-0.5 text-left transition-opacity',
+						interactive && 'hover:bg-surface-overlay/80 cursor-pointer',
+						!interactive && 'cursor-default',
+						tipIndex != null && tipIndex !== i && 'opacity-40'
+					]}
+					style:min-height={`${rowHeight}px`}
+					style:grid-template-columns={`minmax(0, ${labelWidth}px) minmax(0, 1fr) auto`}
 					onclick={() => select(i)}
-				/>
-			{/if}
+					disabled={!interactive}
+				>
+					<span
+						class="text-secondary truncate text-right text-xs leading-snug"
+						title={r.label}
+					>
+						{r.label}
+					</span>
+					<span class="bg-surface-overlay relative block h-4 overflow-hidden rounded-md">
+						<span
+							class="absolute inset-y-0 left-0 rounded-md transition-[width]"
+							style:width={`${pct}%`}
+							style:background={r.color ?? color}
+						></span>
+					</span>
+					{#if showValues}
+						<span class="text-secondary min-w-[2ch] text-right text-xs font-semibold tabular-nums">
+							{formatTick(r.value, 0)}{unit}
+						</span>
+					{/if}
+				</button>
+			</li>
 		{/each}
-	</svg>
+	</ul>
 
-	{#if tipIndex != null && rows[tipIndex]}
-		{@const t = rows[tipIndex]}
+	{#if tipIndex != null && data[tipIndex]}
+		{@const t = data[tipIndex]}
 		<div
-			class="pointer-events-none absolute z-10 rounded-lg border border-border bg-surface-elevated px-2.5 py-1.5 shadow-lg"
-			style:left={`${((labelWidth + t.bw) / W) * 100}%`}
-			style:top={`${(t.y / H) * 100}%`}
+			class="pointer-events-none absolute top-0 right-0 z-10 rounded-lg border border-border bg-surface-elevated px-2.5 py-1.5 shadow-lg"
 			role="status"
 		>
 			<p class="text-[10px] font-medium text-muted">{t.label}</p>

@@ -50,7 +50,7 @@
 	}: AreaLineChartProps = $props();
 
 	const W = 500;
-	const pad: ChartPad = { ...DEFAULT_PAD, b: 32 };
+	const pad: ChartPad = { ...DEFAULT_PAD, b: 28, l: 40 };
 	const uid = `alc-${Math.random().toString(36).slice(2, 8)}`;
 
 	let tipIndex = $state<number | null>(null);
@@ -76,14 +76,24 @@
 		const { min, max } = domain;
 		return [0, 0.5, 1].map((t) => {
 			const raw = min + t * (max - min);
-			const label = integerValues
-				? String(Math.round(raw))
-				: formatTick(raw);
+			const label = integerValues ? String(Math.round(raw)) : formatTick(raw);
 			return {
 				y: pad.t + (1 - t) * (height - pad.t - pad.b),
 				label
 			};
 		});
+	});
+
+	/** First / last / sparse middle — HTML so labels stay readable (SVG stretch does not squash them). */
+	const xLabels = $derived.by(() => {
+		const out: { label: string; leftPct: number }[] = [];
+		for (let i = 0; i < data.length; i++) {
+			const show = i === 0 || i === data.length - 1 || data.length <= 7;
+			const p = points[i];
+			if (!show || !p) continue;
+			out.push({ label: data[i].label, leftPct: (p.x / W) * 100 });
+		}
+		return out;
 	});
 
 	const tip = $derived.by(() => {
@@ -106,14 +116,49 @@
 	}
 </script>
 
-<div class={['relative w-full select-none', className]}>
+<div
+	class={['relative w-full select-none', className]}
+	style:height={`${height}px`}
+	role="img"
+	aria-label="Area line chart"
+>
+	<!-- HTML axis labels: preserveAspectRatio=none would distort SVG <text> -->
+	{#if showGrid}
+		<div class="pointer-events-none absolute inset-0 z-[1]">
+			{#each gridYs as g (g.label + g.y)}
+				<span
+					class="text-secondary absolute -translate-y-1/2 text-[11px] leading-none tabular-nums"
+					style:left="0"
+					style:top={`${(g.y / height) * 100}%`}
+					style:width={`${(pad.l / W) * 100}%`}
+					style:text-align="right"
+					style:padding-right="6px"
+				>
+					{g.label}
+				</span>
+			{/each}
+		</div>
+	{/if}
+
+	<div
+		class="pointer-events-none absolute inset-x-0 bottom-0 z-[1]"
+		style:height={`${(pad.b / height) * 100}%`}
+	>
+		{#each xLabels as xl (xl.label + xl.leftPct)}
+			<span
+				class="text-secondary absolute top-1 -translate-x-1/2 text-[11px] leading-none whitespace-nowrap"
+				style:left={`${xl.leftPct}%`}
+			>
+				{xl.label}
+			</span>
+		{/each}
+	</div>
+
 	<svg
 		viewBox={`0 0 ${W} ${height}`}
 		preserveAspectRatio="none"
-		class="block w-full overflow-visible"
-		style:height={`${height}px`}
-		role="img"
-		aria-label="Area line chart"
+		class="absolute inset-0 block h-full w-full overflow-visible"
+		aria-hidden="true"
 	>
 		<defs>
 			<linearGradient id="{uid}-fill" x1="0" y1="0" x2="0" y2="1">
@@ -130,7 +175,7 @@
 		</defs>
 
 		{#if showGrid}
-			{#each gridYs as g}
+			{#each gridYs as g (g.label + g.y)}
 				<line
 					x1={pad.l}
 					x2={W - pad.r}
@@ -140,15 +185,6 @@
 					stroke-width="1"
 					stroke-dasharray="4 4"
 				/>
-				<text
-					x={pad.l - 8}
-					y={g.y + 3}
-					text-anchor="end"
-					class="fill-muted"
-					font-size="10"
-				>
-					{g.label}
-				</text>
 			{/each}
 		{/if}
 
@@ -168,7 +204,7 @@
 			/>
 		{/if}
 
-		{#each points as p, i}
+		{#each points as p, i (i)}
 			{#if showDots}
 				<circle
 					cx={p.x}
@@ -183,6 +219,7 @@
 			{#if interactive}
 				<!-- Hit area: pointer-only (no focus ring / square outline) -->
 				<!-- svelte-ignore a11y_no_static_element_interactions -->
+				<!-- svelte-ignore a11y_click_events_have_key_events -->
 				<circle
 					cx={p.x}
 					cy={p.y}
@@ -191,23 +228,6 @@
 					class="cursor-pointer"
 					onclick={() => select(i)}
 				/>
-			{/if}
-		{/each}
-
-		{#each data as d, i}
-			{#if i === 0 || i === data.length - 1 || data.length <= 7}
-				{@const p = points[i]}
-				{#if p}
-					<text
-						x={p.x}
-						y={height - 8}
-						text-anchor="middle"
-						class="fill-muted"
-						font-size="10"
-					>
-						{d.label}
-					</text>
-				{/if}
 			{/if}
 		{/each}
 	</svg>
