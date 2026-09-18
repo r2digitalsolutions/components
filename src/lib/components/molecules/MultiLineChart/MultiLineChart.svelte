@@ -78,7 +78,7 @@
 		})
 	);
 
-	const integerValues = $derived(allValues.every((v) => Number.isInteger(v)));
+	const integerValues = $derived(allValues.length > 0 && allValues.every((v) => Number.isInteger(v)));
 
 	const gridYs = $derived.by(() => {
 		const { min, max } = domain;
@@ -121,9 +121,7 @@
 <div class={['relative w-full select-none', className]}>
 	<svg
 		viewBox={`0 0 ${W} ${height}`}
-		preserveAspectRatio="none"
-		class="block w-full overflow-visible"
-		style:height={`${height}px`}
+		class="h-auto w-full overflow-visible"
 		role="img"
 		aria-label="Multi-line chart"
 	>

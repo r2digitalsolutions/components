@@ -29,7 +29,7 @@
 	}: BarChartProps = $props();
 
 	const W = 420;
-	const pad = { t: 28, r: 12, b: 36, l: 12 };
+	const pad = { t: 24, r: 12, b: 32, l: 12 };
 	const uid = `bc-${Math.random().toString(36).slice(2, 8)}`;
 	const color = 'var(--color-brand-500, #6366f1)';
 
@@ -66,50 +66,18 @@
 		};
 	});
 
-	function axisLabel(label: string): string {
-		return label.length > 14 ? `${label.slice(0, 14)}…` : label;
-	}
-
 	function select(i: number) {
 		if (!interactive) return;
 		tipIndex = tipIndex === i ? null : i;
 	}
 </script>
 
-<div
-	class={['relative w-full select-none', className]}
-	style:height={`${height}px`}
-	role="img"
-	aria-label="Bar chart"
->
-	<!-- HTML labels stay readable; SVG stretch would squash <text> -->
-	{#each bars as b, i (b.label + i)}
-		{#if showValues && b.value > 0}
-			<span
-				class="text-secondary pointer-events-none absolute z-[1] -translate-x-1/2 -translate-y-full text-[11px] font-semibold tabular-nums"
-				style:left={`${(b.cx / W) * 100}%`}
-				style:top={`${(b.y / height) * 100}%`}
-				style:margin-top="-2px"
-			>
-				{formatTick(b.value, 0)}{unit}
-			</span>
-		{/if}
-		<span
-			class="text-secondary pointer-events-none absolute z-[1] -translate-x-1/2 truncate text-center text-[11px] leading-tight"
-			style:left={`${(b.cx / W) * 100}%`}
-			style:bottom="4px"
-			style:max-width={`${((W - pad.l - pad.r) / Math.max(data.length, 1) / W) * 100}%`}
-			title={b.label}
-		>
-			{axisLabel(b.label)}
-		</span>
-	{/each}
-
+<div class={['relative w-full select-none', className]}>
 	<svg
 		viewBox={`0 0 ${W} ${height}`}
-		preserveAspectRatio="none"
-		class="absolute inset-0 block h-full w-full overflow-visible"
-		aria-hidden="true"
+		class="h-auto w-full overflow-visible"
+		role="img"
+		aria-label="Bar chart"
 	>
 		<defs>
 			<linearGradient id="{uid}-bar" x1="0" y1="0" x2="0" y2="1">
@@ -118,7 +86,7 @@
 			</linearGradient>
 		</defs>
 
-		{#each bars as b, i (b.label + i)}
+		{#each bars as b, i}
 			<rect
 				x={b.x}
 				y={b.y}
@@ -129,9 +97,23 @@
 				opacity={tipIndex == null || tipIndex === i ? 1 : 0.35}
 				class="transition-opacity"
 			/>
+			{#if showValues && b.value > 0}
+				<text
+					x={b.cx}
+					y={b.y - 6}
+					text-anchor="middle"
+					class="fill-secondary"
+					font-size="10"
+					font-weight="600"
+				>
+					{formatTick(b.value, 0)}{unit}
+				</text>
+			{/if}
+			<text x={b.cx} y={height - 8} text-anchor="middle" class="fill-muted" font-size="10">
+				{b.label}
+			</text>
 			{#if interactive}
 				<!-- svelte-ignore a11y_no_static_element_interactions -->
-				<!-- svelte-ignore a11y_click_events_have_key_events -->
 				<rect
 					x={b.x - 4}
 					y={pad.t}
