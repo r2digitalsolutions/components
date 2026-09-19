@@ -419,11 +419,15 @@
 		{disabled}
 		onkeydown={onTriggerKeydown}
 		class={[
-			'gap-2 rounded-lg border-border bg-surface-elevated font-medium text-primary inline-flex items-center border transition-colors',
-			'hover:bg-surface-overlay focus-visible:ring-brand-500/30 focus-visible:ring-2 focus-visible:outline-none',
-			size === 'sm' ? 'min-h-8 px-2.5 text-xs' : 'min-h-9 px-3 text-sm',
-			disabled && 'cursor-not-allowed opacity-50',
-			trigger && 'p-0 border-0 bg-transparent hover:bg-transparent'
+			'inline-flex items-center font-medium transition-colors focus-visible:ring-brand-500/30 focus-visible:ring-2 focus-visible:outline-none',
+			trigger
+				? 'gap-0 rounded-lg border-0 bg-transparent p-0 text-inherit hover:bg-transparent'
+				: [
+						'gap-2 rounded-lg border border-border bg-surface-elevated text-primary',
+						'hover:bg-surface-overlay',
+						size === 'sm' ? 'min-h-8 px-2.5 text-xs' : 'min-h-9 px-3 text-sm'
+					],
+			disabled && 'cursor-not-allowed opacity-50'
 		]}
 		aria-label={trigger ? label : undefined}
 		aria-haspopup="menu"
