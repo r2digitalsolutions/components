@@ -24,6 +24,8 @@
 		required?: boolean;
 		searchable?: boolean;
 		size?: 'sm' | 'md' | 'lg';
+		/** Min width (px) of the open listbox — see Select `listboxMinWidth`. */
+		listboxMinWidth?: number;
 		/** Sync with `form.data[name]` when inside `<Form>`. */
 		bindData?: boolean;
 		class?: string;
@@ -44,6 +46,7 @@
 		required = false,
 		searchable = false,
 		size = 'md',
+		listboxMinWidth,
 		bindData = false,
 		class: className = '',
 		onchange
@@ -100,6 +103,7 @@
 		{required}
 		{searchable}
 		{size}
+		{listboxMinWidth}
 		status={resolved.status}
 		helperText={resolved.helperText}
 		bind:value

@@ -30,6 +30,11 @@
 		 */
 		flyToSelected?: boolean;
 		size?: 'xs' | 'sm' | 'md' | 'lg';
+		/**
+		 * Minimum width (px) for the open listbox. Defaults to the trigger width.
+		 * Useful when option labels are longer than the field (e.g. contribution groups).
+		 */
+		listboxMinWidth?: number;
 		class?: string;
 		onchange?: (value: string) => void;
 	}
@@ -48,6 +53,7 @@
 		searchable = false,
 		flyToSelected = true,
 		size = 'md',
+		listboxMinWidth,
 		class: className = '',
 		onchange
 	}: SelectProps = $props();
@@ -222,8 +228,9 @@
 		const ceiling = Math.min(maxHeight, available);
 		listHeightCeiling = ceiling;
 
-		// Match the trigger: never narrower, never capped at an arbitrary px (was 320).
-		const width = Math.min(Math.max(rect.width, 0), viewW - margin * 2);
+		// Prefer trigger width; optionally grow for long labels (never past viewport).
+		const minW = Math.max(rect.width, listboxMinWidth ?? 0);
+		const width = Math.min(minW, viewW - margin * 2);
 
 		let left = rect.left;
 		if (left + width > viewLeft + viewW - margin) {

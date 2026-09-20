@@ -329,7 +329,7 @@
 			? 'w-full'
 			: months === 2
 				? 'w-full max-w-xl'
-				: 'w-full min-w-[18rem] max-w-[20rem]',
+				: 'w-full',
 		className
 	]}
 >
