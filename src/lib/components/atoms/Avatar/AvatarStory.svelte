@@ -5,7 +5,7 @@
 		src?: string;
 		alt?: string;
 		name?: string;
-		size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
+		size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
 		status?: 'online' | 'offline' | 'busy' | 'away' | null;
 	}>();
 </script>

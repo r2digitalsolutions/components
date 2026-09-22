@@ -17,6 +17,12 @@
 		description?: string;
 		side?: DrawerSide;
 		size?: DrawerSize;
+		/**
+		 * `true` (default): `<dialog>.showModal()` — top layer + backdrop + scroll lock.
+		 * `false`: Popover API `popover="manual"` — top layer above maps, list stays interactive,
+		 * no light-dismiss (click outside does not close).
+		 */
+		modal?: boolean;
 		closeOnBackdrop?: boolean;
 		closeOnEscape?: boolean;
 		showClose?: boolean;
@@ -34,6 +40,7 @@
 		description,
 		side = 'right',
 		size = 'md',
+		modal = true,
 		closeOnBackdrop = true,
 		closeOnEscape = true,
 		showClose = true,
@@ -44,7 +51,7 @@
 		onclose
 	}: DrawerProps = $props();
 
-	let dialogEl = $state<HTMLDialogElement | null>(null);
+	let shellEl = $state<HTMLElement | null>(null);
 	let motion = $state<DrawerMotion>('idle');
 	let closeFallbackTimer: ReturnType<typeof setTimeout> | null = null;
 	let enterRaf = 0;
@@ -91,17 +98,42 @@
 		bottom: 'w-full max-w-none rounded-none border-x-0 border-b-0'
 	};
 
+	function isShellOpen() {
+		if (!shellEl) return false;
+		if (modal) return (shellEl as HTMLDialogElement).open;
+		return shellEl.matches(':popover-open');
+	}
+
+	function showShell() {
+		if (!shellEl) return;
+		if (modal) (shellEl as HTMLDialogElement).showModal();
+		else shellEl.showPopover();
+	}
+
+	function hideShell() {
+		if (!shellEl) return;
+		if (modal) {
+			const dialog = shellEl as HTMLDialogElement;
+			if (dialog.open) dialog.close();
+		} else if (shellEl.matches(':popover-open')) {
+			shellEl.hidePopover();
+		}
+	}
+
 	$effect(() => {
-		if (!dialogEl) return;
+		if (!shellEl) return;
 
 		if (open) {
 			clearCloseFallback();
 			cancelEnterRaf();
 
-			if (!dialogEl.open) {
-				// Paint off-screen first, then transition in (avoids skipped enter on <dialog>)
+			if (!isShellOpen()) {
 				motion = 'idle';
-				dialogEl.showModal();
+				try {
+					showShell();
+				} catch {
+					/* ignore */
+				}
 				enterRaf = requestAnimationFrame(() => {
 					enterRaf = requestAnimationFrame(() => {
 						if (open) motion = 'open';
@@ -113,13 +145,13 @@
 			return;
 		}
 
-		if (dialogEl.open && motion !== 'closing') {
+		if (isShellOpen() && motion !== 'closing') {
 			startClosing();
 		}
 	});
 
 	$effect(() => {
-		const locked = open || motion === 'closing';
+		const locked = modal && (open || motion === 'closing');
 		if (!locked || typeof document === 'undefined') return;
 
 		scrollLockCount += 1;
@@ -155,7 +187,7 @@
 	}
 
 	function startClosing() {
-		if (motion === 'closing' || !dialogEl?.open) return;
+		if (motion === 'closing' || !isShellOpen()) return;
 		cancelEnterRaf();
 		motion = 'closing';
 		clearCloseFallback();
@@ -166,16 +198,16 @@
 		if (motion !== 'closing') return;
 		clearCloseFallback();
 		motion = 'idle';
-		if (dialogEl?.open) dialogEl.close();
+		hideShell();
 	}
 
 	function close() {
-		if (!dialogEl?.open || motion === 'closing' || !open) return;
+		if (!isShellOpen() || motion === 'closing' || !open) return;
 		open = false;
 		onclose?.();
 	}
 
-	function handleDialogClose() {
+	function handleNativeClose() {
 		cancelEnterRaf();
 		clearCloseFallback();
 		motion = 'idle';
@@ -192,8 +224,20 @@
 	}
 
 	function handleBackdropClick(event: MouseEvent) {
-		if (!closeOnBackdrop || event.target !== dialogEl) return;
+		if (!modal || !closeOnBackdrop || event.target !== shellEl) return;
 		close();
+	}
+
+	function handlePopoverToggle(event: ToggleEvent) {
+		if (event.newState === 'closed') handleNativeClose();
+	}
+
+	function handleKeydown(event: KeyboardEvent) {
+		if (modal || !closeOnEscape) return;
+		if (event.key === 'Escape' && open) {
+			event.preventDefault();
+			close();
+		}
 	}
 
 	function handlePanelTransitionEnd(event: TransitionEvent) {
@@ -204,25 +248,52 @@
 	}
 </script>
 
-<dialog
-	bind:this={dialogEl}
-	id={id}
-	data-side={side}
-	data-motion={motion}
-	aria-labelledby={title ? titleId : undefined}
-	aria-describedby={description ? descriptionId : undefined}
-	onclose={handleDialogClose}
-	oncancel={handleCancelEvent}
-	onclick={handleBackdropClick}
-	class={[
-		'drawer m-0 h-full w-full max-h-none max-w-none overflow-clip border-0 bg-transparent p-0 open:block',
-		blurBackdrop && 'backdrop:bg-black/40 backdrop:backdrop-blur-sm',
-		!blurBackdrop && 'backdrop:bg-black/40'
-	]}
->
+<svelte:window onkeydown={handleKeydown} />
+
+{#if modal}
+	<dialog
+		bind:this={shellEl}
+		{id}
+		data-side={side}
+		data-motion={motion}
+		data-modal="true"
+		aria-labelledby={title ? titleId : undefined}
+		aria-describedby={description ? descriptionId : undefined}
+		onclose={handleNativeClose}
+		oncancel={handleCancelEvent}
+		onclick={handleBackdropClick}
+		class={[
+			'drawer m-0 h-full w-full max-h-none max-w-none overflow-clip border-0 bg-transparent p-0 open:block',
+			blurBackdrop && 'backdrop:bg-black/40 backdrop:backdrop-blur-sm',
+			!blurBackdrop && 'backdrop:bg-black/40'
+		]}
+	>
+		{@render panel()}
+	</dialog>
+{:else}
+	<!-- popover=manual → top layer (above Leaflet) + no light-dismiss -->
+	<div
+		bind:this={shellEl}
+		{id}
+		popover="manual"
+		role="dialog"
+		data-side={side}
+		data-motion={motion}
+		data-modal="false"
+		aria-modal="false"
+		aria-labelledby={title ? titleId : undefined}
+		aria-describedby={description ? descriptionId : undefined}
+		ontoggle={handlePopoverToggle}
+		class="drawer drawer-popover pointer-events-none m-0 h-dvh w-screen max-h-none max-w-none overflow-clip border-0 bg-transparent p-0"
+	>
+		{@render panel()}
+	</div>
+{/if}
+
+{#snippet panel()}
 	<div
 		class={[
-			'drawer-panel flex flex-col border border-border bg-surface-elevated shadow-xl outline-none',
+			'drawer-panel pointer-events-auto flex flex-col border border-border bg-surface-elevated shadow-xl outline-none',
 			sidePanelClasses[side],
 			sizeClasses[side][size],
 			className
@@ -266,17 +337,31 @@
 			</footer>
 		{/if}
 	</div>
-</dialog>
+{/snippet}
 
 <style>
-	/*
-	 * Use overflow:clip (not hidden). hidden creates a scroll container, so
-	 * translateX/Y into the positive axis (right/bottom) expands scrollable
-	 * overflow and the panel stays visually on-screen — killing the enter anim.
-	 */
 	.drawer {
 		overflow: clip;
 		overscroll-behavior: contain;
+	}
+
+	/* Popover UA resets — keep full-viewport transparent shell in the top layer */
+	.drawer-popover {
+		inset: 0;
+		margin: 0;
+		border: none;
+		padding: 0;
+		background: transparent;
+		color: inherit;
+		overflow: clip;
+	}
+
+	.drawer-popover:popover-open {
+		inset: 0;
+		width: 100vw;
+		height: 100dvh;
+		max-width: none;
+		max-height: none;
 	}
 
 	.drawer::backdrop {
@@ -303,7 +388,6 @@
 		transition-duration: 0.22s;
 	}
 
-	/* Dock + off-screen (idle / closing) */
 	.drawer[data-side='left'] .drawer-panel {
 		inset: 0 auto 0 0;
 		transform: translate3d(-100%, 0, 0);
@@ -321,7 +405,6 @@
 		transform: translate3d(0, 100%, 0);
 	}
 
-	/* On-screen */
 	.drawer[data-motion='open'][data-side='left'] .drawer-panel,
 	.drawer[data-motion='open'][data-side='right'] .drawer-panel,
 	.drawer[data-motion='open'][data-side='top'] .drawer-panel,

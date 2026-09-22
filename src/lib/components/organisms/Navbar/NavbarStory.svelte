@@ -13,7 +13,7 @@
 		example?: 'marketing' | 'app' | 'centered' | 'docs' | 'compact';
 		bordered?: boolean;
 		blur?: boolean;
-		maxWidth?: 'full' | '5xl' | '6xl' | '7xl';
+		maxWidth?: 'full' | '5xl' | '6xl' | '7xl' | '2xl';
 		centerLinks?: boolean;
 	}>();
 

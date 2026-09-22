@@ -1260,6 +1260,12 @@ export type {
 	SearchResultsSort,
 	SearchSuggestion
 } from './components/organisms/SearchResults/SearchResults.svelte';
+export { default as SearchResultRow } from './components/molecules/SearchResultRow/SearchResultRow.svelte';
+export type { SearchResultRowKind } from './components/molecules/SearchResultRow/SearchResultRow.svelte';
+export { default as KnowledgeCard } from './components/molecules/KnowledgeCard/KnowledgeCard.svelte';
+export { default as AdUnit } from './components/molecules/AdUnit/AdUnit.svelte';
+export type { AdUnitFormat } from './components/molecules/AdUnit/AdUnit.svelte';
+export { default as AdSlot } from './components/molecules/AdSlot/AdSlot.svelte';
 export { default as SettingsForm } from './components/organisms/SettingsForm/SettingsForm.svelte';
 export type { AccountSettingsValues } from './components/organisms/SettingsForm/SettingsForm.svelte';
 export { default as SchemaForm } from './components/organisms/SchemaForm/SchemaForm.svelte';
@@ -1315,6 +1321,16 @@ export type {
 	ExploreSuggestion,
 	ExploreFeaturedItem
 } from './components/organisms/ExploreFeedPage/ExploreFeedPage.svelte';
+export { default as MapExplorer } from './components/organisms/MapExplorer/MapExplorer.svelte';
+export type {
+	MapExplorerBounds,
+	MapExplorerCluster,
+	MapExplorerFilter,
+	MapExplorerCardContext,
+	MapExplorerItem,
+	MapExplorerListView,
+	MapExplorerPanel
+} from './components/organisms/MapExplorer/MapExplorer.svelte';
 export { default as MultiWorkspaceDashboard } from './components/organisms/MultiWorkspaceDashboard/MultiWorkspaceDashboard.svelte';
 export type {
 	WorkspaceInvite,

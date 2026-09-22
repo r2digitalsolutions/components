@@ -74,10 +74,10 @@
 	const triggerSize = $derived(
 		stacked
 			? size === 'sm'
-				? 'min-h-9 gap-1.5 px-2.5 py-1'
+				? 'h-8 gap-1.5 px-2.5'
 				: size === 'lg'
-					? 'min-h-11 gap-2.5 px-3.5 py-1.5'
-					: 'min-h-10 gap-2 px-3 py-1'
+					? 'h-11 gap-2.5 px-3.5'
+					: 'h-10 gap-2 px-3'
 			: size === 'sm'
 				? 'h-8 gap-1.5 px-2.5 text-xs'
 				: size === 'lg'
@@ -216,11 +216,11 @@
 				<Globe class="h-4 w-4 shrink-0 text-muted" />
 			{/if}
 			{#if stacked}
-				<span class="min-w-0 max-w-28 flex-1 text-left leading-tight" dir={current?.dir ?? 'ltr'}>
+				<span class="min-w-0 max-w-24 flex-1 text-left leading-none" dir={current?.dir ?? 'ltr'}>
 					<span class="text-primary block truncate text-xs font-medium"
 						>{current?.label ?? value}</span
 					>
-					<span class="text-secondary block truncate text-[10px] font-semibold tracking-wide"
+					<span class="text-muted mt-px block truncate text-[9px] font-medium tracking-wide"
 						>{shortCode}</span
 					>
 				</span>

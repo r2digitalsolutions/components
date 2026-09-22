@@ -19,7 +19,7 @@ const meta = {
 		blur: { control: 'boolean' },
 		bordered: { control: 'boolean' },
 		centerLinks: { control: 'boolean' },
-		maxWidth: { control: 'select', options: ['full', '5xl', '6xl', '7xl'] }
+		maxWidth: { control: 'select', options: ['full', '5xl', '6xl', '7xl', '2xl'] }
 	},
 	args: {
 		size: 'md',

@@ -17,6 +17,8 @@
 		badgeVariant?: 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info';
 		variant?: CardVariant;
 		size?: StatCardSize;
+		/** Brand tint (default) or gray icon well */
+		iconTone?: 'brand' | 'neutral';
 		class?: string;
 		icon?: Snippet;
 		onclick?: (e: MouseEvent) => void;
@@ -32,6 +34,7 @@
 		badgeVariant = 'primary',
 		variant = 'default',
 		size = 'md',
+		iconTone = 'brand',
 		class: className = '',
 		icon,
 		onclick
@@ -110,7 +113,10 @@
 		{#if icon}
 			<div
 				class={[
-					'rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-950/60 dark:text-brand-400 flex shrink-0 items-center justify-center',
+					'rounded-xl flex shrink-0 items-center justify-center',
+					iconTone === 'neutral'
+						? 'bg-surface-overlay text-secondary'
+						: 'bg-brand-50 text-brand-600 dark:bg-brand-950/60 dark:text-brand-400',
 					compact ? 'h-8 w-8' : 'h-10 w-10'
 				]}
 			>

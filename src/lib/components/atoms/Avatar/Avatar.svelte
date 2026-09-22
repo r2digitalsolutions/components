@@ -1,5 +1,5 @@
 <script lang="ts">
-	type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
+	type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
 	type AvatarStatus = 'online' | 'offline' | 'busy' | 'away' | null;
 
 	interface AvatarProps {
@@ -31,7 +31,8 @@
 		md: 'h-10 w-10 text-sm',
 		lg: 'h-12 w-12 text-base',
 		xl: 'h-16 w-16 text-lg',
-		'2xl': 'h-20 w-20 text-xl'
+		'2xl': 'h-20 w-20 text-xl',
+		'3xl': 'h-28 w-28 text-2xl sm:h-32 sm:w-32'
 	};
 
 	const statusDotSizes: Record<AvatarSize, string> = {
@@ -40,7 +41,8 @@
 		md: 'h-2.5 w-2.5',
 		lg: 'h-3 w-3',
 		xl: 'h-3.5 w-3.5',
-		'2xl': 'h-4 w-4'
+		'2xl': 'h-4 w-4',
+		'3xl': 'h-5 w-5'
 	};
 
 	const statusColors: Record<NonNullable<AvatarStatus>, string> = {

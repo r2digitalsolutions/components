@@ -56,26 +56,20 @@
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <div
 	class={[
-		'flex flex-col rounded-2xl transition-[box-shadow,transform,border-color] duration-200',
-		hoverable ? 'overflow-visible' : 'overflow-hidden',
+		'rounded-2xl flex flex-col overflow-hidden transition-[box-shadow,transform,border-color] duration-200',
 		variantClasses[variant],
-		hoverable &&
-			'cursor-pointer hover:-translate-y-0.5 hover:border-border-strong hover:shadow-md',
+		hoverable && 'hover:-translate-y-0.5 hover:border-border-strong hover:shadow-md cursor-pointer',
 		!!onclick && 'cursor-pointer',
 		className
 	]}
 	role={onclick ? 'button' : undefined}
 	tabindex={onclick ? 0 : undefined}
-	onclick={onclick}
+	{onclick}
 	onkeydown={onclick ? handleKeydown : undefined}
 >
 	{#if header}
 		<div
-			class={[
-				'w-full border-b border-border',
-				chrome && 'bg-surface/40',
-				paddingClasses[padding]
-			]}
+			class={['border-border w-full border-b', chrome && 'bg-surface/40', paddingClasses[padding]]}
 		>
 			{@render header()}
 		</div>
@@ -83,10 +77,7 @@
 
 	{#if children}
 		<div
-			class={[
-				'flex min-w-0 flex-1 flex-col',
-				padding !== 'none' ? paddingClasses[padding] : ''
-			]}
+			class={['min-w-0 flex flex-1 flex-col', padding !== 'none' ? paddingClasses[padding] : '']}
 		>
 			{@render children()}
 		</div>
@@ -95,7 +86,7 @@
 	{#if footer}
 		<div
 			class={[
-				'border-t border-border',
+				'border-border border-t',
 				chrome ? 'bg-surface/40' : 'bg-surface-overlay/60',
 				paddingClasses[padding]
 			]}

@@ -13,7 +13,7 @@
 	interface AvatarGroupProps {
 		items?: AvatarGroupItem[];
 		max?: number;
-		size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
+		size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
 		/** Separator ring color against parent background */
 		ring?: AvatarGroupRing;
 		class?: string;

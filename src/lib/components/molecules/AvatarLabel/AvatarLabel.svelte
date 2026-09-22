@@ -2,7 +2,7 @@
 	import Avatar from '$lib/components/atoms/Avatar/Avatar.svelte';
 	import StatusDot from '$lib/components/atoms/StatusDot/StatusDot.svelte';
 
-	type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
+	type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
 	type Status = 'online' | 'offline' | 'busy' | 'away';
 
 	interface AvatarLabelProps {
