@@ -12,7 +12,7 @@
 	}
 
 	export type ChipBarSize = 'sm' | 'md';
-	export type ChipBarVariant = 'soft' | 'solid' | 'outline';
+	export type ChipBarVariant = 'soft' | 'solid' | 'outline' | 'underline';
 
 	interface ChipBarProps {
 		items?: ChipBarItem[];
@@ -94,12 +94,22 @@
 		md: 'gap-1.5 px-3 py-1.5 text-sm'
 	};
 
+	const underlineSizes: Record<ChipBarSize, string> = {
+		sm: 'gap-1.5 px-1 pb-2.5 text-xs',
+		md: 'gap-1.5 px-1.5 pb-3 text-sm'
+	};
+
 	const iconSizes: Record<ChipBarSize, string> = {
 		sm: 'h-3.5 w-3.5',
 		md: 'h-4 w-4'
 	};
 
 	function chipClass(isActive: boolean) {
+		if (variant === 'underline') {
+			return isActive
+				? 'rounded-none border-0 border-b-2 border-brand-500 bg-transparent text-primary'
+				: 'rounded-none border-0 border-b-2 border-transparent bg-transparent text-secondary hover:text-primary';
+		}
 		if (variant === 'solid') {
 			return isActive
 				? 'border-brand-500 bg-brand-500 text-white shadow-sm'
@@ -132,7 +142,10 @@
 
 	<div
 		bind:this={scroller}
-		class="flex gap-2 overflow-x-auto py-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+		class={[
+			'flex overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+			variant === 'underline' ? 'gap-5 border-b border-border' : 'gap-2 py-0.5'
+		]}
 		role="listbox"
 		aria-label={ariaLabel}
 		aria-multiselectable={multi}
@@ -146,8 +159,8 @@
 				aria-selected={isActive}
 				disabled={item.disabled}
 				class={[
-					'inline-flex shrink-0 items-center rounded-full border font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40',
-					sizes[size],
+					'inline-flex shrink-0 items-center font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40',
+					variant === 'underline' ? underlineSizes[size] : ['rounded-full border', sizes[size]],
 					chipClass(isActive)
 				]}
 				onclick={() => select(item.id, item.disabled)}
@@ -157,7 +170,7 @@
 					<Icon class={iconSizes[size]} aria-hidden="true" />
 				{/if}
 				<span>{item.label}</span>
-				{#if item.count !== undefined}
+				{#if item.count !== undefined && variant !== 'underline'}
 					<span
 						class={[
 							'rounded-full px-1.5 py-px text-[10px] font-semibold tabular-nums',

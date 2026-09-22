@@ -59,7 +59,13 @@
 
 	function submit() {
 		if (busy) return;
-		onsubmit?.(value);
+		const el =
+			typeof document !== 'undefined'
+				? (document.getElementById(inputId) as HTMLInputElement | null)
+				: null;
+		const live = el?.value ?? value;
+		value = live;
+		onsubmit?.(live);
 	}
 
 	function clear() {

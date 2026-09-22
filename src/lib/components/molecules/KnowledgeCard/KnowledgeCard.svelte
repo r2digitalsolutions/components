@@ -80,15 +80,15 @@
 			<p class="mt-0.5 text-sm text-muted">{subtitle}</p>
 		{/if}
 
-		{#if actions}
-			<div class="mt-3">
-				{@render actions()}
+		{#if children}
+			<div class="mt-3 border-t border-border/70 pt-3">
+				{@render children()}
 			</div>
 		{/if}
 
-		{#if children}
+		{#if actions}
 			<div class="mt-3">
-				{@render children()}
+				{@render actions()}
 			</div>
 		{/if}
 	</div>

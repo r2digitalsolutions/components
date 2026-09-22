@@ -220,11 +220,12 @@
 					<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
 				</svg>
 			</button>
-		{:else if trailIcon}
-			<span class={['text-muted shrink-0', statusIconClasses[status]]}>
+		{/if}
+		{#if trailIcon}
+			<span class={['shrink-0', statusIconClasses[status]]}>
 				{@render trailIcon()}
 			</span>
-		{:else if status === 'error'}
+		{:else if !hasClear && status === 'error'}
 			<svg
 				class="h-4 w-4 text-red-500 shrink-0"
 				viewBox="0 0 24 24"
@@ -237,7 +238,7 @@
 					clip-rule="evenodd"
 				/>
 			</svg>
-		{:else if status === 'success'}
+		{:else if !hasClear && status === 'success'}
 			<svg
 				class="h-4 w-4 text-green-500 shrink-0"
 				viewBox="0 0 24 24"

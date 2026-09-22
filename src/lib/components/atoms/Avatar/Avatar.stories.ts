@@ -11,7 +11,7 @@ const meta = {
 		alt: { control: 'text', description: 'Alt text for the image' },
 		size: {
 			control: 'select',
-			options: ['xs', 'sm', 'md', 'lg', 'xl', '2xl'],
+			options: ['xs', 'sm', 'md', 'lg', 'xl', '2xl', '3xl'],
 			description: 'Avatar size'
 		},
 		status: {

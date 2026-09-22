@@ -17,6 +17,7 @@
 		placeholder={props.placeholder ?? 'Search projects…'}
 		size={props.size ?? 'md'}
 		disabled={props.disabled ?? false}
+		submitLabel="Search"
 		onsubmit={(v) => (lastSubmit = v)}
 	/>
 	{#if lastSubmit}
