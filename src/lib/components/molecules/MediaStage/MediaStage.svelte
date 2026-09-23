@@ -18,7 +18,6 @@
 		type MarqueeRect as MarqueeBox
 	} from '$lib/utils/marqueeSelect.js';
 	import {
-		applyTextAutoSize,
 		createCanvasGuide,
 		pathPointsToDoc,
 		rebakePathLayer,
@@ -88,6 +87,14 @@
 		ondrawcancel?: () => void;
 		/** Double-click a widget instance or container. */
 		onenterlayer?: (id: string) => void;
+		/** Text or note layer currently being typed into. */
+		editingTextId?: string | null;
+		ontextcommit?: (id: string, text: string) => void;
+		/**
+		 * Device preview. Rulers stay on the workspace edges.
+		 * Only the artboard changes size.
+		 */
+		preview?: 'edit' | 'desktop' | 'tablet' | 'mobile';
 	}
 
 	let {
@@ -109,7 +116,10 @@
 		ondropelement,
 		ondrawcomplete,
 		ondrawcancel,
-		onenterlayer
+		onenterlayer,
+		editingTextId = null,
+		ontextcommit,
+		preview = 'edit'
 	}: MediaStageProps = $props();
 
 	let viewportEl = $state<HTMLDivElement | null>(null);
@@ -205,9 +215,14 @@
 	);
 	const selectionFrame = $derived(selectionLive ?? selectionBounds);
 
+	const previewMaxW = $derived(
+		preview === 'mobile' ? 390 : preview === 'tablet' ? 834 : preview === 'desktop' ? 1280 : 0
+	);
+
 	const fitScale = $derived.by(() => {
 		if (vw <= 0 || vh <= 0) return 1;
-		const sx = (vw - PAD * 2) / doc.width;
+		const availW = previewMaxW > 0 ? Math.min(vw - PAD * 2, previewMaxW) : vw - PAD * 2;
+		const sx = availW / doc.width;
 		const sy = (vh - PAD * 2) / doc.height;
 		return Math.max(0.05, Math.min(sx, sy, 1));
 	});
@@ -420,8 +435,9 @@
 		const source = layers.find((l) => l.id === layer.id);
 		if (!source) return;
 
-		const minW = source.kind === 'line' || source.kind === 'arrow' ? 24 : 40;
-		const minH = source.kind === 'line' ? 2 : 24;
+		const textLike = source.kind === 'text' || source.kind === 'sticky';
+		const minW = source.kind === 'line' || source.kind === 'arrow' ? 24 : textLike ? 8 : 40;
+		const minH = source.kind === 'line' ? 2 : textLike ? 8 : 24;
 		let nextAbs = snapLayerRect(
 			{ x: rect.x, y: rect.y, w: rect.w, h: rect.h },
 			cellSize,
@@ -433,6 +449,10 @@
 			8,
 			false
 		);
+		if (textLike && (source.autoSize ?? source.kind === 'text')) {
+			// El tamaño lo pone el texto; la rejilla solo coloca.
+			nextAbs = { ...nextAbs, w: rect.w, h: rect.h };
+		}
 
 		const prevAbs = absMap.get(source.id) ?? source.rect;
 		if (positionLocked) {
@@ -499,12 +519,8 @@
 				scaleDescendants: false
 			});
 		} else {
-			const updated = applyTextAutoSize(
-				source,
-				absToLocalUpdate(source, nextAbs),
-				prevAbs,
-				nextAbs
-			);
+			// Texto auto: la letra la escala MediaLayerItem desde el ancho (esquinas). Aquí solo el rect.
+			const updated = absToLocalUpdate(source, nextAbs);
 			nextLayers = layers.map((l) => (l.id === updated.id ? updated : l));
 		}
 		commitGroupGeometry(nextLayers);
@@ -932,8 +948,8 @@
 	}
 
 	function setGuidePreview(orientation: CanvasGuideOrientation, clientX: number, clientY: number) {
-		if (!stageEl) return;
-		const r = stageEl.getBoundingClientRect();
+		if (!artboardEl) return;
+		const r = artboardEl.getBoundingClientRect();
 		guidePreview = {
 			orientation,
 			x: clientX - r.left,
@@ -1279,263 +1295,291 @@
 				style:width={`${Math.max(vw || 0, boardW + PAD * 2)}px`}
 				style:height={`${Math.max(vh || 0, boardH + PAD * 2)}px`}
 			>
-				<!-- svelte-ignore a11y_no_static_element_interactions -->
 				<div
-					bind:this={artboardEl}
-					onwheel={handleScrollWheel}
-					onclick={(e) => {
-						e.stopPropagation();
-						if (drawMode) {
-							handleDrawClick(e);
-							return;
-						}
-						clearSelectionIfEmptyClick(e);
-					}}
-					ondblclick={(e) => {
-						if (drawMode) {
-							handleDrawDblClick(e);
-							return;
-						}
-						const pt = clientToDoc(e.clientX, e.clientY);
-						const hit = pickLayerAtDoc(pt);
-						if (hit) onenterlayer?.(hit);
-					}}
-					onmousemove={handleDrawMove}
 					class={[
-						'ring-black/10 relative shrink-0 overflow-visible shadow-[0_8px_40px_rgba(15,23,42,0.18)] ring-1',
-						drawMode && 'cursor-crosshair'
+						'relative shrink-0',
+						preview === 'desktop' && 'rounded-xl border-border shadow-lg border',
+						preview === 'tablet' &&
+							'border-neutral-800 shadow-lg bg-neutral-900 p-1.5 rounded-[1.25rem] border-8',
+						preview === 'mobile' &&
+							'border-neutral-800 shadow-lg bg-neutral-900 p-1.5 rounded-[1.75rem] border-8'
 					]}
-					style:width={`${boardW}px`}
-					style:height={`${boardH}px`}
 				>
+					<!-- svelte-ignore a11y_no_static_element_interactions -->
+					<!-- svelte-ignore a11y_click_events_have_key_events -->
 					<div
-						class="left-0 top-0 absolute origin-top-left overflow-visible"
-						style:width={`${doc.width}px`}
-						style:height={`${doc.height}px`}
-						style:transform={`scale(${scale})`}
+						bind:this={artboardEl}
+						onwheel={handleScrollWheel}
+						onclick={(e) => {
+							e.stopPropagation();
+							if (drawMode) {
+								handleDrawClick(e);
+								return;
+							}
+							clearSelectionIfEmptyClick(e);
+						}}
+						ondblclick={(e) => {
+							if (drawMode) {
+								handleDrawDblClick(e);
+								return;
+							}
+							const pt = clientToDoc(e.clientX, e.clientY);
+							const hit = pickLayerAtDoc(pt);
+							if (hit) onenterlayer?.(hit);
+						}}
+						onmousemove={handleDrawMove}
+						class={[
+							'ring-black/10 relative shrink-0 overflow-visible shadow-[0_8px_40px_rgba(15,23,42,0.18)] ring-1',
+							drawMode && 'cursor-crosshair'
+						]}
+						style:width={`${boardW}px`}
+						style:height={`${boardH}px`}
 					>
-						<!-- Artboard surface (clipped). Layers sit above and may overhang like a compositor. -->
-						<div class="inset-0 pointer-events-none absolute overflow-hidden" aria-hidden="true">
-							{#if artboardTransparent}
-								<div
-									class="inset-0 absolute"
-									style:background-color="#e8ebef"
-									style:background-image="linear-gradient(45deg,#cfd5dc 25%,transparent
-									25%),linear-gradient(-45deg,#cfd5dc 25%,transparent
-									25%),linear-gradient(45deg,transparent 75%,#cfd5dc
-									75%),linear-gradient(-45deg,transparent 75%,#cfd5dc 75%)"
-									style:background-size="16px 16px"
-									style:background-position="0 0,0 8px,8px -8px,-8px 0"
-								></div>
-							{/if}
-							<div class="inset-0 absolute" style:background-color={doc.background}></div>
-						</div>
-
-						{#if showGrid}
-							<div
-								class="inset-0 pointer-events-none absolute z-100 overflow-hidden"
-								style={gridOverlayStyle}
-								aria-hidden="true"
-							></div>
-						{/if}
-
-						<div class={['inset-0 absolute overflow-visible', drawMode && 'pointer-events-none']}>
-							{#each sorted as layer, paintIndex (layer.id)}
-								{#if effectivelyVisible.has(layer.id)}
-									{@const realId = resolveSelectableId(layer.id)}
-									{@const isSynthetic = !sceneLayerIds.has(layer.id)}
-									{@const lockedPass = layerLocked(layer) || isSynthetic}
-									{@const displayRect = paintAbsMap.get(layer.id) ?? layer.rect}
-									{@const clipPath = clipPathForLayer(layer.id, displayLayers, paintAbsMap)}
-									{@const sceneLayer = workingLayers.find((l) => l.id === realId)}
-									{@const marqueeBg = !!sceneLayer && isMarqueePassThroughKind(sceneLayer.kind)}
-									{@const isSelected = selectedSet.has(realId) && !isSynthetic}
-									{@const positionLocked = isLayoutLocked(layer)}
-									{@const sizeLocked = isSizeLocked(layer)}
-									{@const dragOk =
-										!lockedPass &&
-										(!marqueeBg || (isSelected && sceneLayer?.kind !== 'canvasPanel'))}
-									<!-- svelte-ignore a11y_no_static_element_interactions -->
+						<div
+							class="left-0 top-0 absolute origin-top-left overflow-visible"
+							style:width={`${doc.width}px`}
+							style:height={`${doc.height}px`}
+							style:transform={`scale(${scale})`}
+						>
+							<!-- Artboard surface (clipped). Layers sit above and may overhang like a compositor. -->
+							<div class="inset-0 pointer-events-none absolute overflow-hidden" aria-hidden="true">
+								{#if artboardTransparent}
 									<div
-										data-layer-item
-										data-marquee-id={realId}
-										class="contents"
-										oncontextmenu={(e) => {
-											if (lockedPass && isSynthetic) {
-												e.preventDefault();
-												e.stopPropagation();
-												onselect?.([realId]);
-												oncontextlayer?.({ id: realId, x: e.clientX, y: e.clientY });
-												return;
-											}
-											if (lockedPass) return;
-											e.preventDefault();
-											e.stopPropagation();
-											if (!selectedSet.has(realId)) onselect?.([realId]);
-											oncontextlayer?.({ id: realId, x: e.clientX, y: e.clientY });
-										}}
-									>
-										<MediaLayerItem
-											{layer}
-											{displayRect}
-											{clipPath}
-											stackIndex={paintIndex}
-											paintTransform={paintTransformForLayer(
-												displayLayers,
-												layer.id,
-												paintAbsMap,
-												layerById
-											)}
-											selected={isSelected}
-											showHandles={isSelected && selectedIds.length === 1}
-											passthrough={lockedPass || groupedChildPassthrough(layer)}
-											followStageRect={selectedIds.length > 1 ||
-												!!selectedAncestorId(workingLayers, realId, selectedSet)}
-											readOnly={isSynthetic}
-											layoutPositionLocked={positionLocked || (marqueeBg && !dragOk)}
-											layoutSizeLocked={sizeLocked}
-											onclick={(e) => selectLayer(layer.id, e)}
-											ondblclick={(e) => {
-												if (lockedPass) return;
-												const pt = clientToDoc(e.clientX, e.clientY);
-												const hit = pickLayerAtDoc(pt) ?? realId;
-												onenterlayer?.(hit);
-											}}
-											onchange={(rect) => handleRect(layer, rect)}
-											oninteract={handleLayerInteract}
-										/>
-									</div>
-								{/if}
-							{/each}
-
-							{#each ancestorOutlineIds as pid (pid)}
-								{@const outline = paintAbsMap.get(pid)}
-								{#if outline}
-									<div
-										class="pointer-events-none absolute z-[999980] outline outline-1 outline-[#3b82f6]/80 outline-dashed"
-										style:left="{outline.x}px"
-										style:top="{outline.y}px"
-										style:width="{outline.w}px"
-										style:height="{outline.h}px"
-										style:transform={paintTransformForLayer(
-											displayLayers,
-											pid,
-											paintAbsMap,
-											layerById
-										)}
-										style:transform-origin="0 0"
-										aria-hidden="true"
+										class="inset-0 absolute"
+										style:background-color="#e8ebef"
+										style:background-image="linear-gradient(45deg,#cfd5dc 25%,transparent
+										25%),linear-gradient(-45deg,#cfd5dc 25%,transparent
+										25%),linear-gradient(45deg,transparent 75%,#cfd5dc
+										75%),linear-gradient(-45deg,transparent 75%,#cfd5dc 75%)"
+										style:background-size="16px 16px"
+										style:background-position="0 0,0 8px,8px -8px,-8px 0"
 									></div>
 								{/if}
-							{/each}
+								<div class="inset-0 absolute" style:background-color={doc.background}></div>
+							</div>
 
-							{#if selectedIds.length > 1}
-								{#each selectedIds as sid (sid)}
-									{@const outline = paintAbsMap.get(sid)}
+							{#if showGrid}
+								<div
+									class="inset-0 pointer-events-none absolute z-100 overflow-hidden"
+									style={gridOverlayStyle}
+									aria-hidden="true"
+								></div>
+							{/if}
+
+							<div class={['inset-0 absolute overflow-visible', drawMode && 'pointer-events-none']}>
+								{#each sorted as layer, paintIndex (layer.id)}
+									{#if effectivelyVisible.has(layer.id)}
+										{@const realId = resolveSelectableId(layer.id)}
+										{@const isSynthetic = !sceneLayerIds.has(layer.id)}
+										{@const lockedPass = layerLocked(layer) || isSynthetic}
+										{@const displayRect = paintAbsMap.get(layer.id) ?? layer.rect}
+										{@const clipPath = clipPathForLayer(layer.id, displayLayers, paintAbsMap)}
+										{@const sceneLayer = workingLayers.find((l) => l.id === realId)}
+										{@const marqueeBg = !!sceneLayer && isMarqueePassThroughKind(sceneLayer.kind)}
+										{@const isSelected = selectedSet.has(realId) && !isSynthetic}
+										{@const positionLocked = isLayoutLocked(layer)}
+										{@const sizeLocked = isSizeLocked(layer)}
+										{@const dragOk =
+											!lockedPass &&
+											(!marqueeBg || (isSelected && sceneLayer?.kind !== 'canvasPanel'))}
+										<!-- svelte-ignore a11y_no_static_element_interactions -->
+										<div
+											data-layer-item
+											data-marquee-id={realId}
+											class="contents"
+											oncontextmenu={(e) => {
+												if (lockedPass && isSynthetic) {
+													e.preventDefault();
+													e.stopPropagation();
+													onselect?.([realId]);
+													oncontextlayer?.({ id: realId, x: e.clientX, y: e.clientY });
+													return;
+												}
+												if (lockedPass) return;
+												e.preventDefault();
+												e.stopPropagation();
+												if (!selectedSet.has(realId)) onselect?.([realId]);
+												oncontextlayer?.({ id: realId, x: e.clientX, y: e.clientY });
+											}}
+										>
+											<MediaLayerItem
+												{layer}
+												{displayRect}
+												{clipPath}
+												stackIndex={paintIndex}
+												paintTransform={paintTransformForLayer(
+													displayLayers,
+													layer.id,
+													paintAbsMap,
+													layerById
+												)}
+												selected={isSelected}
+												showHandles={isSelected && selectedIds.length === 1}
+												passthrough={lockedPass || groupedChildPassthrough(layer)}
+												followStageRect={selectedIds.length > 1 ||
+													!!selectedAncestorId(workingLayers, realId, selectedSet)}
+												readOnly={isSynthetic}
+												layoutPositionLocked={positionLocked || (marqueeBg && !dragOk)}
+												layoutSizeLocked={sizeLocked}
+												onclick={(e) => selectLayer(layer.id, e)}
+												ondblclick={(e) => {
+													if (lockedPass) return;
+													const pt = clientToDoc(e.clientX, e.clientY);
+													const hit = pickLayerAtDoc(pt) ?? realId;
+													onenterlayer?.(hit);
+												}}
+												onchange={(rect) => handleRect(layer, rect)}
+												onpatch={(partial) => {
+													const source = (draftLayers ?? doc.layers).find((l) => l.id === realId);
+													if (!source) return;
+													const next = {
+														...source,
+														...partial,
+														rect: partial.rect ? { ...source.rect, ...partial.rect } : source.rect
+													};
+													if (draftLayers) {
+														draftLayers = draftLayers.map((l) => (l.id === realId ? next : l));
+														return;
+													}
+													onlayerchange?.(next);
+												}}
+												editing={editingTextId === realId && !isSynthetic}
+												ontextcommit={(text) => ontextcommit?.(realId, text)}
+												oninteract={handleLayerInteract}
+											/>
+										</div>
+									{/if}
+								{/each}
+
+								{#each ancestorOutlineIds as pid (pid)}
+									{@const outline = paintAbsMap.get(pid)}
 									{#if outline}
 										<div
-											class="pointer-events-none absolute z-[999985] outline outline-2 outline-[#3b82f6]"
+											class="pointer-events-none absolute z-[999980] outline outline-1 outline-[#3b82f6]/80 outline-dashed"
 											style:left="{outline.x}px"
 											style:top="{outline.y}px"
 											style:width="{outline.w}px"
 											style:height="{outline.h}px"
+											style:transform={paintTransformForLayer(
+												displayLayers,
+												pid,
+												paintAbsMap,
+												layerById
+											)}
+											style:transform-origin="0 0"
 											aria-hidden="true"
 										></div>
 									{/if}
 								{/each}
-								{#if selectionFrame}
-									<div data-marquee-ignore class="contents">
-										<WidgetFrame
-											freeform
-											showChrome={false}
-											flush
-											handleStyle="canva"
-											handlesVisible={true}
-											raiseOnSelect={false}
-											stackIndex={999999}
-											draggable={false}
-											resizable={true}
-											rect={selectionFrame}
-											minW={16}
-											minH={16}
-											class="pointer-events-none bg-transparent"
-											onchange={handleSelectionRect}
-											oninteract={handleSelectionInteract}
-										/>
-									</div>
-								{/if}
-							{/if}
 
-							<!-- ScrollBox chrome above nested layer content -->
-							{#each displayLayers.filter((l) => l.kind === 'scrollBox') as box (box.id + ':scroll')}
-								{#if effectivelyVisible.has(box.id)}
-									{@const boxRect = paintAbsMap.get(box.id) ?? box.rect}
-									{@const scrollOver = scrollBoxOverflow(box.id, displayLayers, absMap)}
-									{@const scrollOff = scrollOffsets.get(box.id) ?? { x: 0, y: 0 }}
-									{@const chrome = {
-										x: scrollOff.x,
-										y: scrollOff.y,
-										maxX: scrollOver.maxX,
-										maxY: scrollOver.maxY
-									}}
-									{@const vScroll =
-										chrome.maxY > 0 ? scrollBarMetrics(boxRect.h, chrome.maxY, chrome.y) : null}
-									{@const hScroll =
-										chrome.maxX > 0 ? scrollBarMetrics(boxRect.w, chrome.maxX, chrome.x) : null}
-									{#if vScroll || hScroll}
-										<div
-											class="pointer-events-none absolute z-[999990]"
-											style:left="{boxRect.x}px"
-											style:top="{boxRect.y}px"
-											style:width="{boxRect.w}px"
-											style:height="{boxRect.h}px"
-										>
-											{#if vScroll}
-												<!-- svelte-ignore a11y_no_static_element_interactions -->
-												<div
-													class="bottom-0 right-0 top-0 w-2.5 rounded-r-md bg-black/[0.04] dark:bg-white/[0.06] pointer-events-auto absolute"
-													style:margin-bottom={hScroll ? '10px' : '0'}
-													onpointerdown={(e) =>
-														jumpScrollTrack(box.id, 'y', chrome, vScroll, hScroll, e)}
-												>
-													<div
-														data-scroll-thumb="y"
-														class="left-0.5 right-0.5 bg-slate-400/75 shadow-sm dark:bg-slate-500/85 absolute cursor-grab rounded-full active:cursor-grabbing"
-														style:top="{vScroll.offset}px"
-														style:height="{vScroll.thumb}px"
-														onpointerdown={(e) =>
-															beginScrollThumbDrag(box.id, 'y', chrome, vScroll, hScroll, e)}
-													></div>
-												</div>
-											{/if}
-											{#if hScroll}
-												<!-- svelte-ignore a11y_no_static_element_interactions -->
-												<div
-													class="bottom-0 left-0 h-2.5 rounded-b-md bg-black/[0.04] dark:bg-white/[0.06] pointer-events-auto absolute"
-													style:right={vScroll ? '10px' : '0'}
-													onpointerdown={(e) =>
-														jumpScrollTrack(box.id, 'x', chrome, vScroll, hScroll, e)}
-												>
-													<div
-														data-scroll-thumb="x"
-														class="top-0.5 bottom-0.5 bg-slate-400/75 shadow-sm dark:bg-slate-500/85 absolute cursor-grab rounded-full active:cursor-grabbing"
-														style:left="{hScroll.offset}px"
-														style:width="{hScroll.thumb}px"
-														onpointerdown={(e) =>
-															beginScrollThumbDrag(box.id, 'x', chrome, vScroll, hScroll, e)}
-													></div>
-												</div>
-											{/if}
-											{#if vScroll && hScroll}
-												<div
-													class="bottom-0 right-0 h-2.5 w-2.5 rounded-br-md bg-black/[0.06] dark:bg-white/[0.08] absolute"
-													aria-hidden="true"
-												></div>
-											{/if}
+								{#if selectedIds.length > 1}
+									{#each selectedIds as sid (sid)}
+										{@const outline = paintAbsMap.get(sid)}
+										{#if outline}
+											<div
+												class="pointer-events-none absolute z-[999985] outline outline-2 outline-[#3b82f6]"
+												style:left="{outline.x}px"
+												style:top="{outline.y}px"
+												style:width="{outline.w}px"
+												style:height="{outline.h}px"
+												aria-hidden="true"
+											></div>
+										{/if}
+									{/each}
+									{#if selectionFrame}
+										<div data-marquee-ignore class="contents">
+											<WidgetFrame
+												freeform
+												showChrome={false}
+												flush
+												handleStyle="canva"
+												handlesVisible={true}
+												raiseOnSelect={false}
+												stackIndex={999999}
+												draggable={false}
+												resizable={true}
+												rect={selectionFrame}
+												minW={16}
+												minH={16}
+												class="pointer-events-none bg-transparent"
+												onchange={handleSelectionRect}
+												oninteract={handleSelectionInteract}
+											/>
 										</div>
 									{/if}
 								{/if}
-							{/each}
+
+								<!-- ScrollBox chrome above nested layer content -->
+								{#each displayLayers.filter((l) => l.kind === 'scrollBox') as box (box.id + ':scroll')}
+									{#if effectivelyVisible.has(box.id)}
+										{@const boxRect = paintAbsMap.get(box.id) ?? box.rect}
+										{@const scrollOver = scrollBoxOverflow(box.id, displayLayers, absMap)}
+										{@const scrollOff = scrollOffsets.get(box.id) ?? { x: 0, y: 0 }}
+										{@const chrome = {
+											x: scrollOff.x,
+											y: scrollOff.y,
+											maxX: scrollOver.maxX,
+											maxY: scrollOver.maxY
+										}}
+										{@const vScroll =
+											chrome.maxY > 0 ? scrollBarMetrics(boxRect.h, chrome.maxY, chrome.y) : null}
+										{@const hScroll =
+											chrome.maxX > 0 ? scrollBarMetrics(boxRect.w, chrome.maxX, chrome.x) : null}
+										{#if vScroll || hScroll}
+											<div
+												class="pointer-events-none absolute z-[999990]"
+												style:left="{boxRect.x}px"
+												style:top="{boxRect.y}px"
+												style:width="{boxRect.w}px"
+												style:height="{boxRect.h}px"
+											>
+												{#if vScroll}
+													<!-- svelte-ignore a11y_no_static_element_interactions -->
+													<div
+														class="bottom-0 right-0 top-0 w-2.5 rounded-r-md bg-black/[0.04] dark:bg-white/[0.06] pointer-events-auto absolute"
+														style:margin-bottom={hScroll ? '10px' : '0'}
+														onpointerdown={(e) =>
+															jumpScrollTrack(box.id, 'y', chrome, vScroll, hScroll, e)}
+													>
+														<div
+															data-scroll-thumb="y"
+															class="left-0.5 right-0.5 bg-slate-400/75 shadow-sm dark:bg-slate-500/85 absolute cursor-grab rounded-full active:cursor-grabbing"
+															style:top="{vScroll.offset}px"
+															style:height="{vScroll.thumb}px"
+															onpointerdown={(e) =>
+																beginScrollThumbDrag(box.id, 'y', chrome, vScroll, hScroll, e)}
+														></div>
+													</div>
+												{/if}
+												{#if hScroll}
+													<!-- svelte-ignore a11y_no_static_element_interactions -->
+													<div
+														class="bottom-0 left-0 h-2.5 rounded-b-md bg-black/[0.04] dark:bg-white/[0.06] pointer-events-auto absolute"
+														style:right={vScroll ? '10px' : '0'}
+														onpointerdown={(e) =>
+															jumpScrollTrack(box.id, 'x', chrome, vScroll, hScroll, e)}
+													>
+														<div
+															data-scroll-thumb="x"
+															class="top-0.5 bottom-0.5 bg-slate-400/75 shadow-sm dark:bg-slate-500/85 absolute cursor-grab rounded-full active:cursor-grabbing"
+															style:left="{hScroll.offset}px"
+															style:width="{hScroll.thumb}px"
+															onpointerdown={(e) =>
+																beginScrollThumbDrag(box.id, 'x', chrome, vScroll, hScroll, e)}
+														></div>
+													</div>
+												{/if}
+												{#if vScroll && hScroll}
+													<div
+														class="bottom-0 right-0 h-2.5 w-2.5 rounded-br-md bg-black/[0.06] dark:bg-white/[0.08] absolute"
+														aria-hidden="true"
+													></div>
+												{/if}
+											</div>
+										{/if}
+									{/if}
+								{/each}
+							</div>
 						</div>
 					</div>
 				</div>
@@ -1545,25 +1589,32 @@
 		</div>
 	</div>
 
-	<!-- Guides span the full stage (rulers → viewport) so they align with ruler numbers -->
+	<!-- Guides stay on the artboard. Rulers stay on the workspace edges. -->
 	{#if showGuides}
+		{@const originX = RULER_LEFT + tickX(0)}
+		{@const originY = RULER_TOP + tickY(0)}
 		{#each guides as guide (guide.id)}
 			{@const locked = guidesLocked || !!guide.locked}
 			{@const hiding = draggingGuideId === guide.id && guidePreview}
-			{@const screenX = RULER_LEFT + tickX(guide.position)}
-			{@const screenY = RULER_TOP + tickY(guide.position)}
 			<!-- svelte-ignore a11y_no_static_element_interactions -->
 			<div
 				data-guide={guide.id}
 				class={[
 					'absolute z-40',
 					guide.orientation === 'vertical'
-						? 'top-0 bottom-0 w-2 -translate-x-1/2 cursor-col-resize'
-						: 'left-0 right-0 h-2 -translate-y-1/2 cursor-row-resize',
+						? 'w-2 -translate-x-1/2 cursor-col-resize'
+						: 'h-2 -translate-y-1/2 cursor-row-resize',
 					locked && 'cursor-default',
 					hiding && 'opacity-0'
 				]}
-				style={guide.orientation === 'vertical' ? `left:${screenX}px` : `top:${screenY}px`}
+				style:left={guide.orientation === 'vertical'
+					? `${RULER_LEFT + tickX(guide.position)}px`
+					: `${originX}px`}
+				style:top={guide.orientation === 'horizontal'
+					? `${RULER_TOP + tickY(guide.position)}px`
+					: `${originY}px`}
+				style:width={guide.orientation === 'horizontal' ? `${boardW}px` : undefined}
+				style:height={guide.orientation === 'vertical' ? `${boardH}px` : undefined}
 				title={locked ? 'Guide locked' : 'Drag to move · Double-click to remove'}
 				onpointerdown={(e) => beginGuideDrag(guide, e)}
 				ondblclick={() => removeGuide(guide.id)}
@@ -1659,9 +1710,15 @@
 		{/each}
 	{/if}
 
-	<!-- Full-stage guide preview while dragging (edge to edge) -->
 	{#if guidePreview}
-		<div class="inset-0 pointer-events-none absolute z-50" aria-hidden="true">
+		<div
+			class="pointer-events-none absolute z-50 overflow-hidden"
+			style:left={`${RULER_LEFT + tickX(0)}px`}
+			style:top={`${RULER_TOP + tickY(0)}px`}
+			style:width={`${boardW}px`}
+			style:height={`${boardH}px`}
+			aria-hidden="true"
+		>
 			{#if guidePreview.orientation === 'vertical'}
 				<div
 					class="top-0 bottom-0 absolute w-px bg-[#00c2ff]"

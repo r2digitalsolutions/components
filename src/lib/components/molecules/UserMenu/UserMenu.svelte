@@ -101,7 +101,8 @@
 		};
 	});
 
-	const avatarSize = $derived(size === 'sm' ? 'sm' : size === 'lg' ? 'lg' : 'md');
+	const compact = $derived(size === 'sm' && !showSubtitle);
+	const avatarSize = $derived(compact ? 'xs' : size === 'lg' ? 'lg' : size === 'sm' ? 'sm' : 'md');
 	const statusLabel = $derived(
 		status === 'online'
 			? 'Online'
@@ -221,34 +222,36 @@
 	});
 </script>
 
-<div class={['relative flex w-full min-w-0', className]}>
+<div class={['min-w-0 relative flex w-full', className]}>
 	<button
 		bind:this={triggerEl}
 		type="button"
 		class={[
-			'inline-flex w-full min-w-0 max-w-full items-center text-left transition-colors',
-			'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40',
+			'min-w-0 inline-flex w-full max-w-full items-center text-left transition-colors',
+			'focus-visible:ring-brand-500/40 focus-visible:ring-2 focus-visible:outline-none',
 			variant === 'outline' &&
-				'gap-2.5 rounded-xl border border-border bg-surface-elevated hover:bg-surface-overlay',
-			variant === 'ghost' && 'gap-2 rounded-lg border border-transparent hover:bg-surface-overlay',
-			size === 'sm' && (variant === 'ghost' ? 'px-1.5 py-1' : 'px-2 py-1.5'),
+				'gap-2.5 rounded-xl border-border bg-surface-elevated hover:bg-surface-overlay border',
+			variant === 'ghost' && 'gap-2 rounded-lg hover:bg-surface-overlay border border-transparent',
+			compact && 'h-8 gap-2 py-0',
+			compact && (variant === 'ghost' ? 'px-1' : 'px-2'),
+			!compact && size === 'sm' && (variant === 'ghost' ? 'px-1.5 py-1' : 'px-2.5 py-1'),
 			size === 'md' && (variant === 'ghost' ? 'px-2 py-1.5' : 'px-2.5 py-2'),
 			size === 'lg' && (variant === 'ghost' ? 'px-2.5 py-2' : 'px-3 py-2.5'),
-			open && (variant === 'ghost' ? 'bg-surface-overlay' : 'ring-2 ring-brand-500/30')
+			open && (variant === 'ghost' ? 'bg-surface-overlay' : 'ring-brand-500/30 ring-2')
 		]}
 		aria-haspopup="menu"
 		aria-expanded={open}
 		aria-controls={menuId || undefined}
 		{@attach popoverInvokerToggle(() => menuEl)}
 	>
-		<span class="shrink-0">
+		<span class="flex shrink-0 items-center">
 			<Avatar {src} {name} size={avatarSize} {status} />
 		</span>
 		{#if showMeta}
-			<span class="hidden min-w-0 flex-1 overflow-hidden sm:block">
-				<span class="block truncate text-sm font-medium text-primary">{name}</span>
+			<span class="min-w-0 sm:block hidden flex-1 overflow-hidden">
+				<span class="text-sm font-medium text-primary block truncate">{name}</span>
 				{#if showSubtitle && (email || role)}
-					<span class="block truncate text-xs text-muted">
+					<span class="text-xs text-muted block truncate">
 						{role ? `${role}` : ''}{role && email ? ' · ' : ''}{email ?? ''}
 					</span>
 				{/if}
@@ -256,7 +259,7 @@
 		{/if}
 		{#if showChevron}
 			<svg
-				class={['h-4 w-4 shrink-0 text-muted transition-transform', open && 'rotate-180']}
+				class={['h-4 w-4 text-muted shrink-0 transition-transform', open && 'rotate-180']}
 				viewBox="0 0 24 24"
 				fill="none"
 				stroke="currentColor"
@@ -278,26 +281,26 @@
 		style={menuStyle}
 		ontoggle={handleToggle}
 		onbeforetoggle={handleBeforeToggle}
-		class="user-menu m-0 overflow-hidden rounded-2xl border border-border bg-surface-elevated shadow-xl inset-auto outline-none"
+		class="user-menu m-0 rounded-2xl border-border bg-surface-elevated shadow-xl inset-auto overflow-hidden border outline-none"
 	>
 		{#if header}
 			{@render header()}
 		{:else}
-			<div class="border-b border-border bg-surface-overlay/50 px-3.5 py-3">
-				<div class="flex items-start gap-3">
+			<div class="border-border bg-surface-overlay/50 px-3.5 py-3 border-b">
+				<div class="gap-3 flex items-start">
 					<Avatar {src} {name} size="lg" {status} />
-					<div class="min-w-0 flex-1 pt-0.5">
-						<p class="truncate text-sm font-semibold text-primary">{name}</p>
+					<div class="min-w-0 pt-0.5 flex-1">
+						<p class="text-sm font-semibold text-primary truncate">{name}</p>
 						{#if email}
-							<p class="truncate text-xs text-muted">{email}</p>
+							<p class="text-xs text-muted truncate">{email}</p>
 						{/if}
-						<div class="mt-2 flex flex-wrap items-center gap-2">
+						<div class="mt-2 gap-2 flex flex-wrap items-center">
 							{#if status && statusLabel}
 								<StatusDot {status} size="sm" showLabel label={statusLabel} />
 							{/if}
 							{#if role}
 								<span
-									class="rounded-md bg-surface-elevated px-1.5 py-0.5 text-[10px] font-medium text-secondary ring-1 ring-border"
+									class="rounded-md bg-surface-elevated px-1.5 py-0.5 font-medium text-secondary ring-border text-[10px] ring-1"
 								>
 									{role}
 								</span>
@@ -314,7 +317,7 @@
 		<div class="p-1.5">
 			{#each items as item (item.id)}
 				{#if item.separator}
-					<div class="my-1.5 border-t border-border" role="separator"></div>
+					<div class="my-1.5 border-border border-t" role="separator"></div>
 				{:else}
 					<button
 						type="button"
@@ -322,8 +325,8 @@
 						disabled={item.disabled}
 						onclick={() => select(item)}
 						class={[
-							'flex w-full items-start gap-2 rounded-xl px-2.5 py-2 text-left transition-colors',
-							'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30',
+							'gap-2 rounded-xl px-2.5 py-2 flex w-full items-start text-left transition-colors',
+							'focus-visible:ring-brand-500/30 focus-visible:ring-2 focus-visible:outline-none',
 							item.destructive
 								? 'text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40'
 								: 'text-primary hover:bg-surface-overlay',
@@ -331,13 +334,13 @@
 						]}
 					>
 						<span class="min-w-0 flex-1">
-							<span class="block text-sm font-medium">{item.label}</span>
+							<span class="text-sm font-medium block">{item.label}</span>
 							{#if item.description}
-								<span class="block text-xs text-muted">{item.description}</span>
+								<span class="text-xs text-muted block">{item.description}</span>
 							{/if}
 						</span>
 						{#if item.shortcut}
-							<span class="mt-0.5 shrink-0 font-mono text-[10px] text-muted">{item.shortcut}</span>
+							<span class="mt-0.5 font-mono text-muted shrink-0 text-[10px]">{item.shortcut}</span>
 						{/if}
 					</button>
 				{/if}

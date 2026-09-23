@@ -107,10 +107,15 @@ export interface CanvasLayer {
 	lineHeight?: number;
 	textAlign?: CanvasTextAlign;
 	/**
-	 * When true, resizing the text box scales `fontSize` with the box
-	 * (geometric mean of width/height scale — Unreal/Canva-style).
+	 * When true, the box hugs the text.
+	 * Side handles set `textMaxWidth` so lines wrap; height always follows the type.
 	 */
 	autoSize?: boolean;
+	/**
+	 * Wrap width in layer pixels. Unset means the box grows with the longest line,
+	 * including manual line breaks. Set by dragging the left or right handle.
+	 */
+	textMaxWidth?: number;
 	/**
 	 * When true, resizing this container scales children (position + size + text)
 	 * relative to the parent — same idea as text `autoSize`. Groups default on.
@@ -127,6 +132,19 @@ export interface CanvasLayer {
 	shadowBlur?: number;
 	shadowColor?: string;
 	blur?: number;
+	/** CSS filter percents. `100` is unchanged. Used by image and video layers. */
+	brightness?: number;
+	contrast?: number;
+	saturate?: number;
+	/**
+	 * Extra zoom inside an image or video, on top of `objectFit`.
+	 * `1` is the fit itself. The layer rect does not change.
+	 */
+	mediaScale?: number;
+	/** Horizontal alignment of the fitted bitmap inside the layer. `0.5` is centered. */
+	mediaX?: number;
+	/** Vertical alignment of the fitted bitmap inside the layer. `0.5` is centered. */
+	mediaY?: number;
 	/** For `path`: normalized points (0–1) relative to rect. */
 	points?: CanvasPoint[];
 	/** For `path`: close the shape into a filled polygon. */
@@ -396,6 +414,12 @@ export function createCanvasLayer(
 		shadowBlur: partial?.shadowBlur,
 		shadowColor: partial?.shadowColor,
 		blur: partial?.blur,
+		brightness: partial?.brightness ?? (kind === 'image' || kind === 'video' ? 100 : undefined),
+		contrast: partial?.contrast ?? (kind === 'image' || kind === 'video' ? 100 : undefined),
+		saturate: partial?.saturate ?? (kind === 'image' || kind === 'video' ? 100 : undefined),
+		mediaScale: partial?.mediaScale ?? (kind === 'image' || kind === 'video' ? 1 : undefined),
+		mediaX: partial?.mediaX ?? (kind === 'image' || kind === 'video' ? 0.5 : undefined),
+		mediaY: partial?.mediaY ?? (kind === 'image' || kind === 'video' ? 0.5 : undefined),
 		points: partial?.points,
 		closed: partial?.closed ?? false,
 		parentId: partial?.parentId ?? null,
@@ -426,6 +450,12 @@ export type CanvasResettableField =
 	| 'flipX'
 	| 'flipY'
 	| 'blur'
+	| 'brightness'
+	| 'contrast'
+	| 'saturate'
+	| 'mediaScale'
+	| 'mediaX'
+	| 'mediaY'
 	| 'shadowBlur'
 	| 'shadowColor'
 	| 'fill'
@@ -480,6 +510,15 @@ export function canvasLayerFieldDefault(
 		case 'blur':
 		case 'shadowBlur':
 			return undefined;
+		case 'brightness':
+		case 'contrast':
+		case 'saturate':
+			return kind === 'image' || kind === 'video' ? 100 : undefined;
+		case 'mediaScale':
+			return kind === 'image' || kind === 'video' ? 1 : undefined;
+		case 'mediaX':
+		case 'mediaY':
+			return kind === 'image' || kind === 'video' ? 0.5 : undefined;
 		case 'shadowColor':
 			return undefined;
 		case 'fill':
@@ -544,7 +583,7 @@ export function resetCanvasField(
 
 /**
  * Scale fontSize with the box when `autoSize` is on (text / sticky).
- * Uses geometric mean of width & height scale so both axes affect size.
+ * Side handles reflow and the frame grows with the lines. Only a corner scales the type.
  */
 export function applyTextAutoSize(
 	from: CanvasLayer,
@@ -562,7 +601,11 @@ export function applyTextAutoSize(
 
 	const sx = next.w / Math.max(1, prev.w);
 	const sy = next.h / Math.max(1, prev.h);
-	const scale = Math.sqrt(sx * sy);
+	const widthChanged = Math.abs(sx - 1) > 0.02;
+	const heightChanged = Math.abs(sy - 1) > 0.02;
+	// Side handles reflow. A shorter box cannot squash the type: the frame grows instead.
+	// Only a corner scales the font, and the box hugs the glyphs again on release.
+	const scale = widthChanged && heightChanged ? sy : 1;
 	if (!Number.isFinite(scale) || Math.abs(scale - 1) < 0.001) return to;
 
 	const base = from.fontSize ?? (from.kind === 'sticky' ? 20 : 32);
@@ -718,7 +761,96 @@ export function alignLayerRect(
 	return { x, y, w, h };
 }
 
+export const COVER_ARTBOARD = { width: 1800, height: 600 } as const;
+
+/** Artboard with the photo fully visible. Scaling that layer is the zoom. */
+export function coverDocumentFromImage(src: string, name = 'Cover'): CanvasDocument {
+	return emptyCanvasDocument({
+		width: COVER_ARTBOARD.width,
+		height: COVER_ARTBOARD.height,
+		background: '#111111',
+		layers: [
+			createCanvasLayer('image', {
+				name,
+				src,
+				objectFit: 'contain',
+				rect: { x: 0, y: 0, w: COVER_ARTBOARD.width, h: COVER_ARTBOARD.height }
+			})
+		]
+	});
+}
+
+/** Drop session blob URLs on the cover layer so the JSON can be stored. */
+export function persistCoverDocument(doc: CanvasDocument): CanvasDocument {
+	return {
+		...doc,
+		layers: doc.layers.map((layer) =>
+			layer.kind === 'image' && layer.name === 'Cover' && layer.src?.startsWith('blob:')
+				? { ...layer, src: '' }
+				: layer
+		)
+	};
+}
+
+/** Point the stored cover layer at the original file URL. */
+export function hydrateCoverDocument(doc: CanvasDocument, src: string): CanvasDocument {
+	return {
+		...doc,
+		layers: doc.layers.map((layer) =>
+			layer.kind === 'image' && layer.name === 'Cover' && !layer.src ? { ...layer, src } : layer
+		)
+	};
+}
+
+/** Where the bitmap sits inside the layer box, in the same units as `box`. */
+export function mediaContentBox(
+	box: { w: number; h: number },
+	natural: { w: number; h: number },
+	fit: CanvasObjectFit | undefined,
+	zoom = 1,
+	mediaX = 0.5,
+	mediaY = 0.5
+): { x: number; y: number; w: number; h: number } {
+	const mode = fit ?? 'cover';
+	const z = zoom > 0 ? zoom : 1;
+	let dw: number;
+	let dh: number;
+	if (mode === 'fill' || natural.w <= 0 || natural.h <= 0) {
+		dw = box.w * z;
+		dh = box.h * z;
+	} else {
+		const base =
+			mode === 'contain'
+				? Math.min(box.w / natural.w, box.h / natural.h)
+				: Math.max(box.w / natural.w, box.h / natural.h);
+		dw = natural.w * base * z;
+		dh = natural.h * base * z;
+	}
+	return {
+		x: (box.w - dw) * mediaX,
+		y: (box.h - dh) * mediaY,
+		w: dw,
+		h: dh
+	};
+}
+
+export function canvasLayerFilter(layer: {
+	blur?: number;
+	brightness?: number;
+	contrast?: number;
+	saturate?: number;
+}): string | undefined {
+	const parts: string[] = [];
+	if (layer.blur) parts.push(`blur(${layer.blur}px)`);
+	if (layer.brightness != null && layer.brightness !== 100)
+		parts.push(`brightness(${layer.brightness}%)`);
+	if (layer.contrast != null && layer.contrast !== 100) parts.push(`contrast(${layer.contrast}%)`);
+	if (layer.saturate != null && layer.saturate !== 100) parts.push(`saturate(${layer.saturate}%)`);
+	return parts.length ? parts.join(' ') : undefined;
+}
+
 export const CANVAS_PRESETS = [
+	{ id: 'cover', label: 'Cover · 1800×600', width: 1800, height: 600 },
 	{ id: 'hd', label: 'HD · 1280×720', width: 1280, height: 720 },
 	{ id: 'fhd', label: 'Full HD · 1920×1080', width: 1920, height: 1080 },
 	{ id: 'square', label: 'Instagram · 1080×1080', width: 1080, height: 1080 },

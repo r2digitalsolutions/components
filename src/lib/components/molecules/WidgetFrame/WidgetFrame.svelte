@@ -6,12 +6,13 @@
 
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import { getContext } from 'svelte';
+	import { getContext, untrack } from 'svelte';
 	import DragHandle from '$lib/components/atoms/DragHandle/DragHandle.svelte';
 	import Skeleton from '$lib/components/atoms/Skeleton/Skeleton.svelte';
 	import Spinner from '$lib/components/atoms/Spinner/Spinner.svelte';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+	import RotateCw from '@lucide/svelte/icons/rotate-cw';
 	import X from '@lucide/svelte/icons/x';
 	import {
 		WIDGET_CANVAS_CONTEXT,
@@ -67,6 +68,18 @@
 		stackIndex?: number;
 		/** CSS transform on the freeform root (e.g. rotate/flip) so chrome rotates too. */
 		transform?: string;
+		/** Current rotation in degrees. With `onrotation`, Canva chrome shows a rotate handle. */
+		rotation?: number;
+		onrotation?: (degrees: number) => void;
+		/**
+		 * Size the frame from its content (`width: max-content; height: auto`).
+		 * Used by text so the box stays stuck to the glyphs.
+		 */
+		hugContent?: boolean;
+		/** Wrap limit in px. The box stays as wide as the text until this cap. */
+		hugMaxWidth?: number;
+		/** Fired when hugged content changes size. Not a user resize. */
+		oncontentresize?: (rect: WidgetRect) => void;
 		collapsible?: boolean;
 		collapsed?: boolean;
 		loading?: boolean;
@@ -87,6 +100,8 @@
 		onreload?: () => void | Promise<void>;
 		oncollapse?: (collapsed: boolean) => void;
 		onchange?: (rect: WidgetRect) => void;
+		/** When false, content may paint outside the frame. Text uses this so glyphs are not cropped. */
+		clipContent?: boolean;
 		/**
 		 * When false, `onchange` still fires but this frame does not write `rect`.
 		 * Use when a parent owns live position (rigid multi-select / group move).
@@ -116,6 +131,11 @@
 		raiseOnSelect = true,
 		stackIndex,
 		transform: frameTransform,
+		rotation = 0,
+		onrotation,
+		hugContent = false,
+		hugMaxWidth = 0,
+		oncontentresize,
 		collapsible = false,
 		collapsed = $bindable(false),
 		loading = false,
@@ -135,6 +155,7 @@
 		onreload,
 		oncollapse,
 		onchange,
+		clipContent = true,
 		applyRect = true,
 		oninteract
 	}: WidgetFrameProps = $props();
@@ -142,6 +163,8 @@
 	const canvas = getContext<WidgetCanvasContext | undefined>(WIDGET_CANVAS_CONTEXT);
 
 	let mode = $state<'move' | 'resize' | null>(null);
+	let rotating = $state(false);
+	let rotateStart: { angle: number; rotation: number; cx: number; cy: number } | null = null;
 	let edge = $state<WidgetResizeEdge>('se');
 	let start = $state({ px: 0, py: 0, x: 0, y: 0, w: 0, h: 0 });
 	/** Pointer down awaiting movement threshold before starting freeform drag (preserves dblclick). */
@@ -159,7 +182,14 @@
 	/** Tamaño local cuando resizable sin freeform (EditableChrome, etc.) */
 	let localW = $state<number | null>(null);
 	let localH = $state<number | null>(null);
-	let rootEl: HTMLDivElement | null = null;
+	let rootEl = $state<HTMLDivElement | null>(null);
+	/** Último tamaño ya enviado. Evita que medir → guardar → medir no pare. */
+	let hugSentW = -1;
+	let hugSentH = -1;
+	let hugPrevW = -1;
+	let hugPrevH = -1;
+	/** Alto real del texto (el rect del drag solo manda en el ancho). */
+	let hugLiveH = $state(0);
 
 	function attachRoot(node: HTMLElement) {
 		rootEl = node as HTMLDivElement;
@@ -167,6 +197,40 @@
 			if (rootEl === node) rootEl = null;
 		};
 	}
+
+	$effect(() => {
+		const el = rootEl;
+		if (!hugContent || !el || !oncontentresize) return;
+		let frame = 0;
+		const publish = () => {
+			const w = el.offsetWidth;
+			const h = el.offsetHeight;
+			if (w < 1 || h < 1) return;
+			hugLiveH = h;
+			if (untrack(() => mode) === 'resize') return;
+			const same =
+				(Math.abs(w - hugSentW) <= 1 && Math.abs(h - hugSentH) <= 1) ||
+				(Math.abs(w - hugPrevW) <= 1 && Math.abs(h - hugPrevH) <= 1);
+			if (same) return;
+			const current = untrack(() => rect);
+			hugPrevW = hugSentW;
+			hugPrevH = hugSentH;
+			hugSentW = w;
+			hugSentH = h;
+			if (Math.abs(w - current.w) <= 1 && Math.abs(h - current.h) <= 1) return;
+			oncontentresize({ x: current.x, y: current.y, w, h });
+		};
+		const observer = new ResizeObserver(() => {
+			cancelAnimationFrame(frame);
+			frame = requestAnimationFrame(publish);
+		});
+		observer.observe(el);
+		frame = requestAnimationFrame(publish);
+		return () => {
+			cancelAnimationFrame(frame);
+			observer.disconnect();
+		};
+	});
 
 	const showDragHandle = $derived(showChrome && (editable || freeform) && draggable);
 	const showResizeHandle = $derived((editable || freeform) && resizable && !collapsed);
@@ -207,19 +271,73 @@
 			w: Math.max(minW, next.w),
 			h: Math.max(minH, next.h)
 		};
-		if (canvas) {
-			if (shouldSnapNow) r = canvas.snapRect(r, minW, minH);
-			r = canvas.clampRect(r, minW, minH);
-		} else {
-			r = { ...r, x: Math.max(0, r.x), y: Math.max(0, r.y) };
+		if (!canvas) {
+			return { ...r, x: Math.max(0, r.x), y: Math.max(0, r.y) };
 		}
-		return r;
+		if (hugContent) {
+			// El tamaño es el del texto: la rejilla y el borde solo mueven x / y.
+			const el = rootEl;
+			const measured = {
+				...r,
+				w: el && el.offsetWidth > 0 ? el.offsetWidth : r.w,
+				h: el && el.offsetHeight > 0 ? el.offsetHeight : r.h
+			};
+			let pos = measured;
+			if (shouldSnapNow) pos = canvas.snapRect(pos, minW, minH);
+			pos = canvas.clampRect({ ...measured, x: pos.x, y: pos.y }, minW, minH);
+			return { ...r, x: pos.x, y: pos.y };
+		}
+		if (shouldSnapNow) r = canvas.snapRect(r, minW, minH);
+		return canvas.clampRect(r, minW, minH);
 	}
 
 	function emitRect(next: WidgetRect) {
 		const r = finalizeRect(next);
 		if (applyRect) rect = r;
 		onchange?.(r);
+	}
+
+	function beginRotate(e: PointerEvent) {
+		if (!onrotation || !rootEl) return;
+		if (e.button !== 0 && e.pointerType === 'mouse') return;
+		e.preventDefault();
+		e.stopPropagation();
+		const box = rootEl.getBoundingClientRect();
+		rotateStart = {
+			angle: Math.atan2(
+				e.clientY - (box.top + box.height / 2),
+				e.clientX - (box.left + box.width / 2)
+			),
+			rotation,
+			cx: box.left + box.width / 2,
+			cy: box.top + box.height / 2
+		};
+		rotating = true;
+		(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+		oninteract?.(true);
+	}
+
+	function moveRotate(e: PointerEvent) {
+		if (!rotating || !rotateStart || !onrotation) return;
+		const angle = Math.atan2(e.clientY - rotateStart.cy, e.clientX - rotateStart.cx);
+		let deg = rotateStart.rotation + ((angle - rotateStart.angle) * 180) / Math.PI;
+		deg = Math.round(deg);
+		if (e.shiftKey) deg = Math.round(deg / 15) * 15;
+		const norm = ((deg % 360) + 360) % 360;
+		for (const axis of [0, 90, 180, 270, 360]) {
+			if (!e.shiftKey && Math.abs(norm - axis) <= 4) {
+				deg = axis === 360 ? 0 : axis;
+				break;
+			}
+		}
+		onrotation(deg);
+	}
+
+	function endRotate() {
+		if (!rotating) return;
+		rotating = false;
+		rotateStart = null;
+		oninteract?.(false);
 	}
 
 	function beginMove(e: PointerEvent) {
@@ -238,6 +356,10 @@
 		e.stopPropagation();
 		bringToFront();
 		pendingMove = null;
+		hugSentW = -1;
+		hugSentH = -1;
+		hugPrevW = -1;
+		hugPrevH = -1;
 		onresizestart?.(e, nextEdge);
 		if (delegateResize || !builtinResize) return;
 
@@ -245,6 +367,10 @@
 		edge = nextEdge;
 		oninteract?.(true);
 		if (freeform) {
+			if (hugContent && rootEl && rootEl.offsetWidth > 0) {
+				// Arrancar desde el tamaño real del texto, no del rect guardado: sin salto al pulsar.
+				rect = { ...rect, w: rootEl.offsetWidth, h: rootEl.offsetHeight };
+			}
 			start = { px: e.clientX, py: e.clientY, ...rect };
 		} else {
 			const box = rootEl?.getBoundingClientRect();
@@ -352,8 +478,13 @@
 		const wasInteracting = mode === 'move' || mode === 'resize' || !!pendingMove;
 		pendingMove = null;
 		if (mode === 'resize' && freeform) {
+			// Con hug el alto lo pone el texto: el rect del drag solo aporta x / y / ancho.
+			emitRect(hugContent && hugLiveH > 0 ? { ...rect, h: hugLiveH } : { ...rect });
+			hugSentW = -1;
+			hugSentH = -1;
+			hugPrevW = -1;
+			hugPrevH = -1;
 			mode = null;
-			emitRect({ ...rect });
 			if (wasInteracting) oninteract?.(false);
 			return;
 		}
@@ -438,6 +569,11 @@
 	const rootStyle = $derived.by(() => {
 		if (freeform) {
 			const xf = frameTransform ? `transform:${frameTransform};transform-origin:0 0;` : '';
+			if (hugContent) {
+				const liveWidth =
+					mode === 'resize' ? `${rect.w}px` : hugMaxWidth > 0 ? `${hugMaxWidth}px` : 'max-content';
+				return `left:${rect.x}px;top:${rect.y}px;width:${liveWidth};height:auto;z-index:${paintZ};${xf}`;
+			}
 			return `left:${rect.x}px;top:${rect.y}px;width:${rect.w}px;height:${collapsed ? 'auto' : `${rect.h}px`};z-index:${paintZ};${xf}`;
 		}
 		if (localW != null) {
@@ -485,8 +621,7 @@
 			? String(className)
 					.split(/\s+/)
 					.filter(
-						(token) =>
-							token && token !== 'h-full' && token !== 'min-h-0' && token !== 'flex-1'
+						(token) => token && token !== 'h-full' && token !== 'min-h-0' && token !== 'flex-1'
 					)
 			: [];
 		return [...base, 'h-auto', 'max-h-fit', 'w-full', 'shrink-0'].join(' ');
@@ -496,12 +631,10 @@
 	const contentFit = $derived(
 		collapsed ||
 			(typeof className === 'string' &&
-				className
-					.split(/\s+/)
-					.some((token) => token === 'h-auto' || token === 'max-h-fit'))
+				className.split(/\s+/).some((token) => token === 'h-auto' || token === 'max-h-fit'))
 	);
 	const bodyOverflowClass = $derived(
-		contentFit ? 'overflow-visible' : flush ? 'overflow-hidden' : 'overflow-auto'
+		contentFit || !clipContent ? 'overflow-visible' : flush ? 'overflow-hidden' : 'overflow-auto'
 	);
 </script>
 
@@ -509,7 +642,8 @@
 <div
 	{@attach attachRoot}
 	class={[
-		'group/widget min-h-0 min-w-0 flex flex-col overflow-visible',
+		'group/widget flex flex-col overflow-visible',
+		hugContent ? 'min-h-min min-w-min' : 'min-h-0 min-w-0',
 		!isCanva && showChrome && 'rounded-xl border-border bg-surface-elevated overflow-hidden border',
 		!isCanva && !showChrome && 'bg-transparent',
 		isCanva && 'bg-transparent',
@@ -628,7 +762,7 @@
 		<div
 			class={[
 				'relative',
-				contentFit ? 'flex-none' : 'min-h-0 flex-1',
+				contentFit || hugContent ? 'flex-none' : 'min-h-0 flex-1',
 				flush ? 'p-0' : 'p-3',
 				bodyOverflowClass
 			]}
@@ -678,6 +812,21 @@
 		</div>
 	{/if}
 
+	{#if isCanva && mode === 'resize'}
+		<div
+			class="rounded-md bg-neutral-900 px-2 py-1 font-medium text-white top-0 shadow-md pointer-events-none absolute left-1/2 z-30 -translate-x-1/2 -translate-y-[calc(100%+8px)] text-[11px] whitespace-nowrap"
+		>
+			{Math.round(rect.w)} × {Math.round(hugContent && hugLiveH > 0 ? hugLiveH : rect.h)}
+		</div>
+	{/if}
+	{#if isCanva && rotating}
+		<div
+			class="rounded-md bg-neutral-900 px-2 py-1 font-medium text-white mt-8 shadow-md pointer-events-none absolute top-full left-1/2 z-30 -translate-x-1/2 text-[11px] whitespace-nowrap"
+		>
+			{Math.round(rotation)}°
+		</div>
+	{/if}
+
 	{#if showResizeHandle}
 		{#each visibleResizeEdges as h (h.edge)}
 			<div
@@ -690,6 +839,40 @@
 			></div>
 		{/each}
 
+		{#if isCanva && onrotation}
+			<div
+				class="h-3 pointer-events-none absolute top-full left-1/2 z-20 w-px -translate-x-1/2 bg-[#3b82f6]"
+			></div>
+			<div
+				class={[
+					edgeAccent,
+					'mt-3 h-6 w-6 top-full left-1/2 z-20 flex -translate-x-1/2 cursor-grab items-center justify-center active:cursor-grabbing'
+				]}
+				role="slider"
+				tabindex="0"
+				aria-label="Rotar"
+				aria-valuemin={-180}
+				aria-valuemax={180}
+				aria-valuenow={Math.round(rotation)}
+				onpointerdown={beginRotate}
+				onpointermove={moveRotate}
+				onpointerup={endRotate}
+				onpointercancel={endRotate}
+				onkeydown={(e) => {
+					if (!onrotation) return;
+					const step = e.shiftKey ? 15 : 1;
+					if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
+						e.preventDefault();
+						onrotation(rotation - step);
+					} else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
+						e.preventDefault();
+						onrotation(rotation + step);
+					}
+				}}
+			>
+				<RotateCw class="h-3 w-3 text-[#3b82f6]" />
+			</div>
+		{/if}
 		{#if !isCanva}
 			<!-- SE grip (visual only, small) -->
 			<div

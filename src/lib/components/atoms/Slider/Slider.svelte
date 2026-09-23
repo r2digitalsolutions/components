@@ -15,6 +15,8 @@
 		showMarks?: boolean;
 		unit?: string;
 		size?: 'sm' | 'md' | 'lg';
+		/** Associates the range with another form, or `""` to keep it out of the parent form. */
+		form?: string;
 		class?: string;
 		onchange?: (value: number) => void;
 		oninput?: (value: number) => void;
@@ -35,6 +37,7 @@
 		showMarks = false,
 		unit = '',
 		size = 'md',
+		form,
 		class: className = '',
 		onchange,
 		oninput
@@ -62,7 +65,7 @@
 
 	function formatValue(v: number): string {
 		if (Number.isInteger(step) && Number.isInteger(v)) return String(v);
-		const decimals = String(step).includes('.') ? String(step).split('.')[1]?.length ?? 2 : 2;
+		const decimals = String(step).includes('.') ? (String(step).split('.')[1]?.length ?? 2) : 2;
 		return v.toFixed(Math.min(decimals, 2));
 	}
 
@@ -79,9 +82,9 @@
 	}
 </script>
 
-<div class={['flex w-full select-none flex-col gap-1.5', className]}>
+<div class={['gap-1.5 flex w-full flex-col select-none', className]}>
 	{#if label || (showValue && valuePosition === 'header' && !inset)}
-		<div class="flex items-center justify-between text-sm font-medium">
+		<div class="text-sm font-medium flex items-center justify-between">
 			{#if label}
 				<label for={sliderId} class="text-primary">{label}</label>
 			{:else}
@@ -98,15 +101,15 @@
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div
 		class={[
-			'relative flex w-full items-center gap-2',
+			'gap-2 relative flex w-full items-center',
 			inset &&
-				'h-7 rounded-md border border-border bg-surface-overlay/80 px-2 shadow-sm dark:bg-surface-overlay/50',
+				'h-7 rounded-md border-border bg-surface-overlay/80 px-2 shadow-sm dark:bg-surface-overlay/50 border',
 			!inset && 'py-1.5'
 		]}
 		onmouseenter={() => (isHovered = true)}
 		onmouseleave={() => (isHovered = false)}
 	>
-		<div class="relative flex min-w-0 flex-1 cursor-pointer touch-none items-center py-1">
+		<div class="min-w-0 py-1 relative flex flex-1 cursor-pointer touch-none items-center">
 			<!-- Track background -->
 			<div
 				class={[
@@ -116,29 +119,29 @@
 				]}
 			>
 				<!-- Fill bar -->
-				<div class="h-full rounded-full bg-brand-500" style="width: {percentage}%"></div>
+				<div class="bg-brand-500 h-full rounded-full" style="width: {percentage}%"></div>
 			</div>
 
 			<!-- Custom Floating Thumb / Handle -->
 			<div
 				class={[
-					'pointer-events-none absolute top-1/2 flex -translate-y-1/2 items-center justify-center rounded-full border-2 border-brand-500 bg-white shadow-md dark:bg-slate-900',
+					'border-brand-500 bg-white shadow-md dark:bg-slate-900 pointer-events-none absolute top-1/2 flex -translate-y-1/2 items-center justify-center rounded-full border-2',
 					'transition-[transform,box-shadow] duration-100',
 					thumbSizeClasses[size],
-					(isFocused || isHovered) && 'scale-110 ring-2 ring-brand-500/25',
+					(isFocused || isHovered) && 'ring-brand-500/25 scale-110 ring-2',
 					disabled && 'border-gray-400 opacity-50'
 				]}
 				style="left: {percentage}%"
 			>
-				<span class="h-1 w-1 rounded-full bg-brand-500"></span>
+				<span class="h-1 w-1 bg-brand-500 rounded-full"></span>
 
 				{#if showValue && valuePosition === 'tooltip' && !inset && (isHovered || isFocused)}
 					<div
-						class="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-slate-900 px-1.5 py-0.5 font-mono text-[10px] font-bold text-white shadow-lg animate-in fade-in zoom-in-95 duration-150 dark:bg-slate-100 dark:text-slate-900"
+						class="-top-8 rounded-md bg-slate-900 px-1.5 py-0.5 font-mono font-bold text-white shadow-lg animate-in fade-in zoom-in-95 dark:bg-slate-100 dark:text-slate-900 pointer-events-none absolute left-1/2 -translate-x-1/2 text-[10px] whitespace-nowrap duration-150"
 					>
 						{formatValue(value)}{unit}
 						<div
-							class="absolute -bottom-1 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rotate-45 bg-slate-900 dark:bg-slate-100"
+							class="-bottom-1 h-1.5 w-1.5 bg-slate-900 dark:bg-slate-100 absolute left-1/2 -translate-x-1/2 rotate-45"
 						></div>
 					</div>
 				{/if}
@@ -149,12 +152,13 @@
 				id={sliderId}
 				type="range"
 				{name}
+				{form}
 				{min}
 				{max}
 				{step}
 				{disabled}
 				bind:value
-				class="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
+				class="inset-0 absolute z-10 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
 				oninput={handleInput}
 				onchange={handleChange}
 				onfocus={() => (isFocused = true)}
@@ -164,7 +168,7 @@
 
 		{#if inlineValue}
 			<span
-				class="w-9 shrink-0 text-right font-mono text-[10px] font-semibold tabular-nums text-secondary"
+				class="w-9 font-mono font-semibold text-secondary shrink-0 text-right text-[10px] tabular-nums"
 				aria-hidden="true"
 			>
 				{formatValue(value)}{unit}
@@ -173,7 +177,7 @@
 	</div>
 
 	{#if showMarks}
-		<div class="-mt-0.5 flex items-center justify-between px-0.5 font-mono text-[10px] text-muted">
+		<div class="-mt-0.5 px-0.5 font-mono text-muted flex items-center justify-between text-[10px]">
 			<span>{min}{unit}</span>
 			<span>{max}{unit}</span>
 		</div>

@@ -161,12 +161,27 @@
 		{ value: 'contain', label: 'Contain' },
 		{ value: 'fill', label: 'Fill' }
 	];
+	const imageFilterPresets = [
+		{ id: 'normal', label: 'Normal', brightness: 100, contrast: 100, saturate: 100 },
+		{ id: 'bw', label: 'B&W', brightness: 100, contrast: 110, saturate: 0 },
+		{ id: 'warm', label: 'Warm', brightness: 108, contrast: 105, saturate: 130 }
+	];
 	const weightOptions = [
 		{ value: '400', label: 'Regular' },
 		{ value: '500', label: 'Medium' },
 		{ value: '600', label: 'Semibold' },
 		{ value: '700', label: 'Bold' },
 		{ value: '800', label: 'Extra bold' }
+	];
+	const fontOptions = [
+		{ value: 'default', label: 'Default' },
+		{ value: 'Inter, sans-serif', label: 'Inter' },
+		{ value: 'Arial, Helvetica, sans-serif', label: 'Arial' },
+		{ value: 'Georgia, serif', label: 'Georgia' },
+		{ value: '"Times New Roman", Times, serif', label: 'Times' },
+		{ value: '"Courier New", Courier, monospace', label: 'Courier' },
+		{ value: 'Verdana, sans-serif', label: 'Verdana' },
+		{ value: 'Impact, sans-serif', label: 'Impact' }
 	];
 	const styleOptions = [
 		{ value: 'normal', label: 'Normal' },
@@ -936,6 +951,88 @@
 							patch({ src: (e.currentTarget as HTMLInputElement).value || undefined })}
 					/>
 				</PropertyField>
+				<PropertyField label="Look">
+					<div class="gap-1 flex flex-wrap">
+						{#each imageFilterPresets as preset (preset.id)}
+							<button
+								type="button"
+								class={[
+									'rounded-md px-2 py-1 text-xs font-medium',
+									layer.brightness === preset.brightness &&
+									layer.contrast === preset.contrast &&
+									layer.saturate === preset.saturate
+										? 'bg-brand-500/15 text-brand-700'
+										: 'bg-surface-overlay text-secondary'
+								]}
+								onclick={() =>
+									patch({
+										brightness: preset.brightness,
+										contrast: preset.contrast,
+										saturate: preset.saturate
+									})}
+							>
+								{preset.label}
+							</button>
+						{/each}
+					</div>
+				</PropertyField>
+				<PropertyField
+					label="Brightness"
+					modified={fieldModified('brightness')}
+					onreset={() => resetField('brightness')}
+				>
+					<Slider
+						size="sm"
+						variant="inset"
+						min={0}
+						max={200}
+						step={1}
+						value={layer.brightness ?? 100}
+						showValue
+						valuePosition="inline"
+						unit="%"
+						form=""
+						oninput={(v) => patch({ brightness: v })}
+					/>
+				</PropertyField>
+				<PropertyField
+					label="Contrast"
+					modified={fieldModified('contrast')}
+					onreset={() => resetField('contrast')}
+				>
+					<Slider
+						size="sm"
+						variant="inset"
+						min={0}
+						max={200}
+						step={1}
+						value={layer.contrast ?? 100}
+						showValue
+						valuePosition="inline"
+						unit="%"
+						form=""
+						oninput={(v) => patch({ contrast: v })}
+					/>
+				</PropertyField>
+				<PropertyField
+					label="Saturation"
+					modified={fieldModified('saturate')}
+					onreset={() => resetField('saturate')}
+				>
+					<Slider
+						size="sm"
+						variant="inset"
+						min={0}
+						max={200}
+						step={1}
+						value={layer.saturate ?? 100}
+						showValue
+						valuePosition="inline"
+						unit="%"
+						form=""
+						oninput={(v) => patch({ saturate: v })}
+					/>
+				</PropertyField>
 				<PropertyField
 					label="Fit"
 					modified={fieldModified('objectFit')}
@@ -945,7 +1042,69 @@
 						size="xs"
 						options={fitOptions}
 						value={layer.objectFit ?? 'cover'}
-						onchange={(v) => patch({ objectFit: v as CanvasLayer['objectFit'] })}
+						onchange={(v) =>
+							patch({
+								objectFit: v as CanvasLayer['objectFit'],
+								mediaScale: 1,
+								mediaX: 0.5,
+								mediaY: 0.5
+							})}
+					/>
+				</PropertyField>
+				<PropertyField
+					label="Zoom"
+					modified={fieldModified('mediaScale')}
+					onreset={() => resetField('mediaScale')}
+				>
+					<Slider
+						size="sm"
+						variant="inset"
+						min={layer.objectFit === 'cover' || layer.objectFit == null ? 1 : 0.25}
+						max={6}
+						step={0.05}
+						value={layer.mediaScale ?? 1}
+						showValue
+						valuePosition="inline"
+						form=""
+						oninput={(v) => patch({ mediaScale: v })}
+					/>
+				</PropertyField>
+				<PropertyField
+					label="Position X"
+					modified={fieldModified('mediaX')}
+					onreset={() => resetField('mediaX')}
+				>
+					<Slider
+						size="sm"
+						variant="inset"
+						min={0}
+						max={100}
+						step={1}
+						value={Math.round((layer.mediaX ?? 0.5) * 100)}
+						showValue
+						valuePosition="inline"
+						unit="%"
+						form=""
+						oninput={(v) => patch({ mediaX: v / 100 })}
+					/>
+				</PropertyField>
+				<PropertyField
+					label="Position Y"
+					modified={fieldModified('mediaY')}
+					onreset={() => resetField('mediaY')}
+				>
+					<Slider
+						size="sm"
+						variant="inset"
+						min={0}
+						max={100}
+						step={1}
+						value={Math.round((layer.mediaY ?? 0.5) * 100)}
+						showValue
+						valuePosition="inline"
+						unit="%"
+						form=""
+						oninput={(v) => patch({ mediaY: v / 100 })}
 					/>
 				</PropertyField>
 				<PropertyField
@@ -980,15 +1139,15 @@
 					modified={fieldModified('text')}
 					onreset={() => resetField('text')}
 				>
-					<div class="relative min-w-0 w-full">
+					<div class="min-w-0 relative w-full">
 						<Textarea
 							rows={2}
 							placeholder="Write the text…"
-							class="[&_textarea]:min-h-9 [&_textarea]:resize-none [&_textarea]:py-1.5 [&_textarea]:pr-8 [&_textarea]:text-xs"
+							class="[&_textarea]:min-h-9 [&_textarea]:py-1.5 [&_textarea]:pr-8 [&_textarea]:text-xs [&_textarea]:resize-none"
 							value={layer.text ?? ''}
 							oninput={(e) => patch({ text: (e.currentTarget as HTMLTextAreaElement).value })}
 						/>
-						<div class="absolute top-0.5 right-0.5">
+						<div class="top-0.5 right-0.5 absolute">
 							<Tooltip content="Open large editor" side="left">
 								<IconButton
 									label="Edit content"
@@ -1012,6 +1171,18 @@
 						checked={layer.autoSize ?? layer.kind === 'text'}
 						onchange={(v) => patch({ autoSize: v })}
 						size="sm"
+					/>
+				</PropertyField>
+				<PropertyField
+					label="Font"
+					modified={fieldModified('fontFamily')}
+					onreset={() => resetField('fontFamily')}
+				>
+					<Select
+						size="xs"
+						options={fontOptions}
+						value={layer.fontFamily ?? 'default'}
+						onchange={(v) => patch({ fontFamily: v === 'default' ? undefined : v })}
 					/>
 				</PropertyField>
 				<PropertyField
@@ -1139,7 +1310,7 @@
 						type="number"
 						size="sm"
 						step={0.05}
-						value={String(layer.lineHeight ?? 1.15)}
+						value={String(layer.lineHeight ?? 1.25)}
 						oninput={(e) =>
 							patch({ lineHeight: Number((e.currentTarget as HTMLInputElement).value) })}
 					/>

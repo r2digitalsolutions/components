@@ -39,16 +39,35 @@
 
 	const defaultLocales: LocaleOption[] = [
 		{ code: 'en', label: 'English', englishLabel: 'English', flag: '🇬🇧', region: 'United Kingdom' },
-		{ code: 'en-US', label: 'English', englishLabel: 'English (US)', flag: '🇺🇸', region: 'United States' },
+		{
+			code: 'en-US',
+			label: 'English',
+			englishLabel: 'English (US)',
+			flag: '🇺🇸',
+			region: 'United States'
+		},
 		{ code: 'es', label: 'Español', englishLabel: 'Spanish', flag: '🇪🇸', region: 'Spain' },
 		{ code: 'es-MX', label: 'Español', englishLabel: 'Spanish (MX)', flag: '🇲🇽', region: 'Mexico' },
 		{ code: 'fr', label: 'Français', englishLabel: 'French', flag: '🇫🇷', region: 'France' },
 		{ code: 'de', label: 'Deutsch', englishLabel: 'German', flag: '🇩🇪', region: 'Germany' },
 		{ code: 'pt', label: 'Português', englishLabel: 'Portuguese', flag: '🇵🇹', region: 'Portugal' },
-		{ code: 'pt-BR', label: 'Português', englishLabel: 'Portuguese (BR)', flag: '🇧🇷', region: 'Brazil' },
+		{
+			code: 'pt-BR',
+			label: 'Português',
+			englishLabel: 'Portuguese (BR)',
+			flag: '🇧🇷',
+			region: 'Brazil'
+		},
 		{ code: 'it', label: 'Italiano', englishLabel: 'Italian', flag: '🇮🇹', region: 'Italy' },
 		{ code: 'ja', label: '日本語', englishLabel: 'Japanese', flag: '🇯🇵', region: 'Japan' },
-		{ code: 'ar', label: 'العربية', englishLabel: 'Arabic', flag: '🇸🇦', region: 'Saudi Arabia', dir: 'rtl' }
+		{
+			code: 'ar',
+			label: 'العربية',
+			englishLabel: 'Arabic',
+			flag: '🇸🇦',
+			region: 'Saudi Arabia',
+			dir: 'rtl'
+		}
 	];
 
 	let {
@@ -74,9 +93,9 @@
 	const triggerSize = $derived(
 		stacked
 			? size === 'sm'
-				? 'h-8 gap-1.5 px-2.5'
+				? 'h-9 gap-2 px-3'
 				: size === 'lg'
-					? 'h-11 gap-2.5 px-3.5'
+					? 'h-12 gap-2.5 px-3.5'
 					: 'h-10 gap-2 px-3'
 			: size === 'sm'
 				? 'h-8 gap-1.5 px-2.5 text-xs'
@@ -86,7 +105,11 @@
 	);
 
 	const segmentSize = $derived(
-		size === 'sm' ? 'h-7 px-2.5 text-xs' : size === 'lg' ? 'h-10 px-3.5 text-sm' : 'h-9 px-3 text-sm'
+		size === 'sm'
+			? 'h-7 px-2.5 text-xs'
+			: size === 'lg'
+				? 'h-10 px-3.5 text-sm'
+				: 'h-9 px-3 text-sm'
 	);
 
 	function select(locale: LocaleOption) {
@@ -108,11 +131,11 @@
 <svelte:window onclick={onDocClick} onkeydown={onKeydown} />
 
 {#if variant === 'segmented'}
-	<div class={['inline-flex flex-col gap-1.5', className]} role="group" aria-label={label}>
+	<div class={['gap-1.5 inline-flex flex-col', className]} role="group" aria-label={label}>
 		{#if showLabel}
 			<span class="text-xs font-medium text-secondary">{label}</span>
 		{/if}
-		<div class="inline-flex rounded-xl border border-border bg-surface-overlay p-1">
+		<div class="rounded-xl border-border bg-surface-overlay p-1 inline-flex border">
 			{#each locales as locale (locale.code)}
 				<button
 					type="button"
@@ -120,7 +143,7 @@
 					aria-checked={value === locale.code}
 					onclick={() => select(locale)}
 					class={[
-						'inline-flex items-center justify-center gap-1.5 rounded-lg font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30',
+						'gap-1.5 rounded-lg font-medium focus-visible:ring-brand-500/30 inline-flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:outline-none',
 						segmentSize,
 						value === locale.code
 							? 'bg-surface-elevated text-primary shadow-sm'
@@ -139,20 +162,20 @@
 {:else if variant === 'list'}
 	<div
 		class={[
-			'w-full overflow-hidden rounded-2xl border border-border bg-surface-elevated',
+			'rounded-2xl border-border bg-surface-elevated w-full overflow-hidden border',
 			className
 		]}
 		role="listbox"
 		aria-label={label}
 	>
-		<div class="flex items-center gap-2 border-b border-border px-4 py-3">
+		<div class="gap-2 border-border px-4 py-3 flex items-center border-b">
 			<Languages class="h-4 w-4 text-muted" />
 			<div class="min-w-0">
 				<p class="text-sm font-medium text-primary">{label}</p>
 				<p class="text-xs text-muted">Choose how the product is displayed</p>
 			</div>
 		</div>
-		<ul class="divide-y divide-border">
+		<ul class="divide-border divide-y">
 			{#each locales as locale (locale.code)}
 				<li>
 					<button
@@ -161,28 +184,28 @@
 						aria-selected={value === locale.code}
 						onclick={() => select(locale)}
 						class={[
-							'flex w-full items-center gap-3 px-4 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500/30',
+							'gap-3 px-4 py-3 focus-visible:ring-brand-500/30 flex w-full items-center text-left transition-colors focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset',
 							value === locale.code ? 'bg-brand-500/5' : 'hover:bg-surface-overlay'
 						]}
 					>
 						{#if showFlags}
 							<span
-								class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-overlay text-xl"
+								class="h-10 w-10 rounded-xl bg-surface-overlay text-xl flex shrink-0 items-center justify-center"
 								aria-hidden="true"
 							>
 								{locale.flag ?? '🌐'}
 							</span>
 						{/if}
 						<span class="min-w-0 flex-1" dir={locale.dir ?? 'ltr'}>
-							<span class="block text-sm font-medium text-primary">{locale.label}</span>
-							<span class="block truncate text-xs text-muted">
+							<span class="text-sm font-medium text-primary block">{locale.label}</span>
+							<span class="text-xs text-muted block truncate">
 								{locale.englishLabel ?? locale.code}
 								{#if locale.region}· {locale.region}{/if}
 							</span>
 						</span>
 						{#if value === locale.code}
 							<span
-								class="flex h-6 w-6 items-center justify-center rounded-full bg-brand-500 text-white"
+								class="h-6 w-6 bg-brand-500 text-white flex items-center justify-center rounded-full"
 							>
 								<Check class="h-3.5 w-3.5" />
 							</span>
@@ -193,14 +216,14 @@
 		</ul>
 	</div>
 {:else}
-	<div bind:this={rootEl} class={['relative inline-flex flex-col gap-1.5', className]}>
+	<div bind:this={rootEl} class={['gap-1.5 relative inline-flex flex-col', className]}>
 		{#if showLabel}
 			<span class="text-xs font-medium text-secondary">{label}</span>
 		{/if}
 		<button
 			type="button"
 			class={[
-				'inline-flex items-center rounded-xl border border-border bg-surface-elevated font-medium text-primary shadow-sm transition hover:bg-surface-overlay focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30',
+				'rounded-xl border-border bg-surface-elevated font-medium text-primary shadow-sm hover:bg-surface-overlay focus-visible:ring-brand-500/30 inline-flex items-center border transition focus-visible:ring-2 focus-visible:outline-none',
 				triggerSize
 			]}
 			aria-haspopup="listbox"
@@ -213,43 +236,43 @@
 					>{current.flag}</span
 				>
 			{:else}
-				<Globe class="h-4 w-4 shrink-0 text-muted" />
+				<Globe class="h-4 w-4 text-muted shrink-0" />
 			{/if}
 			{#if stacked}
-				<span class="min-w-0 max-w-24 flex-1 text-left leading-none" dir={current?.dir ?? 'ltr'}>
-					<span class="text-primary block truncate text-xs font-medium"
+				<span class="min-w-0 max-w-36 leading-tight flex-1 text-left" dir={current?.dir ?? 'ltr'}>
+					<span class="text-primary text-xs font-medium block truncate"
 						>{current?.label ?? value}</span
 					>
-					<span class="text-muted mt-px block truncate text-[9px] font-medium tracking-wide"
+					<span class="text-muted font-medium tracking-wide block truncate text-[11px]"
 						>{shortCode}</span
 					>
 				</span>
 			{:else}
-				<span class="max-w-36 truncate text-xs" dir={current?.dir ?? 'ltr'}
+				<span class="max-w-36 text-xs truncate" dir={current?.dir ?? 'ltr'}
 					>{current?.label ?? value}</span
 				>
 				<span
-					class="rounded-md bg-surface-overlay px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-muted"
+					class="rounded-md bg-surface-overlay px-1.5 py-0.5 font-semibold tracking-wide text-muted text-[10px]"
 				>
 					{shortCode}
 				</span>
 			{/if}
-			<ChevronDown class={['h-3.5 w-3.5 shrink-0 text-muted transition', open && 'rotate-180']} />
+			<ChevronDown class={['h-3.5 w-3.5 text-muted shrink-0 transition', open && 'rotate-180']} />
 		</button>
 
 		{#if open}
 			<div
 				class={[
-					'absolute top-[calc(100%+0.35rem)] z-50 w-72 overflow-hidden rounded-2xl border border-border bg-surface-elevated py-1 shadow-xl',
+					'w-72 rounded-2xl border-border bg-surface-elevated py-1 shadow-xl absolute top-[calc(100%+0.35rem)] z-50 overflow-hidden border',
 					align === 'end' ? 'end-0' : 'start-0'
 				]}
 				role="listbox"
 				aria-label={label}
 			>
-				<div class="border-b border-border px-3 py-2">
-					<p class="text-[11px] font-semibold uppercase tracking-wide text-muted">{label}</p>
+				<div class="border-border px-3 py-2 border-b">
+					<p class="font-semibold tracking-wide text-muted text-[11px] uppercase">{label}</p>
 				</div>
-				<ul class="max-h-72 overflow-auto py-1">
+				<ul class="max-h-72 py-1 overflow-auto">
 					{#each locales as locale (locale.code)}
 						<li>
 							<button
@@ -258,24 +281,24 @@
 								aria-selected={value === locale.code}
 								onclick={() => select(locale)}
 								class={[
-									'flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors focus-visible:outline-none focus-visible:bg-surface-overlay',
+									'gap-2.5 px-3 py-2 focus-visible:bg-surface-overlay flex w-full items-center text-left transition-colors focus-visible:outline-none',
 									value === locale.code ? 'bg-brand-500/5' : 'hover:bg-surface-overlay'
 								]}
 							>
 								{#if showFlags}
-									<span class="w-6 text-center text-base leading-none" aria-hidden="true">
+									<span class="w-6 text-base text-center leading-none" aria-hidden="true">
 										{locale.flag ?? '🌐'}
 									</span>
 								{/if}
 								<span class="min-w-0 flex-1" dir={locale.dir ?? 'ltr'}>
-									<span class="block text-sm font-medium text-primary">{locale.label}</span>
-									<span class="block truncate text-[11px] text-muted">
+									<span class="text-sm font-medium text-primary block">{locale.label}</span>
+									<span class="text-muted block truncate text-[11px]">
 										{locale.englishLabel ?? locale.code}
 										{#if locale.region}· {locale.region}{/if}
 									</span>
 								</span>
 								{#if value === locale.code}
-									<Check class="h-4 w-4 shrink-0 text-brand-600 dark:text-brand-400" />
+									<Check class="h-4 w-4 text-brand-600 dark:text-brand-400 shrink-0" />
 								{/if}
 							</button>
 						</li>

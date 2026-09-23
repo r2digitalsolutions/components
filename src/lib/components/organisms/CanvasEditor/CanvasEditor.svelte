@@ -15,6 +15,7 @@
 	import Panel from '$lib/components/molecules/Panel/Panel.svelte';
 	import SplitPane from '$lib/components/molecules/SplitPane/SplitPane.svelte';
 	import IconButton from '$lib/components/atoms/IconButton/IconButton.svelte';
+	import Menubar, { type MenubarItem } from '$lib/components/organisms/Menubar/Menubar.svelte';
 	import Select from '$lib/components/molecules/Select/Select.svelte';
 	import DropdownMenu, {
 		type DropdownItem
@@ -92,6 +93,9 @@
 	import ZoomOut from '@lucide/svelte/icons/zoom-out';
 	import Grid3x3 from '@lucide/svelte/icons/grid-3x3';
 	import Magnet from '@lucide/svelte/icons/magnet';
+	import Monitor from '@lucide/svelte/icons/monitor';
+	import Tablet from '@lucide/svelte/icons/tablet';
+	import Smartphone from '@lucide/svelte/icons/smartphone';
 	import Copy from '@lucide/svelte/icons/copy';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import Lock from '@lucide/svelte/icons/lock';
@@ -126,6 +130,11 @@
 		value?: CanvasDocument;
 		assets?: MediaAsset[];
 		zoom?: number;
+		/**
+		 * `frame` opens on the cover photo so it can be panned and zoomed.
+		 * `edit` is the full canvas: panels, menu and component search.
+		 */
+		mode?: 'edit' | 'frame';
 		class?: string;
 		onchange?: (doc: CanvasDocument) => void;
 		onassetschange?: (assets: MediaAsset[]) => void;
@@ -140,6 +149,7 @@
 		value = $bindable(emptyCanvasDocument()),
 		assets = $bindable<MediaAsset[]>([]),
 		zoom = $bindable(1),
+		mode = 'edit',
 		class: className = '',
 		onchange,
 		onassetschange,
@@ -154,11 +164,14 @@
 	});
 
 	let selectedIds = $state<string[]>([]);
+	let editingTextId = $state<string | null>(null);
+	let frameBoot = false;
 	let showSidebar = $state(true);
 	let showInspector = $state(true);
 	let assetsSize = $state(58);
 	let sidebarTab = $state<'elements' | 'uploads' | 'widgets'>('elements');
 	let showGrid = $state(false);
+	let stageFrame = $state<'edit' | 'desktop' | 'tablet' | 'mobile'>('edit');
 	let showGuides = $state(true);
 	let snap = $state(true);
 	let cellSize = $state(8);
@@ -198,6 +211,56 @@
 			widgets: value.widgets
 		};
 	});
+
+	$effect(() => {
+		if (mode !== 'frame' || frameBoot) return;
+		const image =
+			stageDoc.layers.find((layer) => layer.kind === 'image' && layer.name === 'Cover') ??
+			stageDoc.layers.find((layer) => layer.kind === 'image');
+		frameBoot = true;
+		showSidebar = false;
+		showInspector = false;
+		if (image) selectedIds = [image.id];
+	});
+
+	const menuItems = $derived<MenubarItem[]>([
+		{
+			id: 'file',
+			label: 'Archivo',
+			items: [
+				{ id: 'export-png', label: 'Exportar PNG' },
+				{ id: 'export-jpeg', label: 'Exportar JPEG' }
+			]
+		},
+		{
+			id: 'edit',
+			label: 'Edición',
+			items: [
+				{ id: 'undo', label: 'Deshacer', shortcut: '⌘Z', disabled: history.past.length === 0 },
+				{ id: 'redo', label: 'Rehacer', shortcut: '⇧⌘Z', disabled: history.future.length === 0 },
+				{
+					id: 'delete',
+					label: 'Borrar selección',
+					destructive: true,
+					shortcut: '⌫',
+					disabled: selectedIds.length === 0
+				}
+			]
+		},
+		{
+			id: 'view',
+			label: 'Vista',
+			items: [
+				{ id: 'grid', label: 'Rejilla', checked: showGrid },
+				{ id: 'snap', label: 'Imán', checked: snap },
+				{ id: 'guides', label: 'Guías', checked: showGuides },
+				{ id: 'panels', label: 'Paneles', checked: showSidebar && showInspector },
+				{ id: 'desktop', label: 'Escritorio' },
+				{ id: 'tablet', label: 'Tablet' },
+				{ id: 'mobile', label: 'Móvil' }
+			]
+		}
+	]);
 
 	const selectedLayer = $derived(
 		selectedIds.length === 1 ? (stageDoc.layers.find((l) => l.id === selectedIds[0]) ?? null) : null
@@ -456,10 +519,7 @@
 		const rootSize = { width: stageDoc.width, height: stageDoc.height };
 		const prev = stageDoc.layers.find((l) => l.id === layer.id);
 		let layers = stageDoc.layers.map((l) => (l.id === layer.id ? layer : l));
-		if (
-			prev &&
-			(shouldAutoSizeChildren(layer) || isContainerKind(layer.kind))
-		) {
+		if (prev && (shouldAutoSizeChildren(layer) || isContainerKind(layer.kind))) {
 			const prevAbs = computeAbsoluteRects(stageDoc.layers, rootSize).get(prev.id) ?? prev.rect;
 			const nextAbs = computeAbsoluteRects(layers, rootSize).get(layer.id) ?? layer.rect;
 			if (Math.abs(nextAbs.w - prevAbs.w) > 0.5 || Math.abs(nextAbs.h - prevAbs.h) > 0.5) {
@@ -945,6 +1005,12 @@
 			nudgeSelected(dirX, dirY, e.shiftKey);
 			return;
 		}
+		if (editingTextId && e.key === 'Escape') {
+			e.preventDefault();
+			(document.activeElement as HTMLElement | null)?.blur?.();
+			editingTextId = null;
+			return;
+		}
 		if (t?.closest?.('input, textarea, select, [contenteditable="true"]')) return;
 
 		if (drawMode) {
@@ -1095,9 +1161,39 @@
 		toast.success('Widget duplicated');
 	}
 
+	function commitText(id: string, text: string) {
+		const layer = stageDoc.layers.find((l) => l.id === id);
+		editingTextId = null;
+		if (!layer || (layer.text ?? '') === text) return;
+		patchLayer({ ...layer, text });
+	}
+
+	function onMenu(id: string, _parentId: string, checked?: boolean) {
+		if (id === 'export-png') void handleExport('png');
+		else if (id === 'export-jpeg') void handleExport('jpeg');
+		else if (id === 'undo') undo();
+		else if (id === 'redo') redo();
+		else if (id === 'delete') deleteSelected();
+		else if (id === 'grid' && checked !== undefined) showGrid = checked;
+		else if (id === 'snap' && checked !== undefined) snap = checked;
+		else if (id === 'guides' && checked !== undefined) showGuides = checked;
+		else if (id === 'panels' && checked !== undefined) {
+			showSidebar = checked;
+			showInspector = checked;
+		} else if (id === 'desktop') stageFrame = stageFrame === 'desktop' ? 'edit' : 'desktop';
+		else if (id === 'tablet') stageFrame = stageFrame === 'tablet' ? 'edit' : 'tablet';
+		else if (id === 'mobile') stageFrame = stageFrame === 'mobile' ? 'edit' : 'mobile';
+	}
+
 	function enterLayer(id: string) {
 		const layer = stageDoc.layers.find((l) => l.id === id);
 		if (!layer) return;
+		if (layer.kind === 'text' || layer.kind === 'sticky') {
+			selectedIds = [id];
+			editingTextId = id;
+			return;
+		}
+		editingTextId = null;
 		if (layer.kind === 'widget' && layer.definitionId && !editingWidgetId) {
 			enterWidgetEdit(layer.definitionId);
 			return;
@@ -1117,6 +1213,9 @@
 <svelte:window onkeydowncapture={handleKeydown} />
 
 <div class={['min-h-0 relative flex h-full flex-col', className]}>
+	{#if mode !== 'frame'}
+		<Menubar items={menuItems} onselect={onMenu} />
+	{/if}
 	<header
 		class="gap-3 border-border bg-surface-elevated px-3 py-2 flex shrink-0 items-center border-b"
 	>
@@ -1572,7 +1671,7 @@
 			{/snippet}
 
 			{#snippet workspace()}
-				<div class="min-h-0 h-full">
+				<div class="min-h-0 relative h-full">
 					<MediaStage
 						document={stageDoc}
 						{selectedIds}
@@ -1582,8 +1681,15 @@
 						{snap}
 						{cellSize}
 						{drawMode}
+						preview={stageFrame}
 						expandWidgets={!editingWidget}
-						onselect={(ids) => (selectedIds = ids)}
+						onselect={(ids) => {
+							if (editingTextId && !ids.includes(editingTextId)) {
+								(document.activeElement as HTMLElement | null)?.blur?.();
+								editingTextId = null;
+							}
+							selectedIds = ids;
+						}}
 						onzoom={setZoom}
 						onlayerchange={patchLayer}
 						ondocumentchange={(doc) => {
@@ -1614,7 +1720,50 @@
 						}}
 						ondrawcancel={() => (drawMode = false)}
 						onenterlayer={enterLayer}
+						{editingTextId}
+						ontextcommit={commitText}
 					/>
+					<div class="inset-x-0 bottom-3 pointer-events-none absolute z-20 flex justify-center">
+						<div class="pointer-events-auto">
+							<Dock size="sm">
+								<DockItem
+									size="sm"
+									active={stageFrame === 'edit'}
+									ariaLabel="Lienzo"
+									onclick={() => (stageFrame = 'edit')}
+								>
+									Lienzo
+								</DockItem>
+								<DockItem
+									size="sm"
+									active={stageFrame === 'desktop'}
+									ariaLabel="Escritorio"
+									onclick={() => (stageFrame = 'desktop')}
+								>
+									<Monitor class="h-3.5 w-3.5" />
+									Escritorio
+								</DockItem>
+								<DockItem
+									size="sm"
+									active={stageFrame === 'tablet'}
+									ariaLabel="Tablet"
+									onclick={() => (stageFrame = 'tablet')}
+								>
+									<Tablet class="h-3.5 w-3.5" />
+									Tablet
+								</DockItem>
+								<DockItem
+									size="sm"
+									active={stageFrame === 'mobile'}
+									ariaLabel="Móvil"
+									onclick={() => (stageFrame = 'mobile')}
+								>
+									<Smartphone class="h-3.5 w-3.5" />
+									Móvil
+								</DockItem>
+							</Dock>
+						</div>
+					</div>
 				</div>
 			{/snippet}
 
@@ -1662,7 +1811,7 @@
 		</EditorShell>
 
 		{#if selectedIds.length > 1}
-			<div class="inset-x-0 bottom-4 px-4 pointer-events-none absolute z-30 flex justify-center">
+			<div class="inset-x-0 bottom-16 px-4 pointer-events-none absolute z-30 flex justify-center">
 				<div class="pointer-events-auto">
 					<BulkActionBar
 						count={selectedIds.length}

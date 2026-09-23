@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	import { on } from 'svelte/events';
 	import { createId } from '$lib/utils/id.js';
 	import { popoverInvokerToggle } from '$lib/utils/popoverInvoker.js';
@@ -37,6 +38,8 @@
 		listboxMinWidth?: number;
 		class?: string;
 		onchange?: (value: string) => void;
+		/** Extra row at the bottom of the list (for example, create). */
+		footer?: Snippet;
 	}
 
 	let {
@@ -55,7 +58,8 @@
 		size = 'md',
 		listboxMinWidth,
 		class: className = '',
-		onchange
+		onchange,
+		footer
 	}: SelectProps = $props();
 
 	let isOpen = $state(false);
@@ -739,6 +743,15 @@
 					{/each}
 				{/if}
 			</div>
+			{#if footer}
+				<div
+					class="border-border p-1.5 shrink-0 border-t"
+					role="presentation"
+					onclick={() => closeListbox()}
+				>
+					{@render footer()}
+				</div>
+			{/if}
 		</div>
 	</div>
 

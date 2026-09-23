@@ -45,6 +45,8 @@
 		/** Extra classes for the main content region (e.g. `p-0` for flush panels). */
 		mainClass?: string;
 		class?: string;
+		/** Left side of the navbar, after the mobile menu button. */
+		leading?: Snippet;
 		actions?: Snippet;
 		children?: Snippet;
 	}
@@ -74,6 +76,7 @@
 		framed = false,
 		mainClass = '',
 		class: className = '',
+		leading: leadingSlot,
 		actions: actionsSlot,
 		children
 	}: AppShellProps = $props();
@@ -240,11 +243,12 @@
 				bind:value={navValue}
 				showBrand={!showSidebar && !showRail}
 				variant="pills"
-				size="sm"
+				size="md"
 				bordered
 				maxWidth="full"
 			>
 				{#snippet leading()}
+					<div class="gap-2 flex min-w-0 items-center">
 					<div class="md:hidden">
 						<IconButton
 							label={mobileOpen ? 'Cerrar menú' : 'Abrir menú'}
@@ -270,6 +274,8 @@
 								{/if}
 							</svg>
 						</IconButton>
+					</div>
+					{#if leadingSlot}{@render leadingSlot()}{/if}
 					</div>
 				{/snippet}
 				{#snippet actions()}

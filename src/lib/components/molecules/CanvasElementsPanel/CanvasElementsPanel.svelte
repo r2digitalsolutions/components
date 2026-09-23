@@ -37,6 +37,8 @@
 </script>
 
 <script lang="ts">
+	import Input from '$lib/components/atoms/Input/Input.svelte';
+
 	interface CanvasElementsPanelProps {
 		class?: string;
 		onadd?: (def: CanvasElementDef) => void;
@@ -56,7 +58,7 @@
 				text: 'Add a heading',
 				fontSize: 56,
 				fontWeight: 700,
-				rect: { w: 440, h: 80 }
+				rect: { w: 440, h: 96 }
 			}
 		},
 		{
@@ -642,7 +644,13 @@
 			kind: 'text',
 			group: 'Icons',
 			glyph: '⭐',
-			partial: { name: 'Star icon', text: '⭐', fontSize: 64, textAlign: 'center', rect: { w: 80, h: 80 } }
+			partial: {
+				name: 'Star icon',
+				text: '⭐',
+				fontSize: 64,
+				textAlign: 'center',
+				rect: { w: 80, h: 80 }
+			}
 		},
 		{
 			id: 'icon-heart',
@@ -650,7 +658,13 @@
 			kind: 'text',
 			group: 'Icons',
 			glyph: '❤️',
-			partial: { name: 'Heart icon', text: '❤️', fontSize: 64, textAlign: 'center', rect: { w: 80, h: 80 } }
+			partial: {
+				name: 'Heart icon',
+				text: '❤️',
+				fontSize: 64,
+				textAlign: 'center',
+				rect: { w: 80, h: 80 }
+			}
 		},
 		{
 			id: 'icon-check',
@@ -658,7 +672,13 @@
 			kind: 'text',
 			group: 'Icons',
 			glyph: '✅',
-			partial: { name: 'Check', text: '✅', fontSize: 56, textAlign: 'center', rect: { w: 72, h: 72 } }
+			partial: {
+				name: 'Check',
+				text: '✅',
+				fontSize: 56,
+				textAlign: 'center',
+				rect: { w: 72, h: 72 }
+			}
 		},
 		{
 			id: 'icon-fire',
@@ -666,7 +686,13 @@
 			kind: 'text',
 			group: 'Icons',
 			glyph: '🔥',
-			partial: { name: 'Fire', text: '🔥', fontSize: 64, textAlign: 'center', rect: { w: 80, h: 80 } }
+			partial: {
+				name: 'Fire',
+				text: '🔥',
+				fontSize: 64,
+				textAlign: 'center',
+				rect: { w: 80, h: 80 }
+			}
 		},
 		{
 			id: 'icon-spark',
@@ -674,7 +700,13 @@
 			kind: 'text',
 			group: 'Icons',
 			glyph: '✨',
-			partial: { name: 'Sparkles', text: '✨', fontSize: 64, textAlign: 'center', rect: { w: 80, h: 80 } }
+			partial: {
+				name: 'Sparkles',
+				text: '✨',
+				fontSize: 64,
+				textAlign: 'center',
+				rect: { w: 80, h: 80 }
+			}
 		},
 		{
 			id: 'icon-rocket',
@@ -682,7 +714,13 @@
 			kind: 'text',
 			group: 'Icons',
 			glyph: '🚀',
-			partial: { name: 'Rocket', text: '🚀', fontSize: 64, textAlign: 'center', rect: { w: 80, h: 80 } }
+			partial: {
+				name: 'Rocket',
+				text: '🚀',
+				fontSize: 64,
+				textAlign: 'center',
+				rect: { w: 80, h: 80 }
+			}
 		},
 		{
 			id: 'icon-idea',
@@ -690,7 +728,13 @@
 			kind: 'text',
 			group: 'Icons',
 			glyph: '💡',
-			partial: { name: 'Idea', text: '💡', fontSize: 64, textAlign: 'center', rect: { w: 80, h: 80 } }
+			partial: {
+				name: 'Idea',
+				text: '💡',
+				fontSize: 64,
+				textAlign: 'center',
+				rect: { w: 80, h: 80 }
+			}
 		},
 		{
 			id: 'icon-target',
@@ -698,7 +742,13 @@
 			kind: 'text',
 			group: 'Icons',
 			glyph: '🎯',
-			partial: { name: 'Target', text: '🎯', fontSize: 64, textAlign: 'center', rect: { w: 80, h: 80 } }
+			partial: {
+				name: 'Target',
+				text: '🎯',
+				fontSize: 64,
+				textAlign: 'center',
+				rect: { w: 80, h: 80 }
+			}
 		},
 		{
 			id: 'icon-party',
@@ -706,18 +756,28 @@
 			kind: 'text',
 			group: 'Icons',
 			glyph: '🎉',
-			partial: { name: 'Party', text: '🎉', fontSize: 64, textAlign: 'center', rect: { w: 80, h: 80 } }
+			partial: {
+				name: 'Party',
+				text: '🎉',
+				fontSize: 64,
+				textAlign: 'center',
+				rect: { w: 80, h: 80 }
+			}
 		}
 	];
 
 	const groupOrder = ['Text', 'Stickies', 'Shapes', 'Lines', 'Frames', 'Panels', 'Icons'];
+	let query = $state('');
 
-	const groups = $derived(
-		groupOrder.map((name) => ({
-			name,
-			items: elements.filter((e) => e.group === name)
-		}))
-	);
+	const groups = $derived.by(() => {
+		const q = query.trim().toLowerCase();
+		return groupOrder
+			.map((name) => ({
+				name,
+				items: elements.filter((e) => e.group === name && (!q || e.label.toLowerCase().includes(q)))
+			}))
+			.filter((group) => group.items.length > 0);
+	});
 
 	function beginDrag(e: DragEvent, el: CanvasElementDef) {
 		if (!e.dataTransfer) return;
@@ -727,22 +787,26 @@
 	}
 </script>
 
-<div class={['flex h-full min-h-0 flex-col gap-4 overflow-auto p-3', className]}>
-	<p class="text-[11px] text-muted">Click or drag onto the canvas</p>
+<div class={['min-h-0 gap-4 p-3 flex h-full flex-col overflow-auto', className]}>
+	<Input size="sm" type="search" placeholder="Buscar" bind:value={query} autocomplete="off" />
+	<p class="text-muted text-[11px]">Click or drag onto the canvas</p>
+	{#if groups.length === 0}
+		<p class="text-xs text-muted">Ningún componente coincide.</p>
+	{/if}
 	{#each groups as group (group.name)}
-		<section class="flex flex-col gap-2">
-			<h3 class="text-[11px] font-semibold uppercase tracking-wide text-muted">{group.name}</h3>
-			<div class="grid grid-cols-3 gap-2">
+		<section class="gap-2 flex flex-col">
+			<h3 class="font-semibold tracking-wide text-muted text-[11px] uppercase">{group.name}</h3>
+			<div class="gap-2 grid grid-cols-3">
 				{#each group.items as el (el.id)}
 					<button
 						type="button"
 						draggable="true"
-						class="flex cursor-grab flex-col items-center gap-1.5 rounded-lg border border-transparent bg-surface px-1.5 py-2.5 text-center transition-colors hover:border-border hover:bg-surface-overlay active:cursor-grabbing"
+						class="gap-1.5 rounded-lg bg-surface px-1.5 py-2.5 hover:border-border hover:bg-surface-overlay flex cursor-grab flex-col items-center border border-transparent text-center transition-colors active:cursor-grabbing"
 						ondragstart={(e) => beginDrag(e, el)}
 						onclick={() => onadd?.(el)}
 					>
 						<span
-							class="flex h-11 w-full items-center justify-center rounded-md bg-[#eef1f5] dark:bg-surface-overlay"
+							class="h-11 rounded-md dark:bg-surface-overlay flex w-full items-center justify-center bg-[#eef1f5]"
 						>
 							{#if el.glyph}
 								<span class="text-xl leading-none">{el.glyph}</span>
@@ -761,7 +825,7 @@
 								</span>
 							{:else if el.kind === 'sticky'}
 								<span
-									class="flex h-8 w-8 items-center justify-center rounded-sm text-[9px] font-semibold"
+									class="h-8 w-8 rounded-sm font-semibold flex items-center justify-center text-[9px]"
 									style:background={el.swatch}
 									style:color={el.partial?.color ?? '#713f12'}
 								>
@@ -841,7 +905,7 @@
 								</svg>
 							{:else}
 								<span
-									class="h-7 w-9 border border-black/5"
+									class="h-7 w-9 border-black/5 border"
 									style:background={el.swatch}
 									style:border-radius="{el.partial?.borderRadius
 										? Math.min(12, el.partial.borderRadius / 2)
@@ -849,7 +913,7 @@
 								></span>
 							{/if}
 						</span>
-						<span class="text-[10px] font-medium text-secondary">{el.label}</span>
+						<span class="font-medium text-secondary text-[10px]">{el.label}</span>
 					</button>
 				{/each}
 			</div>

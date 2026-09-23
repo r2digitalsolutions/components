@@ -371,7 +371,7 @@
 	setComboboxContext(ctx);
 </script>
 
-<div class={['max-w-sm w-full', className]} bind:this={rootEl}>
+<div class={['w-full min-w-0', className]} bind:this={rootEl}>
 	{#if label}
 		<span class="mb-1.5 text-sm font-medium text-primary block">{label}</span>
 	{/if}
@@ -379,7 +379,7 @@
 	<div
 		bind:this={triggerEl}
 		class={[
-			'h-10 gap-2 rounded-xl border-border bg-surface-elevated px-3 flex items-center border transition-colors',
+			'flex h-10 w-full items-center gap-2 rounded-xl border border-border bg-surface-elevated px-3 transition-colors',
 			open && 'border-brand-500 ring-brand-500/20 ring-2',
 			disabled && 'cursor-not-allowed opacity-60'
 		]}

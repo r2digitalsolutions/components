@@ -21,12 +21,29 @@
 		coverSrc?: string;
 		/** Existing remote avatar URL (shown when no local File is selected). */
 		avatarSrc?: string;
+		/** Events and banners only need the cover strip. */
+		showAvatar?: boolean;
+		/** `contain` shows the whole image inside the cover frame. */
+		coverFit?: 'cover' | 'contain';
+		emptyTitle?: string;
+		dropTitle?: string;
+		editLabel?: string;
+		changeLabel?: string;
+		frameLabel?: string;
+		removeLabel?: string;
+		/** Text links under the avatar once a local cover / avatar is selected. */
+		removeCoverLabel?: string;
+		removeAvatarLabel?: string;
+		avatarEmptyLabel?: string;
 		accept?: string;
 		maxCoverMb?: number;
 		maxAvatarMb?: number;
 		disabled?: boolean;
 		class?: string;
 		onchange?: (value: ProfileHeaderValue) => void;
+		/** Top-right actions once a cover exists. The cover itself still replaces the file. */
+		onframe?: () => void;
+		onedit?: () => void;
 	}
 
 	let {
@@ -36,12 +53,25 @@
 		avatarHelperText = 'Avatar · square image recommended',
 		coverSrc = '',
 		avatarSrc = '',
+		showAvatar = true,
+		coverFit = 'cover',
+		emptyTitle = 'Add cover photo',
+		dropTitle = 'Drop cover photo',
+		editLabel = 'Edit cover',
+		changeLabel = 'Change',
+		frameLabel = 'Adjust',
+		removeLabel = 'Remove',
+		removeCoverLabel = 'Remove cover',
+		removeAvatarLabel = 'Remove photo',
+		avatarEmptyLabel = 'Photo',
 		accept = 'image/*',
 		maxCoverMb = 10,
 		maxAvatarMb = 5,
 		disabled = false,
 		class: className = '',
-		onchange
+		onchange,
+		onframe,
+		onedit
 	}: ProfileHeaderUploaderProps = $props();
 
 	let cover = $state<ProfileMedia | null>(null);
@@ -90,6 +120,10 @@
 		return null;
 	}
 
+	export function replaceCover(file: File) {
+		setCover(file);
+	}
+
 	function setCover(file: File | null) {
 		if (file) {
 			const err = validateImage(file, maxCoverMb);
@@ -126,6 +160,15 @@
 		if (avatarInput) avatarInput.value = '';
 	}
 
+	function dragStillInside(event: DragEvent) {
+		const next = event.relatedTarget;
+		return (
+			next instanceof Node &&
+			event.currentTarget instanceof Node &&
+			event.currentTarget.contains(next)
+		);
+	}
+
 	function handleCoverDrop(e: DragEvent) {
 		e.preventDefault();
 		coverDragging = false;
@@ -148,7 +191,7 @@
 	});
 </script>
 
-<div class={['flex w-full flex-col gap-3', className]}>
+<div class={['gap-3 flex w-full flex-col', className]}>
 	{#if label}
 		<div id={labelId} class="text-sm font-medium text-primary">{label}</div>
 	{/if}
@@ -167,25 +210,30 @@
 			if (file) setCover(file);
 		}}
 	/>
-	<input
-		bind:this={avatarInput}
-		id={avatarInputId}
-		type="file"
-		{accept}
-		{disabled}
-		class="sr-only"
-		tabindex={-1}
-		aria-hidden="true"
-		onchange={(e) => {
-			const file = (e.currentTarget as HTMLInputElement).files?.[0] ?? null;
-			if (file) setAvatar(file);
-		}}
-	/>
+	{#if showAvatar}
+		<input
+			bind:this={avatarInput}
+			id={avatarInputId}
+			type="file"
+			{accept}
+			{disabled}
+			class="sr-only"
+			tabindex={-1}
+			aria-hidden="true"
+			onchange={(e) => {
+				const file = (e.currentTarget as HTMLInputElement).files?.[0] ?? null;
+				if (file) setAvatar(file);
+			}}
+		/>
+	{/if}
 
 	<div
-		class="relative rounded-xl border border-border bg-surface-elevated shadow-sm"
+		class="rounded-xl border-border bg-surface-elevated shadow-sm relative border"
 		aria-labelledby={label ? labelId : undefined}
-		aria-describedby={[coverHelperText || avatarHelperText ? helperId : '', errorMessage ? errorId : '']
+		aria-describedby={[
+			coverHelperText || avatarHelperText ? helperId : '',
+			errorMessage ? errorId : ''
+		]
 			.filter(Boolean)
 			.join(' ') || undefined}
 	>
@@ -205,7 +253,10 @@
 				if (!disabled) coverDragging = true;
 			}}
 			ondragover={(e) => e.preventDefault()}
-			ondragleave={() => (coverDragging = false)}
+			ondragleave={(e) => {
+				if (dragStillInside(e)) return;
+				coverDragging = false;
+			}}
 			ondrop={handleCoverDrop}
 			onkeydown={(e) => {
 				if (disabled) return;
@@ -216,44 +267,149 @@
 			}}
 			onclick={() => !disabled && coverInput?.click()}
 			class={[
-				'group relative aspect-3/1 min-h-36 w-full overflow-hidden rounded-t-xl outline-none transition-colors',
-				'focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500/40',
+				'group min-h-36 relative aspect-3/1 w-full overflow-hidden transition-colors outline-none',
+				showAvatar ? 'rounded-t-xl' : 'rounded-xl',
+				'focus-visible:ring-brand-500/40 focus-visible:ring-2 focus-visible:ring-inset',
 				coverDragging ? 'bg-brand-500/10' : 'bg-surface-overlay',
 				disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
 			]}
 		>
 			{#if hasCoverMedia}
-				<img src={coverDisplayUrl} alt="" class="h-full w-full object-cover" />
-				{#if !disabled}
+				<img
+					src={coverDisplayUrl}
+					alt=""
+					class={['h-full w-full', coverFit === 'contain' ? 'object-contain' : 'object-cover']}
+				/>
+				{#if !disabled && onedit}
 					<div
-						class="absolute inset-0 flex items-start justify-end bg-linear-to-b from-black/35 via-transparent to-transparent p-3 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+						class="inset-0 from-black/35 p-3 pointer-events-none absolute flex items-start justify-end bg-linear-to-b via-transparent to-transparent"
+					>
+						<div class="gap-1.5 pointer-events-auto flex flex-wrap items-center justify-end">
+							{#if onframe}
+								<button
+									type="button"
+									class="gap-1.5 rounded-lg bg-white/95 px-2 py-1.5 text-xs font-medium text-primary shadow-sm backdrop-blur dark:bg-neutral-900/95 inline-flex items-center"
+									onclick={(event) => {
+										event.stopPropagation();
+										onframe?.();
+									}}
+								>
+									<svg
+										class="h-3.5 w-3.5"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="2"
+										aria-hidden="true"
+									>
+										<path
+											d="M6 3v4M18 3v4M6 17v4M18 17v4M3 6h4M3 18h4M17 6h4M17 18h4"
+											stroke-linecap="round"
+										/>
+									</svg>
+									{frameLabel}
+								</button>
+							{/if}
+							<button
+								type="button"
+								class="gap-1.5 rounded-lg bg-white/95 px-2 py-1.5 text-xs font-medium text-primary shadow-sm backdrop-blur dark:bg-neutral-900/95 inline-flex items-center"
+								onclick={(event) => {
+									event.stopPropagation();
+									onedit();
+								}}
+							>
+								<svg
+									class="h-3.5 w-3.5"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2"
+									aria-hidden="true"
+								>
+									<path d="M12 20h9" stroke-linecap="round" />
+									<path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" stroke-linejoin="round" />
+								</svg>
+								{editLabel}
+							</button>
+							<button
+								type="button"
+								class="gap-1.5 rounded-lg bg-white/95 px-2 py-1.5 text-xs font-medium text-primary shadow-sm backdrop-blur dark:bg-neutral-900/95 inline-flex items-center"
+								onclick={(event) => {
+									event.stopPropagation();
+									coverInput?.click();
+								}}
+							>
+								<svg
+									class="h-3.5 w-3.5"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2"
+									aria-hidden="true"
+								>
+									<rect x="3" y="5" width="18" height="14" rx="2" />
+									<circle cx="9" cy="10" r="1.5" />
+									<path d="m21 16-5-5-8 8" stroke-linejoin="round" />
+								</svg>
+								{changeLabel}
+							</button>
+							<button
+								type="button"
+								class="gap-1.5 rounded-lg bg-white/95 px-2 py-1.5 text-xs font-medium text-red-600 shadow-sm backdrop-blur dark:bg-neutral-900/95 inline-flex items-center"
+								onclick={(event) => {
+									event.stopPropagation();
+									setCover(null);
+								}}
+							>
+								<svg
+									class="h-3.5 w-3.5"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2"
+									aria-hidden="true"
+								>
+									<path
+										d="M4 7h16M9 7V5h6v2M8 7l1 13h6l1-13"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+									/>
+								</svg>
+								{removeLabel}
+							</button>
+						</div>
+					</div>
+				{:else if !disabled}
+					<div
+						class="inset-0 from-black/35 p-3 absolute flex items-start justify-end bg-linear-to-b via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
 					>
 						<span
-							class="inline-flex items-center gap-1.5 rounded-lg bg-white/95 px-2.5 py-1.5 text-xs font-medium text-primary shadow-sm backdrop-blur dark:bg-slate-900/95"
+							class="gap-1.5 rounded-lg bg-white/95 px-2.5 py-1.5 text-xs font-medium text-primary shadow-sm backdrop-blur dark:bg-neutral-900/95 inline-flex items-center"
 						>
-							<svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"
-								/>
-							</svg>
-							Edit cover
+							{editLabel}
 						</span>
 					</div>
 				{/if}
 			{:else}
-				<div class="flex h-full w-full flex-col items-center justify-center gap-2 px-4 text-center">
+				<div
+					class="inset-0 gap-2 px-4 absolute flex flex-col items-center justify-center text-center"
+				>
 					<div
 						class={[
-							'flex h-10 w-10 items-center justify-center rounded-lg',
+							'h-10 w-10 rounded-lg flex items-center justify-center',
 							coverDragging
 								? 'bg-brand-600 text-white'
 								: 'bg-brand-100 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300'
 						]}
 						aria-hidden="true"
 					>
-						<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+						<svg
+							class="h-5 w-5"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke="currentColor"
+							stroke-width="1.75"
+						>
 							<path
 								stroke-linecap="round"
 								stroke-linejoin="round"
@@ -262,7 +418,7 @@
 						</svg>
 					</div>
 					<p class="text-sm font-medium text-primary">
-						{coverDragging ? 'Drop cover photo' : 'Add cover photo'}
+						{coverDragging ? dropTitle : emptyTitle}
 					</p>
 					<p class="text-xs text-secondary">{coverHelperText}</p>
 				</div>
@@ -270,124 +426,141 @@
 
 			{#if coverDragging}
 				<div
-					class="pointer-events-none absolute inset-0 ring-2 ring-inset ring-brand-500/50"
+					class="inset-0 ring-brand-500/50 pointer-events-none absolute ring-2 ring-inset"
 					aria-hidden="true"
 				></div>
 			{/if}
 		</div>
 
-		<!-- Avatar overlapping cover -->
-		<div class="relative px-4 pb-4 pt-0">
-			<div class="-mt-10 flex items-end gap-4 sm:-mt-12">
-				<!-- svelte-ignore a11y_no_static_element_interactions -->
-				<div
-					role="button"
-					tabindex={disabled ? -1 : 0}
-					aria-label={hasAvatarMedia
-						? avatar
-							? `Change profile photo, ${avatar.name}`
-							: 'Change profile photo'
-						: 'Upload profile photo'}
-					aria-disabled={disabled || undefined}
-					ondragenter={(e) => {
-						e.preventDefault();
-						e.stopPropagation();
-						if (!disabled) avatarDragging = true;
-					}}
-					ondragover={(e) => {
-						e.preventDefault();
-						e.stopPropagation();
-					}}
-					ondragleave={(e) => {
-						e.stopPropagation();
-						avatarDragging = false;
-					}}
-					ondrop={(e) => {
-						e.stopPropagation();
-						handleAvatarDrop(e);
-					}}
-					onkeydown={(e) => {
-						if (disabled) return;
-						if (e.key === 'Enter' || e.key === ' ') {
+		{#if showAvatar}
+			<!-- Avatar overlapping cover -->
+			<div class="px-4 pb-4 pt-0 relative">
+				<div class="-mt-10 gap-4 sm:-mt-12 flex items-end">
+					<!-- svelte-ignore a11y_no_static_element_interactions -->
+					<div
+						role="button"
+						tabindex={disabled ? -1 : 0}
+						aria-label={hasAvatarMedia
+							? avatar
+								? `Change profile photo, ${avatar.name}`
+								: 'Change profile photo'
+							: 'Upload profile photo'}
+						aria-disabled={disabled || undefined}
+						ondragenter={(e) => {
 							e.preventDefault();
-							avatarInput?.click();
-						}
-					}}
-					onclick={(e) => {
-						e.stopPropagation();
-						if (!disabled) avatarInput?.click();
-					}}
-					class={[
-						'group relative z-10 h-20 w-20 shrink-0 overflow-hidden rounded-full border-4 border-surface-elevated bg-surface-overlay shadow-md outline-none transition sm:h-24 sm:w-24',
-						'focus-visible:ring-2 focus-visible:ring-brand-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated',
-						avatarDragging ? 'ring-2 ring-brand-500' : '',
-						disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
-					]}
-				>
-					{#if hasAvatarMedia}
-						<img src={avatarDisplayUrl} alt="" class="h-full w-full object-cover" />
-						{#if !disabled}
-							<div
-								class="absolute inset-0 flex items-center justify-center bg-black/45 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
-							>
-								<span
-									class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white text-primary shadow-sm"
-									aria-hidden="true"
+							e.stopPropagation();
+							if (!disabled) avatarDragging = true;
+						}}
+						ondragover={(e) => {
+							e.preventDefault();
+							e.stopPropagation();
+						}}
+						ondragleave={(e) => {
+							e.stopPropagation();
+							if (dragStillInside(e)) return;
+							avatarDragging = false;
+						}}
+						ondrop={(e) => {
+							e.stopPropagation();
+							handleAvatarDrop(e);
+						}}
+						onkeydown={(e) => {
+							if (disabled) return;
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								avatarInput?.click();
+							}
+						}}
+						onclick={(e) => {
+							e.stopPropagation();
+							if (!disabled) avatarInput?.click();
+						}}
+						class={[
+							'group h-20 w-20 border-surface-elevated bg-surface-overlay shadow-md sm:h-24 sm:w-24 relative z-10 shrink-0 overflow-hidden rounded-full border-4 transition outline-none',
+							'focus-visible:ring-brand-500/40 focus-visible:ring-offset-surface-elevated focus-visible:ring-2 focus-visible:ring-offset-2',
+							avatarDragging ? 'ring-brand-500 ring-2' : '',
+							disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+						]}
+					>
+						{#if hasAvatarMedia}
+							<img src={avatarDisplayUrl} alt="" class="h-full w-full object-cover" />
+							{#if !disabled}
+								<div
+									class="inset-0 bg-black/45 absolute flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
 								>
-									<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"
-										/>
-									</svg>
-								</span>
+									<span
+										class="h-8 w-8 bg-white text-primary shadow-sm inline-flex items-center justify-center rounded-full"
+										aria-hidden="true"
+									>
+										<svg
+											class="h-4 w-4"
+											fill="none"
+											viewBox="0 0 24 24"
+											stroke="currentColor"
+											stroke-width="2"
+										>
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"
+											/>
+										</svg>
+									</span>
+								</div>
+							{/if}
+						{:else}
+							<div
+								class="gap-0.5 text-secondary flex h-full w-full flex-col items-center justify-center"
+							>
+								<svg
+									class="h-6 w-6"
+									fill="none"
+									viewBox="0 0 24 24"
+									stroke="currentColor"
+									stroke-width="1.75"
+								>
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0"
+									/>
+								</svg>
+								<span class="font-medium text-[10px]">{avatarEmptyLabel}</span>
 							</div>
 						{/if}
-					{:else}
-						<div class="flex h-full w-full flex-col items-center justify-center gap-0.5 text-secondary">
-							<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0"
-								/>
-							</svg>
-							<span class="text-[10px] font-medium">Photo</span>
-						</div>
-					{/if}
-				</div>
+					</div>
 
-				<div class="min-w-0 flex-1 pb-1">
-					{#if hasLocalMedia}
-						<div class="flex flex-wrap items-center gap-2">
-							{#if cover && !disabled}
-								<button
-									type="button"
-									onclick={() => setCover(null)}
-									class="rounded-lg px-2 py-1 text-xs font-medium text-secondary transition hover:bg-surface-overlay hover:text-primary"
-								>
-									Remove cover
-								</button>
-							{/if}
-							{#if avatar && !disabled}
-								<button
-									type="button"
-									onclick={() => setAvatar(null)}
-									class="rounded-lg px-2 py-1 text-xs font-medium text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40"
-								>
-									Remove photo
-								</button>
-							{/if}
-						</div>
-					{:else}
-						<p id={helperId} class="text-xs text-secondary leading-relaxed">
-							{avatarHelperText}
-						</p>
-					{/if}
+					<div class="min-w-0 pb-1 flex-1">
+						{#if hasLocalMedia}
+							<div class="gap-2 flex flex-wrap items-center">
+								{#if cover && !disabled}
+									<button
+										type="button"
+										onclick={() => setCover(null)}
+										class="rounded-lg px-2 py-1 text-xs font-medium text-secondary hover:bg-surface-overlay hover:text-primary transition"
+									>
+										{removeCoverLabel}
+									</button>
+								{/if}
+								{#if avatar && !disabled}
+									<button
+										type="button"
+										onclick={() => setAvatar(null)}
+										class="rounded-lg px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40 transition"
+									>
+										{removeAvatarLabel}
+									</button>
+								{/if}
+							</div>
+						{:else}
+							<p id={helperId} class="text-xs text-secondary leading-relaxed">
+								{avatarHelperText}
+							</p>
+						{/if}
+					</div>
 				</div>
 			</div>
-		</div>
+		{/if}
 	</div>
 
 	{#if errorMessage}

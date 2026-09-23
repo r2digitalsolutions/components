@@ -83,6 +83,70 @@
 		)
 	);
 
+	function boundOf(value: string | undefined) {
+		if (!value) return { date: '', time: '' };
+		const [datePart, timePart = ''] = value.split('T');
+		return { date: datePart.slice(0, 10), time: timePart.slice(0, 5) };
+	}
+
+	const minBound = $derived(boundOf(min));
+	const maxBound = $derived(boundOf(max));
+
+	function asMinutes(h: number, m: number) {
+		return h * 60 + m;
+	}
+
+	/** Same calendar day stays open. A time on that day must fall strictly after `min` and before `max`. */
+	function slotBlocked(day: string, h: number, m: number) {
+		if (!day) return false;
+		const at = asMinutes(h, m);
+		if (minBound.time && day === minBound.date) {
+			const start = parseTime(minBound.time);
+			if (start && at <= asMinutes(start.h, start.m)) return true;
+		}
+		if (maxBound.time && day === maxBound.date) {
+			const end = parseTime(maxBound.time);
+			if (end && at >= asMinutes(end.h, end.m)) return true;
+		}
+		return false;
+	}
+
+	function firstOpen(day: string, fromH = 0, fromM = 0) {
+		if (!day) return '';
+		if ((fromH !== 0 || fromM !== 0) && !slotBlocked(day, fromH, fromM))
+			return toTime(fromH, fromM);
+		for (const h of hours24) {
+			for (const m of minutes) {
+				if (h < fromH || (h === fromH && m < fromM)) continue;
+				if (!slotBlocked(day, h, m)) return toTime(h, m);
+			}
+		}
+		return '';
+	}
+
+	function hourBlocked(h: number) {
+		if (!panelDate) return false;
+		return minutes.every((m) => slotBlocked(panelDate, h, m));
+	}
+
+	function minuteBlocked(m: number) {
+		if (!panelDate || selectedH == null) return false;
+		return slotBlocked(panelDate, selectedH, m);
+	}
+
+	const calendarDisabled = $derived.by(() => {
+		const extra: string[] = [];
+		if (minBound.date && minBound.time && !firstOpen(minBound.date)) extra.push(minBound.date);
+		if (maxBound.date && maxBound.time && !firstOpen(maxBound.date)) extra.push(maxBound.date);
+		return [...disabledDates, ...extra];
+	});
+
+	const panelTimeBlocked = $derived.by(() => {
+		const parsed = parseTime(panelTime);
+		if (!panelDate || !parsed) return false;
+		return slotBlocked(panelDate, parsed.h, parsed.m);
+	});
+
 	function pad(n: number) {
 		return String(n).padStart(2, '0');
 	}
@@ -155,7 +219,8 @@
 
 	function beginDraft() {
 		draftDate = date;
-		draftTime = time || '09:00';
+		const base = parseTime(time || '09:00') ?? { h: 9, m: 0 };
+		draftTime = (date && (firstOpen(date, base.h, base.m) || firstOpen(date))) || time || '09:00';
 	}
 
 	function setPanelDate(next: string) {
@@ -206,7 +271,8 @@
 
 		const spaceBelow = viewTop + viewH - trigger.bottom - gap - pad;
 		const spaceAbove = trigger.top - viewTop - gap - pad;
-		const side: 'top' | 'bottom' = spaceBelow < panelH && spaceAbove > spaceBelow ? 'top' : 'bottom';
+		const side: 'top' | 'bottom' =
+			spaceBelow < panelH && spaceAbove > spaceBelow ? 'top' : 'bottom';
 
 		let top = side === 'bottom' ? trigger.bottom + gap : trigger.top - panelH - gap;
 		let left = trigger.left;
@@ -293,8 +359,9 @@
 
 	function handleDateChange(detail: { value: string }) {
 		setPanelDate(detail.value);
-		const currentTime = confirmMode ? draftTime : time;
-		if (!currentTime) setPanelTime('09:00');
+		const current = parseTime(confirmMode ? draftTime : time) ?? { h: 9, m: 0 };
+		const next = firstOpen(detail.value, current.h, current.m) || firstOpen(detail.value);
+		if (next) setPanelTime(next);
 		if (!confirmMode) {
 			emit();
 			if (closeOnSelect && date && time) setOpen(false);
@@ -302,12 +369,18 @@
 	}
 
 	function pickHour(h: number) {
-		const m = selectedM ?? 0;
-		setPanelTime(toTime(h, m));
+		if (hourBlocked(h) || !panelDate) return;
+		const preferred = selectedM ?? 0;
+		const minute = slotBlocked(panelDate, h, preferred)
+			? minutes.find((m) => !slotBlocked(panelDate, h, m))
+			: preferred;
+		if (minute == null) return;
+		setPanelTime(toTime(h, minute));
 		if (!confirmMode) emit();
 	}
 
 	function pickMinute(m: number) {
+		if (minuteBlocked(m)) return;
 		const h = selectedH ?? 9;
 		setPanelTime(toTime(h, m));
 		if (!confirmMode) {
@@ -342,16 +415,16 @@
 	});
 </script>
 
-<div class={['w-full min-w-[20rem] max-w-[22rem]', className]}>
+<div class={['min-w-0 w-full', className]}>
 	{#if label}
-		<span class="mb-1.5 block text-sm font-medium text-primary">{label}</span>
+		<span class="mb-1.5 text-sm font-medium text-primary block">{label}</span>
 	{/if}
 
 	<div
 		bind:this={triggerEl}
 		class={[
-			'flex h-10 w-full items-center overflow-hidden rounded-xl border border-border bg-surface-elevated transition-colors',
-			open && 'border-brand-500 ring-2 ring-brand-500/20',
+			'h-10 rounded-xl border-border bg-surface-elevated flex w-full items-center overflow-hidden border transition-colors',
+			open && 'border-brand-500 ring-brand-500/20 ring-2',
 			disabled && 'opacity-60'
 		]}
 	>
@@ -365,13 +438,13 @@
 			aria-haspopup="dialog"
 			aria-controls={panelId}
 			class={[
-				'flex h-full min-w-0 flex-1 items-center gap-2 px-3.5 text-left text-sm',
+				'min-w-0 gap-2 px-3.5 text-sm flex h-full flex-1 items-center text-left',
 				'hover:bg-surface-overlay focus-visible:outline-none',
 				disabled && 'cursor-not-allowed'
 			]}
 		>
 			<svg
-				class="h-4 w-4 shrink-0 text-muted"
+				class="h-4 w-4 text-muted shrink-0"
 				viewBox="0 0 24 24"
 				fill="none"
 				stroke="currentColor"
@@ -392,10 +465,16 @@
 			<button
 				type="button"
 				onclick={clear}
-				class="h-full px-3 text-muted hover:bg-surface-overlay hover:text-primary"
+				class="px-3 text-muted hover:bg-surface-overlay hover:text-primary h-full"
 				aria-label="Clear"
 			>
-				<svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+				<svg
+					class="h-3.5 w-3.5"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+				>
 					<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
 				</svg>
 			</button>
@@ -411,17 +490,17 @@
 		onbeforetoggle={handleBeforeToggle}
 		ontoggle={handleToggle}
 		data-placed={placed ? true : undefined}
-		class="datetime-picker-popover m-0 flex w-max max-w-[min(100vw-1rem,42rem)] flex-col overflow-hidden rounded-2xl border border-border bg-surface-elevated shadow-xl outline-none"
+		class="datetime-picker-popover m-0 rounded-2xl border-border bg-surface-elevated shadow-xl flex w-max max-w-[min(100vw-1rem,42rem)] flex-col overflow-hidden border outline-none"
 	>
 		{#key open}
-			<div class="flex flex-col sm:flex-row sm:items-stretch">
-				<div class="w-[22rem] shrink-0 p-1.5">
+			<div class="sm:flex-row sm:items-stretch flex flex-col">
+				<div class="p-1.5 w-[22rem] shrink-0">
 					<Calendar
 						mode="single"
 						value={panelDate}
-						{min}
-						{max}
-						{disabledDates}
+						min={minBound.date || undefined}
+						max={maxBound.date || undefined}
+						disabledDates={calendarDisabled}
 						{dots}
 						framed={false}
 						class="w-full"
@@ -429,17 +508,17 @@
 					/>
 				</div>
 				<div
-					class="flex w-full shrink-0 flex-col border-t border-border sm:w-40 sm:border-l sm:border-t-0"
+					class="border-border sm:w-40 sm:border-l sm:border-t-0 flex w-full shrink-0 flex-col border-t"
 				>
 					<span
-						class="shrink-0 border-b border-border px-3 py-2.5 text-center text-[11px] font-medium uppercase tracking-wide text-muted"
+						class="border-border px-3 py-2.5 font-medium tracking-wide text-muted shrink-0 border-b text-center text-[11px] uppercase"
 					>
 						Time
 					</span>
-					<div class="grid min-h-0 flex-1 grid-cols-2 divide-x divide-border">
+					<div class="min-h-0 divide-border grid flex-1 grid-cols-2 divide-x">
 						<div
 							bind:this={hourListEl}
-							class="h-[18.5rem] overflow-y-auto p-1.5"
+							class="p-1.5 h-[18.5rem] overflow-y-auto"
 							role="listbox"
 							aria-label="Hours"
 						>
@@ -447,14 +526,16 @@
 								<button
 									type="button"
 									role="option"
-									aria-pressed={selectedH === h}
 									aria-selected={selectedH === h}
+									aria-disabled={hourBlocked(h)}
+									disabled={hourBlocked(h)}
 									onclick={() => pickHour(h)}
 									class={[
-										'w-full rounded-lg px-2 py-1.5 text-sm transition-colors',
+										'rounded-lg px-2 py-1.5 text-sm w-full transition-colors',
+										hourBlocked(h) && 'cursor-not-allowed opacity-30',
 										selectedH === h
 											? 'bg-brand-500 font-semibold text-white'
-											: 'text-primary hover:bg-surface-overlay'
+											: 'text-primary hover:bg-surface-overlay disabled:hover:bg-transparent'
 									]}
 								>
 									{hourLabel(h)}
@@ -463,7 +544,7 @@
 						</div>
 						<div
 							bind:this={minuteListEl}
-							class="h-[18.5rem] overflow-y-auto p-1.5"
+							class="p-1.5 h-[18.5rem] overflow-y-auto"
 							role="listbox"
 							aria-label="Minutes"
 						>
@@ -471,14 +552,16 @@
 								<button
 									type="button"
 									role="option"
-									aria-pressed={selectedM === m}
 									aria-selected={selectedM === m}
+									aria-disabled={minuteBlocked(m)}
+									disabled={minuteBlocked(m)}
 									onclick={() => pickMinute(m)}
 									class={[
-										'w-full rounded-lg px-2 py-1.5 text-sm transition-colors',
+										'rounded-lg px-2 py-1.5 text-sm w-full transition-colors',
+										minuteBlocked(m) && 'cursor-not-allowed opacity-30',
 										selectedM === m
 											? 'bg-brand-500 font-semibold text-white'
-											: 'text-primary hover:bg-surface-overlay'
+											: 'text-primary hover:bg-surface-overlay disabled:hover:bg-transparent'
 									]}
 								>
 									{pad(m)}
@@ -489,11 +572,16 @@
 				</div>
 			</div>
 			{#if confirmMode}
-				<div class="flex items-center justify-end gap-2 border-t border-border px-3 py-2.5">
+				<div class="gap-2 border-border px-3 py-2.5 flex items-center justify-end border-t">
 					<Button type="button" variant="ghost" size="sm" onclick={cancelDraft}>
 						{resolvedCancelLabel}
 					</Button>
-					<Button type="button" size="sm" disabled={!draftDate} onclick={commitDraft}>
+					<Button
+						type="button"
+						size="sm"
+						disabled={!draftDate || panelTimeBlocked}
+						onclick={commitDraft}
+					>
 						{resolvedSaveLabel}
 					</Button>
 				</div>

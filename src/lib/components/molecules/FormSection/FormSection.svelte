@@ -83,7 +83,7 @@
 	{#if badge}
 		<span
 			class={[
-				'inline-flex rounded-md border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide',
+				'rounded-md px-1.5 py-0.5 font-semibold tracking-wide inline-flex border text-[10px] uppercase',
 				badgeToneClass[badgeTone]
 			]}
 		>
@@ -96,8 +96,8 @@
 	{#if icon}
 		<span
 			class={[
-				'flex shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600',
-				'ring-1 ring-brand-500/10 dark:bg-brand-950/50 dark:text-brand-300',
+				'rounded-lg bg-brand-50 text-brand-600 flex shrink-0 items-center justify-center',
+				'ring-brand-500/10 dark:bg-brand-950/50 dark:text-brand-300 ring-1',
 				size === 'sm' ? 'h-7 w-7' : 'h-9 w-9'
 			]}
 		>
@@ -107,7 +107,7 @@
 {/snippet}
 
 {#snippet titleRow()}
-	<div class="flex min-w-0 flex-wrap items-center gap-2">
+	<div class="min-w-0 gap-2 flex flex-wrap items-center">
 		<h2 class="text-sm font-semibold tracking-tight text-primary">{title}</h2>
 		{@render badgeEl()}
 	</div>
@@ -117,8 +117,8 @@
 	class={[
 		'w-full',
 		variant === 'card' &&
-			'overflow-hidden rounded-2xl border border-border bg-surface-elevated shadow-sm',
-		variant === 'inset' && 'overflow-hidden rounded-2xl border border-border/80 bg-surface/70',
+			'rounded-2xl border-border bg-surface-elevated shadow-sm overflow-hidden border',
+		variant === 'inset' && 'rounded-2xl border-border/80 bg-surface/70 overflow-hidden border',
 		className
 	]}
 >
@@ -127,17 +127,17 @@
 		<button
 			type="button"
 			class={[
-				'flex w-full items-center gap-3 text-left outline-none transition-colors',
+				'gap-3 flex w-full items-center text-left transition-colors outline-none',
 				'hover:bg-surface-overlay/60 focus-visible:bg-surface-overlay/60',
-				'focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500/30',
+				'focus-visible:ring-brand-500/30 focus-visible:ring-2 focus-visible:ring-inset',
 				isCard ? 'px-4 py-3.5 sm:px-5' : 'py-3',
-				open && isCard && 'border-b border-border'
+				open && isCard && 'border-border border-b'
 			]}
 			aria-expanded={open}
 			onclick={toggle}
 		>
 			<span
-				class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-muted"
+				class="h-6 w-6 rounded-md text-muted inline-flex shrink-0 items-center justify-center"
 				aria-hidden="true"
 			>
 				<ChevronRight
@@ -148,15 +148,15 @@
 
 			{@render iconEl('sm')}
 
-			<span class="min-w-0 flex-1 space-y-0.5">
+			<span class="min-w-0 space-y-1 flex-1">
 				{#if eyebrow}
-					<span class="block text-[10px] font-semibold uppercase tracking-[0.14em] text-muted"
+					<span class="font-semibold text-muted block text-[10px] tracking-[0.14em] uppercase"
 						>{eyebrow}</span
 					>
 				{/if}
 				{@render titleRow()}
 				{#if description}
-					<span class="block text-xs leading-relaxed text-secondary">{description}</span>
+					<span class="text-xs leading-relaxed text-secondary block">{description}</span>
 				{/if}
 			</span>
 		</button>
@@ -170,12 +170,12 @@
 				!isCard && 'pb-0'
 			]}
 		>
-			<div class="flex items-start justify-between gap-3">
-				<div class="flex min-w-0 flex-1 items-start gap-3">
+			<div class="gap-3 flex items-start justify-between">
+				<div class="min-w-0 gap-3 flex flex-1 items-start">
 					{@render iconEl('md')}
-					<div class="min-w-0 space-y-0.5">
+					<div class="min-w-0 space-y-1">
 						{#if eyebrow}
-							<p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
+							<p class="font-semibold text-muted text-[10px] tracking-[0.14em] uppercase">
 								{eyebrow}
 							</p>
 						{/if}
@@ -186,14 +186,14 @@
 					</div>
 				</div>
 				{#if actions}
-					<div class="flex shrink-0 flex-wrap items-center gap-2">
+					<div class="gap-2 flex shrink-0 flex-wrap items-center">
 						{@render actions()}
 					</div>
 				{/if}
 			</div>
 
 			{#if divided && layout === 'stack'}
-				<div class={['mt-3 border-b border-border', isCard && '-mx-4 sm:-mx-5']}></div>
+				<div class={['mt-3 border-border border-b', isCard && '-mx-4 sm:-mx-5']}></div>
 			{/if}
 		</div>
 	{/if}
@@ -203,20 +203,20 @@
 			class={[
 				isCard && divided && 'px-4 py-4 sm:px-5 sm:py-5',
 				isCard && !divided && 'px-4 pt-2 pb-4 sm:px-5 sm:pb-5',
-				!isCard && (collapsible || divided) && layout === 'stack' && 'pt-4',
+				!isCard && layout === 'stack' && 'pt-4',
 				useSplit &&
 					'lg:grid lg:grid-cols-[minmax(12rem,17rem)_minmax(0,1fr)] lg:items-start lg:gap-10'
 			]}
 		>
 			{#if useSplit}
-				<aside class="mb-4 hidden min-w-0 lg:mb-0 lg:block">
+				<aside class="mb-4 min-w-0 lg:mb-0 lg:block hidden">
 					<div class="space-y-2 lg:sticky lg:top-4">
 						{#if eyebrow}
-							<p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
+							<p class="font-semibold text-muted text-[10px] tracking-[0.14em] uppercase">
 								{eyebrow}
 							</p>
 						{/if}
-						<div class="flex flex-wrap items-center gap-2">
+						<div class="gap-2 flex flex-wrap items-center">
 							{@render iconEl('sm')}
 							{@render titleRow()}
 						</div>
@@ -224,7 +224,7 @@
 							<p class="max-w-sm text-xs leading-relaxed text-secondary">{description}</p>
 						{/if}
 						{#if actions}
-							<div class="flex flex-wrap gap-2 pt-1">
+							<div class="gap-2 pt-1 flex flex-wrap">
 								{@render actions()}
 							</div>
 						{/if}
@@ -243,10 +243,7 @@
 
 		{#if footer}
 			<div
-				class={[
-					'border-t border-border',
-					isCard ? 'bg-surface/40 px-4 py-3 sm:px-5' : 'mt-4 pt-3'
-				]}
+				class={['border-border border-t', isCard ? 'bg-surface/40 px-4 py-3 sm:px-5' : 'mt-4 pt-3']}
 			>
 				{@render footer()}
 			</div>

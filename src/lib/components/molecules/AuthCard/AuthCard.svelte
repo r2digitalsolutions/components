@@ -10,6 +10,10 @@
 		mark?: string;
 		/** Official brand logo URL (SVG/PNG) for BrandMark */
 		logoSrc?: string;
+		/** Single-color logo, painted with currentColor */
+		monochrome?: boolean;
+		/** Brand / logo link target (e.g. `/`) */
+		brandHref?: string;
 		class?: string;
 		footer?: Snippet;
 		children?: Snippet;
@@ -21,6 +25,8 @@
 		brand = 'R2 Digi',
 		mark,
 		logoSrc,
+		monochrome = false,
+		brandHref,
 		class: className = '',
 		footer,
 		children
@@ -31,10 +37,19 @@
 	variant="elevated"
 	padding="lg"
 	radius="xl"
-	class={`mx-auto w-full max-w-md border border-border shadow-sm ${className}`}
+	class={`max-w-md border-border shadow-sm mx-auto w-full border ${className}`}
 >
-	<div class="mb-6 flex flex-col items-center gap-3 text-center">
-		<BrandMark name={brand} {mark} {logoSrc} size="lg" showName />
+	<div class="mb-6 gap-3 flex flex-col items-center text-center">
+		<BrandMark
+			name={brand}
+			{mark}
+			{logoSrc}
+			{monochrome}
+			href={brandHref}
+			size="lg"
+			showName
+			class="text-primary"
+		/>
 		<div>
 			<h1 class="text-xl font-semibold tracking-tight text-primary">{title}</h1>
 			{#if description}
@@ -44,7 +59,7 @@
 	</div>
 	{@render children?.()}
 	{#if footer}
-		<div class="mt-6 border-t border-border pt-4 text-center text-sm text-secondary">
+		<div class="mt-6 border-border pt-4 text-sm text-secondary border-t text-center">
 			{@render footer()}
 		</div>
 	{/if}

@@ -1,4 +1,9 @@
-import type { CanvasDocument, CanvasLayer } from './canvasDocument.js';
+import {
+	canvasLayerFilter,
+	mediaContentBox,
+	type CanvasDocument,
+	type CanvasLayer
+} from './canvasDocument.js';
 import { computeAbsoluteRects, isEffectivelyVisible } from './canvasHierarchy.js';
 import { flattenLayersWithWidgets } from './canvasWidget.js';
 import { CANVAS_SVG_SHAPES, drawCanvasSvgShape } from './canvasShapes.js';
@@ -212,7 +217,8 @@ function drawShapePath(ctx: CanvasRenderingContext2D, layer: CanvasLayer) {
 function drawText(ctx: CanvasRenderingContext2D, layer: CanvasLayer) {
 	const { x, y, w, h } = layer.rect;
 	if (layer.kind === 'sticky' || layer.textBackground) {
-		ctx.fillStyle = layer.kind === 'sticky' ? (layer.fill ?? '#fef08a') : (layer.textBackground as string);
+		ctx.fillStyle =
+			layer.kind === 'sticky' ? (layer.fill ?? '#fef08a') : (layer.textBackground as string);
 		const r = layer.borderRadius ?? (layer.kind === 'sticky' ? 4 : 0);
 		ctx.beginPath();
 		if (r > 0 && typeof ctx.roundRect === 'function') ctx.roundRect(x, y, w, h, r);
@@ -227,7 +233,8 @@ function drawText(ctx: CanvasRenderingContext2D, layer: CanvasLayer) {
 	ctx.font = `${style} ${weight} ${size}px ${family}`;
 	ctx.fillStyle = layer.color ?? (layer.kind === 'sticky' ? '#713f12' : '#0f172a');
 	ctx.textBaseline = 'middle';
-	ctx.textAlign = layer.textAlign === 'center' ? 'center' : layer.textAlign === 'right' ? 'right' : 'left';
+	ctx.textAlign =
+		layer.textAlign === 'center' ? 'center' : layer.textAlign === 'right' ? 'right' : 'left';
 
 	const pad = 8;
 	const tx =
@@ -272,8 +279,7 @@ function drawText(ctx: CanvasRenderingContext2D, layer: CanvasLayer) {
 			ctx.beginPath();
 			ctx.strokeStyle = ctx.fillStyle as string;
 			ctx.lineWidth = Math.max(1, size / 16);
-			const lineY =
-				layer.textDecoration === 'line-through' ? startY : startY + size * 0.4;
+			const lineY = layer.textDecoration === 'line-through' ? startY : startY + size * 0.4;
 			ctx.moveTo(left, lineY);
 			ctx.lineTo(left + tw, lineY);
 			ctx.stroke();
@@ -305,36 +311,29 @@ async function drawLayer(
 		ctx.shadowOffsetY = Math.round(layer.shadowBlur / 3);
 	}
 
-	if (layer.blur) {
-		ctx.filter = `blur(${layer.blur}px)`;
-	}
+	const filter = canvasLayerFilter(layer);
+	if (filter) ctx.filter = filter;
 
 	if ((layer.kind === 'image' || layer.kind === 'video') && layer.src) {
 		try {
 			const img = await loadImage(layer.src);
 			const fit = layer.objectFit ?? 'cover';
-			if (layer.borderRadius) {
-				ctx.beginPath();
-				if (typeof ctx.roundRect === 'function') {
-					ctx.roundRect(x, y, w, h, layer.borderRadius);
-				} else {
-					ctx.rect(x, y, w, h);
-				}
-				ctx.clip();
-			}
-			if (fit === 'fill') {
-				ctx.drawImage(img, x, y, w, h);
+			ctx.beginPath();
+			if (layer.borderRadius && typeof ctx.roundRect === 'function') {
+				ctx.roundRect(x, y, w, h, layer.borderRadius);
 			} else {
-				const scale =
-					fit === 'contain'
-						? Math.min(w / img.naturalWidth, h / img.naturalHeight)
-						: Math.max(w / img.naturalWidth, h / img.naturalHeight);
-				const dw = img.naturalWidth * scale;
-				const dh = img.naturalHeight * scale;
-				const dx = x + (w - dw) / 2;
-				const dy = y + (h - dh) / 2;
-				ctx.drawImage(img, dx, dy, dw, dh);
+				ctx.rect(x, y, w, h);
 			}
+			ctx.clip();
+			const placed = mediaContentBox(
+				{ w, h },
+				{ w: img.naturalWidth, h: img.naturalHeight },
+				fit,
+				layer.mediaScale ?? 1,
+				layer.mediaX ?? 0.5,
+				layer.mediaY ?? 0.5
+			);
+			ctx.drawImage(img, x + placed.x, y + placed.y, placed.w, placed.h);
 		} catch {
 			ctx.fillStyle = '#e2e8f0';
 			ctx.fillRect(x, y, w, h);
@@ -365,9 +364,7 @@ export function backgroundAlpha(color: string | undefined): number {
 	}
 	const m = raw.match(/^rgba?\(\s*[\d.]+\s*,\s*[\d.]+\s*,\s*[\d.]+(?:\s*,\s*([\d.]+))?\s*\)$/);
 	if (m) return m[1] !== undefined ? Number(m[1]) : 1;
-	const h = raw.match(
-		/^hsla?\(\s*[\d.]+\s*,\s*[\d.]+%\s*,\s*[\d.]+%(?:\s*,\s*([\d.]+))?\s*\)$/
-	);
+	const h = raw.match(/^hsla?\(\s*[\d.]+\s*,\s*[\d.]+%\s*,\s*[\d.]+%(?:\s*,\s*([\d.]+))?\s*\)$/);
 	if (h) return h[1] !== undefined ? Number(h[1]) : 1;
 	return 1;
 }

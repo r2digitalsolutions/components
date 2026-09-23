@@ -92,7 +92,7 @@
 
 	function desktopClass(active: boolean, disabled?: boolean) {
 		return [
-			'gap-1.5 px-3 font-medium relative flex items-center transition-colors no-underline',
+			'gap-1.5 px-3 font-medium relative flex shrink-0 items-center whitespace-nowrap transition-colors no-underline',
 			'focus-visible:ring-brand-500/30 focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset',
 			linkSize,
 			variant === 'underline' && 'border-b-2',
@@ -179,7 +179,7 @@
 
 		<nav
 			class={[
-				'min-w-0 gap-0.5 md:flex hidden h-full items-stretch',
+				'min-w-0 gap-0.5 md:flex hidden h-full flex-nowrap items-stretch',
 				centerLinks ? 'flex-1 justify-center' : 'flex-1',
 				!showBrand && !centerLinks && 'flex-1'
 			]}

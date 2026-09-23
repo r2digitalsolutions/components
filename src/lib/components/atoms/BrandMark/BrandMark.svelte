@@ -9,6 +9,10 @@
 		name?: string;
 		/** Official logo image URL (SVG/PNG). Replaces initials / children. */
 		logoSrc?: string;
+		/** Glyph is a single color. Painted with currentColor so it follows light/dark. */
+		monochrome?: boolean;
+		/** When set, the mark (and name) link here — e.g. `/` on auth pages. */
+		href?: string;
 		size?: BrandMarkSize;
 		showName?: boolean;
 		class?: string;
@@ -19,6 +23,8 @@
 		mark,
 		name = 'Brand',
 		logoSrc,
+		monochrome = false,
+		href,
 		size = 'md',
 		showName = false,
 		class: className = '',
@@ -47,22 +53,35 @@
 		lg: 'text-lg',
 		xl: 'text-xl'
 	};
+
+	const rootClass = $derived([
+		'inline-flex items-center gap-2.5',
+		href && 'no-underline text-inherit',
+		className
+	]);
+
+	const paintMono = $derived(Boolean(logoSrc && monochrome));
+	const monoMask = $derived(paintMono && logoSrc ? `url("${logoSrc}")` : undefined);
 </script>
 
-<span class={['inline-flex items-center gap-2.5', className]}>
+{#snippet markBody()}
 	<span
 		class={[
-			'inline-flex shrink-0 items-center justify-center shadow-sm',
-			logoSrc ? 'overflow-hidden bg-white' : 'bg-brand-500 font-bold tracking-tight text-white',
+			'inline-flex shrink-0 items-center justify-center',
+			paintMono && 'brand-mark-mono bg-current',
+			logoSrc && !paintMono && 'bg-white shadow-sm overflow-hidden',
+			!logoSrc && 'bg-brand-500 font-bold tracking-tight text-white shadow-sm',
 			box[size]
 		]}
+		style:mask-image={monoMask}
+		style:-webkit-mask-image={monoMask}
 		aria-hidden={showName || !!name}
 	>
-		{#if logoSrc}
+		{#if logoSrc && !paintMono}
 			<img src={logoSrc} alt="" class="h-[78%] w-[78%] object-contain" />
-		{:else if children}
+		{:else if !paintMono && children}
 			{@render children()}
-		{:else}
+		{:else if !paintMono}
 			{initials}
 		{/if}
 	</span>
@@ -72,4 +91,25 @@
 	{#if !showName}
 		<span class="sr-only">{name}</span>
 	{/if}
-</span>
+{/snippet}
+
+{#if href}
+	<a {href} class={rootClass} aria-label={name}>
+		{@render markBody()}
+	</a>
+{:else}
+	<span class={rootClass}>
+		{@render markBody()}
+	</span>
+{/if}
+
+<style>
+	.brand-mark-mono {
+		-webkit-mask-repeat: no-repeat;
+		mask-repeat: no-repeat;
+		-webkit-mask-position: center;
+		mask-position: center;
+		-webkit-mask-size: contain;
+		mask-size: contain;
+	}
+</style>

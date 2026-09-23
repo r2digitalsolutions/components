@@ -1,7 +1,12 @@
 <script lang="ts">
 	import WidgetFrame from '$lib/components/molecules/WidgetFrame/WidgetFrame.svelte';
 	import MediaKindIcon from '$lib/components/atoms/MediaKindIcon/MediaKindIcon.svelte';
-	import type { CanvasLayer, CanvasLayerRect } from '$lib/utils/canvasDocument.js';
+	import {
+		canvasLayerFilter,
+		mediaContentBox,
+		type CanvasLayer,
+		type CanvasLayerRect
+	} from '$lib/utils/canvasDocument.js';
 	import type { WidgetRect } from '$lib/components/molecules/WidgetCanvas/widgetCanvasContext.js';
 	import { isContainerKind } from '$lib/utils/canvasHierarchy.js';
 	import { CANVAS_SVG_SHAPES } from '$lib/utils/canvasShapes.js';
@@ -37,6 +42,18 @@
 		onclick?: (e: MouseEvent) => void;
 		ondblclick?: (e: MouseEvent) => void;
 		onchange?: (rect: WidgetRect) => void;
+		/** Zoom and pan inside an image, or grow a text box so the type stays inside. */
+		onpatch?: (
+			partial: Partial<
+				Pick<
+					CanvasLayer,
+					'mediaScale' | 'mediaX' | 'mediaY' | 'rect' | 'fontSize' | 'rotation' | 'textMaxWidth'
+				>
+			>
+		) => void;
+		/** Double-click turned this text or note into an editor. */
+		editing?: boolean;
+		ontextcommit?: (text: string) => void;
 		/** True while this frame is being dragged/resized. */
 		oninteract?: (active: boolean) => void;
 		/**
@@ -63,6 +80,9 @@
 		onclick,
 		ondblclick,
 		onchange,
+		onpatch,
+		editing = false,
+		ontextcommit,
 		oninteract,
 		followStageRect = false
 	}: MediaLayerItemProps = $props();
@@ -72,6 +92,179 @@
 	const noResize = $derived(layoutSizeLocked || layoutLocked);
 	let rect = $state<WidgetRect>({ x: 0, y: 0, w: 100, h: 100 });
 	let interacting = $state(false);
+	let mediaBox = $state<HTMLDivElement | null>(null);
+	let textEl = $state<HTMLDivElement | null>(null);
+	let naturalW = $state(0);
+	let naturalH = $state(0);
+	let mediaGesture = $state(false);
+	let mediaLive = $state<{ x: number; y: number; scale: number } | null>(null);
+	let textFocused = false;
+	let resizeEdge: string | null = null;
+	let panOrigin = { x: 0, y: 0, mediaX: 0.5, mediaY: 0.5 };
+
+	const mediaScale = $derived(mediaLive?.scale ?? layer.mediaScale ?? 1);
+	const mediaX = $derived(mediaLive?.x ?? layer.mediaX ?? 0.5);
+	const mediaY = $derived(mediaLive?.y ?? layer.mediaY ?? 0.5);
+	const placed = $derived(
+		mediaContentBox(
+			{ w: Math.max(pos.w, 1), h: Math.max(pos.h, 1) },
+			{ w: naturalW, h: naturalH },
+			layer.objectFit,
+			mediaScale,
+			mediaX,
+			mediaY
+		)
+	);
+
+	function clamp01(n: number) {
+		return Math.min(1, Math.max(0, n));
+	}
+
+	function onMediaLoad(e: Event) {
+		const img = e.currentTarget as HTMLImageElement;
+		if (!img.naturalWidth) return;
+		naturalW = img.naturalWidth;
+		naturalH = img.naturalHeight;
+	}
+
+	function currentMedia() {
+		return {
+			x: mediaLive?.x ?? layer.mediaX ?? 0.5,
+			y: mediaLive?.y ?? layer.mediaY ?? 0.5,
+			scale: mediaLive?.scale ?? layer.mediaScale ?? 1
+		};
+	}
+
+	function beginMediaPan(e: PointerEvent) {
+		if (e.button !== 0) return;
+		e.stopPropagation();
+		e.preventDefault();
+		(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+		mediaGesture = true;
+		const cur = currentMedia();
+		panOrigin = { x: e.clientX, y: e.clientY, mediaX: cur.x, mediaY: cur.y };
+	}
+
+	function moveMediaPan(e: PointerEvent) {
+		if (!mediaGesture || !mediaBox) return;
+		const box = mediaBox.getBoundingClientRect();
+		if (box.width < 1 || box.height < 1) return;
+		const docDx = ((e.clientX - panOrigin.x) / box.width) * Math.max(pos.w, 1);
+		const docDy = ((e.clientY - panOrigin.y) / box.height) * Math.max(pos.h, 1);
+		const base = mediaContentBox(
+			{ w: Math.max(pos.w, 1), h: Math.max(pos.h, 1) },
+			{ w: naturalW, h: naturalH },
+			layer.objectFit,
+			currentMedia().scale,
+			0,
+			0
+		);
+		const spanX = pos.w - base.w;
+		const spanY = pos.h - base.h;
+		mediaLive = {
+			x: Math.abs(spanX) > 0.5 ? clamp01(panOrigin.mediaX + docDx / spanX) : panOrigin.mediaX,
+			y: Math.abs(spanY) > 0.5 ? clamp01(panOrigin.mediaY + docDy / spanY) : panOrigin.mediaY,
+			scale: currentMedia().scale
+		};
+	}
+
+	function endMediaPan() {
+		if (!mediaGesture) return;
+		mediaGesture = false;
+		const cur = currentMedia();
+		onpatch?.({ mediaX: cur.x, mediaY: cur.y, mediaScale: cur.scale });
+		mediaLive = null;
+	}
+
+	function readEditableText(el: HTMLElement) {
+		return (el.innerText ?? '').replace(/\n$/, '');
+	}
+
+	function zoomMedia(e: WheelEvent) {
+		e.preventDefault();
+		e.stopPropagation();
+		const fit = layer.objectFit ?? 'cover';
+		const min = fit === 'cover' ? 1 : 0.25;
+		const cur = currentMedia();
+		const factor = e.deltaY < 0 ? 1.08 : 1 / 1.08;
+		const scale = Math.min(6, Math.max(min, cur.scale * factor));
+		mediaLive = { x: cur.x, y: cur.y, scale };
+		onpatch?.({ mediaX: cur.x, mediaY: cur.y, mediaScale: scale });
+		if (!mediaGesture) mediaLive = null;
+	}
+
+	const textAuto = $derived(
+		(layer.kind === 'text' || layer.kind === 'sticky') && (layer.autoSize ?? layer.kind === 'text')
+	);
+	/** Canva: los laterales cambian el ancho; las esquinas escalan la letra. Arriba/abajo no existe. */
+	const TEXT_RESIZE_EDGES = ['e', 'w', 'ne', 'nw', 'se', 'sw'] as const;
+	const isCornerEdge = (edge: string | null) =>
+		edge === 'ne' || edge === 'nw' || edge === 'se' || edge === 'sw';
+	let textResizeStart: { fontSize: number; w: number } | null = null;
+
+	function onFrameInteract(active: boolean) {
+		if (active) {
+			interacting = true;
+			if (resizeEdge && textAuto) {
+				textResizeStart = {
+					fontSize: layer.fontSize ?? (layer.kind === 'sticky' ? 20 : 32),
+					w: Math.max(1, pos.w)
+				};
+			}
+			oninteract?.(true);
+			return;
+		}
+		const edge = resizeEdge;
+		resizeEdge = null;
+		textResizeStart = null;
+		if (edge && textAuto) {
+			const scaleX = pos.w > 0 ? layer.rect.w / pos.w : 1;
+			onpatch?.({ textMaxWidth: Math.max(8, rect.w * scaleX) });
+		}
+		interacting = false;
+		oninteract?.(false);
+	}
+
+	/** Esquina en texto: la letra sigue al ancho, igual que Canva. Los laterales no tocan la letra. */
+	function onFrameRect(r: WidgetRect) {
+		if (!followStageRect) rect = r;
+		onchange?.(r);
+		if (!textAuto || !textResizeStart || !isCornerEdge(resizeEdge)) return;
+		const ratio = r.w / textResizeStart.w;
+		if (!Number.isFinite(ratio) || ratio <= 0) return;
+		const fontSize = Math.max(8, Math.min(400, Math.round(textResizeStart.fontSize * ratio)));
+		if (fontSize !== (layer.fontSize ?? (layer.kind === 'sticky' ? 20 : 32))) {
+			onpatch?.({ fontSize });
+		}
+	}
+
+	function onTextBoxResize(next: { x: number; y: number; w: number; h: number }) {
+		if (!textAuto || readOnly) return;
+		const scaleX = pos.w > 0 ? layer.rect.w / pos.w : 1;
+		const scaleY = pos.h > 0 ? layer.rect.h / pos.h : 1;
+		const w = next.w * scaleX;
+		const h = next.h * scaleY;
+		if (Math.abs(w - layer.rect.w) <= 1 && Math.abs(h - layer.rect.h) <= 1) return;
+		onpatch?.({ rect: { ...layer.rect, w, h } });
+	}
+
+	$effect(() => {
+		if (!editing) {
+			textFocused = false;
+			return;
+		}
+		if (!textEl || textFocused) return;
+		textFocused = true;
+		const el = textEl;
+		el.focus();
+		const raw = (el.innerText ?? '').replace(/\n$/, '').trim();
+		if (!raw) return;
+		const range = document.createRange();
+		range.selectNodeContents(el);
+		const sel = window.getSelection();
+		sel?.removeAllRanges();
+		sel?.addRange(range);
+	});
 
 	$effect(() => {
 		// Single-item drag/resize: WidgetFrame owns the live rect.
@@ -80,13 +273,9 @@
 		rect = { x: pos.x, y: pos.y, w: pos.w, h: pos.h };
 	});
 
-	const fitClass = $derived(
-		layer.objectFit === 'contain'
-			? 'object-contain'
-			: layer.objectFit === 'fill'
-				? 'object-fill'
-				: 'object-cover'
-	);
+	const cssFit = $derived(layer.objectFit ?? 'cover');
+	/** Zoomed bitmaps use the measured box. Scale 1 is plain object-fit, same as before. */
+	const zoomedMedia = $derived(Math.abs(mediaScale - 1) > 0.001);
 
 	const contentTransform = $derived.by(() => {
 		const parts: string[] = [];
@@ -95,11 +284,7 @@
 		return parts.length ? parts.join(' ') : undefined;
 	});
 
-	const filter = $derived.by(() => {
-		const parts: string[] = [];
-		if (layer.blur) parts.push(`blur(${layer.blur}px)`);
-		return parts.length ? parts.join(' ') : undefined;
-	});
+	const filter = $derived(canvasLayerFilter(layer));
 
 	const boxShadow = $derived(
 		layer.shadowBlur
@@ -114,7 +299,7 @@
 		!!layer.clipChildren ||
 			layer.kind === 'image' ||
 			layer.kind === 'video' ||
-			layer.kind === 'sticky' ||
+			((layer.kind === 'text' || layer.kind === 'sticky') && !textAuto) ||
 			layer.kind === 'border' ||
 			layer.kind === 'canvasPanel' ||
 			layer.kind === 'overlay' ||
@@ -128,6 +313,7 @@
 
 {#if layer.visible}
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<div
 		class={['contents', className]}
 		data-layer-item
@@ -147,28 +333,42 @@
 			freeform
 			showChrome={false}
 			flush
+			clipContent={layer.kind === 'text' || layer.kind === 'sticky' ? !textAuto : true}
 			handleStyle="canva"
+			hugContent={textAuto}
+			hugMaxWidth={layer.textMaxWidth ?? 0}
+			resizeEdges={textAuto ? [...TEXT_RESIZE_EDGES] : undefined}
+			oncontentresize={onTextBoxResize}
 			handlesVisible={handlesOn}
 			raiseOnSelect={false}
 			stackIndex={stackIndex ?? layer.zIndex}
 			transform={paintTransform}
+			rotation={layer.rotation ?? 0}
+			onrotation={(deg) => onpatch?.({ rotation: deg })}
 			draggable={!layer.locked && !readOnly && !noDrag}
 			resizable={!layer.locked && !readOnly && !noResize && handlesOn}
 			bind:rect
 			applyRect={!followStageRect}
-			minW={layer.kind === 'line' || layer.kind === 'arrow' || layer.kind === 'path' ? 16 : 40}
-			minH={layer.kind === 'line' ? 4 : layer.kind === 'arrow' || layer.kind === 'path' ? 16 : 24}
+			minW={layer.kind === 'line' || layer.kind === 'arrow' || layer.kind === 'path'
+				? 16
+				: layer.kind === 'text' || layer.kind === 'sticky'
+					? 8
+					: 40}
+			minH={layer.kind === 'line'
+				? 4
+				: layer.kind === 'text' || layer.kind === 'sticky'
+					? 8
+					: layer.kind === 'arrow' || layer.kind === 'path'
+						? 16
+						: 24}
+			onresizestart={(_e, edge) => {
+				resizeEdge = edge;
+			}}
 			class={['bg-transparent', passthrough || readOnly ? 'pointer-events-none' : '']
 				.filter(Boolean)
 				.join(' ')}
-			onchange={(r) => {
-				if (!followStageRect) rect = r;
-				onchange?.(r);
-			}}
-			oninteract={(active) => {
-				interacting = active;
-				oninteract?.(active);
-			}}
+			onchange={onFrameRect}
+			oninteract={onFrameInteract}
 		>
 			<div
 				class="h-full w-full"
@@ -181,17 +381,59 @@
 				style:clip-path={clipPath}
 			>
 				{#if layer.kind === 'image' && layer.src}
-					<img
-						src={layer.src}
-						alt={layer.name}
-						class={['h-full w-full', fitClass]}
-						draggable="false"
-					/>
+					<div class="relative h-full w-full" bind:this={mediaBox}>
+						{#if zoomedMedia && naturalW > 0}
+							<img
+								src={layer.src}
+								alt={layer.name}
+								class="absolute max-w-none"
+								draggable="false"
+								style:width="{(placed.w / Math.max(pos.w, 1)) * 100}%"
+								style:height="{(placed.h / Math.max(pos.h, 1)) * 100}%"
+								style:left="{(placed.x / Math.max(pos.w, 1)) * 100}%"
+								style:top="{(placed.y / Math.max(pos.h, 1)) * 100}%"
+								onload={onMediaLoad}
+							/>
+						{:else}
+							<img
+								src={layer.src}
+								alt={layer.name}
+								class="h-full w-full"
+								draggable="false"
+								style:object-fit={cssFit}
+								style:object-position="{mediaX * 100}% {mediaY * 100}%"
+								onload={onMediaLoad}
+							/>
+						{/if}
+						{#if selected && !readOnly && !passthrough}
+							<!-- svelte-ignore a11y_no_static_element_interactions -->
+							<div
+								class="absolute cursor-grab active:cursor-grabbing"
+								style="inset: 12px"
+								onpointerdown={beginMediaPan}
+								onpointermove={moveMediaPan}
+								onpointerup={endMediaPan}
+								onpointercancel={endMediaPan}
+								onwheel={zoomMedia}
+							></div>
+						{/if}
+					</div>
 				{:else if layer.kind === 'video' && layer.src}
-					<video src={layer.src} class={['h-full w-full', fitClass]} muted playsinline></video>
+					<video
+						src={layer.src}
+						class="h-full w-full"
+						style:object-fit={cssFit}
+						style:object-position="{mediaX * 100}% {mediaY * 100}%"
+						style:transform={zoomedMedia ? `scale(${mediaScale})` : undefined}
+						muted
+						playsinline
+					></video>
 				{:else if layer.kind === 'text' || layer.kind === 'sticky'}
 					<div
-						class="px-2 py-1 flex h-full w-full"
+						class={[
+							'px-1.5 py-1 break-words whitespace-pre-wrap',
+							!textAuto && 'h-full w-full overflow-hidden'
+						]}
 						style:background={layer.kind === 'sticky'
 							? (layer.fill ?? '#fef08a')
 							: layer.textBackground}
@@ -205,16 +447,28 @@
 							? `${layer.letterSpacing}px`
 							: undefined}
 						style:line-height={layer.lineHeight ?? 1.25}
-						style:justify-content={layer.textAlign === 'center'
-							? 'center'
-							: layer.textAlign === 'right'
-								? 'flex-end'
-								: 'flex-start'}
 						style:text-align={layer.textAlign ?? 'left'}
-						style:align-items={layer.kind === 'sticky' ? 'flex-start' : 'center'}
 						style:border-radius="{layer.borderRadius ?? (layer.kind === 'sticky' ? 4 : 0)}px"
 					>
-						{layer.text ?? (layer.kind === 'sticky' ? 'Note' : 'Text')}
+						{#if editing}
+							<div
+								bind:this={textEl}
+								class="wrap-anywhere whitespace-pre-wrap outline-none"
+								contenteditable="true"
+								role="textbox"
+								tabindex="0"
+								onpointerdown={(e) => e.stopPropagation()}
+								onblur={() => {
+									if (textEl) ontextcommit?.(readEditableText(textEl));
+								}}
+							>
+								{layer.text ?? (layer.kind === 'sticky' ? 'Note' : 'Text')}
+							</div>
+						{:else}
+							<span class="wrap-anywhere whitespace-pre-wrap"
+								>{layer.text ?? (layer.kind === 'sticky' ? 'Note' : 'Text')}</span
+							>
+						{/if}
 					</div>
 				{:else if layer.kind === 'rect' || layer.kind === 'roundRect' || layer.kind === 'border'}
 					<div

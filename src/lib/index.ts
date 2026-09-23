@@ -493,6 +493,8 @@ export { default as DiffViewer } from './components/molecules/DiffViewer/DiffVie
 export type { DiffMode } from './components/molecules/DiffViewer/DiffViewer.svelte';
 export { default as SignaturePad } from './components/molecules/SignaturePad/SignaturePad.svelte';
 export { default as ImageCropper } from './components/molecules/ImageCropper/ImageCropper.svelte';
+export { default as ImageEditor } from './components/molecules/ImageEditor/ImageEditor.svelte';
+export type { ImageEditorFormat } from './components/molecules/ImageEditor/ImageEditor.svelte';
 export type {
 	CropAspect,
 	CropFormat
@@ -1633,6 +1635,12 @@ export {
 	resetCanvasField,
 	applyTextAutoSize,
 	CANVAS_PRESETS,
+	COVER_ARTBOARD,
+	coverDocumentFromImage,
+	persistCoverDocument,
+	hydrateCoverDocument,
+	canvasLayerFilter,
+	mediaContentBox,
 	presetIdForSize
 } from './utils/canvasDocument.js';
 export type {
