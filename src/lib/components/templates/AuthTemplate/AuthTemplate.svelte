@@ -49,7 +49,7 @@
 			'Ship auth, dashboards, and marketing faster'
 		],
 		asideSide = 'left',
-		mobileHero = true,
+		mobileHero = false,
 		fullHeight = true,
 		fillParent = false,
 		loading = false,

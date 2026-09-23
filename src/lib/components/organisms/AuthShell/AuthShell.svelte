@@ -22,7 +22,10 @@
 		fillParent?: boolean;
 		/** Desktop marketing panel placement */
 		asideSide?: AuthAsideSide;
-		/** Compact gradient hero on small screens */
+		/**
+		 * Compact gradient hero above the form on small screens.
+		 * Off by default: mobile shows only the form column (the card carries the brand).
+		 */
 		mobileHero?: boolean;
 		highlights?: string[];
 		class?: string;
@@ -41,7 +44,7 @@
 		fullHeight = true,
 		fillParent = false,
 		asideSide = 'left',
-		mobileHero = true,
+		mobileHero = false,
 		highlights = [
 			'Reusable atoms, molecules, and page templates',
 			'Consistent tokens across product surfaces',
@@ -173,19 +176,6 @@
 				{#if mobileHero && showAside}
 					<div class="lg:hidden shrink-0">
 						{@render marketingPanel(true)}
-					</div>
-				{:else}
-					<div class="px-5 pt-6 lg:hidden shrink-0 text-center">
-						<BrandMark
-							name={brand}
-							{logoSrc}
-							{monochrome}
-							href={brandHref}
-							showName
-							size="md"
-							class="justify-center"
-						/>
-						<p class="mt-2 text-sm text-muted">{tagline}</p>
 					</div>
 				{/if}
 

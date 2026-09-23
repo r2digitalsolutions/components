@@ -34,7 +34,7 @@ const meta = {
 		headline: 'Sign in to continue',
 		fullHeight: true,
 		asideSide: 'left',
-		mobileHero: true,
+		mobileHero: false,
 		formVariant: 'card',
 		formAlign: 'center',
 		preview: 'desktop'

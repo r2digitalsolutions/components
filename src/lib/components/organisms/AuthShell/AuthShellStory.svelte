@@ -11,7 +11,7 @@
 		headline = 'Sign in to continue',
 		fullHeight = true,
 		asideSide = 'left' as AuthAsideSide,
-		mobileHero = true,
+		mobileHero = false,
 		formVariant = 'card' as LoginFormVariant,
 		formAlign = 'center' as 'center' | 'start',
 		preview = 'desktop' as 'desktop' | 'mobile' | 'compact'
