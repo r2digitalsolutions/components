@@ -11,6 +11,7 @@ export { default as Slider } from './components/atoms/Slider/Slider.svelte';
 export { default as Skeleton } from './components/atoms/Skeleton/Skeleton.svelte';
 export { default as ProgressBar } from './components/atoms/ProgressBar/ProgressBar.svelte';
 export { default as Badge } from './components/atoms/Badge/Badge.svelte';
+export { default as VerifiedBadge } from './components/atoms/VerifiedBadge/VerifiedBadge.svelte';
 export { default as Avatar } from './components/atoms/Avatar/Avatar.svelte';
 export { default as Spinner } from './components/atoms/Spinner/Spinner.svelte';
 export { default as Toggle } from './components/atoms/Toggle/Toggle.svelte';

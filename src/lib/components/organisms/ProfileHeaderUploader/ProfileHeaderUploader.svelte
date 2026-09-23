@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onDestroy } from 'svelte';
+	import { onDestroy, type Snippet } from 'svelte';
 
 	interface ProfileMedia {
 		file: File;
@@ -44,6 +44,10 @@
 		/** Top-right actions once a cover exists. The cover itself still replaces the file. */
 		onframe?: () => void;
 		onedit?: () => void;
+		/** Profile identity (name, badges…) rendered beside the avatar, like a public header. */
+		details?: Snippet;
+		/** Right-aligned actions on the avatar row (e.g. "View public page"). */
+		actions?: Snippet;
 	}
 
 	let {
@@ -71,7 +75,9 @@
 		class: className = '',
 		onchange,
 		onframe,
-		onedit
+		onedit,
+		details,
+		actions
 	}: ProfileHeaderUploaderProps = $props();
 
 	let cover = $state<ProfileMedia | null>(null);
@@ -530,9 +536,28 @@
 						{/if}
 					</div>
 
-					<div class="min-w-0 pb-1 flex-1">
+					<!-- With `details`, only the avatar overlaps the cover; the text stays on the card
+					     surface so it never has to compete with the cover image for contrast. -->
+					<div
+						class={[
+							'min-w-0 flex-1',
+							details
+								? 'mt-10 gap-4 pt-2 sm:mt-12 flex flex-wrap items-center justify-between self-start'
+								: 'pb-1'
+						]}
+					>
+						{#if details}
+							<div class="min-w-0 flex-1">
+								{@render details()}
+							</div>
+						{/if}
+						{#if actions && details}
+							<div class="gap-2 flex shrink-0 flex-wrap items-center justify-end">
+								{@render actions()}
+							</div>
+						{/if}
 						{#if hasLocalMedia}
-							<div class="gap-2 flex flex-wrap items-center">
+							<div class={['gap-2 flex flex-wrap items-center', details ? 'w-full' : '']}>
 								{#if cover && !disabled}
 									<button
 										type="button"
@@ -552,12 +577,17 @@
 									</button>
 								{/if}
 							</div>
-						{:else}
+						{:else if !details}
 							<p id={helperId} class="text-xs text-secondary leading-relaxed">
 								{avatarHelperText}
 							</p>
 						{/if}
 					</div>
+					{#if actions && !details}
+						<div class="pb-1 gap-2 flex shrink-0 flex-wrap items-center justify-end">
+							{@render actions()}
+						</div>
+					{/if}
 				</div>
 			</div>
 		{/if}
