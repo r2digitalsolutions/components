@@ -3,6 +3,7 @@
 	import MediaAssetBrowser from '$lib/components/molecules/MediaAssetBrowser/MediaAssetBrowser.svelte';
 	import MediaLayerList from '$lib/components/molecules/MediaLayerList/MediaLayerList.svelte';
 	import MediaStage from '$lib/components/molecules/MediaStage/MediaStage.svelte';
+	import CanvasPageStrip from './CanvasPageStrip.svelte';
 	import CanvasInspector from '$lib/components/molecules/CanvasInspector/CanvasInspector.svelte';
 	import CanvasElementsPanel, {
 		type CanvasElementDef
@@ -25,18 +26,25 @@
 		INSTAGRAM_GRID_PRESET_ID,
 		alignLayerRect,
 		applyTextAutoSize,
+		blankCanvasPage,
+		cloneCanvasLayers,
 		createCanvasGuide,
 		createCanvasLayer,
 		createPathFromDocPoints,
 		defaultSlotFromRect,
+		documentWithPages,
 		emptyCanvasDocument,
 		instagramGridGuides,
 		migrateCanvasDocument,
+		pagesOf,
 		presetIdForSize,
+		projectPage,
+		writePage,
 		type CanvasAlign,
 		type CanvasDocument,
 		type CanvasLayer,
-		type CanvasLayerKind
+		type CanvasLayerKind,
+		type CanvasPage
 	} from '$lib/utils/canvasDocument.js';
 	import {
 		deleteSubtree,
@@ -173,10 +181,13 @@
 		onexport
 	}: CanvasEditorProps = $props();
 
-	// Ensure v2 document shape
+	// Ensure v2 document shape and a page list (older files are one sheet).
 	$effect.pre(() => {
 		if (value.version !== 2 || !value.widgets) {
 			value = migrateCanvasDocument(value);
+		}
+		if (!value.pages?.length) {
+			value = documentWithPages(value);
 		}
 	});
 
@@ -195,6 +206,10 @@
 	let editingWidgetId = $state<string | null>(null);
 	let history = $state<CanvasHistoryState>(createCanvasHistory(value));
 	let applyingHistory = false;
+	let activePageId = $state('');
+	type PageSnap = { width: number; height: number; page: CanvasPage };
+	type PageHist = { past: string[]; future: string[]; last: string };
+	let pageHistory = $state<Record<string, PageHist>>({});
 	let syncInstanceSizes = $state(true);
 
 	const gridSizeOptions = [
@@ -210,8 +225,22 @@
 		editingWidgetId ? ((value.widgets ?? []).find((w) => w.id === editingWidgetId) ?? null) : null
 	);
 
+	const designPages = $derived(pagesOf(value));
+	const resolvedPageId = $derived(
+		designPages.some((page) => page.id === activePageId)
+			? activePageId
+			: (designPages[0]?.id ?? '')
+	);
+	const activePageHist = $derived(pageHistory[resolvedPageId]);
+	const canUndo = $derived(
+		editingWidgetId ? history.past.length > 0 : (activePageHist?.past.length ?? 0) > 0
+	);
+	const canRedo = $derived(
+		editingWidgetId ? history.future.length > 0 : (activePageHist?.future.length ?? 0) > 0
+	);
+
 	const stageDoc = $derived.by((): CanvasDocument => {
-		if (!editingWidget) return value;
+		if (!editingWidget) return projectPage(value, resolvedPageId);
 		return {
 			...value,
 			width: editingWidget.width,
@@ -247,8 +276,8 @@
 			id: 'edit',
 			label: 'Edición',
 			items: [
-				{ id: 'undo', label: 'Deshacer', shortcut: '⌘Z', disabled: history.past.length === 0 },
-				{ id: 'redo', label: 'Rehacer', shortcut: '⇧⌘Z', disabled: history.future.length === 0 },
+				{ id: 'undo', label: 'Deshacer', shortcut: '⌘Z', disabled: !canUndo },
+				{ id: 'redo', label: 'Rehacer', shortcut: '⇧⌘Z', disabled: !canRedo },
 				{
 					id: 'delete',
 					label: 'Borrar selección',
@@ -471,37 +500,187 @@
 		];
 	});
 
+	function pageSnap(doc: CanvasDocument, pageId: string): string {
+		const page = pagesOf(doc).find((item) => item.id === pageId) ?? pagesOf(doc)[0];
+		const snap: PageSnap = { width: doc.width, height: doc.height, page };
+		return JSON.stringify(snap);
+	}
+
+	function seedPageHistory(doc: CanvasDocument, pageId: string) {
+		if (!pageId || pageHistory[pageId]) return;
+		pageHistory = {
+			...pageHistory,
+			[pageId]: { past: [], future: [], last: pageSnap(doc, pageId) }
+		};
+	}
+
+	function applyPageSnap(doc: CanvasDocument, raw: string): CanvasDocument {
+		const snap = JSON.parse(raw) as PageSnap;
+		return {
+			...writePage(doc, snap.page.id, snap.page),
+			width: snap.width,
+			height: snap.height
+		};
+	}
+
 	function emit(next: CanvasDocument) {
 		const migrated = migrateCanvasDocument(next);
-		if (!applyingHistory) {
-			history = pushCanvasHistory(history, migrated);
-		} else {
-			history = { ...history, last: JSON.stringify(migrated) };
+		if (editingWidgetId) {
+			if (!applyingHistory) {
+				history = pushCanvasHistory(history, migrated);
+			} else {
+				history = { ...history, last: JSON.stringify(migrated) };
+			}
+			value = migrated;
+			onchange?.(value);
+			return;
 		}
-		value = migrated;
+		const pageId = resolvedPageId;
+		seedPageHistory(value, pageId);
+		const stored = {
+			...writePage(migrated, pageId, {
+				background: migrated.background,
+				layers: migrated.layers,
+				guides: migrated.guides,
+				guidesLocked: migrated.guidesLocked
+			}),
+			width: migrated.width,
+			height: migrated.height,
+			widgets: migrated.widgets ?? []
+		};
+		const snap = pageSnap(stored, pageId);
+		const hist = pageHistory[pageId] ?? { past: [], future: [], last: snap };
+		if (!applyingHistory && snap !== hist.last) {
+			pageHistory = {
+				...pageHistory,
+				[pageId]: {
+					past: [...hist.past, hist.last].slice(-80),
+					future: [],
+					last: snap
+				}
+			};
+		} else if (applyingHistory) {
+			pageHistory = {
+				...pageHistory,
+				[pageId]: { ...hist, last: snap }
+			};
+		}
+		value = stored;
 		onchange?.(value);
 	}
 
 	function undo() {
-		const result = undoCanvasHistory(history);
-		if (!result) return;
+		if (editingWidgetId) {
+			const result = undoCanvasHistory(history);
+			if (!result) return;
+			applyingHistory = true;
+			history = result.state;
+			value = migrateCanvasDocument(result.doc);
+			applyingHistory = false;
+			onchange?.(value);
+			selectedIds = selectedIds.filter((id) => stageDoc.layers.some((l) => l.id === id));
+			return;
+		}
+		const pageId = resolvedPageId;
+		const hist = pageHistory[pageId];
+		if (!hist?.past.length) return;
+		const prev = hist.past[hist.past.length - 1];
 		applyingHistory = true;
-		history = result.state;
-		value = migrateCanvasDocument(result.doc);
+		pageHistory = {
+			...pageHistory,
+			[pageId]: {
+				past: hist.past.slice(0, -1),
+				future: [hist.last, ...hist.future].slice(0, 80),
+				last: prev
+			}
+		};
+		value = applyPageSnap(value, prev);
 		applyingHistory = false;
 		onchange?.(value);
-		selectedIds = selectedIds.filter((id) => stageDoc.layers.some((l) => l.id === id));
+		selectedIds = selectedIds.filter((id) => value.layers.some((l) => l.id === id));
 	}
 
 	function redo() {
-		const result = redoCanvasHistory(history);
-		if (!result) return;
+		if (editingWidgetId) {
+			const result = redoCanvasHistory(history);
+			if (!result) return;
+			applyingHistory = true;
+			history = result.state;
+			value = migrateCanvasDocument(result.doc);
+			applyingHistory = false;
+			onchange?.(value);
+			selectedIds = selectedIds.filter((id) => stageDoc.layers.some((l) => l.id === id));
+			return;
+		}
+		const pageId = resolvedPageId;
+		const hist = pageHistory[pageId];
+		if (!hist?.future.length) return;
+		const next = hist.future[0];
 		applyingHistory = true;
-		history = result.state;
-		value = migrateCanvasDocument(result.doc);
+		pageHistory = {
+			...pageHistory,
+			[pageId]: {
+				past: [...hist.past, hist.last].slice(-80),
+				future: hist.future.slice(1),
+				last: next
+			}
+		};
+		value = applyPageSnap(value, next);
 		applyingHistory = false;
 		onchange?.(value);
-		selectedIds = selectedIds.filter((id) => stageDoc.layers.some((l) => l.id === id));
+		selectedIds = selectedIds.filter((id) => value.layers.some((l) => l.id === id));
+	}
+
+	function showPage(pageId: string, pages = pagesOf(value)) {
+		activePageId = pageId;
+		const next = projectPage({ ...value, pages }, pageId);
+		seedPageHistory(next, pageId);
+		value = next;
+		selectedIds = [];
+		editingTextId = null;
+		onchange?.(value);
+	}
+
+	function addPage() {
+		const page = blankCanvasPage({ name: `Hoja ${designPages.length + 1}` });
+		showPage(page.id, [...designPages, page]);
+	}
+
+	function duplicatePage(pageId: string) {
+		const source = designPages.find((page) => page.id === pageId);
+		if (!source) return;
+		const copy = blankCanvasPage({
+			name: `${source.name?.trim() || 'Hoja'} copia`,
+			background: source.background,
+			layers: cloneCanvasLayers(source.layers),
+			guides: (source.guides ?? []).map((guide) =>
+				createCanvasGuide(guide.orientation, guide.position, { locked: guide.locked })
+			),
+			guidesLocked: source.guidesLocked
+		});
+		const index = designPages.findIndex((page) => page.id === pageId);
+		const pages = [...designPages];
+		pages.splice(index + 1, 0, copy);
+		showPage(copy.id, pages);
+	}
+
+	function deletePage(pageId: string) {
+		if (designPages.length < 2) return;
+		const index = designPages.findIndex((page) => page.id === pageId);
+		const pages = designPages.filter((page) => page.id !== pageId);
+		const neighbor = pages[Math.min(index, pages.length - 1)];
+		showPage(neighbor.id, pages);
+	}
+
+	function movePage(pageId: string, direction: -1 | 1) {
+		const pages = [...designPages];
+		const index = pages.findIndex((page) => page.id === pageId);
+		const target = index + direction;
+		if (index < 0 || target < 0 || target >= pages.length) return;
+		const [item] = pages.splice(index, 1);
+		pages.splice(target, 0, item);
+		value = projectPage({ ...value, pages }, resolvedPageId);
+		onchange?.(value);
 	}
 
 	function emitStageLayers(layers: CanvasLayer[], extra?: Partial<CanvasDocument>) {
@@ -1129,8 +1308,8 @@
 				downloadBlob(blob, 'canvas-document.json');
 				return;
 			}
-			const blob = await exportCanvasBlob(value, format);
-			onexport?.({ format, document: value, blob });
+			const blob = await exportCanvasBlob(projectPage(value, resolvedPageId), format);
+			onexport?.({ format, document: projectPage(value, resolvedPageId), blob });
 			downloadBlob(blob, format === 'jpeg' ? 'canvas.jpg' : 'canvas.png');
 		} catch (err) {
 			console.error('Canvas export failed', err);
@@ -1291,10 +1470,10 @@
 		</div>
 
 		<div class="rounded-lg border-border bg-surface p-0.5 flex items-center border">
-			<IconButton label="Undo" size="sm" disabled={!history.past.length} onclick={undo}>
+			<IconButton label="Undo" size="sm" disabled={!canUndo} onclick={undo}>
 				<Undo2 class="h-3.5 w-3.5" />
 			</IconButton>
-			<IconButton label="Redo" size="sm" disabled={!history.future.length} onclick={redo}>
+			<IconButton label="Redo" size="sm" disabled={!canRedo} onclick={redo}>
 				<Redo2 class="h-3.5 w-3.5" />
 			</IconButton>
 		</div>
@@ -1694,7 +1873,8 @@
 			{/snippet}
 
 			{#snippet workspace()}
-				<div class="min-h-0 relative h-full">
+				<div class="flex h-full min-h-0 flex-col">
+					<div class="relative min-h-0 flex-1">
 					<MediaStage
 						document={stageDoc}
 						{selectedIds}
@@ -1747,7 +1927,18 @@
 						ontextcommit={commitText}
 					/>
 					<div class="inset-x-0 bottom-3 pointer-events-none absolute z-20 flex justify-center">
-						<div class="pointer-events-auto">
+						<div class="pointer-events-auto gap-2 flex flex-col items-center">
+							{#if mode !== 'frame' && !editingWidget}
+								<CanvasPageStrip
+									pages={designPages}
+									activeId={resolvedPageId}
+									onselect={showPage}
+									onduplicate={duplicatePage}
+									ondelete={deletePage}
+									onmove={movePage}
+									onadd={addPage}
+								/>
+							{/if}
 							<Dock size="sm">
 								<DockItem
 									size="sm"
@@ -1786,6 +1977,7 @@
 								</DockItem>
 							</Dock>
 						</div>
+					</div>
 					</div>
 				</div>
 			{/snippet}

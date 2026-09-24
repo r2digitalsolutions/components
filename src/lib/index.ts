@@ -1616,6 +1616,12 @@ export {
 } from './utils/mediaTracks.js';
 export {
 	emptyCanvasDocument,
+	blankCanvasPage,
+	pagesOf,
+	documentWithPages,
+	projectPage,
+	writePage,
+	cloneCanvasLayers,
 	createCanvasLayer,
 	createCanvasGuide,
 	createPathFromDocPoints,
@@ -1650,6 +1656,7 @@ export {
 } from './utils/canvasDocument.js';
 export type {
 	CanvasDocument,
+	CanvasPage,
 	CanvasLayer,
 	CanvasLayerKind,
 	CanvasLayerRect,

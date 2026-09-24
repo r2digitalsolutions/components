@@ -228,7 +228,7 @@
 			]}
 			aria-haspopup="listbox"
 			aria-expanded={open}
-			aria-label={label}
+			aria-label={`${label}: ${current?.label ?? value} ${shortCode}`}
 			onclick={() => (open = !open)}
 		>
 			{#if showFlags && current?.flag}

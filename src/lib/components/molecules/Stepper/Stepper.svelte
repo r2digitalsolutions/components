@@ -187,6 +187,7 @@
 						type="button"
 						disabled={!navigable}
 						onclick={() => goTo(index)}
+						aria-label={`${index + 1}. ${step.label}`}
 						aria-current={state === 'current' || state === 'error' ? 'step' : undefined}
 						aria-disabled={step.disabled || undefined}
 						class={[
@@ -215,6 +216,7 @@
 							type="button"
 							disabled={!navigable}
 							onclick={() => goTo(index)}
+							aria-label={`${index + 1}. ${step.label}`}
 							aria-current={state === 'current' || state === 'error' ? 'step' : undefined}
 							aria-disabled={step.disabled || undefined}
 							class={[

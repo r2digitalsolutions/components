@@ -139,7 +139,7 @@
 	--border-strong: oklch(40% calc(var(--r2-gray-c) * 2) var(--r2-gray-h));
 	--text-primary: oklch(96% calc(var(--r2-gray-c) * 0.5) var(--r2-gray-h));
 	--text-secondary: oklch(75% calc(var(--r2-gray-c) * 1.5) var(--r2-gray-h));
-	--text-muted: oklch(55% calc(var(--r2-gray-c) * 1.5) var(--r2-gray-h));
+	--text-muted: oklch(72% calc(var(--r2-gray-c) * 1.5) var(--r2-gray-h));
 	--text-inverse: oklch(15% var(--r2-gray-c) var(--r2-gray-h));
 
 	/* Alert tones */

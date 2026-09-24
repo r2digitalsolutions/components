@@ -183,6 +183,16 @@ export interface CanvasGuide {
 	locked?: boolean;
 }
 
+/** One artboard inside a design. Every page shares the document size. */
+export interface CanvasPage {
+	id: string;
+	name?: string;
+	background: string;
+	layers: CanvasLayer[];
+	guides?: CanvasGuide[];
+	guidesLocked?: boolean;
+}
+
 export interface CanvasDocument {
 	version: 1 | 2;
 	width: number;
@@ -194,6 +204,11 @@ export interface CanvasDocument {
 	guidesLocked?: boolean;
 	/** Local User Widget library (v2). */
 	widgets?: CanvasWidgetDefinition[];
+	/**
+	 * Sheets of this design. Missing or empty means one page taken from the
+	 * top-level background, layers and guides (older documents).
+	 */
+	pages?: CanvasPage[];
 }
 
 const TOP_LEFT: CanvasAnchors = { minX: 0, minY: 0, maxX: 0, maxY: 0 };
@@ -308,16 +323,116 @@ export function emptyCanvasDocument(
 		widgets?: CanvasWidgetDefinition[];
 	}
 ): CanvasDocument {
+	const background = partial?.background ?? '#ffffff';
+	const layers = (partial?.layers ?? []).map(ensureLayerSlot);
+	const guides = partial?.guides ?? [];
+	const guidesLocked = partial?.guidesLocked ?? false;
+	const pages =
+		partial?.pages && partial.pages.length > 0
+			? partial.pages
+			: [
+					blankCanvasPage({
+						name: 'Hoja 1',
+						background,
+						layers,
+						guides,
+						guidesLocked
+					})
+				];
+	const first = pages[0];
 	return {
 		version: 2,
 		width: partial?.width ?? 1280,
 		height: partial?.height ?? 720,
-		background: partial?.background ?? '#ffffff',
-		layers: (partial?.layers ?? []).map(ensureLayerSlot),
-		guides: partial?.guides ?? [],
-		guidesLocked: partial?.guidesLocked ?? false,
-		widgets: partial?.widgets ?? []
+		background: first.background,
+		layers: first.layers,
+		guides: first.guides ?? [],
+		guidesLocked: first.guidesLocked ?? false,
+		widgets: partial?.widgets ?? [],
+		pages
 	};
+}
+
+export function blankCanvasPage(partial?: Partial<Omit<CanvasPage, 'id'>>): CanvasPage {
+	return {
+		id: uid('page'),
+		name: partial?.name,
+		background: partial?.background ?? '#ffffff',
+		layers: partial?.layers ?? [],
+		guides: partial?.guides ?? [],
+		guidesLocked: partial?.guidesLocked ?? false
+	};
+}
+
+/** Pages on a document. A document without `pages` is a single sheet. */
+export function pagesOf(doc: CanvasDocument): CanvasPage[] {
+	if (doc.pages && doc.pages.length > 0) return doc.pages;
+	return [
+		{
+			id: 'page-1',
+			name: 'Hoja 1',
+			background: doc.background,
+			layers: doc.layers,
+			guides: doc.guides ?? [],
+			guidesLocked: doc.guidesLocked ?? false
+		}
+	];
+}
+
+/** Persist `pages` without changing a document that already has them. */
+export function documentWithPages(doc: CanvasDocument): CanvasDocument {
+	if (doc.pages && doc.pages.length > 0) return doc;
+	const page = pagesOf(doc)[0];
+	return { ...doc, pages: [page] };
+}
+
+/** View of the document as the given sheet. Top-level fields mirror that sheet. */
+export function projectPage(doc: CanvasDocument, pageId: string): CanvasDocument {
+	const pages = pagesOf(doc);
+	const page = pages.find((item) => item.id === pageId) ?? pages[0];
+	return {
+		...doc,
+		pages,
+		background: page.background,
+		layers: page.layers,
+		guides: page.guides ?? [],
+		guidesLocked: page.guidesLocked ?? false
+	};
+}
+
+/** Write one sheet and mirror it on the top-level fields (the active sheet). */
+export function writePage(
+	doc: CanvasDocument,
+	pageId: string,
+	patch: Partial<Omit<CanvasPage, 'id'>>
+): CanvasDocument {
+	const pages = pagesOf(doc);
+	const index = Math.max(
+		0,
+		pages.findIndex((item) => item.id === pageId)
+	);
+	const current = pages[index] ?? pages[0];
+	const nextPage: CanvasPage = { ...current, ...patch, id: current.id };
+	const nextPages = pages.map((item, i) => (i === index ? nextPage : item));
+	return {
+		...doc,
+		pages: nextPages,
+		background: nextPage.background,
+		layers: nextPage.layers,
+		guides: nextPage.guides ?? [],
+		guidesLocked: nextPage.guidesLocked ?? false
+	};
+}
+
+/** Clone layer ids so a duplicated sheet does not share identity with the source. */
+export function cloneCanvasLayers(layers: CanvasLayer[]): CanvasLayer[] {
+	const idMap = new Map(layers.map((layer) => [layer.id, uid('layer')]));
+	return layers.map((layer) => {
+		const copy = JSON.parse(JSON.stringify(layer)) as CanvasLayer;
+		copy.id = idMap.get(layer.id)!;
+		if (copy.parentId && idMap.has(copy.parentId)) copy.parentId = idMap.get(copy.parentId)!;
+		return copy;
+	});
 }
 
 /** Migrate v1 (flat absolute layers) → v2 (parentId + slot). */
