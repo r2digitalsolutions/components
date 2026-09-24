@@ -849,17 +849,58 @@ export function canvasLayerFilter(layer: {
 	return parts.length ? parts.join(' ') : undefined;
 }
 
+/** Instagram puzzle feed: 3 columns × 1080 and 3 rows × 1350 (4:5 tiles). */
+export const INSTAGRAM_GRID_PRESET_ID = 'ig-grid-3x3';
+
+export const INSTAGRAM_GRID = {
+	id: INSTAGRAM_GRID_PRESET_ID,
+	cols: 3,
+	rows: 3,
+	cellWidth: 1080,
+	cellHeight: 1350,
+	width: 3240,
+	height: 4050
+} as const;
+
 export const CANVAS_PRESETS = [
 	{ id: 'cover', label: 'Cover · 1800×600', width: 1800, height: 600 },
 	{ id: 'hd', label: 'HD · 1280×720', width: 1280, height: 720 },
 	{ id: 'fhd', label: 'Full HD · 1920×1080', width: 1920, height: 1080 },
 	{ id: 'square', label: 'Instagram · 1080×1080', width: 1080, height: 1080 },
 	{ id: 'story', label: 'Story · 1080×1920', width: 1080, height: 1920 },
+	{
+		id: INSTAGRAM_GRID_PRESET_ID,
+		label: 'Instagram 3×3 · 3240×4050',
+		width: INSTAGRAM_GRID.width,
+		height: INSTAGRAM_GRID.height
+	},
 	{ id: 'landscape', label: 'Landscape · 1600×900', width: 1600, height: 900 },
 	{ id: 'presentation', label: 'Presentation · 1920×1080', width: 1920, height: 1080 },
 	{ id: 'a4', label: 'A4 · 794×1123', width: 794, height: 1123 },
 	{ id: 'twitter', label: 'X Post · 1600×900', width: 1600, height: 900 }
 ] as const;
+
+/** Locked cut lines between the nine Instagram tiles. */
+export function instagramGridGuides(): CanvasGuide[] {
+	const guides: CanvasGuide[] = [];
+	for (let col = 1; col < INSTAGRAM_GRID.cols; col++) {
+		guides.push(createCanvasGuide('vertical', col * INSTAGRAM_GRID.cellWidth, { locked: true }));
+	}
+	for (let row = 1; row < INSTAGRAM_GRID.rows; row++) {
+		guides.push(createCanvasGuide('horizontal', row * INSTAGRAM_GRID.cellHeight, { locked: true }));
+	}
+	return guides;
+}
+
+export function emptyInstagramGridDocument(): CanvasDocument {
+	return emptyCanvasDocument({
+		width: INSTAGRAM_GRID.width,
+		height: INSTAGRAM_GRID.height,
+		background: '#0b1f3a',
+		guides: instagramGridGuides(),
+		guidesLocked: true
+	});
+}
 
 export function presetIdForSize(width: number, height: number): string {
 	const match = CANVAS_PRESETS.find((p) => p.width === width && p.height === height);

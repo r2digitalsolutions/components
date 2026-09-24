@@ -335,6 +335,7 @@
 			flush
 			clipContent={layer.kind === 'text' || layer.kind === 'sticky' ? !textAuto : true}
 			handleStyle="canva"
+			snapMode="live"
 			hugContent={textAuto}
 			hugMaxWidth={layer.textMaxWidth ?? 0}
 			resizeEdges={textAuto ? [...TEXT_RESIZE_EDGES] : undefined}

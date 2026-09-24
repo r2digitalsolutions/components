@@ -22,6 +22,7 @@
 	} from '$lib/components/molecules/DropdownMenu/DropdownMenu.svelte';
 	import {
 		CANVAS_PRESETS,
+		INSTAGRAM_GRID_PRESET_ID,
 		alignLayerRect,
 		applyTextAutoSize,
 		createCanvasGuide,
@@ -29,6 +30,7 @@
 		createPathFromDocPoints,
 		defaultSlotFromRect,
 		emptyCanvasDocument,
+		instagramGridGuides,
 		migrateCanvasDocument,
 		presetIdForSize,
 		type CanvasAlign,
@@ -135,6 +137,14 @@
 		 * `edit` is the full canvas: panels, menu and component search.
 		 */
 		mode?: 'edit' | 'frame';
+		/** Hide the built-in menu when the host already has one. */
+		showMenu?: boolean;
+		showGrid?: boolean;
+		showGuides?: boolean;
+		snap?: boolean;
+		showSidebar?: boolean;
+		showInspector?: boolean;
+		stageFrame?: 'edit' | 'desktop' | 'tablet' | 'mobile';
 		class?: string;
 		onchange?: (doc: CanvasDocument) => void;
 		onassetschange?: (assets: MediaAsset[]) => void;
@@ -150,6 +160,13 @@
 		assets = $bindable<MediaAsset[]>([]),
 		zoom = $bindable(1),
 		mode = 'edit',
+		showMenu = true,
+		showGrid = $bindable(false),
+		showGuides = $bindable(true),
+		snap = $bindable(true),
+		showSidebar = $bindable(true),
+		showInspector = $bindable(true),
+		stageFrame = $bindable<'edit' | 'desktop' | 'tablet' | 'mobile'>('edit'),
 		class: className = '',
 		onchange,
 		onassetschange,
@@ -166,14 +183,8 @@
 	let selectedIds = $state<string[]>([]);
 	let editingTextId = $state<string | null>(null);
 	let frameBoot = false;
-	let showSidebar = $state(true);
-	let showInspector = $state(true);
 	let assetsSize = $state(58);
 	let sidebarTab = $state<'elements' | 'uploads' | 'widgets'>('elements');
-	let showGrid = $state(false);
-	let stageFrame = $state<'edit' | 'desktop' | 'tablet' | 'mobile'>('edit');
-	let showGuides = $state(true);
-	let snap = $state(true);
 	let cellSize = $state(8);
 	let drawMode = $state(false);
 	let ctxOpen = $state(false);
@@ -731,6 +742,17 @@
 		if (editingWidgetId) return;
 		const preset = CANVAS_PRESETS.find((p) => p.id === id);
 		if (!preset) return;
+		if (id === INSTAGRAM_GRID_PRESET_ID) {
+			emit({
+				...value,
+				width: preset.width,
+				height: preset.height,
+				guides: instagramGridGuides(),
+				guidesLocked: true
+			});
+			zoom = 0.25;
+			return;
+		}
 		emit({ ...value, width: preset.width, height: preset.height });
 		zoom = 1;
 	}
@@ -1213,7 +1235,7 @@
 <svelte:window onkeydowncapture={handleKeydown} />
 
 <div class={['min-h-0 relative flex h-full flex-col', className]}>
-	{#if mode !== 'frame'}
+	{#if mode !== 'frame' && showMenu}
 		<Menubar items={menuItems} onselect={onMenu} />
 	{/if}
 	<header
@@ -1238,7 +1260,8 @@
 				<span class="text-sm font-semibold text-primary sm:inline hidden">Canvas</span>
 				<Select
 					size="sm"
-					class="w-44"
+					class="min-w-72"
+					listboxMinWidth={320}
 					options={presetOptions}
 					value={presetValue}
 					onchange={(id) => {

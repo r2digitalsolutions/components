@@ -332,14 +332,15 @@
 	const gridOverlayStyle = $derived.by(() => {
 		const cell = Math.max(4, cellSize);
 		const major = cell * 5;
-		const fine = 'color-mix(in oklab, #0f172a 18%, transparent)';
-		const bold = 'color-mix(in oklab, #0f172a 32%, transparent)';
+		const line = 1 / Math.max(0.05, scale);
+		const fine = 'color-mix(in oklab, #0f172a 28%, transparent)';
+		const bold = 'color-mix(in oklab, #0f172a 48%, transparent)';
 		return [
 			`background-image:`,
-			`linear-gradient(to right, ${fine} 1px, transparent 1px),`,
-			`linear-gradient(to bottom, ${fine} 1px, transparent 1px),`,
-			`linear-gradient(to right, ${bold} 1px, transparent 1px),`,
-			`linear-gradient(to bottom, ${bold} 1px, transparent 1px);`,
+			`linear-gradient(to right, ${fine} ${line}px, transparent ${line}px),`,
+			`linear-gradient(to bottom, ${fine} ${line}px, transparent ${line}px),`,
+			`linear-gradient(to right, ${bold} ${line}px, transparent ${line}px),`,
+			`linear-gradient(to bottom, ${bold} ${line}px, transparent ${line}px);`,
 			`background-size:${cell}px ${cell}px, ${cell}px ${cell}px, ${major}px ${major}px, ${major}px ${major}px;`
 		].join('');
 	});
@@ -1358,14 +1359,6 @@
 								<div class="inset-0 absolute" style:background-color={doc.background}></div>
 							</div>
 
-							{#if showGrid}
-								<div
-									class="inset-0 pointer-events-none absolute z-100 overflow-hidden"
-									style={gridOverlayStyle}
-									aria-hidden="true"
-								></div>
-							{/if}
-
 							<div class={['inset-0 absolute overflow-visible', drawMode && 'pointer-events-none']}>
 								{#each sorted as layer, paintIndex (layer.id)}
 									{#if effectivelyVisible.has(layer.id)}
@@ -1493,6 +1486,7 @@
 												showChrome={false}
 												flush
 												handleStyle="canva"
+												snapMode="live"
 												handlesVisible={true}
 												raiseOnSelect={false}
 												stackIndex={999999}
@@ -1580,6 +1574,14 @@
 									{/if}
 								{/each}
 							</div>
+							{#if showGrid}
+								<div
+									class="pointer-events-none absolute inset-0 overflow-hidden"
+									style:z-index="2000000"
+									style={gridOverlayStyle}
+									aria-hidden="true"
+								></div>
+							{/if}
 						</div>
 					</div>
 				</div>
@@ -1600,13 +1602,14 @@
 			<div
 				data-guide={guide.id}
 				class={[
-					'absolute z-40',
+					'absolute',
 					guide.orientation === 'vertical'
 						? 'w-2 -translate-x-1/2 cursor-col-resize'
 						: 'h-2 -translate-y-1/2 cursor-row-resize',
 					locked && 'cursor-default',
 					hiding && 'opacity-0'
 				]}
+				style:z-index="2100000"
 				style:left={guide.orientation === 'vertical'
 					? `${RULER_LEFT + tickX(guide.position)}px`
 					: `${originX}px`}

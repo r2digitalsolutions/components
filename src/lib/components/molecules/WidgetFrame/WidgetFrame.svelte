@@ -161,6 +161,8 @@
 	}: WidgetFrameProps = $props();
 
 	const canvas = getContext<WidgetCanvasContext | undefined>(WIDGET_CANVAS_CONTEXT);
+	/** Document pixels per screen pixel, so chrome stays the same size when the artboard is zoomed. */
+	const ui = $derived(1 / Math.max(0.05, canvas?.scale || 1));
 
 	let mode = $state<'move' | 'resize' | null>(null);
 	let rotating = $state(false);
@@ -647,7 +649,7 @@
 		!isCanva && showChrome && 'rounded-xl border-border bg-surface-elevated overflow-hidden border',
 		!isCanva && !showChrome && 'bg-transparent',
 		isCanva && 'bg-transparent',
-		canvaBorder && 'outline outline-2 outline-[#3b82f6]',
+		canvaBorder && 'outline outline-[#3b82f6]',
 		freeform ? 'shadow-md absolute' : 'relative',
 		isCanva && 'shadow-none',
 		mode === 'move' && 'cursor-grabbing opacity-95',
@@ -656,6 +658,7 @@
 		frameClassName
 	]}
 	style={rootStyle}
+	style:outline-width={canvaBorder ? `${2 * ui}px` : undefined}
 	onpointerdown={(e) => {
 		bringToFront();
 		if (!showChrome && freeform && draggable && e.button === 0) {
@@ -814,14 +817,21 @@
 
 	{#if isCanva && mode === 'resize'}
 		<div
-			class="rounded-md bg-neutral-900 px-2 py-1 font-medium text-white top-0 shadow-md pointer-events-none absolute left-1/2 z-30 -translate-x-1/2 -translate-y-[calc(100%+8px)] text-[11px] whitespace-nowrap"
+			class="rounded-md bg-neutral-900 font-medium text-white top-0 shadow-md pointer-events-none absolute left-1/2 z-30 whitespace-nowrap"
+			style:padding="{4 * ui}px {8 * ui}px"
+			style:font-size="{11 * ui}px"
+			style:transform="translate(-50%, calc(-100% - {8 * ui}px))"
 		>
 			{Math.round(rect.w)} × {Math.round(hugContent && hugLiveH > 0 ? hugLiveH : rect.h)}
 		</div>
 	{/if}
 	{#if isCanva && rotating}
 		<div
-			class="rounded-md bg-neutral-900 px-2 py-1 font-medium text-white mt-8 shadow-md pointer-events-none absolute top-full left-1/2 z-30 -translate-x-1/2 text-[11px] whitespace-nowrap"
+			class="rounded-md bg-neutral-900 font-medium text-white shadow-md pointer-events-none absolute top-full left-1/2 z-30 whitespace-nowrap"
+			style:margin-top="{32 * ui}px"
+			style:padding="{4 * ui}px {8 * ui}px"
+			style:font-size="{11 * ui}px"
+			style:transform="translateX(-50%)"
 		>
 			{Math.round(rotation)}°
 		</div>
@@ -832,6 +842,9 @@
 			<div
 				data-resize-handle
 				class={[edgeAccent, h.class]}
+				style:width={isCanva ? `${12 * ui}px` : undefined}
+				style:height={isCanva ? `${12 * ui}px` : undefined}
+				style:border-width={isCanva ? `${2 * ui}px` : undefined}
 				role="separator"
 				aria-orientation={h.edge === 'e' || h.edge === 'w' ? 'vertical' : 'horizontal'}
 				aria-label={`Resize ${title ?? 'widget'} (${h.edge})`}
@@ -841,13 +854,19 @@
 
 		{#if isCanva && onrotation}
 			<div
-				class="h-3 pointer-events-none absolute top-full left-1/2 z-20 w-px -translate-x-1/2 bg-[#3b82f6]"
+				class="pointer-events-none absolute top-full left-1/2 z-20 -translate-x-1/2 bg-[#3b82f6]"
+				style:width="{Math.max(1, ui)}px"
+				style:height="{12 * ui}px"
 			></div>
 			<div
 				class={[
 					edgeAccent,
-					'mt-3 h-6 w-6 top-full left-1/2 z-20 flex -translate-x-1/2 cursor-grab items-center justify-center active:cursor-grabbing'
+					'top-full left-1/2 z-20 flex -translate-x-1/2 cursor-grab items-center justify-center active:cursor-grabbing'
 				]}
+				style:width="{24 * ui}px"
+				style:height="{24 * ui}px"
+				style:margin-top="{12 * ui}px"
+				style:border-width="{2 * ui}px"
 				role="slider"
 				tabindex="0"
 				aria-label="Rotar"
@@ -870,7 +889,7 @@
 					}
 				}}
 			>
-				<RotateCw class="h-3 w-3 text-[#3b82f6]" />
+				<RotateCw width={12 * ui} height={12 * ui} class="text-[#3b82f6]" />
 			</div>
 		{/if}
 		{#if !isCanva}
