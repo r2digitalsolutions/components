@@ -4,6 +4,7 @@
 	import MediaLayerList from '$lib/components/molecules/MediaLayerList/MediaLayerList.svelte';
 	import MediaStage from '$lib/components/molecules/MediaStage/MediaStage.svelte';
 	import CanvasPageStrip from './CanvasPageStrip.svelte';
+	import CanvasQuickDock from './CanvasQuickDock.svelte';
 	import CanvasInspector from '$lib/components/molecules/CanvasInspector/CanvasInspector.svelte';
 	import CanvasElementsPanel, {
 		type CanvasElementDef
@@ -211,6 +212,7 @@
 	type PageHist = { past: string[]; future: string[]; last: string };
 	let pageHistory = $state<Record<string, PageHist>>({});
 	let syncInstanceSizes = $state(true);
+	const toolOn = 'bg-neutral-200 text-neutral-950 dark:bg-neutral-700 dark:text-neutral-50';
 
 	const gridSizeOptions = [
 		{ value: '4', label: '4px' },
@@ -1418,7 +1420,7 @@
 		<Menubar items={menuItems} onselect={onMenu} />
 	{/if}
 	<header
-		class="gap-3 border-border bg-surface-elevated px-3 py-2 flex shrink-0 items-center border-b"
+		class="gap-3 border-border bg-neutral-100 px-3 py-2 dark:bg-neutral-900 relative flex shrink-0 items-center border-b"
 	>
 		<div class="min-w-0 gap-2 flex items-center">
 			{#if editingWidget}
@@ -1488,7 +1490,7 @@
 						showGrid = !showGrid;
 						(e.currentTarget as HTMLButtonElement).blur();
 					}}
-					class={showGrid ? 'bg-brand-500/10 text-brand-600' : undefined}
+					class={showGrid ? toolOn : undefined}
 				>
 					<Grid3x3 class="h-3.5 w-3.5" />
 				</IconButton>
@@ -1514,7 +1516,7 @@
 						snap = !snap;
 						(e.currentTarget as HTMLButtonElement).blur();
 					}}
-					class={snap ? 'bg-brand-500/10 text-brand-600' : undefined}
+					class={snap ? toolOn : undefined}
 				>
 					<Magnet class="h-3.5 w-3.5" />
 				</IconButton>
@@ -1529,7 +1531,7 @@
 					label="Pen tool"
 					size="sm"
 					onclick={() => (drawMode = !drawMode)}
-					class={drawMode ? 'bg-brand-500/10 text-brand-600' : undefined}
+					class={drawMode ? toolOn : undefined}
 				>
 					<Pencil class="h-3.5 w-3.5" />
 				</IconButton>
@@ -1544,7 +1546,7 @@
 					label="Toggle guides"
 					size="sm"
 					onclick={() => (showGuides = !showGuides)}
-					class={showGuides ? 'bg-brand-500/10 text-brand-600' : undefined}
+					class={showGuides ? toolOn : undefined}
 				>
 					<Eye class="h-3.5 w-3.5" />
 				</IconButton>
@@ -1564,7 +1566,7 @@
 					label={value.guidesLocked ? 'Unlock guides' : 'Lock guides'}
 					size="sm"
 					onclick={toggleGuidesLocked}
-					class={value.guidesLocked ? 'bg-brand-500/10 text-brand-600' : undefined}
+					class={value.guidesLocked ? toolOn : undefined}
 				>
 					{#if value.guidesLocked}
 						<Lock class="h-3.5 w-3.5" />
@@ -1608,6 +1610,68 @@
 				</DropdownMenu>
 			</div>
 		{/if}
+
+		<div
+			class="pointer-events-none absolute inset-y-0 left-1/2 flex -translate-x-1/2 items-center"
+		>
+			<div
+				class="border-border bg-neutral-50 p-0.5 dark:bg-neutral-800 pointer-events-auto flex items-center rounded-lg border"
+			>
+				<button
+					type="button"
+					class={[
+						'rounded-md px-2.5 py-1 text-xs font-medium',
+						stageFrame === 'edit' ? toolOn : 'text-neutral-600 hover:bg-neutral-200/70 dark:text-neutral-300 dark:hover:bg-neutral-700 dark:hover:text-neutral-50'
+					]}
+					aria-pressed={stageFrame === 'edit'}
+					onclick={() => (stageFrame = 'edit')}
+				>
+					Lienzo
+				</button>
+				<button
+					type="button"
+					class={[
+						'gap-1 rounded-md px-2.5 py-1 text-xs font-medium inline-flex items-center',
+						stageFrame === 'desktop'
+							? toolOn
+							: 'text-neutral-600 hover:bg-neutral-200/70 dark:text-neutral-300 dark:hover:bg-neutral-700 dark:hover:text-neutral-50'
+					]}
+					aria-pressed={stageFrame === 'desktop'}
+					onclick={() => (stageFrame = 'desktop')}
+				>
+					<Monitor class="h-3.5 w-3.5" />
+					Escritorio
+				</button>
+				<button
+					type="button"
+					class={[
+						'gap-1 rounded-md px-2.5 py-1 text-xs font-medium inline-flex items-center',
+						stageFrame === 'tablet'
+							? toolOn
+							: 'text-neutral-600 hover:bg-neutral-200/70 dark:text-neutral-300 dark:hover:bg-neutral-700 dark:hover:text-neutral-50'
+					]}
+					aria-pressed={stageFrame === 'tablet'}
+					onclick={() => (stageFrame = 'tablet')}
+				>
+					<Tablet class="h-3.5 w-3.5" />
+					Tablet
+				</button>
+				<button
+					type="button"
+					class={[
+						'gap-1 rounded-md px-2.5 py-1 text-xs font-medium inline-flex items-center',
+						stageFrame === 'mobile'
+							? toolOn
+							: 'text-neutral-600 hover:bg-neutral-200/70 dark:text-neutral-300 dark:hover:bg-neutral-700 dark:hover:text-neutral-50'
+					]}
+					aria-pressed={stageFrame === 'mobile'}
+					onclick={() => (stageFrame = 'mobile')}
+				>
+					<Smartphone class="h-3.5 w-3.5" />
+					Móvil
+				</button>
+			</div>
+		</div>
 
 		<div class="gap-1 ml-auto flex items-center">
 			<IconButton
@@ -1926,9 +1990,19 @@
 						{editingTextId}
 						ontextcommit={commitText}
 					/>
+					{#if selectedLayer && mode !== 'frame'}
+						<div class="inset-x-0 top-3 pointer-events-none absolute z-30 flex justify-center">
+							<CanvasQuickDock
+								layer={selectedLayer}
+								onpatch={patchLayer}
+								onduplicate={duplicateSelected}
+								ondelete={deleteSelected}
+							/>
+						</div>
+					{/if}
 					<div class="inset-x-0 bottom-3 pointer-events-none absolute z-20 flex justify-center">
-						<div class="pointer-events-auto gap-2 flex flex-col items-center">
-							{#if mode !== 'frame' && !editingWidget}
+						{#if mode !== 'frame' && !editingWidget}
+							<div class="pointer-events-auto">
 								<CanvasPageStrip
 									pages={designPages}
 									activeId={resolvedPageId}
@@ -1938,45 +2012,8 @@
 									onmove={movePage}
 									onadd={addPage}
 								/>
-							{/if}
-							<Dock size="sm">
-								<DockItem
-									size="sm"
-									active={stageFrame === 'edit'}
-									ariaLabel="Lienzo"
-									onclick={() => (stageFrame = 'edit')}
-								>
-									Lienzo
-								</DockItem>
-								<DockItem
-									size="sm"
-									active={stageFrame === 'desktop'}
-									ariaLabel="Escritorio"
-									onclick={() => (stageFrame = 'desktop')}
-								>
-									<Monitor class="h-3.5 w-3.5" />
-									Escritorio
-								</DockItem>
-								<DockItem
-									size="sm"
-									active={stageFrame === 'tablet'}
-									ariaLabel="Tablet"
-									onclick={() => (stageFrame = 'tablet')}
-								>
-									<Tablet class="h-3.5 w-3.5" />
-									Tablet
-								</DockItem>
-								<DockItem
-									size="sm"
-									active={stageFrame === 'mobile'}
-									ariaLabel="Móvil"
-									onclick={() => (stageFrame = 'mobile')}
-								>
-									<Smartphone class="h-3.5 w-3.5" />
-									Móvil
-								</DockItem>
-							</Dock>
-						</div>
+							</div>
+						{/if}
 					</div>
 					</div>
 				</div>

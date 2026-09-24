@@ -34,7 +34,7 @@
 
 <div class="relative">
 	<div
-		class="border-border bg-surface-elevated gap-0.5 rounded-xl p-1 shadow-lg flex items-center border"
+		class="border-border bg-neutral-100 dark:bg-neutral-900 gap-0.5 rounded-xl p-1 shadow-lg flex items-center border"
 		aria-label="Hojas"
 	>
 		<button
@@ -42,7 +42,7 @@
 			class="rounded-md relative h-11 w-9 overflow-hidden border border-border"
 			style:background-color={active?.background ?? '#ffffff'}
 			aria-current="true"
-			aria-label={active?.name?.trim() || `Hoja ${activeIndex + 1}`}
+			aria-label={`${active?.name?.trim() || `Hoja ${activeIndex + 1}`}, ${activeIndex + 1} de ${pages.length}`}
 			onclick={() => (open = !open)}
 		>
 			<span
@@ -51,6 +51,9 @@
 				{activeIndex + 1}
 			</span>
 		</button>
+		<span class="text-neutral-700 dark:text-neutral-200 px-1 text-[11px] font-medium tabular-nums">
+			{activeIndex + 1} de {pages.length}
+		</span>
 		<IconButton label="Añadir hoja" size="sm" onclick={onadd}>
 			<Plus class="h-4 w-4" />
 		</IconButton>
@@ -74,7 +77,7 @@
 						type="button"
 						class={[
 							'rounded-md relative h-16 w-12 shrink-0 overflow-hidden border',
-							selected ? 'border-brand-500 ring-brand-500 ring-2' : 'border-border'
+							selected ? 'border-neutral-950 ring-2 ring-neutral-950 dark:border-neutral-50 dark:ring-neutral-50' : 'border-border'
 						]}
 						style:background-color={page.background}
 						aria-current={selected ? 'true' : undefined}

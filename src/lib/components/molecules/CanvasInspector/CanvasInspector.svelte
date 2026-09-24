@@ -1200,7 +1200,11 @@
 							patch({ fontSize: Number((e.currentTarget as HTMLInputElement).value) })}
 					/>
 				</PropertyField>
-				<PropertyField label="Weight">
+				<PropertyField
+					label="Weight"
+					modified={fieldModified('fontWeight')}
+					onreset={() => resetField('fontWeight')}
+				>
 					<Select
 						size="xs"
 						options={weightOptions}
@@ -1208,7 +1212,11 @@
 						onchange={(v) => patch({ fontWeight: v })}
 					/>
 				</PropertyField>
-				<PropertyField label="Style">
+				<PropertyField
+					label="Style"
+					modified={fieldModified('fontStyle')}
+					onreset={() => resetField('fontStyle')}
+				>
 					<Select
 						size="xs"
 						options={styleOptions}
@@ -1216,7 +1224,11 @@
 						onchange={(v) => patch({ fontStyle: v as CanvasLayer['fontStyle'] })}
 					/>
 				</PropertyField>
-				<PropertyField label="Decoration">
+				<PropertyField
+					label="Decoration"
+					modified={fieldModified('textDecoration')}
+					onreset={() => resetField('textDecoration')}
+				>
 					<Select
 						size="xs"
 						options={decoOptions}
@@ -1296,7 +1308,11 @@
 						/>
 					</PropertyField>
 				{/if}
-				<PropertyField label="Letter spacing">
+				<PropertyField
+					label="Letter spacing"
+					modified={fieldModified('letterSpacing')}
+					onreset={() => resetField('letterSpacing')}
+				>
 					<Input
 						type="number"
 						size="sm"
@@ -1305,7 +1321,11 @@
 							patch({ letterSpacing: Number((e.currentTarget as HTMLInputElement).value) })}
 					/>
 				</PropertyField>
-				<PropertyField label="Line height">
+				<PropertyField
+					label="Line height"
+					modified={fieldModified('lineHeight')}
+					onreset={() => resetField('lineHeight')}
+				>
 					<Input
 						type="number"
 						size="sm"

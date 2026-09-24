@@ -598,6 +598,8 @@ export type CanvasResettableField =
 
 function canvasValuesEqual(a: unknown, b: unknown): boolean {
 	if (a === b) return true;
+	if (typeof a === 'number' && typeof b === 'string' && b !== '' && Number(b) === a) return true;
+	if (typeof b === 'number' && typeof a === 'string' && a !== '' && Number(a) === b) return true;
 	// Treat unset numeric effects as 0
 	if ((a == null || a === 0) && (b == null || b === 0)) return true;
 	if (a == null && b == null) return true;
@@ -645,9 +647,13 @@ export function canvasLayerFieldDefault(
 		case 'fontSize':
 			return d.fontSize;
 		case 'fontWeight':
+			return kind === 'text' || kind === 'sticky' ? 600 : undefined;
 		case 'fontFamily':
+			return undefined;
 		case 'fontStyle':
+			return kind === 'text' || kind === 'sticky' ? 'normal' : undefined;
 		case 'textDecoration':
+			return kind === 'text' || kind === 'sticky' ? 'none' : undefined;
 		case 'letterSpacing':
 		case 'lineHeight':
 			return undefined;
@@ -683,9 +689,8 @@ export function canvasLayerFieldDefault(
 export function isCanvasFieldModified(layer: CanvasLayer, field: CanvasResettableField): boolean {
 	const def = canvasLayerFieldDefault(layer.kind, field);
 	const raw = layer[field as keyof CanvasLayer];
-	// Missing autoSize / autoSizeChildren on older docs → kind default.
-	const cur =
-		(field === 'autoSize' || field === 'autoSizeChildren') && raw === undefined ? def : raw;
+	// Unset means the kind default (older docs and fields the UI fills in).
+	const cur = raw === undefined ? def : raw;
 	return !canvasValuesEqual(cur, def);
 }
 

@@ -45,9 +45,7 @@
 	}: PropertyFieldProps = $props();
 
 	const canReset = $derived(!!onreset && modified && !disabled);
-	const columns = $derived(
-		compact ? `${labelWidth} minmax(0, 1fr)` : `1.25rem ${labelWidth} minmax(0, 1fr)`
-	);
+	const columns = $derived(`${labelWidth} minmax(0, 1fr)`);
 </script>
 
 <div
@@ -59,33 +57,27 @@
 	]}
 	style:grid-template-columns={columns}
 >
-	{#if !compact}
-		<!-- Reset gutter: always reserved so every row shares the same label/value columns -->
-		<span class="flex h-7 w-5 items-center justify-center">
-			{#if canReset}
-				<Tooltip content="Reset to default" side="top">
-					<IconButton
-						label="Reset to default"
-						size="xs"
-						class="text-amber-500 hover:bg-amber-500/10 hover:text-amber-600 dark:text-amber-400 dark:hover:text-amber-300"
-						onclick={() => onreset?.()}
-					>
-						<RotateCcw class="h-3 w-3" strokeWidth={2.5} />
-					</IconButton>
-				</Tooltip>
-			{/if}
-		</span>
-	{/if}
-
 	<span class="flex min-w-0 items-center justify-start gap-0.5 text-left" title={label}>
 		<Text
 			size="xs"
 			tone={canReset ? 'primary' : 'secondary'}
 			as="span"
-			class={['min-w-0 flex-1 truncate font-medium', canReset && 'text-amber-700 dark:text-amber-400']}
+			class={['min-w-0 truncate font-medium', canReset && 'text-amber-700 dark:text-amber-400']}
 		>
 			{label}
 		</Text>
+		{#if canReset}
+			<Tooltip content="Restablecer" side="top">
+				<IconButton
+					label="Restablecer"
+					size="xs"
+					class="shrink-0 text-amber-500 hover:bg-amber-500/10 hover:text-amber-600 dark:text-amber-400 dark:hover:text-amber-300"
+					onclick={() => onreset?.()}
+				>
+					<RotateCcw class="h-3 w-3" strokeWidth={2.5} />
+				</IconButton>
+			</Tooltip>
+		{/if}
 		{#if exposed !== null}
 			<IconButton
 				label={exposed ? 'Hide from instances' : 'Expose on instances'}

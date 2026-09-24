@@ -333,8 +333,8 @@
 		const cell = Math.max(4, cellSize);
 		const major = cell * 5;
 		const line = 1 / Math.max(0.05, scale);
-		const fine = 'color-mix(in oklab, #0f172a 28%, transparent)';
-		const bold = 'color-mix(in oklab, #0f172a 48%, transparent)';
+		const fine = 'color-mix(in oklab, #171717 28%, transparent)';
+		const bold = 'color-mix(in oklab, #171717 48%, transparent)';
 		return [
 			`background-image:`,
 			`linear-gradient(to right, ${fine} ${line}px, transparent ${line}px),`,
@@ -1277,13 +1277,7 @@
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div
 			bind:this={viewportEl}
-			class="min-h-0 min-w-0 relative flex-1 overflow-auto"
-			style:background-color="#dfe3e8"
-			style:background-image="linear-gradient(45deg,#cfd5dc 25%,transparent
-			25%),linear-gradient(-45deg,#cfd5dc 25%,transparent 25%),linear-gradient(45deg,transparent
-			75%,#cfd5dc 75%),linear-gradient(-45deg,transparent 75%,#cfd5dc 75%)"
-			style:background-size="16px 16px"
-			style:background-position="0 0,0 8px,8px -8px,-8px 0"
+			class="min-h-0 min-w-0 relative flex-1 overflow-auto bg-neutral-200 dark:bg-neutral-950"
 			role="presentation"
 			onclick={clearSelectionIfEmptyClick}
 			ondragover={handleElementDragOver}
@@ -1347,11 +1341,11 @@
 								{#if artboardTransparent}
 									<div
 										class="inset-0 absolute"
-										style:background-color="#e8ebef"
-										style:background-image="linear-gradient(45deg,#cfd5dc 25%,transparent
-										25%),linear-gradient(-45deg,#cfd5dc 25%,transparent
-										25%),linear-gradient(45deg,transparent 75%,#cfd5dc
-										75%),linear-gradient(-45deg,transparent 75%,#cfd5dc 75%)"
+										style:background-color="#f5f5f5"
+										style:background-image="linear-gradient(45deg,#e5e5e5 25%,transparent
+										25%),linear-gradient(-45deg,#e5e5e5 25%,transparent
+										25%),linear-gradient(45deg,transparent 75%,#e5e5e5
+										75%),linear-gradient(-45deg,transparent 75%,#e5e5e5 75%)"
 										style:background-size="16px 16px"
 										style:background-position="0 0,0 8px,8px -8px,-8px 0"
 									></div>
@@ -1537,7 +1531,7 @@
 													>
 														<div
 															data-scroll-thumb="y"
-															class="left-0.5 right-0.5 bg-slate-400/75 shadow-sm dark:bg-slate-500/85 absolute cursor-grab rounded-full active:cursor-grabbing"
+															class="left-0.5 right-0.5 bg-neutral-400/80 absolute cursor-grab rounded-full active:cursor-grabbing"
 															style:top="{vScroll.offset}px"
 															style:height="{vScroll.thumb}px"
 															onpointerdown={(e) =>
@@ -1555,7 +1549,7 @@
 													>
 														<div
 															data-scroll-thumb="x"
-															class="top-0.5 bottom-0.5 bg-slate-400/75 shadow-sm dark:bg-slate-500/85 absolute cursor-grab rounded-full active:cursor-grabbing"
+															class="top-0.5 bottom-0.5 bg-neutral-400/80 absolute cursor-grab rounded-full active:cursor-grabbing"
 															style:left="{hScroll.offset}px"
 															style:width="{hScroll.thumb}px"
 															onpointerdown={(e) =>
@@ -1672,7 +1666,7 @@
 			{/if}
 		</svg>
 		<div
-			class="bottom-3 rounded-md bg-slate-900/90 px-3 py-1.5 text-white shadow pointer-events-none absolute left-1/2 z-50 -translate-x-1/2 text-[11px]"
+			class="bottom-3 rounded-md bg-neutral-900/90 px-3 py-1.5 text-white pointer-events-none absolute left-1/2 z-50 -translate-x-1/2 text-[11px]"
 		>
 			Click to add · near start to close · double-click / Enter to finish · Esc cancel
 		</div>
