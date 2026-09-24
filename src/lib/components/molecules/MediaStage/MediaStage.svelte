@@ -19,6 +19,7 @@
 	} from '$lib/utils/marqueeSelect.js';
 	import {
 		createCanvasGuide,
+		INSTAGRAM_GRID,
 		pathPointsToDoc,
 		rebakePathLayer,
 		snapLayerRect,
@@ -234,6 +235,26 @@
 	const guideSnapList = $derived(
 		guides.map((g) => ({ orientation: g.orientation, position: g.position }))
 	);
+
+	/** 3×3 Instagram tiles: the cut lines need to read above the alignment grid. */
+	const instagramCuts = $derived(
+		doc.width === INSTAGRAM_GRID.width && doc.height === INSTAGRAM_GRID.height
+	);
+	const instagramCells = $derived.by(() => {
+		if (!instagramCuts) return [];
+		const cells: { n: number; x: number; y: number }[] = [];
+		const total = INSTAGRAM_GRID.rows * INSTAGRAM_GRID.cols;
+		for (let row = 0; row < INSTAGRAM_GRID.rows; row++) {
+			for (let col = 0; col < INSTAGRAM_GRID.cols; col++) {
+				cells.push({
+					n: total - (row * INSTAGRAM_GRID.cols + col),
+					x: col * INSTAGRAM_GRID.cellWidth,
+					y: row * INSTAGRAM_GRID.cellHeight
+				});
+			}
+		}
+		return cells;
+	});
 
 	type RulerTick = { pos: number; level: 'major' | 'mid' | 'minor' };
 
@@ -990,7 +1011,6 @@
 
 	/** Drag from ruler: live full-stage preview, commit guide on release. */
 	function beginRulerDrag(orientation: CanvasGuideOrientation, e: PointerEvent) {
-		if (guidesLocked) return;
 		e.preventDefault();
 		e.stopPropagation();
 		setGuidePreview(orientation, e.clientX, e.clientY);
@@ -1001,7 +1021,7 @@
 		const onUp = (ev: PointerEvent) => {
 			const pt = clientToDoc(ev.clientX, ev.clientY);
 			const pos = clampGuidePos(orientation, orientation === 'vertical' ? pt.x : pt.y);
-			patchGuides([...guides, createCanvasGuide(orientation, pos)]);
+			patchGuides([...guides, createCanvasGuide(orientation, pos)], false);
 			guidePreview = null;
 			window.removeEventListener('pointermove', onMove);
 			window.removeEventListener('pointerup', onUp);
@@ -1011,7 +1031,8 @@
 	}
 
 	function removeGuide(id: string) {
-		if (guidesLocked) return;
+		const guide = guides.find((g) => g.id === id);
+		if (!guide || guidesLocked || guide.locked) return;
 		patchGuides(guides.filter((g) => g.id !== id));
 	}
 
@@ -1587,8 +1608,6 @@
 
 	<!-- Guides stay on the artboard. Rulers stay on the workspace edges. -->
 	{#if showGuides}
-		{@const originX = RULER_LEFT + tickX(0)}
-		{@const originY = RULER_TOP + tickY(0)}
 		{#each guides as guide (guide.id)}
 			{@const locked = guidesLocked || !!guide.locked}
 			{@const hiding = draggingGuideId === guide.id && guidePreview}
@@ -1606,29 +1625,78 @@
 				style:z-index="2100000"
 				style:left={guide.orientation === 'vertical'
 					? `${RULER_LEFT + tickX(guide.position)}px`
-					: `${originX}px`}
+					: '0px'}
 				style:top={guide.orientation === 'horizontal'
 					? `${RULER_TOP + tickY(guide.position)}px`
-					: `${originY}px`}
-				style:width={guide.orientation === 'horizontal' ? `${boardW}px` : undefined}
-				style:height={guide.orientation === 'vertical' ? `${boardH}px` : undefined}
+					: '0px'}
+				style:width={guide.orientation === 'horizontal'
+					? `${RULER_LEFT + tickX(0) + boardW}px`
+					: undefined}
+				style:height={guide.orientation === 'vertical'
+					? `${RULER_TOP + tickY(0) + boardH}px`
+					: undefined}
 				title={locked ? 'Guide locked' : 'Drag to move · Double-click to remove'}
 				onpointerdown={(e) => beginGuideDrag(guide, e)}
 				ondblclick={() => removeGuide(guide.id)}
 			>
 				<span
-					class={[
-						'pointer-events-none absolute bg-[#00c2ff]',
-						guide.orientation === 'vertical'
-							? 'top-0 left-1/2 h-full w-px -translate-x-1/2'
-							: 'left-0 top-1/2 h-px w-full -translate-y-1/2',
-						locked && 'opacity-60'
-					]}
-					style:box-shadow="0 0 0 1px rgba(0,194,255,0.35)"
+					class="pointer-events-none absolute left-1/2 w-px -translate-x-1/2 bg-white"
+					style:top="0px"
+					style:height="{Math.max(0, RULER_TOP + tickY(0))}px"
+					style:display={guide.orientation === 'vertical' ? undefined : 'none'}
 					aria-hidden="true"
 				></span>
+				<span
+					class="pointer-events-none absolute top-1/2 h-px w-full -translate-y-1/2 bg-white"
+					style:left="0px"
+					style:width={guide.orientation === 'horizontal'
+						? `${Math.max(0, RULER_LEFT + tickX(0))}px`
+						: undefined}
+					style:display={guide.orientation === 'horizontal' ? undefined : 'none'}
+					aria-hidden="true"
+				></span>
+				<span
+					class={[
+						'pointer-events-none absolute bg-neutral-950',
+						guide.orientation === 'vertical'
+							? 'left-1/2 w-px -translate-x-1/2'
+							: 'h-px -translate-y-1/2'
+					]}
+					style:top={guide.orientation === 'vertical'
+						? `${Math.max(0, RULER_TOP + tickY(0))}px`
+						: '50%'}
+					style:left={guide.orientation === 'horizontal'
+						? `${Math.max(0, RULER_LEFT + tickX(0))}px`
+						: undefined}
+					style:height={guide.orientation === 'vertical' ? `${boardH}px` : undefined}
+					style:width={guide.orientation === 'horizontal' ? `${boardW}px` : undefined}
+					aria-hidden="true"
+				></span>
+				<span
+					class="pointer-events-none absolute rounded bg-white px-1 py-px text-[10px] leading-none font-medium text-neutral-950"
+					style:left={guide.orientation === 'vertical'
+						? '10px'
+						: `${Math.max(0, RULER_LEFT + tickX(0)) + 6}px`}
+					style:top={guide.orientation === 'vertical'
+						? `${Math.max(0, RULER_TOP + tickY(0)) + 6}px`
+						: '10px'}
+				>
+					{Math.round(guide.position)}
+				</span>
 			</div>
 		{/each}
+		{#if instagramCuts}
+			{#each instagramCells as cell (cell.n)}
+				<span
+					class="pointer-events-none absolute z-[2100001] text-[11px] font-medium leading-none text-white"
+					style:left="{RULER_LEFT + tickX(cell.x) + 6}px"
+					style:top="{RULER_TOP + tickY(cell.y) + 6}px"
+					style:text-shadow="0 0 2px #000, 0 1px 2px #000"
+				>
+					{cell.n}
+				</span>
+			{/each}
+		{/if}
 	{/if}
 
 	<!-- Pen draft preview -->
@@ -1708,26 +1776,48 @@
 	{/if}
 
 	{#if guidePreview}
-		<div
-			class="pointer-events-none absolute z-50 overflow-hidden"
-			style:left={`${RULER_LEFT + tickX(0)}px`}
-			style:top={`${RULER_TOP + tickY(0)}px`}
-			style:width={`${boardW}px`}
-			style:height={`${boardH}px`}
-			aria-hidden="true"
-		>
+		{@const previewPos = Math.round(
+			(guidePreview.orientation === 'vertical' ? guidePreview.x : guidePreview.y) / scale
+		)}
+		<div class="pointer-events-none absolute inset-0 z-50 overflow-hidden" aria-hidden="true">
 			{#if guidePreview.orientation === 'vertical'}
 				<div
-					class="top-0 bottom-0 absolute w-px bg-[#00c2ff]"
-					style:left={`${guidePreview.x}px`}
-					style:box-shadow="0 0 0 1px rgba(0,194,255,0.35)"
+					class="absolute top-0 w-px bg-white"
+					style:left={`${RULER_LEFT + tickX(0) + guidePreview.x}px`}
+					style:height={`${Math.max(0, RULER_TOP + tickY(0))}px`}
 				></div>
+				<div
+					class="absolute w-px bg-neutral-950"
+					style:left={`${RULER_LEFT + tickX(0) + guidePreview.x}px`}
+					style:top={`${Math.max(0, RULER_TOP + tickY(0))}px`}
+					style:height={`${boardH}px`}
+				></div>
+				<span
+					class="absolute rounded bg-white px-1 py-px text-[10px] leading-none font-medium text-neutral-950"
+					style:left={`${RULER_LEFT + tickX(0) + guidePreview.x + 10}px`}
+					style:top={`${Math.max(0, RULER_TOP + tickY(0)) + 6}px`}
+				>
+					{previewPos}
+				</span>
 			{:else}
 				<div
-					class="left-0 right-0 absolute h-px bg-[#00c2ff]"
-					style:top={`${guidePreview.y}px`}
-					style:box-shadow="0 0 0 1px rgba(0,194,255,0.35)"
+					class="absolute left-0 h-px bg-white"
+					style:top={`${RULER_TOP + tickY(0) + guidePreview.y}px`}
+					style:width={`${Math.max(0, RULER_LEFT + tickX(0))}px`}
 				></div>
+				<div
+					class="absolute h-px bg-neutral-950"
+					style:top={`${RULER_TOP + tickY(0) + guidePreview.y}px`}
+					style:left={`${Math.max(0, RULER_LEFT + tickX(0))}px`}
+					style:width={`${boardW}px`}
+				></div>
+				<span
+					class="absolute rounded bg-white px-1 py-px text-[10px] leading-none font-medium text-neutral-950"
+					style:left={`${Math.max(0, RULER_LEFT + tickX(0)) + 6}px`}
+					style:top={`${RULER_TOP + tickY(0) + guidePreview.y + 10}px`}
+				>
+					{previewPos}
+				</span>
 			{/if}
 		</div>
 	{/if}

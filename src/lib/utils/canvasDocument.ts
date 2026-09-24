@@ -1016,9 +1016,9 @@ export function emptyInstagramGridDocument(): CanvasDocument {
 	return emptyCanvasDocument({
 		width: INSTAGRAM_GRID.width,
 		height: INSTAGRAM_GRID.height,
-		background: '#0b1f3a',
+		background: '#ffffff',
 		guides: instagramGridGuides(),
-		guidesLocked: true
+		guidesLocked: false
 	});
 }
 

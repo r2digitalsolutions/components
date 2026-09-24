@@ -35,6 +35,7 @@
 		defaultSlotFromRect,
 		documentWithPages,
 		emptyCanvasDocument,
+		INSTAGRAM_GRID,
 		instagramGridGuides,
 		migrateCanvasDocument,
 		pagesOf,
@@ -644,7 +645,13 @@
 	}
 
 	function addPage() {
-		const page = blankCanvasPage({ name: `Hoja ${designPages.length + 1}` });
+		const instagram =
+			value.width === INSTAGRAM_GRID.width && value.height === INSTAGRAM_GRID.height;
+		const page = blankCanvasPage({
+			name: `Hoja ${designPages.length + 1}`,
+			background: '#ffffff',
+			guides: instagram ? instagramGridGuides() : []
+		});
 		showPage(page.id, [...designPages, page]);
 	}
 
@@ -929,7 +936,7 @@
 				width: preset.width,
 				height: preset.height,
 				guides: instagramGridGuides(),
-				guidesLocked: true
+				guidesLocked: false
 			});
 			zoom = 0.25;
 			return;

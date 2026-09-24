@@ -305,8 +305,8 @@
 									class={[
 										'gap-3 rounded-xl px-3 py-2 text-sm flex w-full items-center justify-between text-left transition-colors',
 										active
-											? 'bg-brand-50 text-brand-700 dark:bg-brand-950/40 dark:text-brand-300'
-											: 'text-primary hover:bg-surface-overlay',
+											? 'bg-neutral-200 text-neutral-950 dark:bg-neutral-800 dark:text-neutral-50'
+											: 'text-primary hover:bg-neutral-100 dark:hover:bg-neutral-800',
 										item.disabled && 'cursor-not-allowed opacity-40'
 									]}
 								>
@@ -316,8 +316,8 @@
 												class={[
 													'h-8 w-8 rounded-lg flex shrink-0 items-center justify-center',
 													active
-														? 'bg-brand-100/80 text-brand-700 dark:bg-brand-900/50 dark:text-brand-300'
-														: 'bg-surface-overlay text-muted'
+														? 'bg-neutral-300 text-neutral-950 dark:bg-neutral-700 dark:text-neutral-50'
+														: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300'
 												]}
 												aria-hidden="true"
 											>
