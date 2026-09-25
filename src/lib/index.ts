@@ -1324,6 +1324,7 @@ export type {
 	ExploreSuggestion,
 	ExploreFeaturedItem
 } from './components/organisms/ExploreFeedPage/ExploreFeedPage.svelte';
+export { default as LocationMap } from './components/molecules/LocationMap/LocationMap.svelte';
 export { default as MapExplorer } from './components/organisms/MapExplorer/MapExplorer.svelte';
 export type {
 	MapExplorerBounds,

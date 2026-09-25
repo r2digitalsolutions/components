@@ -79,12 +79,17 @@
 	const showImage = $derived(!!src && !imgError);
 </script>
 
-<span class={['relative inline-flex aspect-square shrink-0', className]}>
+<span
+	class={[
+		'relative inline-flex aspect-square shrink-0 overflow-hidden rounded-full',
+		sizeClasses[size],
+		className
+	]}
+>
 	<span
 		class={[
-			'inline-flex aspect-square items-center justify-center overflow-hidden rounded-full',
+			'inline-flex h-full w-full items-center justify-center rounded-full',
 			ringed && 'ring-2 ring-surface-elevated',
-			sizeClasses[size],
 			!showImage && [bgColor, 'text-white font-semibold']
 		]}
 		role={alt ? 'img' : undefined}

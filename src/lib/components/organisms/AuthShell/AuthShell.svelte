@@ -142,9 +142,11 @@
 <div
 	class={[
 		'bg-surface flex w-full flex-col overflow-hidden',
-		// h-dvh (not height:100%): % collapses when html/body have no explicit height
+		// Prefer h-full so embedded browsers (IDE Simple Browser) don't exceed the
+		// iframe: h-dvh tracks the OS window and causes a second outer scrollbar.
+		// min-h-dvh keeps a viewport floor when html/body have no explicit height.
 		fillParent && 'min-h-0 h-full',
-		!fillParent && fullHeight && 'h-dvh min-h-dvh',
+		!fillParent && fullHeight && 'h-full min-h-dvh',
 		!fillParent && !fullHeight && 'min-h-[32rem]',
 		className
 	]}
@@ -179,14 +181,16 @@
 					</div>
 				{/if}
 
-				<!-- Form column: true center in remaining space -->
-				<div
-					class="min-h-0 px-5 py-8 sm:px-8 sm:py-10 flex h-full flex-1 flex-col items-center justify-center overflow-y-auto"
-				>
-					<div class="max-w-md mx-auto w-full shrink-0">
-						{#if children}
-							{@render children()}
-						{/if}
+				<!-- Scroll outer, center inner (min-h-full): one scrollbar when tall -->
+				<div class="min-h-0 flex h-full flex-1 flex-col overflow-y-auto">
+					<div
+						class="px-5 py-8 sm:px-8 sm:py-10 flex min-h-full flex-1 flex-col items-center justify-center"
+					>
+						<div class="max-w-md mx-auto w-full shrink-0">
+							{#if children}
+								{@render children()}
+							{/if}
+						</div>
 					</div>
 				</div>
 
