@@ -174,10 +174,10 @@
 		aria-label="{copy.trigger}{unreadCount > 0 ? withCount(copy.unreadSuffix, unreadCount) : ''}"
 		aria-expanded={open}
 		aria-controls={popoverId}
-		class="relative flex h-9 w-9 items-center justify-center rounded-lg text-secondary outline-none transition-colors hover:bg-surface-overlay hover:text-primary focus-visible:ring-2 focus-visible:ring-brand-500/30"
+		class="relative inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-border bg-surface-elevated text-primary shadow-sm transition-all duration-200 hover:border-border-strong hover:bg-surface-overlay focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
 	>
 		<svg
-			class="h-5 w-5"
+			class="h-4 w-4"
 			viewBox="0 0 24 24"
 			fill="none"
 			stroke="currentColor"
@@ -192,7 +192,7 @@
 		</svg>
 		{#if unreadCount > 0}
 			<span
-				class="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-brand-500 text-[10px] font-bold leading-none text-white"
+				class="pointer-events-none absolute -top-1 -right-1 flex min-w-5 items-center justify-center rounded-full bg-brand-500 px-1 py-0.5 text-[10px] font-bold leading-none text-white shadow-sm"
 			>
 				{unreadCount > 9 ? '9+' : unreadCount}
 			</span>
