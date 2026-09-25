@@ -76,7 +76,7 @@
 		variant === 'compact' ? 'py-6' : variant === 'mega' ? 'py-12' : 'py-10'
 	);
 
-	const maxW = $derived(variant === 'mega' ? 'max-w-7xl' : 'max-w-6xl');
+	const maxW = $derived(variant === 'mega' ? 'max-w-screen-2xl' : 'max-w-6xl');
 
 	function handleLink(link: FooterLink, event: MouseEvent) {
 		link.onclick?.(event);
@@ -330,22 +330,21 @@
 			</div>
 		</div>
 
-		<div
-			class={[
-				'mx-auto flex w-full flex-col gap-2 border-t border-border px-4 py-4 text-xs text-muted sm:flex-row sm:items-center sm:justify-between sm:px-6',
-				maxW
-			]}
-		>
-			<span>{resolvedCopyright}</span>
-			<div class="flex flex-wrap items-center gap-x-4 gap-y-1">
-				{#if bottomLinks.length}
-					{#each bottomLinks as link (link.id)}
-						{@render linkItem(link, 'transition-colors hover:text-primary')}
-					{/each}
-				{/if}
-				{#if legal}
-					{@render legal()}
-				{/if}
+		<div class={['mx-auto w-full px-4 sm:px-6', maxW]}>
+			<div
+				class="flex w-full flex-col gap-2 border-t border-border py-4 text-xs text-muted sm:flex-row sm:items-center sm:justify-between"
+			>
+				<span>{resolvedCopyright}</span>
+				<div class="flex flex-wrap items-center gap-x-4 gap-y-1">
+					{#if bottomLinks.length}
+						{#each bottomLinks as link (link.id)}
+							{@render linkItem(link, 'transition-colors hover:text-primary')}
+						{/each}
+					{/if}
+					{#if legal}
+						{@render legal()}
+					{/if}
+				</div>
 			</div>
 		</div>
 	{/if}
