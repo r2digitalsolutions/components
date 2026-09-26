@@ -260,6 +260,12 @@
 		onselect?.(item);
 		const row = listEl?.querySelector(`[data-map-item="${item.id}"]`);
 		row?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+
+		if (map && Number.isFinite(item.lat) && Number.isFinite(item.lng) && item.lat !== 0 && item.lng !== 0) {
+			skipNextMove = true;
+			const targetZoom = Math.max(map.getZoom(), 13);
+			map.flyTo([item.lat, item.lng], targetZoom, { duration: 0.8 });
+		}
 	}
 
 	function closeDetail() {
