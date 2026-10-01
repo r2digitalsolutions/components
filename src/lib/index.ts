@@ -11,6 +11,8 @@ export { default as Slider } from './components/atoms/Slider/Slider.svelte';
 export { default as Skeleton } from './components/atoms/Skeleton/Skeleton.svelte';
 export { default as ProgressBar } from './components/atoms/ProgressBar/ProgressBar.svelte';
 export { default as Badge } from './components/atoms/Badge/Badge.svelte';
+export { default as AnalysisBadge } from './components/atoms/AnalysisBadge/AnalysisBadge.svelte';
+export type { AnalysisStatus } from './components/atoms/AnalysisBadge/AnalysisBadge.svelte';
 export { default as VerifiedBadge } from './components/atoms/VerifiedBadge/VerifiedBadge.svelte';
 export { default as Avatar } from './components/atoms/Avatar/Avatar.svelte';
 export { default as Spinner } from './components/atoms/Spinner/Spinner.svelte';
@@ -228,6 +230,8 @@ export { default as Pagination } from './components/molecules/Pagination/Paginat
 export { default as Breadcrumb } from './components/molecules/Breadcrumb/Breadcrumb.svelte';
 export type { BreadcrumbItem } from './components/molecules/Breadcrumb/Breadcrumb.svelte';
 export { default as EmptyState } from './components/molecules/EmptyState/EmptyState.svelte';
+export { default as SuggestedTags } from './components/molecules/SuggestedTags/SuggestedTags.svelte';
+export { default as ClassificationSuggestion } from './components/molecules/ClassificationSuggestion/ClassificationSuggestion.svelte';
 export { default as Accordion } from './components/molecules/Accordion/Accordion.svelte';
 export type { AccordionItem } from './components/molecules/Accordion/Accordion.svelte';
 export { default as Stepper } from './components/molecules/Stepper/Stepper.svelte';
@@ -940,6 +944,13 @@ export { SHEET_SIZE_SNAPS } from './components/organisms/Sheet/Sheet.svelte';
 export { default as DataTable } from './components/organisms/DataTable/DataTable.svelte';
 export type { DataTableColumn } from './components/organisms/DataTable/DataTable.svelte';
 export { default as DataGrid } from './components/organisms/DataGrid/DataGrid.svelte';
+export { default as MediaAnalysisPanel } from './components/organisms/MediaAnalysisPanel/MediaAnalysisPanel.svelte';
+export type {
+	ClassificationSuggestionSource,
+	SuggestedTagSource
+} from './components/organisms/MediaAnalysisPanel/MediaAnalysisPanel.svelte';
+export { default as ModerationReviewPanel } from './components/organisms/ModerationReviewPanel/ModerationReviewPanel.svelte';
+export type { ModerationDecision } from './components/organisms/ModerationReviewPanel/ModerationReviewPanel.svelte';
 export type {
 	DataGridColumn,
 	DataGridEditType,
