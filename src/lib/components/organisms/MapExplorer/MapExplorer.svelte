@@ -634,13 +634,15 @@
 									onclick={() => selectItem(item)}
 								>
 									{#if listView === 'flyer'}
-										<div class="relative aspect-[3/4] w-full overflow-hidden">
+										<div
+											class="bg-surface-overlay relative aspect-[3/1] w-full overflow-hidden"
+										>
 											{#if item.imageUrl}
 												<Image
 													src={item.imageUrl}
 													alt={item.title}
 													class="inset-0 absolute h-full w-full"
-													objectFit="cover"
+													objectFit="contain"
 												/>
 											{:else}
 												<div
