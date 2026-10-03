@@ -3,6 +3,8 @@
 	import Filter from '@lucide/svelte/icons/filter';
 	import List from '@lucide/svelte/icons/list';
 	import LayoutGrid from '@lucide/svelte/icons/layout-grid';
+	import GalleryVertical from '@lucide/svelte/icons/gallery-vertical';
+	import CalendarDays from '@lucide/svelte/icons/calendar-days';
 	import LayoutList from '@lucide/svelte/icons/layout-list';
 	import LocateFixed from '@lucide/svelte/icons/locate-fixed';
 	import MapIcon from '@lucide/svelte/icons/map';
@@ -60,7 +62,7 @@
 	};
 
 	export type MapExplorerPanel = 'list' | 'map';
-	export type MapExplorerListView = 'list' | 'grid';
+	export type MapExplorerListView = 'list' | 'grid' | 'flyer' | 'calendar';
 	export type MapExplorerCardContext = {
 		select: () => void;
 		selected: boolean;
@@ -92,6 +94,8 @@
 		detailCtaLabel?: string;
 		listViewLabel?: string;
 		gridViewLabel?: string;
+		flyerViewLabel?: string;
+		calendarViewLabel?: string;
 		listView?: MapExplorerListView;
 		locateOnLoad?: boolean;
 		showSearchArea?: boolean;
@@ -103,6 +107,8 @@
 		tileAttribution?: string;
 		class?: string;
 		card?: Snippet<[MapExplorerItem, MapExplorerCardContext]>;
+		/** Si se pasa, habilita la vista 'calendar' (ocupa el lugar de lista + mapa). */
+		calendar?: Snippet;
 		detail?: Snippet<[MapExplorerItem]>;
 		emptyAction?: Snippet;
 		onsearch?: (query: string) => void;
@@ -140,6 +146,8 @@
 		detailCtaLabel = 'View',
 		listViewLabel = 'List',
 		gridViewLabel = 'Grid',
+		flyerViewLabel = 'Flyer',
+		calendarViewLabel = 'Calendar',
 		listView = $bindable<MapExplorerListView>('list'),
 		locateOnLoad = true,
 		showSearchArea = true,
@@ -151,6 +159,7 @@
 		tileAttribution = '&copy; OpenStreetMap contributors',
 		class: className = '',
 		card,
+		calendar,
 		detail,
 		emptyAction,
 		onsearch,
@@ -526,6 +535,24 @@
 				>
 					<LayoutGrid class="h-4 w-4" />
 				</IconButton>
+				<IconButton
+					label={flyerViewLabel}
+					size="sm"
+					variant={listView === 'flyer' ? 'secondary' : 'ghost'}
+					onclick={() => (listView = 'flyer')}
+				>
+					<GalleryVertical class="h-4 w-4" />
+				</IconButton>
+				{#if calendar}
+					<IconButton
+						label={calendarViewLabel}
+						size="sm"
+						variant={listView === 'calendar' ? 'secondary' : 'ghost'}
+						onclick={() => (listView = 'calendar')}
+					>
+						<CalendarDays class="h-4 w-4" />
+					</IconButton>
+				{/if}
 			</div>
 			<Button variant="secondary" size="sm" loading={locating} onclick={() => void locate()}>
 				<LocateFixed class="h-4 w-4" />
@@ -553,7 +580,12 @@
 		</div>
 	</div>
 
-	<div class="min-h-0 relative flex flex-1">
+	{#if calendar && listView === 'calendar'}
+		<div class="min-h-0 p-3 flex-1 overflow-y-auto">
+			{@render calendar()}
+		</div>
+	{/if}
+	<div class={['min-h-0 relative flex-1', calendar && listView === 'calendar' ? 'hidden' : 'flex']}>
 		<aside
 			class={[
 				'border-border bg-surface min-h-0 lg:flex lg:w-[26rem] xl:w-[32rem] w-full shrink-0 flex-col overflow-hidden border-r',
@@ -564,7 +596,9 @@
 				bind:this={listEl}
 				class={[
 					'min-h-0 p-3 flex-1 overflow-y-auto',
-					listView === 'grid' ? 'gap-3 sm:grid-cols-2 grid grid-cols-1 content-start' : 'space-y-3'
+					listView === 'grid' || listView === 'flyer'
+						? 'gap-3 sm:grid-cols-2 grid grid-cols-1 content-start'
+						: 'space-y-3'
 				]}
 			>
 				{#if items.length === 0 && !loading}
@@ -579,8 +613,11 @@
 					</div>
 				{:else}
 					{#each items as item (item.id)}
-						<div data-map-item={item.id} class={listView === 'grid' ? 'min-w-0' : undefined}>
-							{#if card}
+						<div
+							data-map-item={item.id}
+							class={listView === 'grid' || listView === 'flyer' ? 'min-w-0' : undefined}
+						>
+							{#if card && listView !== 'flyer'}
 								{@render card(item, {
 									select: () => selectItem(item),
 									selected: selectedId === item.id,
@@ -596,7 +633,32 @@
 									]}
 									onclick={() => selectItem(item)}
 								>
-									{#if listView === 'grid'}
+									{#if listView === 'flyer'}
+										<div class="relative aspect-[3/4] w-full overflow-hidden">
+											{#if item.imageUrl}
+												<Image
+													src={item.imageUrl}
+													alt={item.title}
+													class="inset-0 absolute h-full w-full"
+													objectFit="cover"
+												/>
+											{:else}
+												<div
+													class="bg-brand-500/10 text-brand-700 dark:text-brand-300 inset-0 text-3xl font-semibold absolute flex items-center justify-center"
+												>
+													{item.title.slice(0, 1)}
+												</div>
+											{/if}
+											<div
+												class="inset-x-0 bottom-0 space-y-0.5 p-3 absolute bg-linear-to-t from-black/80 to-transparent"
+											>
+												<p class="text-sm font-semibold line-clamp-2 text-white">{item.title}</p>
+												{#if item.meta}
+													<p class="text-xs text-white/80">{item.meta}</p>
+												{/if}
+											</div>
+										</div>
+									{:else if listView === 'grid'}
 										{#if item.imageUrl}
 											<div class="h-36 w-full overflow-hidden">
 												<Image
