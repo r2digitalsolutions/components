@@ -39,6 +39,8 @@
 		meta?: string;
 		priceLabel?: string;
 		imageUrl?: string | null;
+		/** Fallback when `imageUrl` fails (e.g. thumb → full original). */
+		imageFallbackUrl?: string | null;
 		href?: string;
 		badge?: string;
 		chip?: string;
@@ -640,6 +642,7 @@
 											{#if item.imageUrl}
 												<Image
 													src={item.imageUrl}
+													fallbackSrc={item.imageFallbackUrl ?? undefined}
 													alt={item.title}
 													class="inset-0 absolute h-full w-full"
 													objectFit="contain"
@@ -665,6 +668,7 @@
 											<div class="h-36 w-full overflow-hidden">
 												<Image
 													src={item.imageUrl}
+													fallbackSrc={item.imageFallbackUrl ?? undefined}
 													alt={item.title}
 													class="h-full w-full"
 													objectFit="cover"
@@ -705,6 +709,7 @@
 												<div class="w-28 relative shrink-0 overflow-hidden">
 													<Image
 														src={item.imageUrl}
+														fallbackSrc={item.imageFallbackUrl ?? undefined}
 														alt={item.title}
 														class="inset-0 absolute h-full w-full"
 														objectFit="cover"
@@ -846,6 +851,7 @@
 				{#if selected.imageUrl}
 					<Image
 						src={selected.imageUrl}
+						fallbackSrc={selected.imageFallbackUrl ?? undefined}
 						alt={selected.title}
 						aspectRatio="16 / 9"
 						objectFit="cover"
