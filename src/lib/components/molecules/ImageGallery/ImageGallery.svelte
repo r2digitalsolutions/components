@@ -7,7 +7,8 @@
 
 	export interface GalleryImage {
 		id: string;
-		src: string;
+		src: string; // grid / preview (thumb)
+		fullSrc?: string; // lightbox main image (full). Defaults to src
 		alt: string;
 		caption?: string;
 	}
@@ -40,11 +41,13 @@
 	let open = $state(false);
 	let index = $state(0);
 	let failed = $state<Record<string, boolean>>({});
+	let usedFallback = $state<Record<string, boolean>>({});
 
 	const lightboxImages = $derived(
 		images.map(
 			(img): LightboxImage => ({
-				src: img.src,
+				src: img.fullSrc ?? img.src,
+				thumbSrc: img.fullSrc ? img.src : undefined,
 				alt: img.alt,
 				caption: img.caption
 			})
@@ -83,6 +86,18 @@
 		failed = { ...failed, [id]: true };
 	}
 
+	function onImgError(img: GalleryImage) {
+		if (img.fullSrc && !usedFallback[img.id]) {
+			usedFallback = { ...usedFallback, [img.id]: true };
+			return;
+		}
+		markFailed(img.id);
+	}
+
+	function tileSrc(img: GalleryImage) {
+		return usedFallback[img.id] && img.fullSrc ? img.fullSrc : img.src;
+	}
+
 	const heroGridClass = $derived.by(() => {
 		const n = heroVisible.length;
 		if (n <= 1) return 'grid-cols-1';
@@ -115,12 +130,12 @@
 				</div>
 			{:else}
 				<img
-					src={img.src}
+					src={tileSrc(img)}
 					alt={img.alt}
-					loading="eager"
+					loading="lazy"
 					decoding="async"
 					class="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
-					onerror={() => markFailed(img.id)}
+					onerror={() => onImgError(img)}
 				/>
 			{/if}
 
@@ -158,12 +173,12 @@
 			</div>
 		{:else}
 			<img
-				src={img.src}
+				src={tileSrc(img)}
 				alt={img.alt}
-				loading="eager"
+				loading="lazy"
 				decoding="async"
 				class="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
-				onerror={() => markFailed(img.id)}
+				onerror={() => onImgError(img)}
 			/>
 		{/if}
 		<div
@@ -232,13 +247,13 @@
 						</div>
 					{:else}
 						<img
-							src={img.src}
+							src={tileSrc(img)}
 							alt={img.alt}
-							loading="eager"
+							loading="lazy"
 							decoding="async"
 							class="w-full object-cover transition duration-300 group-hover:scale-[1.02]"
 							style:aspect-ratio={i % 3 === 0 ? '4/5' : i % 3 === 1 ? '1/1' : '5/4'}
-							onerror={() => markFailed(img.id)}
+							onerror={() => onImgError(img)}
 						/>
 					{/if}
 					<span

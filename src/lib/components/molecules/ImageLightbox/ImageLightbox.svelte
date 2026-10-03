@@ -1,6 +1,7 @@
 <script lang="ts">
 	export interface LightboxImage {
 		src: string;
+		thumbSrc?: string; // filmstrip; defaults to src
 		alt?: string;
 		caption?: string;
 	}
@@ -565,7 +566,7 @@
 									]}
 								>
 									<img
-										src={img.src}
+										src={img.thumbSrc ?? img.src}
 										alt=""
 										class="h-14 w-[4.5rem] object-cover sm:h-16 sm:w-24"
 										draggable="false"
