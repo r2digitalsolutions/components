@@ -37,13 +37,17 @@
 		 */
 		syncRemoteIssues?: boolean;
 		/**
-		 * When `false`, skip Kit's default `invalidateAll()` after a successful remote form
+		 * When `false`, skip Kit's default `refreshAll()` after a successful remote form
 		 * (via `submit().updates()`). Prefer {@link updates} to refresh specific queries.
 		 * @default true
 		 */
+		refreshAll?: boolean;
+		/**
+		 * @deprecated Use {@link refreshAll}. Kept for apps still on the old name.
+		 */
 		invalidateAll?: boolean;
 		/**
-		 * Single-flight query refreshes. Passing this (even `[]`) opts out of `invalidateAll`.
+		 * Single-flight query refreshes. Passing this (even `[]`) opts out of `refreshAll`.
 		 * @see https://svelte.dev/docs/kit/remote-functions#Single-flight-mutations
 		 */
 		updates?: RemoteQueryUpdate[];
@@ -77,7 +81,8 @@
 		disabled = false,
 		remote = null,
 		syncRemoteIssues = true,
-		invalidateAll = true,
+		refreshAll,
+		invalidateAll,
 		updates,
 		onSuccess,
 		onError,
@@ -261,14 +266,16 @@
 		});
 	}
 
-	/** Kit: `submit().updates(...)` (even empty) prevents the default invalidateAll waterfall. */
+	const shouldRefreshAll = $derived(refreshAll ?? invalidateAll ?? true);
+
+	/** Kit: `submit().updates(...)` (even empty) prevents the default refreshAll waterfall. */
 	function runSubmit(
 		submit: () => Promise<boolean> & {
 			updates: (...args: RemoteQueryUpdate[]) => Promise<boolean>;
 		}
 	) {
 		if (updates) return submit().updates(...updates);
-		if (!invalidateAll) return submit().updates();
+		if (!shouldRefreshAll) return submit().updates();
 		return submit();
 	}
 
