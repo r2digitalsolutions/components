@@ -1,0 +1,15 @@
+---
+description: Publicar @r2digisolutions/components al terminar cambios en la lib
+alwaysApply: true
+---
+
+# Publicar al terminar
+
+Si en esta sesión cambiaste código de esta librería, **antes de dar por cerrado el trabajo**:
+
+1. Working tree limpio en `main`.
+2. `pnpm release:patch` (o `minor` / `major`), o `pnpm exec bumpp patch --commit --tag --push --yes`.
+3. Esperar CI → npm (`publish.yml` con tag `v*`).
+4. En apps consumidoras afectadas: `pnpm add @r2digisolutions/components@^X.Y.Z`.
+
+No dejar el cambio solo en local aunque Vite resuelva la carpeta hermana.
