@@ -41,6 +41,9 @@
 		imageUrl?: string | null;
 		/** Fallback when `imageUrl` fails (e.g. thumb → full original). */
 		imageFallbackUrl?: string | null;
+		/** Portrait flyer for flyer view; falls back to `imageUrl`. */
+		flyerImageUrl?: string | null;
+		flyerImageFallbackUrl?: string | null;
 		href?: string;
 		badge?: string;
 		chip?: string;
@@ -636,13 +639,18 @@
 									onclick={() => selectItem(item)}
 								>
 									{#if listView === 'flyer'}
+										{@const flyerSrc = item.flyerImageUrl ?? item.imageUrl}
+										{@const flyerFallback =
+											item.flyerImageUrl != null
+												? (item.flyerImageFallbackUrl ?? item.imageUrl)
+												: item.imageFallbackUrl}
 										<div
-											class="bg-surface-overlay relative aspect-[3/1] w-full overflow-hidden"
+											class="bg-surface-overlay relative aspect-[3/4] w-full overflow-hidden"
 										>
-											{#if item.imageUrl}
+											{#if flyerSrc}
 												<Image
-													src={item.imageUrl}
-													fallbackSrc={item.imageFallbackUrl ?? undefined}
+													src={flyerSrc}
+													fallbackSrc={flyerFallback ?? undefined}
 													alt={item.title}
 													class="inset-0 absolute h-full w-full"
 													objectFit="contain"
