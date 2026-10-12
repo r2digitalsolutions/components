@@ -181,10 +181,10 @@
 					</div>
 				{/if}
 
-				<!-- Scroll outer, center inner (min-h-full): one scrollbar when tall -->
+				<!-- Scroll outer, center inner. min-h-dvh so the card stays centered even when a parent only has min-height. -->
 				<div class="min-h-0 flex h-full flex-1 flex-col overflow-y-auto">
 					<div
-						class="px-5 py-8 sm:px-8 sm:py-10 flex min-h-full flex-1 flex-col items-center justify-center"
+						class="px-5 py-8 sm:px-8 sm:py-10 flex min-h-dvh flex-1 flex-col items-center justify-center"
 					>
 						<div class="max-w-md mx-auto w-full shrink-0">
 							{#if children}
