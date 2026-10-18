@@ -75,14 +75,15 @@
 			fullWidth && 'w-full'
 		]}
 	>
-		{#each items as item, index (item.id)}
-			<button
-				type="button"
-				id={`tab-${item.id}`}
-				role="tab"
-				aria-selected={activeId === item.id}
-				aria-controls={`panel-${item.id}`}
-				tabindex={activeId === item.id ? 0 : -1}
+		{#each items as item, index (item?.id ?? index)}
+			{#if item}
+				<button
+					type="button"
+					id={`tab-${item.id}`}
+					role="tab"
+					aria-selected={activeId === item.id}
+					aria-controls={`panel-${item.id}`}
+					tabindex={activeId === item.id ? 0 : -1}
 				disabled={item.disabled}
 				onclick={() => select(item.id, item.disabled)}
 				onkeydown={(e) => onKeydown(e, index)}
@@ -108,6 +109,7 @@
 					></span>
 				{/if}
 			</button>
-		{/each}
+		{/if}
+	{/each}
 	</div>
 </div>
