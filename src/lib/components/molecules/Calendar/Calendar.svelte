@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { i18n } from '$lib/utils/i18n.svelte.js';
+	import { getDictionary, type MessageKey } from '$lib/utils/i18n.js';
+
 	export type CalendarMode = 'single' | 'multiple' | 'range';
 
 	export type CalendarDot = string | { date: string; color?: string };
@@ -59,6 +62,9 @@
 		onchange
 	}: CalendarProps = $props();
 
+	// The calendar's locale names its controls; without one, the shared i18n store does.
+	const localMessages = $derived(locale && locale !== 'en' ? getDictionary(locale) : null);
+	const message = (key: MessageKey) => localMessages?.[key] ?? i18n.t(key);
 	const today = new Date();
 	const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
@@ -75,8 +81,16 @@
 		return value;
 	}
 
+	/** First selectable month when it is in the future (e.g. an end date after a start). */
+	function minMonth() {
+		return min && min.slice(0, 10) > todayIso ? monthFromIso(min) : null;
+	}
+
+	// Without a selection, open on the first selectable month.
 	let view = $state(
-		monthFromIso(selectionIso()) ?? new Date(today.getFullYear(), today.getMonth(), 1)
+		monthFromIso(selectionIso()) ??
+			minMonth() ??
+			new Date(today.getFullYear(), today.getMonth(), 1)
 	);
 	let panel = $state<Panel>('days');
 	/** Which month column owns the month/year picker when months=2. */
@@ -426,7 +440,7 @@
 								type="button"
 								onclick={() => shift(-1)}
 								class="rounded-lg p-1.5 text-secondary hover:bg-surface-overlay hover:text-primary"
-								aria-label="Previous month"
+								aria-label={message('previousMonth')}
 							>
 								<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 									<path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
@@ -458,7 +472,7 @@
 								type="button"
 								onclick={() => shift(1)}
 								class="rounded-lg p-1.5 text-secondary hover:bg-surface-overlay hover:text-primary"
-								aria-label="Next month"
+								aria-label={message('nextMonth')}
 							>
 								<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 									<path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
@@ -525,7 +539,7 @@
 					type="button"
 					onclick={() => shift(-1)}
 					class="rounded-lg p-1.5 text-secondary hover:bg-surface-overlay hover:text-primary"
-					aria-label={panel === 'years' ? 'Previous years' : 'Previous year'}
+					aria-label={message(panel === 'years' ? 'previousYears' : 'previousYear')}
 				>
 					<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 						<path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
@@ -550,7 +564,7 @@
 					type="button"
 					onclick={() => shift(1)}
 					class="rounded-lg p-1.5 text-secondary hover:bg-surface-overlay hover:text-primary"
-					aria-label={panel === 'years' ? 'Next years' : 'Next year'}
+					aria-label={message(panel === 'years' ? 'nextYears' : 'nextYear')}
 				>
 					<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 						<path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />

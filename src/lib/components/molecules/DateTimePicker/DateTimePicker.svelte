@@ -501,7 +501,7 @@
 		id={panelId}
 		popover="auto"
 		role="dialog"
-		aria-label="Choose date and time"
+		aria-label={message('chooseDateTime')}
 		onbeforetoggle={handleBeforeToggle}
 		ontoggle={handleToggle}
 		data-placed={placed ? true : undefined}
@@ -536,7 +536,7 @@
 							bind:this={hourListEl}
 							class="p-1.5 h-[18.5rem] overflow-y-auto"
 							role="listbox"
-							aria-label="Hours"
+							aria-label={message('hours')}
 						>
 							{#each hours24 as h (h)}
 								<button
@@ -562,7 +562,7 @@
 							bind:this={minuteListEl}
 							class="p-1.5 h-[18.5rem] overflow-y-auto"
 							role="listbox"
-							aria-label="Minutes"
+							aria-label={message('minutes')}
 						>
 							{#each minutes as m (m)}
 								<button

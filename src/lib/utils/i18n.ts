@@ -12,6 +12,15 @@ export interface UiMessages {
 	time: string;
 	clear: string;
 	selectDateTime: string;
+	chooseDateTime: string;
+	hours: string;
+	minutes: string;
+	previousMonth: string;
+	nextMonth: string;
+	previousYear: string;
+	nextYear: string;
+	previousYears: string;
+	nextYears: string;
 	optional: string;
 	required: string;
 	loading: string;
@@ -70,6 +79,15 @@ const en: UiMessages = {
 	time: 'Time',
 	clear: 'Clear',
 	selectDateTime: 'Select date & time',
+	chooseDateTime: 'Choose date and time',
+	hours: 'Hours',
+	minutes: 'Minutes',
+	previousMonth: 'Previous month',
+	nextMonth: 'Next month',
+	previousYear: 'Previous year',
+	nextYear: 'Next year',
+	previousYears: 'Previous years',
+	nextYears: 'Next years',
 	optional: 'Optional',
 	required: 'Required',
 	loading: 'Loading…',
@@ -121,6 +139,15 @@ const es: UiMessages = {
 	time: 'Hora',
 	clear: 'Borrar',
 	selectDateTime: 'Selecciona fecha y hora',
+	chooseDateTime: 'Elegir fecha y hora',
+	hours: 'Horas',
+	minutes: 'Minutos',
+	previousMonth: 'Mes anterior',
+	nextMonth: 'Mes siguiente',
+	previousYear: 'Año anterior',
+	nextYear: 'Año siguiente',
+	previousYears: 'Años anteriores',
+	nextYears: 'Años siguientes',
 	optional: 'Opcional',
 	required: 'Obligatorio',
 	loading: 'Cargando…',
@@ -172,6 +199,15 @@ const pt: UiMessages = {
 	time: 'Hora',
 	clear: 'Limpar',
 	selectDateTime: 'Selecione data e hora',
+	chooseDateTime: 'Escolher data e hora',
+	hours: 'Horas',
+	minutes: 'Minutos',
+	previousMonth: 'Mês anterior',
+	nextMonth: 'Mês seguinte',
+	previousYear: 'Ano anterior',
+	nextYear: 'Ano seguinte',
+	previousYears: 'Anos anteriores',
+	nextYears: 'Anos seguintes',
 	optional: 'Opcional',
 	required: 'Obrigatório',
 	loading: 'A carregar…',
@@ -223,6 +259,15 @@ const fr: UiMessages = {
 	time: 'Heure',
 	clear: 'Effacer',
 	selectDateTime: 'Choisir la date et l’heure',
+	chooseDateTime: 'Choisir la date et l’heure',
+	hours: 'Heures',
+	minutes: 'Minutes',
+	previousMonth: 'Mois précédent',
+	nextMonth: 'Mois suivant',
+	previousYear: 'Année précédente',
+	nextYear: 'Année suivante',
+	previousYears: 'Années précédentes',
+	nextYears: 'Années suivantes',
 	optional: 'Facultatif',
 	required: 'Obligatoire',
 	loading: 'Chargement…',
@@ -274,6 +319,15 @@ const de: UiMessages = {
 	time: 'Uhrzeit',
 	clear: 'Löschen',
 	selectDateTime: 'Datum und Uhrzeit wählen',
+	chooseDateTime: 'Datum und Uhrzeit wählen',
+	hours: 'Stunden',
+	minutes: 'Minuten',
+	previousMonth: 'Vorheriger Monat',
+	nextMonth: 'Nächster Monat',
+	previousYear: 'Vorheriges Jahr',
+	nextYear: 'Nächstes Jahr',
+	previousYears: 'Vorherige Jahre',
+	nextYears: 'Nächste Jahre',
 	optional: 'Optional',
 	required: 'Pflichtfeld',
 	loading: 'Wird geladen…',
@@ -325,6 +379,15 @@ const ca: UiMessages = {
 	time: 'Hora',
 	clear: 'Esborra',
 	selectDateTime: 'Tria data i hora',
+	chooseDateTime: 'Tria data i hora',
+	hours: 'Hores',
+	minutes: 'Minuts',
+	previousMonth: 'Mes anterior',
+	nextMonth: 'Mes següent',
+	previousYear: 'Any anterior',
+	nextYear: 'Any següent',
+	previousYears: 'Anys anteriors',
+	nextYears: 'Anys següents',
 	optional: 'Opcional',
 	required: 'Obligatori',
 	loading: 'S’està carregant…',
