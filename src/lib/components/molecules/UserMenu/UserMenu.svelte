@@ -15,6 +15,7 @@
 		disabled?: boolean;
 		destructive?: boolean;
 		separator?: boolean;
+		icon?: any;
 	}
 
 	type UserStatus = 'online' | 'offline' | 'busy' | 'away' | null;
@@ -325,7 +326,7 @@
 						disabled={item.disabled}
 						onclick={() => select(item)}
 						class={[
-							'gap-2 rounded-xl px-2.5 py-2 flex w-full items-start text-left transition-colors',
+							'gap-2.5 rounded-xl px-2.5 py-1.5 flex w-full items-center text-left transition-colors',
 							'focus-visible:ring-brand-500/30 focus-visible:ring-2 focus-visible:outline-none',
 							item.destructive
 								? 'text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40'
@@ -333,6 +334,9 @@
 							item.disabled && 'cursor-not-allowed opacity-40'
 						]}
 					>
+						{#if item.icon}
+							<svelte:component this={item.icon} size={18} class="shrink-0 text-muted" aria-hidden="true" />
+						{/if}
 						<span class="min-w-0 flex-1">
 							<span class="text-sm font-medium block">{item.label}</span>
 							{#if item.description}
@@ -340,7 +344,7 @@
 							{/if}
 						</span>
 						{#if item.shortcut}
-							<span class="mt-0.5 font-mono text-muted shrink-0 text-[10px]">{item.shortcut}</span>
+							<span class="font-mono text-muted shrink-0 text-[10px]">{item.shortcut}</span>
 						{/if}
 					</button>
 				{/if}
