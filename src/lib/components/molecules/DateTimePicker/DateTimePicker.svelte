@@ -5,6 +5,7 @@
 	import type { CalendarDot } from '../Calendar/Calendar.svelte';
 	import type { TimeFormat } from '../TimePicker/TimePicker.svelte';
 	import { i18n } from '$lib/utils/i18n.svelte.js';
+	import { getDictionary, resolveLocaleTag, type MessageKey } from '$lib/utils/i18n.js';
 	import { createId } from '$lib/utils/id.js';
 	import { popoverInvokerToggle } from '$lib/utils/popoverInvoker.js';
 
@@ -32,6 +33,12 @@
 		closeOnSelect?: boolean;
 		cancelLabel?: string;
 		saveLabel?: string;
+		/** BCP 47 locale for the calendar and displayed date. Defaults to the components i18n locale. */
+		locale?: string;
+		/** Heading of the time column. Defaults to the locale's "Time". */
+		timeLabel?: string;
+		/** Accessible name of the clear button. Defaults to the locale's "Clear". */
+		clearLabel?: string;
 		class?: string;
 		onchange?: (detail: { date: string; time: string; value: string }) => void;
 	}
@@ -43,7 +50,7 @@
 		open = $bindable(false),
 		disabled = false,
 		label = '',
-		placeholder = 'Select date & time',
+		placeholder,
 		min,
 		max,
 		disabledDates = [],
@@ -53,6 +60,9 @@
 		closeOnSelect = false,
 		cancelLabel,
 		saveLabel,
+		locale,
+		timeLabel,
+		clearLabel,
 		class: className = '',
 		onchange
 	}: DateTimePickerProps = $props();
@@ -66,8 +76,13 @@
 	let draftDate = $state('');
 	let draftTime = $state('');
 
-	const resolvedCancelLabel = $derived(cancelLabel ?? i18n.t('cancel'));
-	const resolvedSaveLabel = $derived(saveLabel ?? i18n.t('save'));
+	const dateLocale = $derived(locale || resolveLocaleTag(i18n.locale));
+	// An explicit locale wins over the shared i18n store (e.g. apps with their own i18n).
+	const localMessages = $derived(locale ? getDictionary(locale) : null);
+	const message = (key: MessageKey) => localMessages?.[key] ?? i18n.t(key);
+	const resolvedCancelLabel = $derived(cancelLabel ?? message('cancel'));
+	const resolvedSaveLabel = $derived(saveLabel ?? message('save'));
+	const resolvedPlaceholder = $derived(placeholder ?? message('selectDateTime'));
 	const confirmMode = $derived(!closeOnSelect);
 	const panelDate = $derived(confirmMode ? draftDate : date);
 	const panelTime = $derived(confirmMode ? draftTime : time);
@@ -191,7 +206,7 @@
 	function formatIso(iso: string) {
 		if (!iso) return '';
 		const [y, m, d] = iso.split('-').map(Number);
-		return new Date(y, m - 1, d).toLocaleDateString('en', {
+		return new Date(y, m - 1, d).toLocaleDateString(dateLocale, {
 			month: 'short',
 			day: 'numeric',
 			year: 'numeric'
@@ -207,7 +222,7 @@
 	}
 
 	const fieldLabel = $derived.by(() => {
-		if (!date && !time) return placeholder;
+		if (!date && !time) return resolvedPlaceholder;
 		if (date && time) return `${formatIso(date)} · ${formatTimeDisplay(time)}`;
 		if (date) return `${formatIso(date)} · …`;
 		return formatTimeDisplay(time);
@@ -466,7 +481,7 @@
 				type="button"
 				onclick={clear}
 				class="px-3 text-muted hover:bg-surface-overlay hover:text-primary h-full"
-				aria-label="Clear"
+				aria-label={clearLabel ?? message('clear')}
 			>
 				<svg
 					class="h-3.5 w-3.5"
@@ -503,6 +518,7 @@
 						disabledDates={calendarDisabled}
 						{dots}
 						framed={false}
+						locale={dateLocale}
 						class="w-full"
 						onchange={handleDateChange}
 					/>
@@ -513,7 +529,7 @@
 					<span
 						class="border-border px-3 py-2.5 font-medium tracking-wide text-muted shrink-0 border-b text-center text-[11px] uppercase"
 					>
-						Time
+						{timeLabel ?? message('time')}
 					</span>
 					<div class="min-h-0 divide-border grid flex-1 grid-cols-2 divide-x">
 						<div

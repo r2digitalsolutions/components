@@ -19,6 +19,8 @@
 		errorMessage?: string;
 		disabled?: boolean;
 		bindData?: boolean;
+		/** BCP 47 locale for the calendar and displayed date. */
+		locale?: string;
 		class?: string;
 		onchange?: (value: string) => void;
 	}
@@ -34,6 +36,7 @@
 		errorMessage,
 		disabled = false,
 		bindData = false,
+		locale,
 		class: className = '',
 		onchange
 	}: FormDatePickerProps = $props();
@@ -71,6 +74,7 @@
 		{placeholder}
 		{min}
 		{max}
+		{locale}
 		disabled={resolved.disabled}
 		bind:value
 		onchange={handleChange}

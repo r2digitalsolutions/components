@@ -21,6 +21,11 @@
 		errorMessage?: string;
 		disabled?: boolean;
 		bindData?: boolean;
+		/** BCP 47 locale for the calendar, displayed date and built-in labels. */
+		locale?: string;
+		cancelLabel?: string;
+		saveLabel?: string;
+		minuteStep?: number;
 		class?: string;
 		onchange?: (detail: { date: string; time: string; value: string }) => void;
 	}
@@ -28,7 +33,7 @@
 	let {
 		name,
 		label,
-		placeholder = 'Select date & time',
+		placeholder,
 		value = $bindable(''),
 		date = $bindable(''),
 		time = $bindable(''),
@@ -38,6 +43,10 @@
 		errorMessage,
 		disabled = false,
 		bindData = false,
+		locale,
+		cancelLabel,
+		saveLabel,
+		minuteStep,
 		class: className = '',
 		onchange
 	}: FormDateTimePickerProps = $props();
@@ -77,6 +86,10 @@
 		{placeholder}
 		{min}
 		{max}
+		{locale}
+		{cancelLabel}
+		{saveLabel}
+		{minuteStep}
 		disabled={resolved.disabled}
 		bind:value
 		bind:date

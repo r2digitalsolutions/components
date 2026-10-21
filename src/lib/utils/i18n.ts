@@ -8,6 +8,10 @@ export interface UiMessages {
 	reset: string;
 	submit: string;
 	close: string;
+	/** Date & time pickers */
+	time: string;
+	clear: string;
+	selectDateTime: string;
 	optional: string;
 	required: string;
 	loading: string;
@@ -63,6 +67,9 @@ const en: UiMessages = {
 	reset: 'Reset',
 	submit: 'Submit',
 	close: 'Close',
+	time: 'Time',
+	clear: 'Clear',
+	selectDateTime: 'Select date & time',
 	optional: 'Optional',
 	required: 'Required',
 	loading: 'Loading…',
@@ -111,6 +118,9 @@ const es: UiMessages = {
 	reset: 'Restablecer',
 	submit: 'Enviar',
 	close: 'Cerrar',
+	time: 'Hora',
+	clear: 'Borrar',
+	selectDateTime: 'Selecciona fecha y hora',
 	optional: 'Opcional',
 	required: 'Obligatorio',
 	loading: 'Cargando…',
@@ -159,6 +169,9 @@ const pt: UiMessages = {
 	reset: 'Repor',
 	submit: 'Enviar',
 	close: 'Fechar',
+	time: 'Hora',
+	clear: 'Limpar',
+	selectDateTime: 'Selecione data e hora',
 	optional: 'Opcional',
 	required: 'Obrigatório',
 	loading: 'A carregar…',
@@ -207,6 +220,9 @@ const fr: UiMessages = {
 	reset: 'Réinitialiser',
 	submit: 'Envoyer',
 	close: 'Fermer',
+	time: 'Heure',
+	clear: 'Effacer',
+	selectDateTime: 'Choisir la date et l’heure',
 	optional: 'Facultatif',
 	required: 'Obligatoire',
 	loading: 'Chargement…',
@@ -255,6 +271,9 @@ const de: UiMessages = {
 	reset: 'Zurücksetzen',
 	submit: 'Senden',
 	close: 'Schließen',
+	time: 'Uhrzeit',
+	clear: 'Löschen',
+	selectDateTime: 'Datum und Uhrzeit wählen',
 	optional: 'Optional',
 	required: 'Pflichtfeld',
 	loading: 'Wird geladen…',
@@ -303,6 +322,9 @@ const ca: UiMessages = {
 	reset: 'Restablir',
 	submit: 'Enviar',
 	close: 'Tancar',
+	time: 'Hora',
+	clear: 'Esborra',
+	selectDateTime: 'Tria data i hora',
 	optional: 'Opcional',
 	required: 'Obligatori',
 	loading: 'S’està carregant…',
