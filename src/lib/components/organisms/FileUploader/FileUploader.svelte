@@ -87,6 +87,8 @@
 
 	const labelId = $derived(`${id}-label`);
 	const helperId = $derived(`${id}-helper`);
+	// The visible dropzone text must be part of its accessible name (WCAG 2.5.3 Label in Name).
+	const dropzoneContentId = $derived(`${id}-dropzone-content`);
 	const errorId = $derived(`${id}-error`);
 	const maxBytes = $derived(maxSizeMb * 1024 * 1024);
 
@@ -318,10 +320,8 @@
 	<div
 		role="button"
 		tabindex={disabled ? -1 : 0}
-		aria-labelledby={resolvedLabel ? labelId : undefined}
-		aria-describedby={[resolvedHelperText ? helperId : '', errorMessage ? errorId : '']
-			.filter(Boolean)
-			.join(' ') || undefined}
+		aria-labelledby={resolvedLabel ? `${labelId} ${dropzoneContentId}` : dropzoneContentId}
+		aria-describedby={errorMessage ? errorId : undefined}
 		aria-disabled={disabled || undefined}
 		ondragenter={handleDragEnter}
 		ondragover={handleDragOver}
@@ -346,6 +346,7 @@
 		]}
 	>
 		<div
+			id={dropzoneContentId}
 			class={[
 				'flex',
 				vertical
@@ -398,7 +399,7 @@
 				{#if resolvedHelperText}
 					<p
 						id={helperId}
-						class={['mt-0.5 leading-relaxed text-secondary text-[11px]', vertical && 'text-center']}
+						class={['mt-0.5 leading-relaxed text-secondary text-xs', vertical && 'text-center']}
 					>
 						{resolvedHelperText}
 					</p>
