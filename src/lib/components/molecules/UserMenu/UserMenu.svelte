@@ -236,8 +236,8 @@
 			compact && 'h-8 gap-2 py-0',
 			compact && (variant === 'ghost' ? 'px-1' : 'px-2'),
 			!compact && size === 'sm' && (variant === 'ghost' ? 'px-1.5 py-1' : 'px-2.5 py-1'),
-			size === 'md' && (variant === 'ghost' ? 'px-2 py-1.5' : 'px-2.5 py-2'),
-			size === 'lg' && (variant === 'ghost' ? 'px-2.5 py-2' : 'px-3 py-2.5'),
+			size === 'md' && (variant === 'ghost' ? 'px-2 py-1.5' : 'px-2.5 py-1.5'),
+			size === 'lg' && (variant === 'ghost' ? 'px-2.5 py-2' : 'px-3 py-2'),
 			open && (variant === 'ghost' ? 'bg-surface-overlay' : 'ring-brand-500/30 ring-2')
 		]}
 		aria-haspopup="menu"
@@ -287,7 +287,7 @@
 		{#if header}
 			{@render header()}
 		{:else}
-			<div class="border-border bg-surface-overlay/50 px-3.5 py-3 border-b">
+			<div class="border-border bg-surface-overlay/50 px-3.5 py-2 border-b">
 				<div class="gap-3 flex items-start">
 					<Avatar {src} {name} size="lg" {status} />
 					<div class="min-w-0 pt-0.5 flex-1">
@@ -318,7 +318,7 @@
 		<div class="p-1.5">
 			{#each items as item (item.id)}
 				{#if item.separator}
-					<div class="my-1.5 border-border border-t" role="separator"></div>
+					<div class="my-1 border-border border-t" role="separator"></div>
 				{:else}
 					<button
 						type="button"
