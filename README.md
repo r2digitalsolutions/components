@@ -85,6 +85,25 @@ Los componentes usan clases de Tailwind 4. En la app consumidora basta con impor
 
 Ese import registra tokens (`border-border`, `bg-surface`, …) y hace que Tailwind escanee los `.svelte` del paquete. Sin él, las utilidades pueden faltar o `--border` no estar definido.
 
+#### CSS más pequeño en producción (opcional)
+
+Por defecto Tailwind escanea **todos** los componentes del paquete, aunque la app use unos pocos. El plugin de Vite `componentSources()` hace que, en `vite build`, solo escanee los componentes que la app importa (y sus dependencias internas). El CSS de la app no cambia:
+
+```ts
+// vite.config.ts
+import { componentSources } from '@r2digisolutions/components/vite';
+import tailwindcss from '@tailwindcss/vite';
+
+export default defineConfig({
+	plugins: [componentSources(), tailwindcss(), sveltekit()] // antes de tailwindcss()
+});
+```
+
+- Lee los `import { … } from '@r2digisolutions/components'` de `src/` (cambia las carpetas con `componentSources({ dirs: ['src', 'otra'] })`).
+- Si encuentra un import que no puede analizar (`import * as`, imports dinámicos o subrutas internas), avisa en el build y vuelve a escanear el paquete entero, así que nunca deja clases sin generar.
+- En `vite dev` no hace nada: se escanea todo.
+- Si solo quieres los tokens sin escanear nada: `@import '@r2digisolutions/components/theme.css';`.
+
 ## Tema: modo + paleta
 
 Hay dos ejes independientes en `<html>`:
