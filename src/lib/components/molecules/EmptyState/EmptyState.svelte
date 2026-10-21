@@ -6,6 +6,8 @@
 		description?: string;
 		icon?: Snippet;
 		action?: Snippet;
+		/** Heading level of the title, to keep the page outline in order. Default 3. */
+		headingLevel?: 2 | 3 | 4 | 5 | 6;
 		class?: string;
 	}
 
@@ -14,6 +16,7 @@
 		description = 'There are no items to display right now.',
 		icon,
 		action,
+		headingLevel = 3,
 		class: className = ''
 	}: EmptyStateProps = $props();
 </script>
@@ -35,7 +38,9 @@
 		{/if}
 	</div>
 
-	<h3 class="text-base font-semibold text-primary mb-1">{title}</h3>
+	<svelte:element this={`h${headingLevel}`} class="text-base font-semibold text-primary mb-1"
+		>{title}</svelte:element
+	>
 	{#if description}
 		<p class="text-xs text-muted max-w-sm leading-relaxed mb-5">{description}</p>
 	{/if}
