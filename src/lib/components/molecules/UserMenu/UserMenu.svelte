@@ -287,15 +287,15 @@
 		{#if header}
 			{@render header()}
 		{:else}
-			<div class="border-border bg-surface-overlay/50 px-3.5 py-2 border-b">
-				<div class="gap-3 flex items-start">
-					<Avatar {src} {name} size="lg" {status} />
-					<div class="min-w-0 pt-0.5 flex-1">
-						<p class="text-sm font-semibold text-primary truncate">{name}</p>
+			<div class="border-border bg-surface-overlay/50 px-3.5 py-1.5 border-b">
+				<div class="gap-2 flex items-start">
+					<Avatar {src} {name} size="md" {status} />
+					<div class="min-w-0 pt-0 flex-1">
+						<p class="text-sm font-semibold text-primary truncate leading-tight">{name}</p>
 						{#if email}
-							<p class="text-xs text-muted truncate">{email}</p>
+							<p class="text-xs text-muted truncate leading-tight">{email}</p>
 						{/if}
-						<div class="mt-2 gap-2 flex flex-wrap items-center">
+						<div class="mt-1 gap-2 flex flex-wrap items-center">
 							{#if status && statusLabel}
 								<StatusDot {status} size="sm" showLabel label={statusLabel} />
 							{/if}
@@ -335,7 +335,7 @@
 						]}
 					>
 						{#if item.icon}
-							<svelte:component this={item.icon} size={18} class="shrink-0 text-muted" aria-hidden="true" />
+							<svelte:component this={item.icon} size={22} class="shrink-0 text-muted" aria-hidden="true" />
 						{/if}
 						<span class="min-w-0 flex-1">
 							<span class="text-sm font-medium block">{item.label}</span>
