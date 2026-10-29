@@ -357,13 +357,21 @@
 		return `transform: translate3d(${tx}px, ${ty}px, 0) scale(${scale}); opacity: ${fade}`;
 	});
 	const transitioning = $derived(!dragging);
+
+	/** Promotes the node to the top layer; removing it from the DOM leaves the layer automatically. */
+	function topLayer(node: HTMLElement) {
+		node.showPopover?.();
+	}
 </script>
 
 {#if open && current}
+	<!-- popover=manual → browser top layer: fixed page chrome (bottom navs, headers) can't cover it -->
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 	<div
+		popover="manual"
+		use:topLayer
 		class={[
-			'fixed inset-0 z-50 flex flex-col',
+			'fixed inset-0 z-50 m-0 flex h-dvh max-h-none w-screen max-w-none flex-col overflow-visible border-0 p-0',
 			blurBackdrop && 'backdrop-blur-xl',
 			className
 		]}
