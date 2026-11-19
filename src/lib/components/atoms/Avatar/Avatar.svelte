@@ -92,7 +92,8 @@
 			ringed && 'ring-2 ring-surface-elevated',
 			!showImage && [bgColor, 'text-white font-semibold']
 		]}
-		role={alt ? 'img' : undefined}
+		// Con foto el <img> ya lleva su texto alternativo; sin foto, las iniciales son una imagen con nombre.
+		role={alt || !showImage ? 'img' : undefined}
 		aria-label={alt ?? name}
 	>
 		{#if showImage}

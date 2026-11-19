@@ -61,7 +61,8 @@
 	>
 		{title}
 	</h3>
-	<ul class="space-y-1" role="group" aria-label={title}>
+	<div role="group" aria-label={title}>
+	<ul class="space-y-1">
 		{#each visible as option (option.id)}
 			{@const active = value.includes(option.id)}
 			<li>

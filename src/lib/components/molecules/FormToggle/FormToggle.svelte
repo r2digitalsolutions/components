@@ -90,6 +90,7 @@
 			<Toggle
 				{id}
 				{size}
+				ariaLabel={label}
 				disabled={resolved.disabled}
 				labelPosition="right"
 				bind:checked

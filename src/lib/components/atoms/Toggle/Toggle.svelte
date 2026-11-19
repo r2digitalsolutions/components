@@ -3,6 +3,8 @@
 		checked?: boolean;
 		disabled?: boolean;
 		label?: string;
+		/** Nombre accesible cuando la etiqueta visible se pinta fuera del interruptor. */
+		ariaLabel?: string;
 		labelPosition?: 'left' | 'right';
 		size?: 'sm' | 'md' | 'lg';
 		id?: string;
@@ -14,6 +16,7 @@
 		checked = $bindable(false),
 		disabled = false,
 		label,
+		ariaLabel,
 		labelPosition = 'right',
 		size = 'md',
 		id,
@@ -57,7 +60,7 @@
 	id={id}
 	role="switch"
 	aria-checked={checked}
-	aria-label={label}
+	aria-label={ariaLabel ?? label}
 	{disabled}
 	class={[
 		'inline-flex items-center gap-2.5 select-none',

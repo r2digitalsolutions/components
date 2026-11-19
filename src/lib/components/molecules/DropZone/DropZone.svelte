@@ -272,19 +272,19 @@
 				{#if showConstraints && maxSizeMb} · max {maxSizeMb}MB{/if}
 			</p>
 		</div>
-		<input
-			bind:this={inputEl}
-			id={inputId}
-			name={inputName}
-			type="file"
-			class="sr-only"
-			aria-label={label}
-			{accept}
-			{multiple}
-			{disabled}
-			onchange={(e) => pick((e.currentTarget as HTMLInputElement).files)}
-		/>
 	</button>
+	<input
+		bind:this={inputEl}
+		id={inputId}
+		name={inputName}
+		type="file"
+		class="sr-only"
+		aria-label={label}
+		{accept}
+		{multiple}
+		{disabled}
+		onchange={(e) => pick((e.currentTarget as HTMLInputElement).files)}
+	/>
 
 	{#if error}
 		<p class="text-xs text-red-600 dark:text-red-400">{error}</p>
