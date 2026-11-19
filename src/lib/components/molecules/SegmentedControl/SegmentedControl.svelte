@@ -53,7 +53,7 @@
 
 <div
 	class={[
-		'inline-flex rounded-xl bg-surface-overlay p-1',
+		'inline-flex max-w-full shrink-0 rounded-xl bg-surface-overlay p-1',
 		fullWidth && 'flex w-full',
 		className
 	]}
@@ -69,9 +69,9 @@
 			disabled={item.disabled}
 			onclick={() => select(item.id, item.disabled)}
 			class={[
-				'inline-flex items-center justify-center rounded-lg font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30',
+				'inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-lg font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30',
 				sizeClasses[size],
-				fullWidth && 'flex-1',
+				fullWidth && 'min-w-0 flex-1 shrink',
 				isActive
 					? 'bg-brand-500 text-white shadow-sm'
 					: 'text-secondary hover:bg-surface-elevated/70 hover:text-primary',
