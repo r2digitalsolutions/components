@@ -46,8 +46,13 @@
 		 * floating — inset rounded card (Flutter demos)
 		 * pill — capsule
 		 * notch — floating + explicit SVG CircularNotchedRectangle
+		 * docked — full-width bar with a top border; the FAB pokes out of it (workspace apps)
 		 */
-		variant?: 'default' | 'floating' | 'pill' | 'notch';
+		variant?: 'default' | 'floating' | 'pill' | 'notch' | 'docked';
+		/** FAB shape: round, or a rounded square (workspace look). */
+		fabShape?: 'circle' | 'square';
+		/** Active item: soft pill behind the icon, or just the brand colour. */
+		activeStyle?: 'pill' | 'color';
 		showLabels?: boolean;
 		blur?: boolean;
 		/** Colored FAB background (CSS color or token class handled via style) */
@@ -63,6 +68,8 @@
 		value = $bindable(''),
 		size = 'md',
 		variant = 'notch',
+		fabShape = 'circle',
+		activeStyle = 'pill',
 		showLabels = true,
 		blur = false,
 		fabClass = 'bg-brand-500 hover:bg-brand-600',
@@ -163,7 +170,9 @@
 			class={[
 				'rounded-2xl relative inline-flex items-center justify-center transition-[transform,background-color,box-shadow] duration-200',
 				sizes.iconWrap,
-				active
+				active && activeStyle === 'color'
+					? 'text-brand-700 dark:text-brand-300'
+					: active
 					? 'bg-brand-500/12 text-brand-600 dark:text-brand-400 shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--color-brand-500)_22%,transparent)]'
 					: 'group-hover:bg-surface-overlay/80 bg-transparent'
 			]}
@@ -184,7 +193,7 @@
 			{/if}
 			{#if item.badge !== undefined && item.badge !== ''}
 				<span
-					class="-right-1 -top-1 h-4 min-w-4 bg-red-500 px-1 font-semibold text-white shadow-sm absolute flex items-center justify-center rounded-full text-[9px]"
+					class="-right-1.5 -top-1 h-4 min-w-4 bg-red-500 ring-surface-elevated ring-2 px-1 font-semibold text-white shadow-sm absolute flex items-center justify-center rounded-full text-[9px]"
 				>
 					{item.badge}
 				</span>
@@ -195,7 +204,7 @@
 				class={[
 					'font-medium truncate leading-none transition-colors',
 					sizes.label,
-					active && 'text-brand-600 dark:text-brand-400'
+					active && 'font-semibold text-brand-700 dark:text-brand-300'
 				]}
 			>
 				{item.label}
@@ -207,7 +216,9 @@
 <nav
 	class={[
 		'relative w-full',
-		fabItem && sizes.pad,
+		fabItem && variant !== 'docked' && sizes.pad,
+		variant === 'docked' &&
+			'border-border bg-surface-elevated pb-[max(0.25rem,env(safe-area-inset-bottom))] border-t',
 		(variant === 'floating' || variant === 'notch' || variant === 'pill') &&
 			'px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))]',
 		variant === 'default' && 'pb-[max(0.25rem,env(safe-area-inset-bottom))]',
@@ -227,8 +238,10 @@
 			onclick={() => select(fabItem.id, fabItem.disabled)}
 			aria-label={fabItem.label}
 			class={[
-				'top-0 text-white absolute left-1/2 z-20 flex -translate-x-1/2 items-center justify-center rounded-full',
-				'shadow-[0_10px_28px_rgba(0,0,0,0.28)] transition-all duration-200 active:scale-95',
+				'text-white absolute left-1/2 z-20 flex -translate-x-1/2 items-center justify-center',
+				fabShape === 'square' ? 'rounded-[1.15rem]' : 'rounded-full',
+				variant === 'docked' ? '-top-5 shadow-[0_10px_24px_-6px_color-mix(in_oklab,var(--color-brand-700)_55%,transparent)]' : 'top-0 shadow-[0_10px_28px_rgba(0,0,0,0.28)]',
+				'transition-all duration-200 active:scale-95',
 				'focus-visible:ring-brand-500/40 focus-visible:ring-offset-surface focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
 				sizes.fab,
 				fabClass,
@@ -261,7 +274,7 @@
 		class={[
 			'relative flex w-full items-center',
 			sizes.bar,
-			variant === 'default' && 'bg-transparent',
+			(variant === 'default' || variant === 'docked') && 'bg-transparent',
 			(variant === 'floating' || variant === 'notch') && 'rounded-2xl bg-surface-elevated',
 			variant === 'pill' && 'bg-surface-elevated rounded-full',
 			elevated && variant !== 'default' && 'shadow-lg',

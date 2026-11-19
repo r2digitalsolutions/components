@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Snippet } from 'svelte';
+	import type { Component, Snippet } from 'svelte';
 	import Card from '$lib/components/molecules/Card/Card.svelte';
 	import type { CardVariant } from '$lib/components/molecules/Card/Card.svelte';
 	import Badge from '$lib/components/atoms/Badge/Badge.svelte';
@@ -25,6 +25,10 @@
 		sparklineTone?: 'brand' | 'success' | 'warning' | 'error' | 'neutral';
 		class?: string;
 		icon?: Snippet;
+		/** Small icon before the label (workspace look); does not hide the sparkline. */
+		labelIcon?: Component<{ class?: string; size?: number | string; strokeWidth?: number | string }>;
+		/** `pill` puts the delta in a small tinted chip (+12%). */
+		deltaStyle?: 'text' | 'pill';
 		onclick?: (e: MouseEvent) => void;
 	}
 
@@ -43,6 +47,8 @@
 		sparklineTone = 'brand',
 		class: className = '',
 		icon,
+		labelIcon: LabelIcon,
+		deltaStyle = 'text',
 		onclick
 	}: StatCardProps = $props();
 
@@ -58,33 +64,57 @@
 	chrome={false}
 >
 	<div class="gap-3 flex items-start justify-between">
-		<div class="min-w-0 space-y-1">
+		<div class="min-w-0 space-y-1 flex-1">
 			<div class="gap-2 flex flex-wrap items-center">
-				<p class={['font-medium text-secondary', compact ? 'text-xs' : 'text-sm']}>{label}</p>
+				<p
+					class={[
+						'gap-1.5 font-medium text-secondary inline-flex items-center',
+						compact ? 'text-xs' : 'text-sm'
+					]}
+				>
+					{#if LabelIcon}<LabelIcon class="h-3.5 w-3.5 text-muted" strokeWidth={2} />{/if}{label}
+				</p>
 				{#if badge}
 					<Badge variant={badgeVariant} size="sm">{badge}</Badge>
 				{/if}
 			</div>
-			<p
-				class={[
-					'min-w-0 font-semibold tracking-tight text-primary',
-					compact ? 'text-lg leading-snug' : 'text-2xl'
-				]}
-			>
-				{value}
-			</p>
+			<div class="gap-3 flex items-end justify-between">
+				<p
+					class={[
+						'min-w-0 font-semibold tracking-tight text-primary',
+						compact ? 'text-lg leading-snug' : 'text-2xl'
+					]}
+				>
+					{value}
+				</p>
+				{#if sparkline && sparkline.length > 1 && !icon}
+					<Sparkline
+						data={sparkline}
+						tone={sparklineTone}
+						width={compact ? 72 : 96}
+						height={compact ? 26 : 34}
+						class="shrink-0"
+					/>
+				{/if}
+			</div>
 			{#if delta || description}
 				<div class="gap-2 text-xs flex flex-wrap items-center">
 					{#if delta}
 						<span
 							class={[
 								'gap-0.5 font-medium inline-flex items-center',
-								trend === 'up' && 'text-green-600 dark:text-green-400',
-								trend === 'down' && 'text-red-600 dark:text-red-400',
-								trend === 'neutral' && 'text-muted'
+								deltaStyle === 'pill' && 'px-1.5 py-0.5 font-semibold rounded-md',
+								deltaStyle === 'pill' && trend === 'down'
+									? 'bg-red-500/10 text-red-700 dark:text-red-300'
+									: deltaStyle === 'pill'
+										? 'bg-brand-500/12 text-brand-700 dark:text-brand-300'
+										: '',
+								deltaStyle === 'text' && trend === 'up' && 'text-green-600 dark:text-green-400',
+								deltaStyle === 'text' && trend === 'down' && 'text-red-600 dark:text-red-400',
+								deltaStyle === 'text' && trend === 'neutral' && 'text-muted'
 							]}
 						>
-							{#if trend === 'up'}
+							{#if deltaStyle === 'pill'}{:else if trend === 'up'}
 								<svg
 									class="h-3.5 w-3.5"
 									viewBox="0 0 24 24"
@@ -116,15 +146,6 @@
 				</div>
 			{/if}
 		</div>
-		{#if sparkline && sparkline.length > 1 && !icon}
-			<Sparkline
-				data={sparkline}
-				tone={sparklineTone}
-				width={compact ? 72 : 96}
-				height={compact ? 26 : 34}
-				class="shrink-0 self-end"
-			/>
-		{/if}
 		{#if icon}
 			<div
 				class={[

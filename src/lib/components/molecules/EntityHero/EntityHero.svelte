@@ -21,6 +21,12 @@
 		stats?: EntityHeroStat[];
 		/** Hide the cover band (compact header). */
 		compact?: boolean;
+		/** Height of the cover band. */
+		coverSize?: 'sm' | 'md' | 'lg';
+		/** Extra CSS for the cover <img> (framing: object-position, scale…). */
+		coverStyle?: string;
+		/** Buttons over the cover, shown on hover/focus (always on touch): «Cambiar portada», «Ajustar»… */
+		coverActions?: Snippet;
 		class?: string;
 		/** Status badges next to the title. */
 		badges?: Snippet;
@@ -38,6 +44,9 @@
 		initials,
 		stats = [],
 		compact = false,
+		coverSize = 'sm',
+		coverStyle,
+		coverActions,
 		class: className = '',
 		badges,
 		meta,
@@ -63,10 +72,25 @@
 >
 	{#if !compact}
 		<div
-			class="entity-hero-cover h-16 sm:h-20 bg-cover bg-center"
-			style={cover ? `background-image:url(${JSON.stringify(cover)})` : undefined}
-			aria-hidden="true"
-		></div>
+			class={[
+				'entity-hero-cover group/cover relative overflow-hidden',
+				{ sm: 'h-16 sm:h-20', md: 'h-28 sm:h-36', lg: 'h-36 sm:h-48' }[coverSize]
+			]}
+		>
+			{#if cover}<img
+					src={cover}
+					alt=""
+					class="inset-0 absolute h-full w-full object-cover"
+					style={coverStyle}
+				/>{/if}
+			{#if coverActions}
+				<div
+					class="right-3 top-3 gap-2 absolute flex opacity-100 transition-opacity duration-200 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/cover:opacity-100 [@media(hover:hover)]:group-focus-within/cover:opacity-100"
+				>
+					{@render coverActions()}
+				</div>
+			{/if}
+		</div>
 	{/if}
 	<div
 		class={['gap-4 px-4 pb-4 sm:px-5 lg:flex-row lg:items-end flex flex-col', compact && 'pt-4']}
@@ -77,7 +101,7 @@
 					'rounded-2xl bg-brand-600 font-bold text-white flex shrink-0 items-center justify-center overflow-hidden',
 					compact
 						? 'h-12 w-12 text-base'
-						: '-mt-8 border-surface-elevated text-xl shadow-md h-[4.25rem] w-[4.25rem] border-4'
+						: 'relative z-10 -mt-8 border-surface-elevated text-xl shadow-md h-[4.25rem] w-[4.25rem] border-4'
 				]}
 			>
 				{#if avatar}<img

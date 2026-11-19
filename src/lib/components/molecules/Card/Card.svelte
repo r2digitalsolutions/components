@@ -11,6 +11,8 @@
 		/** Soft tint behind header / footer chrome (DiffViewer-style). Default true. */
 		chrome?: boolean;
 		class?: string;
+		/** DOM id (anchor links such as #bandeja). */
+		id?: string;
 		header?: Snippet;
 		footer?: Snippet;
 		children?: Snippet;
@@ -23,6 +25,7 @@
 		hoverable = false,
 		chrome = true,
 		class: className = '',
+		id,
 		header,
 		footer,
 		children,
@@ -55,6 +58,7 @@
 
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <div
+	{id}
 	class={[
 		'rounded-2xl flex flex-col overflow-hidden transition-[box-shadow,transform,border-color] duration-200',
 		variantClasses[variant],
