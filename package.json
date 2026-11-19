@@ -34,6 +34,7 @@
 	},
 	"files": [
 		"dist",
+		"WORKSPACE.md",
 		"!dist/**/*.test.*",
 		"!dist/**/*.spec.*"
 	],

@@ -12,6 +12,12 @@
 		initials?: string;
 		/** Soft accent for the avatar tile */
 		tone?: 'brand' | 'sky' | 'emerald' | 'amber' | 'rose';
+		/** Logo/avatar image; falls back to initials. */
+		src?: string;
+		/** Second line (role, category…). Replaces the «plan» line when set. */
+		subtitle?: string;
+		/** Pending count shown at the end of the row. Hidden when 0. */
+		badge?: string | number;
 	}
 
 	interface OrgSwitcherProps {
@@ -19,6 +25,12 @@
 		value?: string;
 		/** Compact trigger for sidebars */
 		compact?: boolean;
+		/** Small heading above the list. */
+		title?: string;
+		/** Label of the create row (shown when `oncreate` is set). */
+		createLabel?: string;
+		/** Small note under the create row (e.g. «Linked to your account»). */
+		footerNote?: string;
 		class?: string;
 		onchange?: (id: string) => void;
 		oncreate?: () => void;
@@ -40,6 +52,9 @@
 		],
 		value = $bindable('acme'),
 		compact = false,
+		title,
+		createLabel = 'Create organization',
+		footerNote,
 		class: className = '',
 		onchange,
 		oncreate
@@ -71,40 +86,51 @@
 		aria-expanded={open}
 		onclick={() => (open = !open)}
 		class={[
-			'flex w-full items-center gap-2 rounded-xl border border-border bg-surface-elevated text-left transition-colors',
-			'hover:border-border-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30',
+			'gap-2 rounded-xl border-border bg-surface-elevated flex w-full items-center border text-left transition-colors',
+			'hover:border-border-strong focus-visible:ring-brand-500/30 focus-visible:ring-2 focus-visible:outline-none',
 			compact ? 'px-2 py-1.5' : 'px-3 py-2'
 		]}
 	>
 		<span
 			class={[
-				'flex shrink-0 items-center justify-center rounded-lg text-xs font-bold',
+				'rounded-lg text-xs font-bold flex shrink-0 items-center justify-center',
 				compact ? 'h-7 w-7' : 'h-8 w-8',
 				TONE[current?.tone ?? 'brand']
 			]}
 		>
-			{current?.initials ?? (current?.name ?? '?').slice(0, 2).toUpperCase()}
+			{#if current?.src}<img
+					src={current.src}
+					alt=""
+					class="rounded-lg h-full w-full object-cover"
+				/>{:else}{current?.initials ?? (current?.name ?? '?').slice(0, 2).toUpperCase()}{/if}
 		</span>
 		{#if !compact}
 			<span class="min-w-0 flex-1">
-				<span class="block truncate text-sm font-semibold text-primary">{current?.name}</span>
-				{#if current?.plan}
-					<span class="block truncate text-[11px] text-muted">{current.plan} plan</span>
+				<span class="text-sm font-semibold text-primary block truncate">{current?.name}</span>
+				{#if current?.subtitle}
+					<span class="text-muted block truncate text-[11px]">{current.subtitle}</span>
+				{:else if current?.plan}
+					<span class="text-muted block truncate text-[11px]">{current.plan} plan</span>
 				{/if}
 			</span>
 		{:else}
-			<span class="min-w-0 flex-1 truncate text-sm font-medium text-primary">{current?.name}</span>
+			<span class="min-w-0 text-sm font-medium text-primary flex-1 truncate">{current?.name}</span>
 		{/if}
-		<ChevronsUpDown class="h-4 w-4 shrink-0 text-muted" strokeWidth={2} />
+		<ChevronsUpDown class="h-4 w-4 text-muted shrink-0" strokeWidth={2} />
 	</button>
 
 	{#if open}
 		<div
 			role="listbox"
 			aria-label="Organizations"
-			class="absolute left-0 right-0 z-50 mt-1.5 overflow-hidden rounded-xl border border-border bg-surface-elevated shadow-lg"
+			class="left-0 right-0 mt-1.5 rounded-xl border-border bg-surface-elevated shadow-lg absolute z-50 overflow-hidden border"
 		>
-			<ul class="max-h-64 overflow-y-auto p-1">
+			{#if title}
+				<p class="px-3 pb-1 pt-2.5 font-semibold tracking-wider text-muted text-[11px] uppercase">
+					{title}
+				</p>
+			{/if}
+			<ul class="max-h-64 p-1 overflow-y-auto">
 				{#each orgs as org (org.id)}
 					<li>
 						<button
@@ -113,54 +139,73 @@
 							aria-selected={org.id === value}
 							onclick={() => select(org.id)}
 							class={[
-								'flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left transition-colors',
+								'gap-2 rounded-lg px-2 py-2 flex w-full items-center text-left transition-colors',
 								org.id === value ? 'bg-brand-500/10' : 'hover:bg-surface-overlay'
 							]}
 						>
 							<span
 								class={[
-									'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold',
+									'h-8 w-8 rounded-lg text-xs font-bold flex shrink-0 items-center justify-center',
 									TONE[org.tone ?? 'brand']
 								]}
 							>
-								{org.initials ?? org.name.slice(0, 2).toUpperCase()}
+								{#if org.src}<img
+										src={org.src}
+										alt=""
+										class="rounded-lg h-full w-full object-cover"
+									/>{:else}{org.initials ?? org.name.slice(0, 2).toUpperCase()}{/if}
 							</span>
 							<span class="min-w-0 flex-1">
-								<span class="flex items-center gap-2">
-									<span class="truncate text-sm font-medium text-primary">{org.name}</span>
+								<span class="gap-2 flex items-center">
+									<span class="text-sm font-medium text-primary truncate">{org.name}</span>
 									{#if org.plan}
 										<Badge size="sm" variant="secondary">{org.plan}</Badge>
 									{/if}
 								</span>
+								{#if org.subtitle}
+									<span class="text-muted block truncate text-[11px]">{org.subtitle}</span>
+								{/if}
 							</span>
+							{#if org.badge !== undefined && org.badge !== '' && org.badge !== 0 && org.id !== value}
+								<span
+									class="h-5 min-w-5 bg-brand-600 px-1.5 font-bold text-white flex shrink-0 items-center justify-center rounded-full text-[11px]"
+									>{org.badge}</span
+								>
+							{/if}
 							{#if org.id === value}
-								<Check class="h-4 w-4 shrink-0 text-brand-600 dark:text-brand-400" strokeWidth={2.5} />
+								<Check
+									class="h-4 w-4 text-brand-600 dark:text-brand-400 shrink-0"
+									strokeWidth={2.5}
+								/>
 							{/if}
 						</button>
 					</li>
 				{/each}
 			</ul>
 			{#if oncreate}
-				<div class="border-t border-border p-1">
+				<div class="border-border p-1 border-t">
 					<button
 						type="button"
 						onclick={() => {
 							open = false;
 							oncreate?.();
 						}}
-						class="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-sm font-medium text-secondary transition-colors hover:bg-surface-overlay"
+						class="gap-2 rounded-lg px-2 py-2 text-sm font-medium text-secondary hover:bg-surface-overlay flex w-full items-center transition-colors"
 					>
 						<span
-							class="flex h-8 w-8 items-center justify-center rounded-lg border border-dashed border-border text-muted"
+							class="h-8 w-8 rounded-lg border-border text-muted flex items-center justify-center border border-dashed"
 						>
 							<Plus class="h-4 w-4" strokeWidth={2} />
 						</span>
-						Create organization
+						{createLabel}
 					</button>
+					{#if footerNote}
+						<p class="px-2 pb-1.5 pt-1 text-muted text-[11px]">{footerNote}</p>
+					{/if}
 				</div>
 			{:else}
-				<div class="border-t border-border px-3 py-2">
-					<p class="inline-flex items-center gap-1.5 text-[11px] text-muted">
+				<div class="border-border px-3 py-2 border-t">
+					<p class="gap-1.5 text-muted inline-flex items-center text-[11px]">
 						<Building2 class="h-3 w-3" strokeWidth={2} />
 						{orgs.length} workspaces
 					</p>

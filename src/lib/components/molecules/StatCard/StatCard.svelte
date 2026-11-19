@@ -3,6 +3,7 @@
 	import Card from '$lib/components/molecules/Card/Card.svelte';
 	import type { CardVariant } from '$lib/components/molecules/Card/Card.svelte';
 	import Badge from '$lib/components/atoms/Badge/Badge.svelte';
+	import Sparkline from '$lib/components/atoms/Sparkline/Sparkline.svelte';
 
 	export type StatCardTrend = 'up' | 'down' | 'neutral';
 	export type StatCardSize = 'sm' | 'md';
@@ -19,6 +20,9 @@
 		size?: StatCardSize;
 		/** Brand tint (default) or gray icon well */
 		iconTone?: 'brand' | 'neutral';
+		/** Mini trend line at the bottom-right (e.g. last 8 weeks). */
+		sparkline?: number[];
+		sparklineTone?: 'brand' | 'success' | 'warning' | 'error' | 'neutral';
 		class?: string;
 		icon?: Snippet;
 		onclick?: (e: MouseEvent) => void;
@@ -35,6 +39,8 @@
 		variant = 'default',
 		size = 'md',
 		iconTone = 'brand',
+		sparkline,
+		sparklineTone = 'brand',
 		class: className = '',
 		icon,
 		onclick
@@ -110,6 +116,15 @@
 				</div>
 			{/if}
 		</div>
+		{#if sparkline && sparkline.length > 1 && !icon}
+			<Sparkline
+				data={sparkline}
+				tone={sparklineTone}
+				width={compact ? 72 : 96}
+				height={compact ? 26 : 34}
+				class="shrink-0 self-end"
+			/>
+		{/if}
 		{#if icon}
 			<div
 				class={[

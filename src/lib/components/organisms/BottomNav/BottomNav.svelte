@@ -1,4 +1,12 @@
 <script lang="ts">
+	import type { Component } from 'svelte';
+
+	export type BottomNavIconComponent = Component<{
+		class?: string;
+		size?: number | string;
+		strokeWidth?: number | string;
+	}>;
+
 	export type BottomNavIcon =
 		| 'home'
 		| 'search'
@@ -19,6 +27,10 @@
 		id: string;
 		label: string;
 		icon?: BottomNavIcon;
+		/** Any icon component (e.g. Lucide). Wins over `icon`. */
+		iconComponent?: BottomNavIconComponent;
+		/** Render as a link (SvelteKit navigation) instead of a button. */
+		href?: string;
 		badge?: string | number;
 		disabled?: boolean;
 		/** Center FAB (Flutter CircularNotchedRectangle) */
@@ -65,7 +77,8 @@
 		plus: 'M12 5v14M5 12h14',
 		inbox: 'M4 6h16v12H4V6zm0 4l8 5 8-5',
 		user: 'M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z',
-		heart: 'M20.8 5.6a5 5 0 00-7.1 0L12 7.3l-1.7-1.7a5 5 0 00-7.1 7.1l1.7 1.7L12 21.5l7.1-7.1 1.7-1.7a5 5 0 000-7.1z',
+		heart:
+			'M20.8 5.6a5 5 0 00-7.1 0L12 7.3l-1.7-1.7a5 5 0 00-7.1 7.1l1.7 1.7L12 21.5l7.1-7.1 1.7-1.7a5 5 0 000-7.1z',
 		grid: 'M4 4h7v7H4V4zm9 0h7v7h-7V4zM4 13h7v7H4v-7zm9 0h7v7h-7v-7z',
 		bell: 'M15 17h5l-1.4-1.4A2 2 0 0118 14v-3a6 6 0 10-12 0v3c0 .5-.2 1-.6 1.4L4 17h5m6 0a3 3 0 11-6 0',
 		bookmark: 'M7 4h10a1 1 0 011 1v16l-6-3-6 3V5a1 1 0 011-1z',
@@ -130,41 +143,48 @@
 
 {#snippet navItem(item: BottomNavItem)}
 	{@const active = value === item.id}
-	<button
-		type="button"
-		disabled={item.disabled}
+	<!-- svelte-ignore a11y_no_static_element_interactions (a or button, both interactive) -->
+	<svelte:element
+		this={item.href && !item.disabled ? 'a' : 'button'}
+		href={item.href && !item.disabled ? item.href : undefined}
+		type={item.href && !item.disabled ? undefined : 'button'}
+		disabled={item.href ? undefined : item.disabled}
 		onclick={() => select(item.id, item.disabled)}
 		aria-current={active ? 'page' : undefined}
 		class={[
-			'group relative flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-1',
+			'group min-w-0 gap-0.5 px-1 relative flex flex-1 flex-col items-center justify-center',
 			'rounded-xl transition-colors duration-200',
-			'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30',
+			'focus-visible:ring-brand-500/30 focus-visible:ring-2 focus-visible:outline-none',
 			active ? 'text-brand-600 dark:text-brand-400' : 'text-muted hover:text-primary',
 			item.disabled && 'cursor-not-allowed opacity-40'
 		]}
 	>
 		<span
 			class={[
-				'relative inline-flex items-center justify-center rounded-2xl transition-[transform,background-color,box-shadow] duration-200',
+				'rounded-2xl relative inline-flex items-center justify-center transition-[transform,background-color,box-shadow] duration-200',
 				sizes.iconWrap,
 				active
-					? 'bg-brand-500/12 text-brand-600 shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--color-brand-500)_22%,transparent)] dark:text-brand-400'
-					: 'bg-transparent group-hover:bg-surface-overlay/80'
+					? 'bg-brand-500/12 text-brand-600 dark:text-brand-400 shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--color-brand-500)_22%,transparent)]'
+					: 'group-hover:bg-surface-overlay/80 bg-transparent'
 			]}
 		>
-			<svg
-				class={sizes.icon}
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="currentColor"
-				stroke-width={active ? '2.25' : '1.85'}
-				aria-hidden="true"
-			>
-				<path stroke-linecap="round" stroke-linejoin="round" d={iconPaths[item.icon ?? 'home']} />
-			</svg>
+			{#if item.iconComponent}
+				<item.iconComponent class={sizes.icon} strokeWidth={active ? 2.25 : 1.85} />
+			{:else}
+				<svg
+					class={sizes.icon}
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width={active ? '2.25' : '1.85'}
+					aria-hidden="true"
+				>
+					<path stroke-linecap="round" stroke-linejoin="round" d={iconPaths[item.icon ?? 'home']} />
+				</svg>
+			{/if}
 			{#if item.badge !== undefined && item.badge !== ''}
 				<span
-					class="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-semibold text-white shadow-sm"
+					class="-right-1 -top-1 h-4 min-w-4 bg-red-500 px-1 font-semibold text-white shadow-sm absolute flex items-center justify-center rounded-full text-[9px]"
 				>
 					{item.badge}
 				</span>
@@ -173,7 +193,7 @@
 		{#if showLabels}
 			<span
 				class={[
-					'truncate font-medium leading-none transition-colors',
+					'font-medium truncate leading-none transition-colors',
 					sizes.label,
 					active && 'text-brand-600 dark:text-brand-400'
 				]}
@@ -181,7 +201,7 @@
 				{item.label}
 			</span>
 		{/if}
-	</button>
+	</svelte:element>
 {/snippet}
 
 <nav
@@ -198,36 +218,43 @@
 	style="--notch-r: {sizes.notch}px; --fab-gap: {sizes.gap}px;"
 >
 	{#if fabItem}
-		<button
-			type="button"
-			disabled={fabItem.disabled}
+		<!-- svelte-ignore a11y_no_static_element_interactions (a or button, both interactive) -->
+		<svelte:element
+			this={fabItem.href && !fabItem.disabled ? 'a' : 'button'}
+			href={fabItem.href && !fabItem.disabled ? fabItem.href : undefined}
+			type={fabItem.href && !fabItem.disabled ? undefined : 'button'}
+			disabled={fabItem.href ? undefined : fabItem.disabled}
 			onclick={() => select(fabItem.id, fabItem.disabled)}
 			aria-label={fabItem.label}
 			class={[
-				'absolute left-1/2 top-0 z-20 flex -translate-x-1/2 items-center justify-center rounded-full text-white',
+				'top-0 text-white absolute left-1/2 z-20 flex -translate-x-1/2 items-center justify-center rounded-full',
 				'shadow-[0_10px_28px_rgba(0,0,0,0.28)] transition-all duration-200 active:scale-95',
-				'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
+				'focus-visible:ring-brand-500/40 focus-visible:ring-offset-surface focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
 				sizes.fab,
 				fabClass,
 				fabItem.disabled && 'cursor-not-allowed opacity-40',
-				value === fabItem.id && 'ring-2 ring-brand-300/60 ring-offset-2 ring-offset-surface'
+				value === fabItem.id && 'ring-brand-300/60 ring-offset-surface ring-2 ring-offset-2'
 			]}
 		>
-			<svg
-				class={sizes.fabIcon}
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="2.5"
-				aria-hidden="true"
-			>
-				<path
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					d={iconPaths[fabItem.icon ?? 'plus']}
-				/>
-			</svg>
-		</button>
+			{#if fabItem.iconComponent}
+				<fabItem.iconComponent class={sizes.fabIcon} strokeWidth={2.5} />
+			{:else}
+				<svg
+					class={sizes.fabIcon}
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2.5"
+					aria-hidden="true"
+				>
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						d={iconPaths[fabItem.icon ?? 'plus']}
+					/>
+				</svg>
+			{/if}
+		</svelte:element>
 	{/if}
 
 	<div
@@ -236,26 +263,26 @@
 			sizes.bar,
 			variant === 'default' && 'bg-transparent',
 			(variant === 'floating' || variant === 'notch') && 'rounded-2xl bg-surface-elevated',
-			variant === 'pill' && 'rounded-full bg-surface-elevated',
+			variant === 'pill' && 'bg-surface-elevated rounded-full',
 			elevated && variant !== 'default' && 'shadow-lg',
 			blur && variant !== 'default' && 'bg-surface-elevated/95 backdrop-blur-md',
 			useNotch && 'notched-bar'
 		]}
 	>
 		{#if fabItem}
-			<div class="flex min-w-0 flex-1 items-center self-stretch px-1">
+			<div class="min-w-0 px-1 flex flex-1 items-center self-stretch">
 				{#each leftItems as item (item.id)}
 					{@render navItem(item)}
 				{/each}
 			</div>
 			<div class="w-[var(--fab-gap)] shrink-0 self-stretch" aria-hidden="true"></div>
-			<div class="flex min-w-0 flex-1 items-center self-stretch px-1">
+			<div class="min-w-0 px-1 flex flex-1 items-center self-stretch">
 				{#each rightItems as item (item.id)}
 					{@render navItem(item)}
 				{/each}
 			</div>
 		{:else}
-			<div class="flex w-full items-center self-stretch px-1">
+			<div class="px-1 flex w-full items-center self-stretch">
 				{#each items as item (item.id)}
 					{@render navItem(item)}
 				{/each}

@@ -104,6 +104,10 @@ export default defineConfig({
 - En `vite dev` no hace nada: se escanea todo.
 - Si solo quieres los tokens sin escanear nada: `@import '@r2digisolutions/components/theme.css';`.
 
+## Paneles (estética workspace)
+
+Guía de estructura y estilo para paneles de gestión: [WORKSPACE.md](WORKSPACE.md).
+
 ## Tema: modo + paleta
 
 Hay dos ejes independientes en `<html>`:

@@ -570,6 +570,19 @@ export type {
 } from './components/molecules/WorkspaceCard/WorkspaceCard.svelte';
 export { default as OrgSwitcher } from './components/molecules/OrgSwitcher/OrgSwitcher.svelte';
 export type { OrgItem } from './components/molecules/OrgSwitcher/OrgSwitcher.svelte';
+export { default as SectionNav } from './components/molecules/SectionNav/SectionNav.svelte';
+export type {
+	SectionNavItem,
+	SectionNavGroup,
+	SectionNavIcon
+} from './components/molecules/SectionNav/SectionNav.svelte';
+export { default as EntityHero } from './components/molecules/EntityHero/EntityHero.svelte';
+export type { EntityHeroStat } from './components/molecules/EntityHero/EntityHero.svelte';
+export { default as ActionRow } from './components/molecules/ActionRow/ActionRow.svelte';
+export type {
+	ActionRowIcon,
+	ActionRowTone
+} from './components/molecules/ActionRow/ActionRow.svelte';
 export { default as SessionRow } from './components/molecules/SessionRow/SessionRow.svelte';
 export type {
 	SessionInfo,
@@ -1032,13 +1045,21 @@ export type {
 	SidebarIcon
 } from './components/organisms/Sidebar/Sidebar.svelte';
 export { default as NavRail } from './components/organisms/NavRail/NavRail.svelte';
-export type { NavRailItem, NavRailIcon } from './components/organisms/NavRail/NavRail.svelte';
+export type {
+	NavRailItem,
+	NavRailIcon,
+	NavRailVariant
+} from './components/organisms/NavRail/NavRail.svelte';
+export { default as WorkspaceShell } from './components/organisms/WorkspaceShell/WorkspaceShell.svelte';
+export { default as ProfilePicker } from './components/organisms/ProfilePicker/ProfilePicker.svelte';
+export type { ProfilePickerItem } from './components/organisms/ProfilePicker/ProfilePicker.svelte';
 export { default as Navbar } from './components/organisms/Navbar/Navbar.svelte';
 export type { NavbarLink } from './components/organisms/Navbar/Navbar.svelte';
 export { default as BottomNav } from './components/organisms/BottomNav/BottomNav.svelte';
 export type {
 	BottomNavItem,
-	BottomNavIcon
+	BottomNavIcon,
+	BottomNavIconComponent
 } from './components/organisms/BottomNav/BottomNav.svelte';
 export { default as CommandPalette } from './components/organisms/CommandPalette/CommandPalette.svelte';
 export type {

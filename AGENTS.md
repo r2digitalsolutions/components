@@ -17,6 +17,10 @@ Confirmación no interactiva: `pnpm exec bumpp patch --commit --tag --push --yes
 
 Detalle del flujo: [README.md § Publicación](README.md#publicación).
 
+## Paneles y back-offices: estética «workspace»
+
+Para cualquier panel de gestión usa **siempre** la estructura y las reglas de [WORKSPACE.md](WORKSPACE.md): `WorkspaceShell` + `NavRail` solid con etiquetas + `SectionNav` + `EntityHero` + `StatCard` con sparkline + bandeja con `ActionRow` + `OrgSwitcher`/`ProfilePicker` + `CommandPalette` + `BottomNav` con botón + central. Si una app necesita algo que no existe, créalo aquí (en su nivel atómico, con su story) en vez de en la app.
+
 ## Comandos
 
 ```bash
