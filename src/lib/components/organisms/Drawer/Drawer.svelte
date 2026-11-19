@@ -44,7 +44,7 @@
 		closeOnBackdrop = true,
 		closeOnEscape = true,
 		showClose = true,
-		blurBackdrop = true,
+		blurBackdrop = false,
 		class: className = '',
 		children,
 		footer,

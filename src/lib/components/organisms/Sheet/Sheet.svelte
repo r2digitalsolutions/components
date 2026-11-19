@@ -84,7 +84,7 @@
 		dismissOffset = 80,
 		closeOnBackdrop = true,
 		closeOnEscape = true,
-		blurBackdrop = true,
+		blurBackdrop = false,
 		maxWidth = '32rem',
 		class: className = '',
 		children,

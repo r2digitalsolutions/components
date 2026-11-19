@@ -28,7 +28,8 @@
 		class: className = ''
 	}: ComparisonCurvesProps = $props();
 
-	const W = 420;
+	let measuredWidth = $state(0);
+	const W = $derived(measuredWidth > 0 ? measuredWidth : 420);
 	const pad: ChartPad = { ...DEFAULT_PAD, l: 28, b: 28 };
 	const uid = `cc-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -51,7 +52,7 @@
 	);
 </script>
 
-<div class={['w-full', className]}>
+<div class={['w-full', className]} bind:clientWidth={measuredWidth}>
 	<svg viewBox={`0 0 ${W} ${height}`} class="h-auto w-full" role="img" aria-label="Comparison curves">
 		<defs>
 			{#each plotted as s}

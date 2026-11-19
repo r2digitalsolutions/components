@@ -60,7 +60,7 @@
 		closeOnEscape = true,
 		showHandle = true,
 		showClose = true,
-		blurBackdrop = true,
+		blurBackdrop = false,
 		draggable = true,
 		pullToClose = true,
 		dismissOffset = 100,

@@ -1053,6 +1053,8 @@ export type {
 export { default as WorkspaceShell } from './components/organisms/WorkspaceShell/WorkspaceShell.svelte';
 export { default as ProfilePicker } from './components/organisms/ProfilePicker/ProfilePicker.svelte';
 export type { ProfilePickerItem } from './components/organisms/ProfilePicker/ProfilePicker.svelte';
+export { default as MediaPickerDialog } from './components/organisms/MediaPickerDialog/MediaPickerDialog.svelte';
+export type { MediaPickerItem, MediaPickerAlbum } from './components/organisms/MediaPickerDialog/MediaPickerDialog.svelte';
 export { default as Navbar } from './components/organisms/Navbar/Navbar.svelte';
 export type { NavbarLink } from './components/organisms/Navbar/Navbar.svelte';
 export { default as BottomNav } from './components/organisms/BottomNav/BottomNav.svelte';

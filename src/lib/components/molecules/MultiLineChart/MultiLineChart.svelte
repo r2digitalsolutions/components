@@ -49,13 +49,16 @@
 		class: className = ''
 	}: MultiLineChartProps = $props();
 
-	const W = 500;
+	/** Drawn at the real pixel width, so text and dots keep their size on wide cards. */
+	let measuredWidth = $state(0);
+	const W = $derived(measuredWidth > 0 ? measuredWidth : 500);
 	const pad: ChartPad = { ...DEFAULT_PAD, b: 32 };
 
 	let tipIndex = $state<number | null>(null);
 
 	const allValues = $derived(series.flatMap((s) => s.values));
-	const domain = $derived.by(() => {
+	const integerValues = $derived(allValues.length > 0 && allValues.every((v) => Number.isInteger(v)));
+	const rawDomain = $derived.by(() => {
 		if (yMin !== undefined && yMax !== undefined) return { min: yMin, max: yMax };
 		const auto = scaleDomain(allValues);
 		if (yMin !== undefined) return { min: yMin, max: Math.max(auto.max, yMin + 1) };
@@ -63,6 +66,16 @@
 			return { min: 0, max: auto.max };
 		}
 		return auto;
+	});
+	/** With whole numbers, the middle guide must be whole too (0 · 2 · 4, never 0 · 3 · 5). */
+	const domain = $derived.by(() => {
+		const d = rawDomain;
+		if (!integerValues) return d;
+		let max = Math.ceil(d.max);
+		const min = Math.floor(d.min);
+		if (max - min < 2) max = min + 2;
+		if ((max - min) % 2) max += 1;
+		return { min, max };
 	});
 
 	const plotted = $derived(
@@ -78,7 +91,6 @@
 		})
 	);
 
-	const integerValues = $derived(allValues.length > 0 && allValues.every((v) => Number.isInteger(v)));
 
 	const gridYs = $derived.by(() => {
 		const { min, max } = domain;
@@ -118,7 +130,7 @@
 	const pointCount = $derived(Math.max(0, ...series.map((s) => s.values.length)));
 </script>
 
-<div class={['relative w-full select-none', className]}>
+<div class={['relative w-full select-none', className]} bind:clientWidth={measuredWidth}>
 	<svg
 		viewBox={`0 0 ${W} ${height}`}
 		class="h-auto w-full overflow-visible"

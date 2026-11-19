@@ -65,7 +65,7 @@
 		hideFooter = false,
 		footerAlign = 'end',
 		scrollable = true,
-		blurBackdrop = true,
+		blurBackdrop = false,
 		class: className = '',
 		children,
 		header,

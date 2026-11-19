@@ -49,14 +49,17 @@
 		class: className = ''
 	}: AreaLineChartProps = $props();
 
-	const W = 500;
+	/** Drawn at the real pixel width, so text and dots keep their size on wide cards. */
+	let measuredWidth = $state(0);
+	const W = $derived(measuredWidth > 0 ? measuredWidth : 500);
 	const pad: ChartPad = { ...DEFAULT_PAD, b: 32 };
 	const uid = `alc-${Math.random().toString(36).slice(2, 8)}`;
 
 	let tipIndex = $state<number | null>(null);
 
 	const values = $derived(data.map((d) => d.value));
-	const domain = $derived.by(() => {
+	const integerValues = $derived(values.length > 0 && values.every((v) => Number.isInteger(v)));
+	const rawDomain = $derived.by(() => {
 		if (yMin !== undefined && yMax !== undefined) return { min: yMin, max: yMax };
 		const auto = scaleDomain(values);
 		if (yMin !== undefined) return { min: yMin, max: Math.max(auto.max, yMin + 1) };
@@ -65,11 +68,20 @@
 		}
 		return auto;
 	});
+	/** With whole numbers, the middle guide must be whole too (0 · 2 · 4, never 0 · 3 · 5). */
+	const domain = $derived.by(() => {
+		const d = rawDomain;
+		if (!integerValues) return d;
+		let max = Math.ceil(d.max);
+		const min = Math.floor(d.min);
+		if (max - min < 2) max = min + 2;
+		if ((max - min) % 2) max += 1;
+		return { min, max };
+	});
 	const points = $derived(mapPoints(values, W, height, pad, domain));
 	const line = $derived(smooth ? smoothLinePath(points) : linearLinePath(points));
 	const area = $derived(areaPath(line, points, height, pad));
 
-	const integerValues = $derived(values.length > 0 && values.every((v) => Number.isInteger(v)));
 
 	const gridYs = $derived.by(() => {
 		const { min, max } = domain;
@@ -106,7 +118,7 @@
   Keep aspect ratio (h-auto, no preserveAspectRatio=none).
   Stretching to a fixed CSS height warps curves/dots — as in Ads vs gestor.
 -->
-<div class={['relative w-full select-none', className]}>
+<div class={['relative w-full select-none', className]} bind:clientWidth={measuredWidth}>
 	<svg
 		viewBox={`0 0 ${W} ${height}`}
 		class="h-auto w-full overflow-visible"
@@ -167,7 +179,7 @@
 		{/if}
 
 		{#each points as p, i (i)}
-			{#if showDots}
+			{#if showDots && (points.length <= 16 || tipIndex === i || i === points.length - 1)}
 				<circle
 					cx={p.x}
 					cy={p.y}

@@ -36,7 +36,9 @@
 		class: className = ''
 	}: StackedBarChartProps = $props();
 
-	const W = 420;
+	/** Drawn at the real pixel width, so text and dots keep their size on wide cards. */
+	let measuredWidth = $state(0);
+	const W = $derived(measuredWidth > 0 ? measuredWidth : 420);
 	const pad = { t: 16, r: 12, b: 32, l: 12 };
 
 	let tipCol = $state<number | null>(null);
@@ -96,7 +98,7 @@
 	}
 </script>
 
-<div class={['w-full space-y-3', className]}>
+<div class={['w-full space-y-3', className]} bind:clientWidth={measuredWidth}>
 	<div class="relative w-full select-none">
 		<svg
 			viewBox={`0 0 ${W} ${height}`}

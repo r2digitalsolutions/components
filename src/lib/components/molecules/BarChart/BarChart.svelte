@@ -28,7 +28,9 @@
 		class: className = ''
 	}: BarChartProps = $props();
 
-	const W = 420;
+	/** Drawn at the real pixel width, so text and dots keep their size on wide cards. */
+	let measuredWidth = $state(0);
+	const W = $derived(measuredWidth > 0 ? measuredWidth : 420);
 	const pad = { t: 24, r: 12, b: 32, l: 12 };
 	const uid = `bc-${Math.random().toString(36).slice(2, 8)}`;
 	const color = 'var(--color-brand-500, #6366f1)';
@@ -72,7 +74,7 @@
 	}
 </script>
 
-<div class={['relative w-full select-none', className]}>
+<div class={['relative w-full select-none', className]} bind:clientWidth={measuredWidth}>
 	<svg
 		viewBox={`0 0 ${W} ${height}`}
 		class="h-auto w-full overflow-visible"
