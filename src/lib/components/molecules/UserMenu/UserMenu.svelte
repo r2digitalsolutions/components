@@ -6,6 +6,7 @@
 	import StatusDot from '$lib/components/atoms/StatusDot/StatusDot.svelte';
 	import { createId } from '$lib/utils/id.js';
 	import { popoverInvokerToggle } from '$lib/utils/popoverInvoker.js';
+	import { hideUntilPlaced } from '$lib/utils/popoverPlacement.js';
 
 	export interface UserMenuItem {
 		id: string;
@@ -274,6 +275,7 @@
 
 	<div
 		bind:this={menuEl}
+		{@attach hideUntilPlaced}
 		id={menuId}
 		popover="auto"
 		role="menu"

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { bindPopoverInvokerToggle } from '$lib/utils/popoverInvoker.js';
+	import { hideUntilPlaced } from '$lib/utils/popoverPlacement.js';
 
 	export type PopoverPlacement = 'top' | 'bottom' | 'left' | 'right';
 	export type PopoverAlign = 'start' | 'center' | 'end';
@@ -241,6 +242,7 @@
 		<div
 			bind:this={panelEl}
 			id={panelId}
+			{@attach hideUntilPlaced}
 			popover="auto"
 			role="dialog"
 			ontoggle={onToggle}

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { on } from 'svelte/events';
 	import { popoverInvokerToggle } from '$lib/utils/popoverInvoker.js';
+	import { hideUntilPlaced } from '$lib/utils/popoverPlacement.js';
 
 	export interface CascaderOption {
 		value: string;
@@ -197,6 +198,7 @@
 
 	<div
 		bind:this={popoverEl}
+		{@attach hideUntilPlaced}
 		id={popoverId}
 		popover="auto"
 		onbeforetoggle={handleBeforeToggle}
