@@ -2,6 +2,7 @@
 	import type { TreeNode } from '../TreeView/TreeView.svelte';
 	import { on } from 'svelte/events';
 	import { popoverInvokerToggle } from '$lib/utils/popoverInvoker.js';
+	import { hideUntilPlaced } from '$lib/utils/popoverPlacement.js';
 
 	interface TreeSelectProps {
 		id?: string;
@@ -255,6 +256,7 @@
 
 	<div
 		bind:this={popoverEl}
+		{@attach hideUntilPlaced}
 		id={popoverId}
 		popover="auto"
 		role="tree"

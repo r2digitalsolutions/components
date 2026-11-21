@@ -3,6 +3,7 @@
 	import { on } from 'svelte/events';
 	import { createId } from '$lib/utils/id.js';
 	import { popoverInvokerToggle } from '$lib/utils/popoverInvoker.js';
+	import { hideUntilPlaced } from '$lib/utils/popoverPlacement.js';
 
 	export interface DropdownItem {
 		id: string;
@@ -457,6 +458,7 @@
 	<!-- Native Popover API -->
 	<div
 		bind:this={menuEl}
+		{@attach hideUntilPlaced}
 		id={menuId}
 		popover="auto"
 		role="menu"
