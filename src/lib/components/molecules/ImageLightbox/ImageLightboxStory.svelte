@@ -30,7 +30,7 @@
 		zoomable?: boolean;
 		draggable?: boolean;
 		dismissible?: boolean;
-		variant?: 'gallery' | 'single' | 'many' | 'minimal';
+		variant?: 'gallery' | 'single' | 'many' | 'minimal' | 'media';
 	} = $props();
 
 	let open = $state(false);
@@ -78,8 +78,32 @@
 		caption: `Sample photo ${i + 1} of 12`
 	}));
 
+	const media: LightboxImage[] = [
+		gallery[0],
+		{
+			type: 'video',
+			src: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
+			poster: 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?w=800',
+			caption: 'A video file: plays with native controls, no zoom'
+		},
+		gallery[1],
+		{
+			type: 'video',
+			embed: true,
+			src: 'https://www.youtube-nocookie.com/embed/aqz-KE-bpKQ',
+			poster: 'https://i.ytimg.com/vi/aqz-KE-bpKQ/hqdefault.jpg',
+			caption: 'An embedded player (YouTube)'
+		}
+	];
+
 	const images = $derived(
-		variant === 'single' ? single : variant === 'many' ? many : gallery
+		variant === 'single'
+			? single
+			: variant === 'many'
+				? many
+				: variant === 'media'
+					? media
+					: gallery
 	);
 
 	const resolvedThumbnails = $derived(variant === 'minimal' ? false : showThumbnails);
@@ -92,7 +116,7 @@
 	}
 </script>
 
-<div class="w-full max-w-3xl space-y-5">
+<div class="max-w-3xl space-y-5 w-full">
 	<div class="space-y-1">
 		<p class="text-sm font-semibold text-primary">Image lightbox</p>
 		<p class="text-xs leading-relaxed text-secondary">
@@ -103,27 +127,27 @@
 			{:else if variant === 'minimal'}
 				Chrome reduced: no thumbnails, captions, or counter.
 			{:else}
-				Click a thumbnail or open the gallery. Swipe sideways to change image, pull down to
-				close, scroll or double-click to zoom.
+				Click a thumbnail or open the gallery. Swipe sideways to change image, pull down to close,
+				scroll or double-click to zoom.
 			{/if}
 		</p>
 	</div>
 
 	{#if variant !== 'single'}
-		<div class="grid grid-cols-3 gap-2 sm:grid-cols-5">
+		<div class="gap-2 sm:grid-cols-5 grid grid-cols-3">
 			{#each images.slice(0, variant === 'many' ? 10 : images.length) as img, i}
 				<button
 					type="button"
-					class="group relative overflow-hidden rounded-xl ring-1 ring-border transition hover:ring-brand-500/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40"
+					class="group rounded-xl ring-border hover:ring-brand-500/50 focus-visible:ring-brand-500/40 relative overflow-hidden ring-1 transition focus-visible:ring-2 focus-visible:outline-none"
 					onclick={() => openAt(i)}
 				>
 					<img
-						src={img.src}
+						src={img.type === 'video' ? (img.poster ?? '') : img.src}
 						alt={img.alt}
 						class="aspect-[4/3] w-full object-cover transition duration-300 group-hover:scale-105"
 					/>
 					<span
-						class="absolute inset-0 bg-black/0 transition group-hover:bg-black/20"
+						class="inset-0 bg-black/0 group-hover:bg-black/20 absolute transition"
 						aria-hidden="true"
 					></span>
 				</button>
@@ -132,7 +156,7 @@
 	{:else}
 		<button
 			type="button"
-			class="group relative max-w-md overflow-hidden rounded-2xl ring-1 ring-border transition hover:ring-brand-500/50"
+			class="group max-w-md rounded-2xl ring-border hover:ring-brand-500/50 relative overflow-hidden ring-1 transition"
 			onclick={() => openAt(0)}
 		>
 			<img
@@ -143,7 +167,7 @@
 		</button>
 	{/if}
 
-	<div class="flex flex-wrap gap-2">
+	<div class="gap-2 flex flex-wrap">
 		<Button size="sm" onclick={() => openAt(0)}>Open lightbox</Button>
 		{#if images.length > 1}
 			<Button size="sm" variant="outline" onclick={() => openAt(Math.min(2, images.length - 1))}>
@@ -152,28 +176,30 @@
 		{/if}
 	</div>
 
-	<dl class="grid grid-cols-2 gap-x-4 gap-y-1.5 rounded-xl border border-border bg-surface-elevated p-3 text-[11px] sm:grid-cols-3">
-		<div class="flex justify-between gap-2 sm:block">
+	<dl
+		class="gap-x-4 gap-y-1.5 rounded-xl border-border bg-surface-elevated p-3 sm:grid-cols-3 grid grid-cols-2 border text-[11px]"
+	>
+		<div class="gap-2 sm:block flex justify-between">
 			<dt class="text-muted">Images</dt>
-			<dd class="font-medium tabular-nums text-primary">{images.length}</dd>
+			<dd class="font-medium text-primary tabular-nums">{images.length}</dd>
 		</div>
-		<div class="flex justify-between gap-2 sm:block">
+		<div class="gap-2 sm:block flex justify-between">
 			<dt class="text-muted">Drag</dt>
 			<dd class="font-medium text-primary">{draggable ? 'on' : 'off'}</dd>
 		</div>
-		<div class="flex justify-between gap-2 sm:block">
+		<div class="gap-2 sm:block flex justify-between">
 			<dt class="text-muted">Zoom</dt>
 			<dd class="font-medium text-primary">{zoomable ? 'on' : 'off'}</dd>
 		</div>
-		<div class="flex justify-between gap-2 sm:block">
+		<div class="gap-2 sm:block flex justify-between">
 			<dt class="text-muted">Loop</dt>
 			<dd class="font-medium text-primary">{loop ? 'on' : 'off'}</dd>
 		</div>
-		<div class="flex justify-between gap-2 sm:block">
+		<div class="gap-2 sm:block flex justify-between">
 			<dt class="text-muted">Thumbnails</dt>
 			<dd class="font-medium text-primary">{resolvedThumbnails ? 'on' : 'off'}</dd>
 		</div>
-		<div class="flex justify-between gap-2 sm:block">
+		<div class="gap-2 sm:block flex justify-between">
 			<dt class="text-muted">Blur</dt>
 			<dd class="font-medium text-primary">{blurBackdrop ? 'on' : 'off'}</dd>
 		</div>

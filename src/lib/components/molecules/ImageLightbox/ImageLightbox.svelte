@@ -1,9 +1,27 @@
 <script lang="ts">
 	export interface LightboxImage {
 		src: string;
-		thumbSrc?: string; // filmstrip; defaults to src
+		thumbSrc?: string; // filmstrip; defaults to poster, then src
 		alt?: string;
 		caption?: string;
+		/** `video` plays `src` (a file) or, with `embed`, loads it in an iframe (YouTube, Vimeo…). Default `image`. */
+		type?: 'image' | 'video';
+		poster?: string;
+		/** Video only: `src` is a player URL to embed instead of a video file. */
+		embed?: boolean;
+		/** Video only: portrait (9:16) instead of landscape (16:9). */
+		vertical?: boolean;
+	}
+
+	export interface LightboxLabels {
+		close?: string;
+		previous?: string;
+		next?: string;
+		zoomIn?: string;
+		zoomOut?: string;
+		resetZoom?: string;
+		thumbnails?: string;
+		preview?: string;
 	}
 
 	interface ImageLightboxProps {
@@ -29,6 +47,8 @@
 		dismissible?: boolean;
 		minZoom?: number;
 		maxZoom?: number;
+		/** Texts of the buttons, for translated apps. English by default. */
+		labels?: LightboxLabels;
 		class?: string;
 		onclose?: () => void;
 		onchange?: (index: number) => void;
@@ -52,12 +72,27 @@
 		dismissible = true,
 		minZoom = 1,
 		maxZoom = 4,
+		labels = {},
 		class: className = '',
 		onclose,
 		onchange
 	}: ImageLightboxProps = $props();
 
 	const current = $derived(images[index]);
+	const isVideo = $derived(current?.type === 'video');
+	// Videos are not zoomed: wheel, double click and +/- are left to the player.
+	const canZoom = $derived(zoomable && !isVideo);
+	const text = $derived({
+		close: 'Close',
+		previous: 'Previous image',
+		next: 'Next image',
+		zoomIn: 'Zoom in',
+		zoomOut: 'Zoom out',
+		resetZoom: 'Reset zoom',
+		thumbnails: 'Image thumbnails',
+		preview: 'Preview',
+		...labels
+	});
 	const hasMany = $derived(images.length > 1);
 	const canPrev = $derived(hasMany && (loop || index > 0));
 	const canNext = $derived(hasMany && (loop || index < images.length - 1));
@@ -132,7 +167,7 @@
 	}
 
 	function zoomAt(nextScale: number, clientX?: number, clientY?: number) {
-		if (!zoomable) return;
+		if (!canZoom) return;
 		const prev = scale;
 		const next = clampZoom(nextScale);
 		if (next === prev) return;
@@ -157,7 +192,7 @@
 	}
 
 	function toggleZoom(e?: MouseEvent) {
-		if (!zoomable || suppressClick) return;
+		if (!canZoom || suppressClick) return;
 		if (scale > minZoom) {
 			resetTransform();
 		} else {
@@ -166,7 +201,7 @@
 	}
 
 	function onWheel(e: WheelEvent) {
-		if (!open || !zoomable) return;
+		if (!open || !canZoom) return;
 		e.preventDefault();
 		const delta = e.deltaY > 0 ? -0.2 : 0.2;
 		zoomAt(scale + delta, e.clientX, e.clientY);
@@ -371,7 +406,7 @@
 		popover="manual"
 		use:topLayer
 		class={[
-			'fixed inset-0 z-50 m-0 flex h-dvh max-h-none w-screen max-w-none flex-col overflow-visible border-0 p-0',
+			'inset-0 m-0 p-0 fixed z-50 flex h-dvh max-h-none w-screen max-w-none flex-col overflow-visible border-0',
 			blurBackdrop && 'backdrop-blur-xl',
 			className
 		]}
@@ -384,45 +419,55 @@
 		<!-- Top bar -->
 		<header
 			data-lightbox-chrome
-			class="relative z-20 flex shrink-0 items-center justify-between gap-3 px-4 py-3 sm:px-5"
+			class="gap-3 px-4 py-3 sm:px-5 relative z-20 flex shrink-0 items-center justify-between"
 		>
 			<div class="min-w-0 flex-1">
 				{#if showCounter}
-					<p class="text-sm font-medium tabular-nums text-white/90">
+					<p class="text-sm font-medium text-white/90 tabular-nums">
 						{#if hasMany}
 							{index + 1}<span class="text-white/35"> / {images.length}</span>
 						{:else}
-							Preview
+							{text.preview}
 						{/if}
-						{#if zoomable && scale > minZoom}
-							<span class="ml-2 text-xs font-normal text-white/40"
-								>{Math.round(scale * 100)}%</span
-							>
+						{#if canZoom && scale > minZoom}
+							<span class="ml-2 text-xs font-normal text-white/40">{Math.round(scale * 100)}%</span>
 						{/if}
 					</p>
 				{/if}
 			</div>
 
-			<div class="flex items-center gap-1">
-				{#if zoomable}
+			<div class="gap-1 flex items-center">
+				{#if canZoom}
 					<button
 						type="button"
-						class="flex h-9 w-9 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white disabled:opacity-30"
+						class="h-9 w-9 rounded-lg text-white/70 hover:bg-white/10 hover:text-white flex items-center justify-center transition disabled:opacity-30"
 						onclick={() => zoomAt(scale - 0.25)}
-						aria-label="Zoom out"
+						aria-label={text.zoomOut}
 						disabled={scale <= minZoom}
 					>
-						<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<svg
+							class="h-4 w-4"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+						>
 							<path stroke-linecap="round" d="M5 12h14" />
 						</svg>
 					</button>
 					<button
 						type="button"
-						class="flex h-9 w-9 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white disabled:opacity-30"
+						class="h-9 w-9 rounded-lg text-white/70 hover:bg-white/10 hover:text-white flex items-center justify-center transition disabled:opacity-30"
 						onclick={() => (scale > minZoom ? resetTransform() : zoomAt(2))}
-						aria-label={scale > minZoom ? 'Reset zoom' : 'Zoom in'}
+						aria-label={scale > minZoom ? text.resetZoom : text.zoomIn}
 					>
-						<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+						<svg
+							class="h-4 w-4"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.75"
+						>
 							<circle cx="11" cy="11" r="7" />
 							<path stroke-linecap="round" d="M21 21l-4.3-4.3" />
 							{#if scale <= minZoom}
@@ -434,11 +479,17 @@
 				{#if showClose}
 					<button
 						type="button"
-						class="ml-1 flex h-9 w-9 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white"
+						class="ml-1 h-9 w-9 rounded-lg text-white/70 hover:bg-white/10 hover:text-white flex items-center justify-center transition"
 						onclick={close}
-						aria-label="Close"
+						aria-label={text.close}
 					>
-						<svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<svg
+							class="h-5 w-5"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+						>
 							<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
 						</svg>
 					</button>
@@ -450,8 +501,8 @@
 		<div
 			bind:this={stageEl}
 			class={[
-				'relative flex min-h-0 flex-1 items-center justify-center px-12 sm:px-16',
-				scale > minZoom || (draggable && hasMany) ? 'cursor-grab' : 'cursor-default',
+				'min-h-0 px-12 sm:px-16 relative flex flex-1 items-center justify-center',
+				!isVideo && (scale > minZoom || (draggable && hasMany)) ? 'cursor-grab' : 'cursor-default',
 				dragging && 'cursor-grabbing'
 			]}
 			onpointerdown={onPointerDown}
@@ -466,14 +517,20 @@
 				<button
 					data-lightbox-chrome
 					type="button"
-					class="absolute left-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full text-white/50 transition hover:bg-white/10 hover:text-white sm:left-3"
+					class="left-2 h-10 w-10 text-white/50 hover:bg-white/10 hover:text-white sm:left-3 absolute top-1/2 z-10 flex -translate-y-1/2 items-center justify-center rounded-full transition"
 					onclick={(e) => {
 						e.stopPropagation();
 						prev();
 					}}
-					aria-label="Previous image"
+					aria-label={text.previous}
 				>
-					<svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+					<svg
+						class="h-6 w-6"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.75"
+					>
 						<path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
 					</svg>
 				</button>
@@ -483,14 +540,20 @@
 				<button
 					data-lightbox-chrome
 					type="button"
-					class="absolute right-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full text-white/50 transition hover:bg-white/10 hover:text-white sm:right-3"
+					class="right-2 h-10 w-10 text-white/50 hover:bg-white/10 hover:text-white sm:right-3 absolute top-1/2 z-10 flex -translate-y-1/2 items-center justify-center rounded-full transition"
 					onclick={(e) => {
 						e.stopPropagation();
 						next();
 					}}
-					aria-label="Next image"
+					aria-label={text.next}
 				>
-					<svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+					<svg
+						class="h-6 w-6"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.75"
+					>
 						<path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
 					</svg>
 				</button>
@@ -498,39 +561,76 @@
 
 			<figure
 				class={[
-					'relative flex max-h-full max-w-5xl flex-col items-center will-change-transform',
+					'max-w-5xl relative flex max-h-full flex-col items-center will-change-transform',
 					transitioning && 'transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]'
 				]}
 				style={imageStyle}
 			>
-				{#if !imageLoaded}
-					<div class="absolute inset-0 flex items-center justify-center" aria-hidden="true">
-						<span
-							class="h-7 w-7 animate-spin rounded-full border-2 border-white/15 border-t-white/70"
-						></span>
+				{#if isVideo}
+					<!-- data-lightbox-chrome: clicks and drags on the player go to its controls, not to swipe -->
+					<div
+						data-lightbox-chrome
+						class={[
+							'rounded-lg bg-black shadow-2xl overflow-hidden',
+							current.vertical
+								? 'aspect-[9/16] h-[min(72vh,860px)] max-w-[88vw]'
+								: 'aspect-video max-h-[min(72vh,860px)] w-[min(88vw,1024px)]'
+						]}
+					>
+						{#key current.src}
+							{#if current.embed}
+								<iframe
+									src={current.src}
+									title={current.alt ?? current.caption ?? 'Video'}
+									class="h-full w-full border-0"
+									allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+									allowfullscreen
+									referrerpolicy="strict-origin-when-cross-origin"
+								></iframe>
+							{:else}
+								<!-- svelte-ignore a11y_media_has_caption -->
+								<video
+									src={current.src}
+									poster={current.poster}
+									class="h-full w-full object-contain"
+									controls
+									autoplay
+									playsinline
+									preload="metadata"
+								></video>
+							{/if}
+						{/key}
 					</div>
+				{:else}
+					{#if !imageLoaded}
+						<div class="inset-0 absolute flex items-center justify-center" aria-hidden="true">
+							<span
+								class="h-7 w-7 animate-spin border-white/15 border-t-white/70 rounded-full border-2"
+							></span>
+						</div>
+					{/if}
+					<img
+						src={current.src}
+						alt={current.alt ?? ''}
+						draggable="false"
+						class={[
+							'max-h-[min(72vh,860px)] max-w-[min(100%,88vw)] object-contain select-none',
+							!imageLoaded && 'opacity-0',
+							imageLoaded && 'opacity-100 transition-opacity duration-300'
+						]}
+						onload={() => (imageLoaded = true)}
+					/>
 				{/if}
-				<img
-					src={current.src}
-					alt={current.alt ?? ''}
-					draggable="false"
-					class={[
-						'max-h-[min(72vh,860px)] max-w-[min(100%,88vw)] select-none object-contain',
-						!imageLoaded && 'opacity-0',
-						imageLoaded && 'opacity-100 transition-opacity duration-300'
-					]}
-					onload={() => (imageLoaded = true)}
-				/>
 			</figure>
 		</div>
 
 		<!-- Bottom dock -->
 		<footer
 			data-lightbox-chrome
-			class="relative z-20 shrink-0 border-t border-white/[0.06] bg-zinc-950/80 px-0 pb-3 pt-3 backdrop-blur-xl sm:pb-4 sm:pt-3.5"
+			class="border-white/[0.06] bg-zinc-950/80 px-0 pb-3 pt-3 backdrop-blur-xl sm:pb-4 sm:pt-3.5 relative z-20 shrink-0 border-t"
 		>
 			{#if showCaptions && (current.caption || current.alt)}
-				<p class="mb-3 truncate px-4 text-center text-sm text-white/65 sm:px-5">
+				<p class="mb-3 px-4 text-sm text-white/65 sm:px-5 truncate text-center">
 					{current.caption ?? current.alt}
 				</p>
 			{/if}
@@ -538,19 +638,19 @@
 			{#if showStrip}
 				<div class="relative">
 					<div
-						class="pointer-events-none absolute inset-y-0 left-0 z-10 w-8 bg-gradient-to-r from-zinc-950/90 to-transparent sm:w-12"
+						class="inset-y-0 left-0 w-8 from-zinc-950/90 sm:w-12 pointer-events-none absolute z-10 bg-gradient-to-r to-transparent"
 						aria-hidden="true"
 					></div>
 					<div
-						class="pointer-events-none absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-zinc-950/90 to-transparent sm:w-12"
+						class="inset-y-0 right-0 w-8 from-zinc-950/90 sm:w-12 pointer-events-none absolute z-10 bg-gradient-to-l to-transparent"
 						aria-hidden="true"
 					></div>
 
 					<div
 						bind:this={stripEl}
-						class="flex gap-2.5 overflow-x-auto scroll-smooth px-4 py-2 sm:gap-3 sm:px-6 sm:py-2.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+						class="gap-2.5 px-4 py-2 sm:gap-3 sm:px-6 sm:py-2.5 flex [scrollbar-width:none] overflow-x-auto scroll-smooth [&::-webkit-scrollbar]:hidden"
 						role="tablist"
-						aria-label="Image thumbnails"
+						aria-label={text.thumbnails}
 					>
 						{#each images as img, i (img.src + i)}
 							{@const active = i === index}
@@ -562,27 +662,45 @@
 								aria-label={img.alt ?? `Image ${i + 1}`}
 								onclick={() => goTo(i)}
 								class={[
-									'group relative shrink-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950',
+									'group rounded-lg focus-visible:ring-white/70 focus-visible:ring-offset-zinc-950 relative shrink-0 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
 									'transition-[transform,opacity] duration-200',
 									active ? 'z-[1] scale-105 opacity-100' : 'opacity-45 hover:opacity-85'
 								]}
 							>
 								<span
 									class={[
-										'block overflow-hidden rounded-lg bg-white/5 shadow-lg transition ring-2',
-										active ? 'ring-white' : 'ring-transparent group-hover:ring-white/25'
+										'rounded-lg bg-white/5 shadow-lg block overflow-hidden ring-2 transition',
+										active ? 'ring-white' : 'group-hover:ring-white/25 ring-transparent'
 									]}
 								>
-									<img
-										src={img.thumbSrc ?? img.src}
-										alt=""
-										class="h-14 w-[4.5rem] object-cover sm:h-16 sm:w-24"
-										draggable="false"
-									/>
+									{#if img.type !== 'video' || img.thumbSrc || img.poster}
+										<img
+											src={img.thumbSrc ?? img.poster ?? img.src}
+											alt=""
+											class="h-14 sm:h-16 sm:w-24 w-[4.5rem] object-cover"
+											draggable="false"
+										/>
+									{:else}
+										<span class="h-14 bg-zinc-800 sm:h-16 sm:w-24 block w-[4.5rem]"></span>
+									{/if}
 								</span>
+								{#if img.type === 'video'}
+									<span
+										class="inset-0 pointer-events-none absolute flex items-center justify-center"
+										aria-hidden="true"
+									>
+										<svg
+											class="h-6 w-6 text-white drop-shadow"
+											viewBox="0 0 24 24"
+											fill="currentColor"
+										>
+											<path d="M8 5.5v13l11-6.5z" />
+										</svg>
+									</span>
+								{/if}
 								{#if active}
 									<span
-										class="absolute -bottom-1.5 left-1/2 h-0.5 w-5 -translate-x-1/2 rounded-full bg-white"
+										class="-bottom-1.5 h-0.5 w-5 bg-white absolute left-1/2 -translate-x-1/2 rounded-full"
 										aria-hidden="true"
 									></span>
 								{/if}

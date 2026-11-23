@@ -487,7 +487,7 @@ export { default as MonthPicker } from './components/molecules/MonthPicker/Month
 export { default as WeekPicker } from './components/molecules/WeekPicker/WeekPicker.svelte';
 export { default as YearPicker } from './components/molecules/YearPicker/YearPicker.svelte';
 export { default as ImageLightbox } from './components/molecules/ImageLightbox/ImageLightbox.svelte';
-export type { LightboxImage } from './components/molecules/ImageLightbox/ImageLightbox.svelte';
+export type { LightboxImage, LightboxLabels } from './components/molecules/ImageLightbox/ImageLightbox.svelte';
 export { default as EmojiPicker } from './components/molecules/EmojiPicker/EmojiPicker.svelte';
 export type { EmojiCategory } from './components/molecules/EmojiPicker/EmojiPicker.svelte';
 export { default as MentionInput } from './components/molecules/MentionInput/MentionInput.svelte';

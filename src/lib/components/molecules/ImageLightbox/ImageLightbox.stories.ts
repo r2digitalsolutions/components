@@ -8,7 +8,7 @@ const meta = {
 	argTypes: {
 		variant: {
 			control: 'select',
-			options: ['gallery', 'single', 'many', 'minimal'],
+			options: ['gallery', 'single', 'many', 'minimal', 'media'],
 			description: 'Story layout / image set'
 		},
 		loop: { control: 'boolean' },
@@ -83,4 +83,9 @@ export const NoBlur: Story = {
 export const NoThumbnails: Story = {
 	name: 'No thumbnails',
 	args: { showThumbnails: false }
+};
+
+export const PhotosAndVideos: Story = {
+	name: 'Photos and videos',
+	args: { variant: 'media' }
 };
