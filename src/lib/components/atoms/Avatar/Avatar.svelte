@@ -1,4 +1,6 @@
 <script lang="ts">
+	import VerifiedBadge from '$lib/components/atoms/VerifiedBadge/VerifiedBadge.svelte';
+
 	type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
 	type AvatarStatus = 'online' | 'offline' | 'busy' | 'away' | null;
 
@@ -10,6 +12,10 @@
 		status?: AvatarStatus;
 		/** Soft outline around the avatar (disable inside AvatarGroup) */
 		ringed?: boolean;
+		/** Shows the verified seal on the bottom-right corner. */
+		verified?: boolean;
+		/** Accessible name of the seal. */
+		verifiedLabel?: string;
 		class?: string;
 	}
 
@@ -20,6 +26,8 @@
 		size = 'md',
 		status = null,
 		ringed = true,
+		verified = false,
+		verifiedLabel = 'Verified',
 		class: className = ''
 	}: AvatarProps = $props();
 
@@ -43,6 +51,16 @@
 		xl: 'h-3.5 w-3.5',
 		'2xl': 'h-4 w-4',
 		'3xl': 'h-5 w-5'
+	};
+
+	const sealSizes: Record<AvatarSize, 'xs' | 'sm' | 'md' | 'lg'> = {
+		xs: 'xs',
+		sm: 'xs',
+		md: 'sm',
+		lg: 'sm',
+		xl: 'md',
+		'2xl': 'md',
+		'3xl': 'lg'
 	};
 
 	const statusColors: Record<NonNullable<AvatarStatus>, string> = {
@@ -80,16 +98,12 @@
 </script>
 
 <span
-	class={[
-		'relative inline-flex aspect-square shrink-0 overflow-hidden rounded-full',
-		sizeClasses[size],
-		className
-	]}
+	class={['relative inline-flex aspect-square shrink-0 rounded-full', sizeClasses[size], className]}
 >
 	<span
 		class={[
-			'inline-flex h-full w-full items-center justify-center rounded-full',
-			ringed && 'ring-2 ring-surface-elevated',
+			'inline-flex h-full w-full items-center justify-center overflow-hidden rounded-full',
+			ringed && 'ring-surface-elevated ring-2',
 			!showImage && [bgColor, 'text-white font-semibold']
 		]}
 		// Con foto el <img> ya lleva su texto alternativo; sin foto, las iniciales son una imagen con nombre.
@@ -108,10 +122,16 @@
 		{/if}
 	</span>
 
-	{#if status}
+	{#if verified}
+		<VerifiedBadge
+			size={sealSizes[size]}
+			title={verifiedLabel}
+			class="-right-1 -bottom-1 bg-surface-elevated absolute rounded-full"
+		/>
+	{:else if status}
 		<span
 			class={[
-				'absolute bottom-0 right-0 rounded-full ring-2 ring-surface',
+				'bottom-0 right-0 ring-surface absolute rounded-full ring-2',
 				statusDotSizes[size],
 				statusColors[status]
 			]}

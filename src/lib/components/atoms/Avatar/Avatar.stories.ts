@@ -18,7 +18,8 @@ const meta = {
 			control: 'select',
 			options: [null, 'online', 'offline', 'busy', 'away'],
 			description: 'Status indicator dot'
-		}
+		},
+		verified: { control: 'boolean', description: 'Verified seal on the corner' }
 	},
 	args: { name: 'Rafael González', size: 'md', status: null }
 } satisfies Meta<typeof AvatarStory>;
@@ -32,6 +33,10 @@ export const WithInitials: Story = {
 
 export const Online: Story = {
 	args: { name: 'Ana Martínez', status: 'online', size: 'lg' }
+};
+
+export const Verified: Story = {
+	args: { name: 'Evoteg', verified: true, size: 'lg' }
 };
 
 export const Busy: Story = {

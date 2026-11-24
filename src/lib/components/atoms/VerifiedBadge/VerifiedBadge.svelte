@@ -1,7 +1,7 @@
 <script lang="ts">
 	interface VerifiedBadgeProps {
-		/** Icon size. `sm` for inline text, `md` next to titles, `lg` for hero headers. */
-		size?: 'sm' | 'md' | 'lg';
+		/** Icon size. `xs` on avatar corners, `sm` for inline text, `md` next to titles, `lg` for hero headers. */
+		size?: 'xs' | 'sm' | 'md' | 'lg';
 		/** When set, renders a pill with the seal and this text instead of the bare seal. */
 		label?: string;
 		/** Accessible name for the bare seal. */
@@ -18,6 +18,7 @@
 
 	const sizeClass = $derived(
 		{
+			xs: 'h-3.5 w-3.5',
 			sm: 'h-4 w-4',
 			md: 'h-5 w-5',
 			lg: 'h-7 w-7'
