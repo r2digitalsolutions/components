@@ -7,6 +7,7 @@
 		name?: string;
 		size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
 		status?: 'online' | 'offline' | 'busy' | 'away' | null;
+		verified?: boolean;
 	}>();
 </script>
 
@@ -16,4 +17,5 @@
 	name={props.name ?? 'Rafael González'}
 	size={props.size ?? 'md'}
 	status={props.status ?? null}
+	verified={props.verified ?? false}
 />

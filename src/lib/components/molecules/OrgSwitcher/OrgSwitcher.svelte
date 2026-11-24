@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Badge from '$lib/components/atoms/Badge/Badge.svelte';
+	import VerifiedBadge from '$lib/components/atoms/VerifiedBadge/VerifiedBadge.svelte';
 	import Check from '@lucide/svelte/icons/check';
 	import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
 	import Plus from '@lucide/svelte/icons/plus';
@@ -18,6 +19,8 @@
 		subtitle?: string;
 		/** Pending count shown at the end of the row. Hidden when 0. */
 		badge?: string | number;
+		/** Verified organization: seal on the avatar corner and next to the name. */
+		verified?: boolean;
 	}
 
 	interface OrgSwitcherProps {
@@ -31,6 +34,8 @@
 		createLabel?: string;
 		/** Small note under the create row (e.g. «Linked to your account»). */
 		footerNote?: string;
+		/** Accessible name of the verified seal. */
+		verifiedLabel?: string;
 		class?: string;
 		onchange?: (id: string) => void;
 		oncreate?: () => void;
@@ -55,6 +60,7 @@
 		title,
 		createLabel = 'Create organization',
 		footerNote,
+		verifiedLabel = 'Verified',
 		class: className = '',
 		onchange,
 		oncreate
@@ -79,6 +85,15 @@
 
 <svelte:document onclick={onDocClick} />
 
+{#snippet cornerSeal()}
+	<span
+		class="-right-1.5 -bottom-1.5 bg-surface-elevated absolute flex rounded-full"
+		aria-hidden="true"
+	>
+		<VerifiedBadge size="xs" />
+	</span>
+{/snippet}
+
 <div class={['relative', className]} bind:this={rootEl}>
 	<button
 		type="button"
@@ -93,7 +108,7 @@
 	>
 		<span
 			class={[
-				'rounded-lg text-xs font-bold flex shrink-0 items-center justify-center',
+				'rounded-lg text-xs font-bold relative flex shrink-0 items-center justify-center',
 				compact ? 'h-7 w-7' : 'h-8 w-8',
 				TONE[current?.tone ?? 'brand']
 			]}
@@ -103,10 +118,14 @@
 					alt=""
 					class="rounded-lg h-full w-full object-cover"
 				/>{:else}{current?.initials ?? (current?.name ?? '?').slice(0, 2).toUpperCase()}{/if}
+			{#if current?.verified}{@render cornerSeal()}{/if}
 		</span>
 		{#if !compact}
 			<span class="min-w-0 flex-1">
-				<span class="text-sm font-semibold text-primary block truncate">{current?.name}</span>
+				<span class="gap-1 flex items-center">
+					<span class="text-sm font-semibold text-primary truncate">{current?.name}</span>
+					{#if current?.verified}<VerifiedBadge size="xs" title={verifiedLabel} />{/if}
+				</span>
 				{#if current?.subtitle}
 					<span class="text-muted block truncate text-[11px]">{current.subtitle}</span>
 				{:else if current?.plan}
@@ -145,7 +164,7 @@
 						>
 							<span
 								class={[
-									'h-8 w-8 rounded-lg text-xs font-bold flex shrink-0 items-center justify-center',
+									'h-8 w-8 rounded-lg text-xs font-bold relative flex shrink-0 items-center justify-center',
 									TONE[org.tone ?? 'brand']
 								]}
 							>
@@ -154,10 +173,12 @@
 										alt=""
 										class="rounded-lg h-full w-full object-cover"
 									/>{:else}{org.initials ?? org.name.slice(0, 2).toUpperCase()}{/if}
+								{#if org.verified}{@render cornerSeal()}{/if}
 							</span>
 							<span class="min-w-0 flex-1">
 								<span class="gap-2 flex items-center">
 									<span class="text-sm font-medium text-primary truncate">{org.name}</span>
+									{#if org.verified}<VerifiedBadge size="xs" title={verifiedLabel} />{/if}
 									{#if org.plan}
 										<Badge size="sm" variant="secondary">{org.plan}</Badge>
 									{/if}
