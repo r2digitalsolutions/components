@@ -349,15 +349,42 @@
 	}
 
 	/**
-	 * Full Kit `RemoteForm` → own `.enhance` (invalidateAll / updates / callbacks).
-	 * Already-enhanced spread → caller owns enhance; pass through unchanged.
+	 * Form only wraps with its own `.enhance` when it owns the submit lifecycle
+	 * (`onSuccess` / `onError` / `beforeSubmit` / `updates`, or explicit
+	 * `refreshAll={false}` / `invalidateAll={false}`).
+	 *
+	 * Otherwise pass `remote` through unchanged so caller-provided
+	 * `remote={form.enhance(...)}` handlers are not overwritten.
+	 * (Kit's `.enhance()` returns the same object that still has `fields`, so
+	 * we cannot detect "already enhanced" via `'fields' in remote`.)
+	 *
+	 * Memoize the Form-owned enhance so re-renders do not replace the callback.
 	 */
+	const wantsOwnEnhance = $derived(
+		onSuccess != null ||
+			onError != null ||
+			beforeSubmit != null ||
+			updates != null ||
+			refreshAll === false ||
+			invalidateAll === false
+	);
+
+	let ownedEnhanceAttrs: object | null = null;
+	let ownedEnhanceFor: typeof kitForm | null = null;
+
 	function remoteFormAttrs(): object {
 		if (!remote) return {};
-		if (!kitForm) return remote as object;
-		return kitForm.enhance(async ({ submit }) => {
+		if (!kitForm || !wantsOwnEnhance) {
+			ownedEnhanceAttrs = null;
+			ownedEnhanceFor = null;
+			return remote as object;
+		}
+		if (ownedEnhanceFor === kitForm && ownedEnhanceAttrs) return ownedEnhanceAttrs;
+		ownedEnhanceFor = kitForm;
+		ownedEnhanceAttrs = kitForm.enhance(async ({ submit }) => {
 			await handleRemoteEnhance(submit);
 		}) as object;
+		return ownedEnhanceAttrs;
 	}
 </script>
 

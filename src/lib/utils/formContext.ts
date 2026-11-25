@@ -24,6 +24,10 @@ export function fieldPath(...segments: Array<string | number>): string {
 /**
  * Spreadable remote form binding: a Kit `RemoteForm` or the object returned by `.enhance(...)`.
  *
+ * When using `remote={form.enhance(...)}`, do **not** also pass Form's
+ * `onSuccess` / `onError` / `beforeSubmit` (or `updates` / `refreshAll={false}` /
+ * `invalidateAll={false}`) — those make Form take ownership and replace your enhance.
+ *
  * @example
  * ```ts
  * remote={createPost}
