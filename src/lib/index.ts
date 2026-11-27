@@ -487,7 +487,10 @@ export { default as MonthPicker } from './components/molecules/MonthPicker/Month
 export { default as WeekPicker } from './components/molecules/WeekPicker/WeekPicker.svelte';
 export { default as YearPicker } from './components/molecules/YearPicker/YearPicker.svelte';
 export { default as ImageLightbox } from './components/molecules/ImageLightbox/ImageLightbox.svelte';
-export type { LightboxImage, LightboxLabels } from './components/molecules/ImageLightbox/ImageLightbox.svelte';
+export type {
+	LightboxImage,
+	LightboxLabels
+} from './components/molecules/ImageLightbox/ImageLightbox.svelte';
 export { default as EmojiPicker } from './components/molecules/EmojiPicker/EmojiPicker.svelte';
 export type { EmojiCategory } from './components/molecules/EmojiPicker/EmojiPicker.svelte';
 export { default as MentionInput } from './components/molecules/MentionInput/MentionInput.svelte';
@@ -569,7 +572,7 @@ export type {
 	WorkspaceCard as WorkspaceCardData
 } from './components/molecules/WorkspaceCard/WorkspaceCard.svelte';
 export { default as OrgSwitcher } from './components/molecules/OrgSwitcher/OrgSwitcher.svelte';
-export type { OrgItem } from './components/molecules/OrgSwitcher/OrgSwitcher.svelte';
+export type { OrgItem, OrgStatusTone } from './components/molecules/OrgSwitcher/OrgSwitcher.svelte';
 export { default as SectionNav } from './components/molecules/SectionNav/SectionNav.svelte';
 export type {
 	SectionNavItem,
@@ -1054,7 +1057,10 @@ export { default as WorkspaceShell } from './components/organisms/WorkspaceShell
 export { default as ProfilePicker } from './components/organisms/ProfilePicker/ProfilePicker.svelte';
 export type { ProfilePickerItem } from './components/organisms/ProfilePicker/ProfilePicker.svelte';
 export { default as MediaPickerDialog } from './components/organisms/MediaPickerDialog/MediaPickerDialog.svelte';
-export type { MediaPickerItem, MediaPickerAlbum } from './components/organisms/MediaPickerDialog/MediaPickerDialog.svelte';
+export type {
+	MediaPickerItem,
+	MediaPickerAlbum
+} from './components/organisms/MediaPickerDialog/MediaPickerDialog.svelte';
 export { default as Navbar } from './components/organisms/Navbar/Navbar.svelte';
 export type { NavbarLink } from './components/organisms/Navbar/Navbar.svelte';
 export { default as BottomNav } from './components/organisms/BottomNav/BottomNav.svelte';
