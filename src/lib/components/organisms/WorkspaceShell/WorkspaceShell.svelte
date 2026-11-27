@@ -44,11 +44,13 @@
 </script>
 
 <div class={['bg-surface text-primary flex min-h-dvh', className]}>
+	<!-- The side columns sit above the content so their popovers (OrgSwitcher, account menu) are not
+	     covered by positioned elements in the page, such as a hero banner. -->
 	{#if rail}
-		<div class="top-0 md:flex sticky hidden h-dvh">{@render rail()}</div>
+		<div class="top-0 md:flex sticky z-40 hidden h-dvh">{@render rail()}</div>
 	{/if}
 	{#if secondary}
-		<div class="top-0 lg:flex sticky hidden h-dvh">{@render secondary()}</div>
+		<div class="top-0 lg:flex sticky z-40 hidden h-dvh">{@render secondary()}</div>
 	{/if}
 	<div class="min-w-0 flex flex-1 flex-col">
 		{#if mobileHeader}
