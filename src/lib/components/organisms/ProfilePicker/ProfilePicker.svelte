@@ -1,6 +1,8 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import Plus from '@lucide/svelte/icons/plus';
+	import Search from '@lucide/svelte/icons/search';
+	import Input from '$lib/components/atoms/Input/Input.svelte';
 
 	export interface ProfilePickerItem {
 		id: string;
@@ -14,6 +16,8 @@
 		/** Pending count on the corner. Hidden when 0. */
 		badge?: string | number;
 		href?: string;
+		/** Extra words the search matches. */
+		keywords?: string;
 	}
 
 	interface ProfilePickerProps {
@@ -28,6 +32,11 @@
 		note?: string;
 		/** `screen` fills the viewport with the brand background; `inline` is a plain block. */
 		variant?: 'screen' | 'inline';
+		/** Show a search box when there are more than this many profiles. 0 = always, `Infinity` = never. */
+		searchThreshold?: number;
+		searchPlaceholder?: string;
+		/** Shown when the search finds nothing. */
+		emptyLabel?: string;
 		class?: string;
 		/** Logo above the title. */
 		brand?: Snippet;
@@ -45,6 +54,9 @@
 		createSubtitle,
 		note,
 		variant = 'screen',
+		searchThreshold = 8,
+		searchPlaceholder = 'Buscar…',
+		emptyLabel = 'Sin resultados',
 		class: className = '',
 		brand,
 		footer,
@@ -64,11 +76,32 @@
 	const hasBadge = (p: ProfilePickerItem) =>
 		p.badge !== undefined && p.badge !== '' && p.badge !== 0;
 
+	let query = $state('');
+	const searchable = $derived(profiles.length > searchThreshold);
+	const fold = (s: string) =>
+		s
+			.normalize('NFD')
+			.replace(/[\u0300-\u036f]/g, '')
+			.toLowerCase()
+			.trim();
+	const shown = $derived.by(() => {
+		const words = fold(query).split(/\s+/).filter(Boolean);
+		if (!words.length) return profiles;
+		return profiles.filter((p) => {
+			const hay = fold([p.name, p.subtitle, p.keywords].filter(Boolean).join(' '));
+			return words.every((w) => hay.includes(w));
+		});
+	});
+
 	function pick(p: ProfilePickerItem) {
 		value = p.id;
 		onselect?.(p);
 	}
 </script>
+
+{#snippet searchIcon()}
+	<Search class="h-5 w-5" strokeWidth={2} />
+{/snippet}
 
 {#snippet tile(p: ProfilePickerItem)}
 	<span
@@ -123,8 +156,21 @@
 	>
 		{title}
 	</h1>
+	{#if searchable}
+		<div class={['mt-8 max-w-md rounded-xl w-full', screen && 'bg-surface-elevated shadow-lg']}>
+			<Input
+				type="search"
+				size="lg"
+				clearable
+				autocomplete="off"
+				placeholder={searchPlaceholder}
+				bind:value={query}
+				leadIcon={searchIcon}
+			/>
+		</div>
+	{/if}
 	<ul class="mt-10 max-w-2xl gap-x-6 gap-y-8 sm:grid-cols-3 md:grid-cols-4 grid w-full grid-cols-2">
-		{#each profiles as p (p.id)}
+		{#each shown as p (p.id)}
 			<li class="min-w-0">
 				{#if p.href}
 					<a
@@ -141,7 +187,17 @@
 				{/if}
 			</li>
 		{/each}
-		{#if oncreate}
+		{#if searchable && query && !shown.length}
+			<li
+				class={[
+					'py-6 text-sm col-span-full text-center',
+					screen ? 'text-brand-200/80' : 'text-muted'
+				]}
+			>
+				{emptyLabel}
+			</li>
+		{/if}
+		{#if oncreate && !query}
 			<li class="min-w-0">
 				<button
 					type="button"
