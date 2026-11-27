@@ -49,6 +49,9 @@ export interface UiMessages {
 	edit: string;
 	removeNamed: string;
 	selectedFiles: string;
+	/** Copy buttons */
+	copy: string;
+	copied: string;
 	addProfilePhoto: string;
 	media: string;
 	imageRequired: string;
@@ -114,6 +117,8 @@ const en: UiMessages = {
 	edit: 'Edit',
 	removeNamed: 'Remove {name}',
 	selectedFiles: 'Selected files',
+	copy: 'Copy',
+	copied: 'Copied',
 	addProfilePhoto: 'Add a profile photo',
 	media: 'Media',
 	imageRequired: '{name}: an image is required',
@@ -174,6 +179,8 @@ const es: UiMessages = {
 	edit: 'Editar',
 	removeNamed: 'Quitar {name}',
 	selectedFiles: 'Archivos seleccionados',
+	copy: 'Copiar',
+	copied: 'Copiado',
 	addProfilePhoto: 'Añade una foto de perfil',
 	media: 'Multimedia',
 	imageRequired: '{name}: se requiere una imagen',
@@ -234,6 +241,8 @@ const pt: UiMessages = {
 	edit: 'Editar',
 	removeNamed: 'Remover {name}',
 	selectedFiles: 'Ficheiros selecionados',
+	copy: 'Copiar',
+	copied: 'Copiado',
 	addProfilePhoto: 'Adicione uma foto de perfil',
 	media: 'Multimédia',
 	imageRequired: '{name}: é necessária uma imagem',
@@ -294,6 +303,8 @@ const fr: UiMessages = {
 	edit: 'Modifier',
 	removeNamed: 'Retirer {name}',
 	selectedFiles: 'Fichiers sélectionnés',
+	copy: 'Copier',
+	copied: 'Copié',
 	addProfilePhoto: 'Ajoutez une photo de profil',
 	media: 'Médias',
 	imageRequired: '{name} : une image est requise',
@@ -354,6 +365,8 @@ const de: UiMessages = {
 	edit: 'Bearbeiten',
 	removeNamed: '{name} entfernen',
 	selectedFiles: 'Ausgewählte Dateien',
+	copy: 'Kopieren',
+	copied: 'Kopiert',
 	addProfilePhoto: 'Profilfoto hinzufügen',
 	media: 'Medien',
 	imageRequired: '{name}: ein Bild ist erforderlich',
@@ -414,6 +427,8 @@ const ca: UiMessages = {
 	edit: 'Editar',
 	removeNamed: 'Treure {name}',
 	selectedFiles: 'Fitxers seleccionats',
+	copy: 'Copiar',
+	copied: 'Copiat',
 	addProfilePhoto: 'Afegeix una foto de perfil',
 	media: 'Multimèdia',
 	imageRequired: '{name}: cal una imatge',
