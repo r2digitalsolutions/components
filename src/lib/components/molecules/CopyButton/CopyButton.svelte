@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Button from '$lib/components/atoms/Button/Button.svelte';
+	import { i18n } from '$lib/utils/i18n.svelte.js';
 
 	interface CopyButtonProps {
 		value: string;
@@ -13,8 +14,8 @@
 
 	let {
 		value,
-		label = 'Copy',
-		copiedLabel = 'Copied',
+		label,
+		copiedLabel,
 		size = 'sm',
 		variant = 'secondary',
 		class: className = '',
@@ -42,12 +43,12 @@
 		<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
 			<path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
 		</svg>
-		{copiedLabel}
+		{copiedLabel ?? i18n.t('copied')}
 	{:else}
 		<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
 			<rect x="9" y="9" width="13" height="13" rx="2" />
 			<path stroke-linecap="round" stroke-linejoin="round" d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
 		</svg>
-		{label}
+		{label ?? i18n.t('copy')}
 	{/if}
 </Button>
